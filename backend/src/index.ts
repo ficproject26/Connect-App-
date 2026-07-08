@@ -15,7 +15,7 @@ import { db } from './db';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Enable Middlewares
 app.use(cors({
