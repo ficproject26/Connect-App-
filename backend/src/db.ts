@@ -342,25 +342,22 @@ class DatabaseManager {
   private isFallback: boolean = false;
   private memoryDb: MockDatabaseSchema = DEFAULT_MOCK_DATA;
 
-  constructor() {
-    this.initialize();
-  }
+  constructor() {}
 
-  private async initialize() {
+  public async connect() {
     const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null);
     
     if (!connStr) {
-      console.warn(`[DB]: No MongoDB connection string found in MONGODB_URI or DATABASE_URL. Falling back to persistent Mock Database.`);
-      this.isFallback = true;
-      this.loadMockDbFromFile();
-      return;
+      const errorMsg = `[DB]: No MongoDB connection string found in MONGODB_URI or DATABASE_URL. MongoDB is strictly required.`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
 
     console.log(`[DB]: Attempting connection to MongoDB...`);
     try {
       this.mongoClient = new MongoClient(connStr, {
-        connectTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 5000
+        connectTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 10000
       });
       await this.mongoClient.connect();
       
@@ -372,11 +369,11 @@ class DatabaseManager {
       await this.createIndexes();
       await this.seedDefaultData();
     } catch (err: any) {
-      console.warn(`[DB]: MongoDB connection failed. Falling back to persistent Mock Database. Reason: ${err.message}`);
-      this.isFallback = true;
+      const errorMsg = `[DB]: MongoDB connection failed. Reason: ${err.message}`;
+      console.error(errorMsg);
       this.mongoClient = null;
       this.mongoDb = null;
-      this.loadMockDbFromFile();
+      throw new Error(errorMsg);
     }
   }
 

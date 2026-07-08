@@ -9,6 +9,7 @@ import deliveryRouter from './routes/delivery';
 import ordersRouter from './routes/orders';
 import mapsRouter from './routes/maps';
 import { socketManager } from './socket';
+import { db } from './db';
 
 // Load environmental variables
 dotenv.config();
@@ -44,7 +45,14 @@ app.use('/api/maps', mapsRouter);
 const server = http.createServer(app);
 socketManager.init(server);
 
-// Start Server listening
-server.listen(PORT, () => {
-  console.log(`[Server]: Connect App Backend running on http://localhost:${PORT}`);
-});
+// Connect to Database and start Server
+db.connect()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`[Server]: Connect App Backend running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('[Server]: Failed to start backend due to database connection failure:', err.message);
+    process.exit(1);
+  });
