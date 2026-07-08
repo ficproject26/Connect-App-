@@ -154,185 +154,14 @@ const VENDOR_LAT = 12.9348;
 const VENDOR_LNG = 77.6189;
 
 const DEFAULT_MOCK_DATA: MockDatabaseSchema = {
-  vendors: [
-    {
-      id: 'v1',
-      name: 'ABC Electronics',
-      email: 'abc.electronics@gmail.com',
-      phone: '+91 98765 43210',
-      address: 'Karol Bagh, New Delhi, 110005',
-      rating: 4.8,
-      active: true,
-      created_at: new Date().toISOString()
-    }
-  ],
-  delivery_partners: [
-    {
-      id: 'dp1',
-      name: 'Dev Singh',
-      photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
-      mobile: '+91 98989 89898',
-      emergency_contact: '+91 91919 19191',
-      address: 'Sector 15, Dwarka, Delhi',
-      vehicle_type: 'Electric Bike',
-      vehicle_number: 'DL-3C-AB-1234',
-      driving_license: 'DL1234567890',
-      aadhaar: '1234 5678 9012',
-      status: 'Available',
-      availability: true,
-      current_latitude: VENDOR_LAT + 0.005,
-      current_longitude: VENDOR_LNG + 0.005,
-      speed: 0,
-      battery_level: 92,
-      last_updated_time: new Date().toISOString(),
-      vendor_id: 'v1',
-      joining_date: '2026-01-10'
-    },
-    {
-      id: 'dp2',
-      name: 'Rajesh Kumar',
-      photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      mobile: '+91 97777 77777',
-      emergency_contact: '+91 95555 55555',
-      address: 'Koramangala 3rd Block, Bangalore',
-      vehicle_type: 'Scooter',
-      vehicle_number: 'KA-01-EF-5678',
-      driving_license: 'KA1234567890',
-      aadhaar: '9876 5432 1098',
-      status: 'Offline',
-      availability: false,
-      current_latitude: VENDOR_LAT - 0.008,
-      current_longitude: VENDOR_LNG - 0.006,
-      speed: 0,
-      battery_level: 45,
-      last_updated_time: new Date().toISOString(),
-      vendor_id: 'v1',
-      joining_date: '2026-03-15'
-    },
-    {
-      id: 'dp3',
-      name: 'Amit Patel',
-      photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      mobile: '+91 96666 66666',
-      emergency_contact: '+91 94444 44444',
-      address: 'HSR Layout, Bangalore',
-      vehicle_type: 'Bicycle',
-      vehicle_number: 'N/A',
-      driving_license: 'N/A',
-      aadhaar: '5678 1234 9012',
-      status: 'Break',
-      availability: false,
-      current_latitude: VENDOR_LAT + 0.012,
-      current_longitude: VENDOR_LNG - 0.003,
-      speed: 0,
-      battery_level: 80,
-      last_updated_time: new Date().toISOString(),
-      vendor_id: 'v1',
-      joining_date: '2026-05-01'
-    }
-  ],
-  orders: [
-    {
-      id: 'ORD1245',
-      order_number: 'ORD1245',
-      vendor_id: 'v1',
-      customer_name: 'Amit Verma',
-      customer_phone: '+91 98888 88888',
-      customer_address: 'Koramangala 5th Block, Bangalore',
-      customer_latitude: VENDOR_LAT + 0.015,
-      customer_longitude: VENDOR_LNG + 0.01,
-      product_details: 'boAt Rockerz 450 x 1',
-      amount: 2499,
-      status: 'Delivered'
-    },
-    {
-      id: 'ORD1244',
-      order_number: 'ORD1244',
-      vendor_id: 'v1',
-      customer_name: 'Neha Singh',
-      customer_phone: '+91 97777 66666',
-      customer_address: 'HSR Layout Sector 2, Bangalore',
-      customer_latitude: VENDOR_LAT - 0.01,
-      customer_longitude: VENDOR_LNG + 0.02,
-      product_details: 'OnePlus Nord Watch x 1',
-      amount: 3999,
-      status: 'Preparing'
-    },
-    {
-      id: 'ORD1243',
-      order_number: 'ORD1243',
-      vendor_id: 'v1',
-      customer_name: 'Rohit Gupta',
-      customer_phone: '+91 96666 55555',
-      customer_address: 'Indiranagar 100ft Road, Bangalore',
-      customer_latitude: VENDOR_LAT + 0.03,
-      customer_longitude: VENDOR_LNG - 0.01,
-      product_details: 'Samsung Galaxy Buds x 1',
-      amount: 1299,
-      status: 'Order Received'
-    }
-  ],
+  vendors: [],
+  delivery_partners: [],
+  orders: [],
   delivery_assignments: [],
   delivery_tracking: [],
-  delivery_status_history: [
-    {
-      order_id: 'ORD1245',
-      status: 'Order Received',
-      updated_by: 'Customer',
-      notes: 'Order placed by Amit Verma',
-      timestamp: new Date(Date.now() - 3600 * 2000).toISOString()
-    },
-    {
-      order_id: 'ORD1245',
-      status: 'Delivered',
-      updated_by: 'Delivery Partner',
-      notes: 'Handed over to customer',
-      timestamp: new Date(Date.now() - 1200 * 1000).toISOString()
-    },
-    {
-      order_id: 'ORD1244',
-      status: 'Order Received',
-      updated_by: 'Customer',
-      notes: 'Order placed by Neha Singh',
-      timestamp: new Date(Date.now() - 1800 * 1000).toISOString()
-    },
-    {
-      order_id: 'ORD1244',
-      status: 'Preparing',
-      updated_by: 'Vendor',
-      notes: 'Vendor has started preparing the items',
-      timestamp: new Date(Date.now() - 900 * 1000).toISOString()
-    },
-    {
-      order_id: 'ORD1243',
-      status: 'Order Received',
-      updated_by: 'Customer',
-      notes: 'Order placed by Rohit Gupta',
-      timestamp: new Date().toISOString()
-    }
-  ],
-  delivery_earnings: [
-    {
-      id: 'e1',
-      delivery_partner_id: 'dp1',
-      order_id: 'ORD1245',
-      per_delivery_earning: 60.00,
-      incentive: 10.00,
-      bonus: 5.00,
-      date: new Date().toISOString().split('T')[0]
-    }
-  ],
-  delivery_ratings: [
-    {
-      id: 'r1',
-      order_id: 'ORD1245',
-      rating_value: 5,
-      comment: 'Super fast delivery, very polite delivery agent!',
-      rater_role: 'Customer',
-      target_partner_id: 'dp1',
-      timestamp: new Date().toISOString()
-    }
-  ],
+  delivery_status_history: [],
+  delivery_earnings: [],
+  delivery_ratings: [],
   customer_tracking_logs: []
 };
 
@@ -365,9 +194,8 @@ class DatabaseManager {
       this.mongoDb = this.mongoClient.db(dbName);
       console.log(`[DB]: Connected to MongoDB successfully. Database: ${dbName}`);
       
-      // Setup collections, indexes and seed if empty
+      // Setup collections and indexes
       await this.createIndexes();
-      await this.seedDefaultData();
     } catch (err: any) {
       const errorMsg = `[DB]: MongoDB connection failed. Reason: ${err.message}`;
       console.error(errorMsg);
