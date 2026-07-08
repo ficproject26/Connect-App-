@@ -1,0 +1,247 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-dark: #030712;
+  --color-brand-navy: #0b132b;
+  --color-brand-navylight: #1c2541;
+  --color-brand-gold-light: #F3E5AB;
+  --color-brand-gold: #D4AF37;
+  --color-brand-gold-dark: #AA7C11;
+  --color-brand-silver-light: #F8FAFC;
+  --color-brand-silver: #94A3B8;
+  --color-brand-silver-dark: #64748B;
+  --color-brand-diamond-light: #E2E8F0;
+  --color-brand-diamond: #1E293B;
+  --color-brand-diamond-dark: #0F172A;
+
+  --font-sans: 'Outfit', 'Inter', 'sans-serif';
+  --font-serif: 'Playfair Display', 'Georgia', 'serif';
+
+  --animate-logo-draw: logoDraw 3.0s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-fade-out: fadeOut 0.8s ease-in-out forwards;
+  --animate-fade-in: fadeIn 0.8s ease-in-out forwards;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-sparkle: sparkle 2s ease-in-out infinite;
+  --animate-pulse-connection: pulseConnection 15s linear infinite;
+  --animate-spin-slow: spin 45s linear infinite;
+  --animate-scroll-wheel: scrollWheel 2s ease-in-out infinite;
+
+  @keyframes scrollWheel {
+    0% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(6px); opacity: 0.3; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes pulseConnection {
+    0% { stroke-dashoffset: 160; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  @keyframes logoDraw {
+    0% { stroke-dashoffset: 1000; fill: transparent; }
+    65% { stroke-dashoffset: 0; fill: transparent; }
+    100% { stroke-dashoffset: 0; fill: currentColor; }
+  }
+  @keyframes fadeOut {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.05); pointer-events: none; }
+  }
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes sparkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-sans antialiased overflow-x-hidden transition-colors duration-300;
+  }
+}
+
+:root {
+  --bg-surface: #ffffff;
+  --bg-base: #f8fafc;
+  --border-mid: #cbd5e1;
+  --border-subtle: #f1f5f9;
+  --text-muted: #475569;
+  --text-faint: #64748b;
+  --text-base: #0f172a;
+}
+
+.dark {
+  --bg-surface: #0b132b;
+  --bg-base: #050b18;
+  --border-mid: #1c2541;
+  --border-subtle: #1e293b;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --text-base: #f8fafc;
+}
+
+/* Custom Utilities */
+
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Glassmorphism card styles */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-card-dark {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.text-gradient-gold {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-gold-dark via-brand-gold to-brand-gold-light;
+}
+
+.bg-gradient-gold {
+  @apply bg-gradient-to-r from-brand-gold-dark via-brand-gold to-brand-gold-light;
+}
+
+/* Sparkle element absolute animations */
+.sparkle-slow {
+  animation: sparkle 3s ease-in-out infinite;
+}
+
+.sparkle-fast {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Logo animation drawing path style */
+.logo-svg-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: logoDraw 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 3D Card Flip Helpers */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* 3D Phone Mockup Custom Classes */
+.phone-perspective-container {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.phone-mockup-3d {
+  transform: rotateX(24deg) rotateY(-32deg) rotateZ(14deg);
+  transform-style: preserve-3d;
+  box-shadow: 
+    -1px 1px 0px #475569,
+    -2px 2px 0px #475569,
+    -3px 3px 0px #334155,
+    -4px 4px 0px #334155,
+    -5px 5px 0px #1e293b,
+    -6px 6px 0px #0f172a,
+    -25px 35px 80px rgba(0, 0, 0, 0.9),
+    -5px 5px 15px rgba(212, 175, 55, 0.05);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .phone-mockup-3d {
+  transform: rotateX(15deg) rotateY(-20deg) rotateZ(8deg);
+  box-shadow: 
+    -1px 1px 0px #64748b,
+    -2px 2px 0px #475569,
+    -3px 3px 0px #334155,
+    -4px 4px 0px #1e293b,
+    -5px 5px 0px #0f172a,
+    -30px 45px 90px rgba(0, 0, 0, 0.95),
+    -5px 5px 20px rgba(212, 175, 55, 0.1);
+}
+
+/* Mega Dropdown Slide Animation */
+@keyframes slideUp {
+  0%  { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Earth Rotation Animation (Hero Left to Right Drift) */
+@keyframes spin-earth {
+  0%, 100% {
+    transform: rotate(-0.8deg) scale(1.05);
+  }
+  50% {
+    transform: rotate(0.8deg) scale(1.05);
+  }
+}
+
+.animate-spin-earth {
+  transform-origin: 50% 103%;
+  animation: spin-earth 20s ease-in-out infinite;
+}
+
+
+/* Custom Globe Rotation Animation (Ecosystem 360 Spin) */
+@keyframes spin-globe-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-globe-spin {
+  animation: spin-globe-rotate 80s linear infinite;
+}
+
+
+
+
+.bg-radial-fade {
+  background: radial-gradient(circle at center, transparent 30%, #020b18 80%);
+}
+
+
+

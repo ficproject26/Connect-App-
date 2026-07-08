@@ -1,0 +1,311 @@
+{
+  "vendors": [
+    {
+      "id": "v1",
+      "name": "ABC Electronics",
+      "email": "abc.electronics@gmail.com",
+      "phone": "+91 98765 43210",
+      "address": "Karol Bagh, New Delhi, 110005",
+      "rating": 4.8,
+      "active": true,
+      "created_at": "2026-06-26T06:31:57.849Z"
+    },
+    {
+      "id": "v_test_1782455522182",
+      "name": "Test Audiovisual Outlet",
+      "email": "test.vendor.1782455522182@connect.com",
+      "phone": "+91 99999 99999",
+      "address": "Test Vendor Address, Bangalore",
+      "rating": 5,
+      "active": true,
+      "created_at": "2026-06-26T06:32:02.182Z"
+    }
+  ],
+  "delivery_partners": [
+    {
+      "id": "dp1",
+      "name": "Dev Singh",
+      "photo": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+      "mobile": "+91 98989 89898",
+      "emergency_contact": "+91 91919 19191",
+      "address": "Sector 15, Dwarka, Delhi",
+      "vehicle_type": "Electric Bike",
+      "vehicle_number": "DL-3C-AB-1234",
+      "driving_license": "DL1234567890",
+      "aadhaar": "1234 5678 9012",
+      "status": "Available",
+      "availability": true,
+      "current_latitude": 12.9398,
+      "current_longitude": 77.62389999999999,
+      "speed": 0,
+      "battery_level": 92,
+      "last_updated_time": "2026-06-26T06:31:57.849Z",
+      "vendor_id": "v1",
+      "joining_date": "2026-01-10"
+    },
+    {
+      "id": "dp2",
+      "name": "Rajesh Kumar",
+      "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "mobile": "+91 97777 77777",
+      "emergency_contact": "+91 95555 55555",
+      "address": "Koramangala 3rd Block, Bangalore",
+      "vehicle_type": "Scooter",
+      "vehicle_number": "KA-01-EF-5678",
+      "driving_license": "KA1234567890",
+      "aadhaar": "9876 5432 1098",
+      "status": "Offline",
+      "availability": false,
+      "current_latitude": 12.9268,
+      "current_longitude": 77.6129,
+      "speed": 0,
+      "battery_level": 45,
+      "last_updated_time": "2026-06-26T06:31:57.850Z",
+      "vendor_id": "v1",
+      "joining_date": "2026-03-15"
+    },
+    {
+      "id": "dp3",
+      "name": "Amit Patel",
+      "photo": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "mobile": "+91 96666 66666",
+      "emergency_contact": "+91 94444 44444",
+      "address": "HSR Layout, Bangalore",
+      "vehicle_type": "Bicycle",
+      "vehicle_number": "N/A",
+      "driving_license": "N/A",
+      "aadhaar": "5678 1234 9012",
+      "status": "Break",
+      "availability": false,
+      "current_latitude": 12.9468,
+      "current_longitude": 77.6159,
+      "speed": 0,
+      "battery_level": 80,
+      "last_updated_time": "2026-06-26T06:31:57.850Z",
+      "vendor_id": "v1",
+      "joining_date": "2026-05-01"
+    },
+    {
+      "id": "dp_near_1782455522182",
+      "name": "Near Rider Dev",
+      "photo": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
+      "mobile": "+91 90000 00001",
+      "emergency_contact": "+91 90000 00000",
+      "address": "Rider Close Address, Bangalore",
+      "vehicle_type": "Electric Bike",
+      "vehicle_number": "KA-03-HA-1111",
+      "driving_license": "DL11111111",
+      "aadhaar": "1111 2222 3333",
+      "status": "Busy",
+      "availability": false,
+      "current_latitude": 12.9358,
+      "current_longitude": 77.619,
+      "speed": 0,
+      "battery_level": 90,
+      "last_updated_time": "2026-06-26T06:32:02.186Z",
+      "vendor_id": "v_test_1782455522182",
+      "joining_date": "2026-06-18",
+      "rating": 5
+    },
+    {
+      "id": "dp_far_1782455522182",
+      "name": "Far Rider Rajesh",
+      "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+      "mobile": "+91 90000 00002",
+      "emergency_contact": "+91 90000 00000",
+      "address": "Rider Far Address, Bangalore",
+      "vehicle_type": "Scooter",
+      "vehicle_number": "KA-03-HA-2222",
+      "driving_license": "DL22222222",
+      "aadhaar": "2222 3333 4444",
+      "status": "Available",
+      "availability": true,
+      "current_latitude": 12.96,
+      "current_longitude": 77.63,
+      "speed": 0,
+      "battery_level": 80,
+      "last_updated_time": "2026-06-26T06:32:02.182Z",
+      "vendor_id": "v_test_1782455522182",
+      "joining_date": "2026-06-18"
+    }
+  ],
+  "orders": [
+    {
+      "id": "ORD1245",
+      "order_number": "ORD1245",
+      "vendor_id": "v1",
+      "customer_name": "Amit Verma",
+      "customer_phone": "+91 98888 88888",
+      "customer_address": "Koramangala 5th Block, Bangalore",
+      "customer_latitude": 12.9498,
+      "customer_longitude": 77.6289,
+      "product_details": "boAt Rockerz 450 x 1",
+      "amount": 2499,
+      "status": "Delivered"
+    },
+    {
+      "id": "ORD1244",
+      "order_number": "ORD1244",
+      "vendor_id": "v1",
+      "customer_name": "Neha Singh",
+      "customer_phone": "+91 97777 66666",
+      "customer_address": "HSR Layout Sector 2, Bangalore",
+      "customer_latitude": 12.9248,
+      "customer_longitude": 77.63889999999999,
+      "product_details": "OnePlus Nord Watch x 1",
+      "amount": 3999,
+      "status": "Preparing"
+    },
+    {
+      "id": "ORD1243",
+      "order_number": "ORD1243",
+      "vendor_id": "v1",
+      "customer_name": "Rohit Gupta",
+      "customer_phone": "+91 96666 55555",
+      "customer_address": "Indiranagar 100ft Road, Bangalore",
+      "customer_latitude": 12.964799999999999,
+      "customer_longitude": 77.60889999999999,
+      "product_details": "Samsung Galaxy Buds x 1",
+      "amount": 1299,
+      "status": "Order Received"
+    },
+    {
+      "id": "ORD_T99_1782455522182",
+      "order_number": "OT-522182",
+      "vendor_id": "v_test_1782455522182",
+      "customer_name": "Dhanush Customer",
+      "customer_phone": "+91 98888 88888",
+      "customer_address": "Koramangala 4th Block, Bangalore",
+      "customer_latitude": 12.93,
+      "customer_longitude": 77.622,
+      "product_details": "Connect Premium Earbuds x 1",
+      "amount": 1500,
+      "status": "Delivered"
+    }
+  ],
+  "delivery_assignments": [
+    {
+      "id": "asg_3977",
+      "order_id": "ORD_T99_1782455522182",
+      "delivery_partner_id": "dp_near_1782455522182",
+      "status": "Accepted",
+      "assigned_at": "2026-06-26T06:32:02.183Z",
+      "responded_at": "2026-06-26T06:32:02.184Z"
+    }
+  ],
+  "delivery_tracking": [
+    {
+      "delivery_partner_id": "dp_near_1782455522182",
+      "order_id": "ORD_T99_1782455522182",
+      "latitude": 12.935,
+      "longitude": 77.6195,
+      "speed": 25,
+      "current_address": "Koramangala 3rd Block Junction",
+      "battery_level": 89,
+      "updated_at": "2026-06-26T06:32:02.185Z",
+      "id": 1
+    }
+  ],
+  "delivery_status_history": [
+    {
+      "order_id": "ORD1245",
+      "status": "Order Received",
+      "updated_by": "Customer",
+      "notes": "Order placed by Amit Verma",
+      "timestamp": "2026-06-26T04:31:57.850Z"
+    },
+    {
+      "order_id": "ORD1245",
+      "status": "Delivered",
+      "updated_by": "Delivery Partner",
+      "notes": "Handed over to customer",
+      "timestamp": "2026-06-26T06:11:57.850Z"
+    },
+    {
+      "order_id": "ORD1244",
+      "status": "Order Received",
+      "updated_by": "Customer",
+      "notes": "Order placed by Neha Singh",
+      "timestamp": "2026-06-26T06:01:57.850Z"
+    },
+    {
+      "order_id": "ORD1244",
+      "status": "Preparing",
+      "updated_by": "Vendor",
+      "notes": "Vendor has started preparing the items",
+      "timestamp": "2026-06-26T06:16:57.850Z"
+    },
+    {
+      "order_id": "ORD1243",
+      "status": "Order Received",
+      "updated_by": "Customer",
+      "notes": "Order placed by Rohit Gupta",
+      "timestamp": "2026-06-26T06:31:57.850Z"
+    },
+    {
+      "order_id": "ORD_T99_1782455522182",
+      "status": "Assigned To Delivery Partner",
+      "updated_by": "System",
+      "notes": "Automatically assigned closest partner: Near Rider Dev (0.11 km away)",
+      "id": 6,
+      "timestamp": "2026-06-26T06:32:02.184Z"
+    },
+    {
+      "order_id": "ORD_T99_1782455522182",
+      "status": "Delivery Partner Accepted",
+      "updated_by": "Delivery Partner",
+      "notes": "Near Rider Dev accepted the delivery assignment.",
+      "id": 7,
+      "timestamp": "2026-06-26T06:32:02.185Z"
+    },
+    {
+      "order_id": "ORD_T99_1782455522182",
+      "status": "Delivered",
+      "updated_by": "Delivery Partner",
+      "notes": "Delivered to customer. OTP Verified.",
+      "id": 8,
+      "timestamp": "2026-06-26T06:32:02.185Z"
+    }
+  ],
+  "delivery_earnings": [
+    {
+      "id": "e1",
+      "delivery_partner_id": "dp1",
+      "order_id": "ORD1245",
+      "per_delivery_earning": 60,
+      "incentive": 10,
+      "bonus": 5,
+      "date": "2026-06-26"
+    },
+    {
+      "id": "e_test_1782455522182",
+      "delivery_partner_id": "dp_near_1782455522182",
+      "order_id": "ORD_T99_1782455522182",
+      "per_delivery_earning": 65,
+      "incentive": 10,
+      "bonus": 0,
+      "date": "2026-06-26"
+    }
+  ],
+  "delivery_ratings": [
+    {
+      "id": "r1",
+      "order_id": "ORD1245",
+      "rating_value": 5,
+      "comment": "Super fast delivery, very polite delivery agent!",
+      "rater_role": "Customer",
+      "target_partner_id": "dp1",
+      "timestamp": "2026-06-26T06:31:57.850Z"
+    },
+    {
+      "id": "r_test_1782455522182",
+      "order_id": "ORD_T99_1782455522182",
+      "rating_value": 5,
+      "comment": "Excellent and polite delivery partner!",
+      "rater_role": "Customer",
+      "target_partner_id": "dp_near_1782455522182",
+      "timestamp": "2026-06-26T06:32:02.186Z"
+    }
+  ],
+  "customer_tracking_logs": []
+}
