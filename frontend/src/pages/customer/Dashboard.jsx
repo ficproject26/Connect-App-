@@ -751,14 +751,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     () => localStorage.getItem('theme') || 'light'
   );
   
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
       try {
         const res = await productService.getProducts();
-        if (res && res.success && Array.isArray(res.products) && res.products.length > 0) {
-          setProducts([...res.products, ...initialProducts]);
+        if (res && res.success && Array.isArray(res.products)) {
+          setProducts(res.products);
         }
       } catch (err) {
         console.warn("Failed to load vendor products dynamically:", err);
