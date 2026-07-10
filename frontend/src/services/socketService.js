@@ -11,7 +11,7 @@ class SocketServiceClient {
 
     try {
       // Connect to the Node/Express backend server
-      this.socket = io('http://localhost:8000', {
+      this.socket = io('http://127.0.0.1:8000', {
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 3,
         timeout: 5000

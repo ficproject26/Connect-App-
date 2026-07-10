@@ -3609,7 +3609,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                   {openFilters.category && (
                     <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Sarees', 'Kurtis', 'Shirts', 'T-shirts', 'Shoes', 'Bags', 'Watches', 'Beauty', 'Home Decor'].map(cat => (
+                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Products').map(p => p.category).filter(Boolean))].map(cat => (
                         <label key={cat} className="flex items-center gap-2.5 text-xs text-slate-605 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
                           <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => handleCheckboxChange(cat, selectedCategories, setSelectedCategories)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
                           <span className="font-medium">{cat}</span>
@@ -3868,7 +3868,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                   {openFilters.dailyNeedsType && (
                     <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Gourmet', 'Personal Health', 'Beauty'].map(type => (
+                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Daily Needs').map(p => p.category).filter(Boolean))].map(type => (
                         <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
                           <input type="checkbox" checked={selectedDailyNeedsTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedDailyNeedsTypes, setSelectedDailyNeedsTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
                           <span className="font-medium">{type}</span>

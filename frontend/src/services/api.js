@@ -1,4 +1,4 @@
-const BACKEND_URL = 'http://localhost:8000/api';
+const BACKEND_URL = 'http://127.0.0.1:8000/api';
 
 // Haversine distance formula
 function getDistance(lat1, lon1, lat2, lon2) {
