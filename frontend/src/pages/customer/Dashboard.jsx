@@ -2730,21 +2730,152 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const wishlistProducts = products.filter(product => favorites.includes(product.id));
 
   // RENDER HELPERS
+  const renderHeaderIcons = (isMobile = false) => {
+    return (
+      <div className="flex items-center gap-3 md:gap-4">
+        {/* Theme Toggle Button */}
+        <button 
+          onClick={toggleTheme}
+          className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {theme === 'dark' ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5" />}
+        </button>
+
+        {/* Notifications */}
+        <div className="relative">
+          <button 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
+            title="Notifications"
+          >
+            <Bell className="w-4.5 h-4.5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          {isNotificationsOpen && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
+              <div className={`absolute ${isMobile ? '-right-16' : 'right-0'} mt-2 w-80 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
+                <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
+                  <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={() => {
+                        setUnreadCount(0);
+                        triggerNotification("All notifications marked as read");
+                      }}
+                      className="text-[10px] text-amber-500 hover:text-amber-600 font-bold hover:underline cursor-pointer border-none bg-transparent"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+                
+                <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
+                  {unreadCount > 0 ? (
+                    notificationsList.map((notif, idx) => (
+                      <div key={idx} className="flex gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors text-left border-b border-slate-50 dark:border-slate-900 last:border-b-0">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5" />
+                        <div className="leading-tight">
+                          <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{notif.text}</p>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{notif.time}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
+                      No unread notifications
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Wishlist */}
+        <button 
+          onClick={() => setIsWishlistOpen(true)}
+          className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
+          title="My Wishlist"
+        >
+          <Heart className="w-4.5 h-4.5" />
+          {favorites.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+              {favorites.length}
+            </span>
+          )}
+        </button>
+
+        {/* Cart */}
+        <button 
+          onClick={() => setIsCartOpen(true)}
+          className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
+          title="My Cart"
+        >
+          <ShoppingCart className="w-4.5 h-4.5" />
+          {cart.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+              {cart.length}
+            </span>
+          )}
+        </button>
+
+        {/* Profile Avatar / Badge */}
+        <div 
+          onClick={() => setIsProfileModalOpen(true)}
+          className="flex items-center gap-2 cursor-pointer select-none pl-2 border-l border-slate-200 dark:border-slate-800/60"
+        >
+          <div className="relative">
+            <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-950/40 text-[#f43397] flex items-center justify-center font-bold text-sm border border-rose-200 dark:border-rose-900/40 shrink-0">
+              {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
+            </div>
+            {/* Membership Symbol Overlay badge */}
+            <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-white dark:border-slate-900 flex items-center justify-center ${tier.badgeBg} shadow-xs shrink-0`}>
+              <tier.icon className={`w-2.5 h-2.5 ${tier.badgeText}`} />
+            </div>
+          </div>
+          <div className="hidden sm:flex flex-col text-left leading-none">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[80px]">
+              {(currentUser?.name || profileName).split(' ')[0]}
+            </span>
+            <span className={`text-[8px] font-bold uppercase mt-0.5 ${tier.colorClass}`}>
+              {tier.name}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDashboardHeader = () => {
     return (
-      <header className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-3.5 flex flex-col md:flex-row justify-between items-center gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 select-none cursor-pointer" onClick={clearAllFilters}>
-          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60">
-            <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
+      <header className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-3.5 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors">
+        {/* Top Row: Logo & Mobile Icons */}
+        <div className="flex items-center justify-between w-full md:w-auto">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 select-none cursor-pointer" onClick={clearAllFilters}>
+            <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60">
+              <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
+            </div>
+            <div className="flex flex-col leading-none text-left">
+              <span className="text-sm font-black tracking-wide text-[#0b1e36] dark:text-white font-sans">Connect App</span>
+            </div>
           </div>
-          <div className="flex flex-col leading-none text-left">
-            <span className="text-sm font-black tracking-wide text-[#0b1e36] dark:text-white font-sans">Connect App</span>
+
+          {/* Icons shown only on mobile */}
+          <div className="flex md:hidden items-center">
+            {renderHeaderIcons(true)}
           </div>
         </div>
 
         {/* Search Input in middle */}
-        <div className="relative w-full md:max-w-xl flex items-center border border-slate-300 dark:border-slate-700 dark:border-slate-700 rounded-full bg-slate-50/50 dark:bg-slate-800/50 pl-4 py-1 pr-1.5 focus-within:border-amber-400 transition-all">
+        <div className="relative w-full md:max-w-xl flex items-center border border-slate-300 dark:border-slate-700 rounded-full bg-slate-50/50 dark:bg-slate-800/50 pl-4 py-1 pr-1.5 focus-within:border-amber-400 transition-all">
           <div className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 pr-3 mr-3 shrink-0 cursor-pointer select-none">
             <span>All</span>
             <ChevronDown className="w-3.5 h-3.5 opacity-60" />
@@ -2761,20 +2892,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </button>
         </div>
 
-        {/* Header Right Widgets */}
-        <div className="flex items-center gap-5 justify-between w-full md:w-auto">
+        {/* Location Selector & Desktop Icons */}
+        <div className="flex items-center justify-between gap-5 w-full md:w-auto">
           {/* Location Selector Button & Dropdown */}
-          <div className="relative shrink-0">
+          <div className="relative shrink-0 w-full md:w-auto">
             <button 
               onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1 border border-slate-200 dark:border-slate-800/60 rounded-xl bg-slate-50/20 dark:bg-[#0a192f]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-left transition-colors"
+              className="flex items-center gap-2 px-3 py-1 border border-slate-200 dark:border-slate-800/60 rounded-xl bg-slate-50/20 dark:bg-[#0a192f]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-left transition-colors w-full md:w-auto"
             >
               <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-              <div className="leading-tight pr-1">
+              <div className="leading-tight pr-1 flex-grow">
                 <div className="text-[10px] font-extrabold text-slate-800 dark:text-white">
                   {selectedLocation.city}, {selectedLocation.state}
                 </div>
-                <div className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-bold mt-0.5 truncate max-w-[110px]">
+                <div className="text-[8px] text-slate-400 dark:text-slate-500 font-bold mt-0.5 truncate max-w-[200px] md:max-w-[110px]">
                   {selectedLocation.area}
                 </div>
               </div>
@@ -2790,9 +2921,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 />
                 
                 {/* Dropdown Card */}
-                <div className="absolute right-0 md:left-0 mt-2 w-76 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200">
+                <div className="absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-0 mt-2 w-full max-w-[320px] md:w-76 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200">
                   {/* Search box */}
-                  <div className="relative flex items-center border border-slate-300 dark:border-slate-700 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl px-2.5 py-1.5 focus-within:border-amber-400">
+                  <div className="relative flex items-center border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl px-2.5 py-1.5 focus-within:border-amber-400">
                     <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                     <input 
                       type="text"
@@ -2866,7 +2997,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     }}
                     className="mt-3 w-full flex items-center gap-2 py-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-950/40 border border-blue-100/50 dark:border-blue-900/30 transition-colors cursor-pointer text-left px-3"
                   >
-                    <div className="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-blue-550/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                         <circle cx="12" cy="12" r="10" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8M8 12h8" />
@@ -2874,7 +3005,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div className="text-left leading-none">
                       <span className="text-xs font-extrabold block">Use Current Location</span>
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-bold block mt-0.5">Detect my current location</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">Detect my current location</span>
                     </div>
                   </button>
 
@@ -2902,8 +3033,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             </div>
                             <button 
                               onClick={(e) => {
-                                e.stopPropagation();
-                                setRecentLocations(prev => prev.filter((_, i) => i !== idx));
+                                  e.stopPropagation();
+                                  setRecentLocations(prev => prev.filter((_, i) => i !== idx));
                               }}
                               className="p-1 hover:text-red-500 text-slate-350 dark:text-slate-600 transition-colors cursor-pointer"
                             >
@@ -2959,123 +3090,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Theme Toggle Button */}
-            <button 
-              onClick={toggleTheme}
-              className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {theme === 'dark' ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5" />}
-            </button>
-
-            {/* Notifications */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
-                title="Notifications"
-              >
-                <Bell className="w-4.5 h-4.5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {isNotificationsOpen && (
-                <>
-                  <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-205 text-left">
-                    <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
-                      <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
-                      {unreadCount > 0 && (
-                        <button 
-                          onClick={() => {
-                            setUnreadCount(0);
-                            triggerNotification("All notifications marked as read");
-                          }}
-                          className="text-[10px] text-amber-500 hover:text-amber-600 font-bold hover:underline cursor-pointer border-none bg-transparent"
-                        >
-                          Mark all as read
-                        </button>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
-                      {unreadCount > 0 ? (
-                        notificationsList.map((notif, idx) => (
-                          <div key={idx} className="flex gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors text-left border-b border-slate-50 dark:border-slate-900 last:border-b-0">
-                            <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5" />
-                            <div className="leading-tight">
-                              <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{notif.text}</p>
-                              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{notif.time}</span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
-                          No unread notifications
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Wishlist */}
-            <button 
-              onClick={() => setIsWishlistOpen(true)}
-              className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
-              title="My Wishlist"
-            >
-              <Heart className="w-4.5 h-4.5" />
-              {favorites.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-                  {favorites.length}
-                </span>
-              )}
-            </button>
-
-            {/* Cart */}
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
-              title="My Cart"
-            >
-              <ShoppingCart className="w-4.5 h-4.5" />
-              {cart.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-                  {cart.length}
-                </span>
-              )}
-            </button>
-
-            {/* Profile Avatar / Badge */}
-            <div 
-              onClick={() => setIsProfileModalOpen(true)}
-              className="flex items-center gap-2 cursor-pointer select-none pl-2 border-l border-slate-200 dark:border-slate-800/60"
-            >
-              <div className="relative">
-                <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-950/40 text-[#f43397] flex items-center justify-center font-bold text-sm border border-rose-200 dark:border-rose-900/40 shrink-0">
-                  {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-                </div>
-                {/* Membership Symbol Overlay badge */}
-                <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-white dark:border-slate-900 flex items-center justify-center ${tier.badgeBg} shadow-xs shrink-0`}>
-                  <tier.icon className={`w-2.5 h-2.5 ${tier.badgeText}`} />
-                </div>
-              </div>
-              <div className="hidden sm:flex flex-col text-left leading-none">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[80px]">
-                  {(currentUser?.name || profileName).split(' ')[0]}
-                </span>
-                <span className={`text-[8px] font-bold uppercase mt-0.5 ${tier.colorClass}`}>
-                  {tier.name}
-                </span>
-              </div>
-            </div>
+          {/* Icons shown only on desktop */}
+          <div className="hidden md:flex items-center">
+            {renderHeaderIcons(false)}
           </div>
         </div>
       </header>
@@ -3473,7 +3490,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         className="relative"
         onMouseLeave={handleMouseLeave}
       >
-        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-3 flex items-center justify-center gap-6 overflow-x-auto no-scrollbar shadow-xs transition-colors">
+        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-3 flex items-center justify-start md:justify-center gap-6 overflow-x-auto no-scrollbar shadow-xs transition-colors">
           {subNavbarCategories.map((cat) => {
             const isActive = activeTab === cat;
             return (
@@ -3715,167 +3732,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
-  // 4. TRENDING PRODUCTS (LEFT)
-  const renderTrendingProducts = () => {
-    const trending = initialProducts.slice(0, 4);
-    return (
-      <div className="space-y-4 text-left w-full">
-        <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Trending Products</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All →</button>
-        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {trending.map(product => {
-            const isFavorited = favorites.includes(product.id);
-            return (
-              <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-350 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-0.5">
-                <div className="relative aspect-[0.95/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
-                  <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
-                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
-                    <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
-                  </button>
-                </div>
-                
-                <div className="p-3.5 flex-grow flex flex-col justify-between text-left">
-                  <div>
-                    <h4 className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
-                    <div className="flex items-baseline gap-1.5 mt-2">
-                      <span className="text-xs font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
-                      <span className="text-[9px] text-emerald-600 font-bold">{product.discount}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 flex items-center justify-between gap-1 w-full">
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                        <span>{product.rating}</span>
-                        <Star className="w-2 h-2 fill-emerald-600 text-emerald-600" />
-                      </div>
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          addToCart(product); 
-                        }} 
-                        className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[8px] font-black px-2 py-1 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30 shrink-0"
-                      >
-                        <Plus className="w-2 h-2" />
-                        <span>Add</span>
-                      </button>
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (!cart.find(item => item.id === product.id)) {
-                            addToCart(product);
-                          }
-                          setIsCartOpen(true);
-                        }} 
-                        className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-black px-2 py-1 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
-                      >
-                        <span>Order Now</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // 5. STAY BEST OFFERS (LEFT)
-  const renderStayOffers = () => {
-    const stays = [
-      { name: 'The Leela Palace Bengaluru', location: 'Old Airport Road, Bangalore', rating: 4.8, reviews: 245, price: 8499, image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=60' },
-      { name: 'Oberoi Hotel Bengaluru', location: 'MG Road, Bangalore', rating: 4.7, reviews: 198, price: 6999, image: hotelActual },
-      { name: 'Taj MG Road Bengaluru', location: 'Trinity Circle, Bangalore', rating: 4.6, reviews: 320, price: 5499, image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&auto=format&fit=crop&q=60' },
-      { name: 'ITC Gardenia Luxury Stay', location: 'Residency Road, Bangalore', rating: 4.8, reviews: 154, price: 7499, image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&auto=format&fit=crop&q=60' }
-    ];
-    return (
-      <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-200">
-        <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Stay Best Offers</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Stay'); setActiveTab('Stay'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stays.map((stay, idx) => (
-            <div key={idx} onClick={() => setSelectedProduct({ ...stay, tag: '15% SAVINGS', price: stay.price, originalPrice: Math.round(stay.price * 1.18), discount: '15% off', rating: stay.rating, reviews: stay.reviews, image: stay.image, delivery: 'Book instantly', subNavbarCategory: 'Stay', description: `Experience luxury at ${stay.name}, located at ${stay.location}. Enjoy premium amenities, world-class service, and exclusive member discounts. Book your stay for ₹${stay.price.toLocaleString()} per night.` })} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
-              <div className="h-28 bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={stay.image} alt={stay.name} className="w-full h-full object-cover" />
-                <span className="absolute left-2.5 top-2.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[7px] font-extrabold px-2 py-0.5 rounded shadow-sm">15% SAVINGS</span>
-              </div>
-              <div className="p-3 flex-1 flex flex-col justify-between text-left">
-                <div className="space-y-1">
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{stay.name}</h4>
-                  <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-400 font-bold block truncate">{stay.location}</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2">
-                  <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-amber-600 dark:text-amber-400">
-                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                    <span>{stay.rating}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{stay.price.toLocaleString()}</span>
-                    <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold block">/ Night</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // 6. POPULAR RESTAURANTS (LEFT)
-  const renderPopularRestaurants = () => {
-    const restaurants = [
-      { name: 'The Rameshwaram Cafe', cat: 'South Indian • Indiranagar', rating: 4.6, dist: '1.5 km', time: '40-50 min', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=60' },
-      { name: 'Barbeque Nation Buffet', cat: 'North Indian • Koramangala', rating: 4.4, dist: '3.2 km', time: '30-40 min', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop&q=60' },
-      { name: 'Empire Restaurant Grill', cat: 'Mughlai • Church Street', rating: 4.2, dist: '1.8 km', time: '30-40 min', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&auto=format&fit=crop&q=60' },
-      { name: 'Toit Craft Brewery', cat: 'Pub Food • Indiranagar', rating: 4.5, dist: '2.1 km', time: '40-50 min', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&auto=format&fit=crop&q=60' }
-    ];
-    return (
-      <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-800 dark:text-slate-200">
-        <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Popular Restaurants</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Food'); setActiveTab('Food'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {restaurants.map((rest, idx) => (
-            <div key={idx} onClick={() => setSelectedProduct({ ...rest, name: rest.name, tag: 'FLAT 20% OFF', price: 499, originalPrice: 624, discount: '20% off', rating: rest.rating, reviews: 180, image: rest.image, delivery: `${rest.time} delivery`, subNavbarCategory: 'Food', description: `${rest.name} is one of the most loved restaurants serving ${rest.cat}. Located just ${rest.dist} away with ${rest.time} delivery. Enjoy a flat 20% off on all orders for Connect members.` })} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
-              <div className="h-28 bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={rest.image} alt={rest.name} className="w-full h-full object-cover" />
-                <span className="absolute left-2.5 top-2.5 bg-rose-500 text-white text-[7px] font-extrabold px-2 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
-              </div>
-              <div className="p-3 flex-1 flex flex-col justify-between text-left">
-                <div className="space-y-1">
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{rest.name}</h4>
-                  <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block truncate">{rest.cat}</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2 text-[9px] font-bold text-slate-500 dark:text-slate-400">
-                  <div className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                    <span>{rest.rating}</span>
-                  </div>
-                  <div>{rest.dist} • {rest.time}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
 
   // 7. BALANCE CARDS GRID (RIGHT)
@@ -5497,9 +5354,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Fourth Row: Catalog Sections */}
             <div className="w-full space-y-8">
               {renderTopServices()}
-              {renderTrendingProducts()}
-              {renderStayOffers()}
-              {renderPopularRestaurants()}
             </div>
           </div>
         )}
