@@ -4006,20 +4006,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <button onClick={clearAllFilters} className="mt-6 text-xs font-bold text-white bg-amber-400 hover:bg-amber-500 px-5 py-2.5 rounded-md transition-all shadow cursor-pointer">Reset All Filters</button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
                     {filteredProducts.map((product) => {
                       const isFavorited = favorites.includes(product.id);
                       return (
                         <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
-                          <div className="relative aspect-[4/3] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
+                          <div className="relative aspect-[1.5/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
                             <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
-                            <span className="absolute left-1.5 top-1.5 bg-slate-900/80 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase">{product.tag}</span>
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1.5 top-1.5 w-6 h-6 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
-                              <Heart className={`w-3 h-3 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                            <span className="absolute left-1 top-1 bg-slate-900/80 text-white text-[6.5px] font-black px-1 py-0.5 rounded uppercase">{product.tag}</span>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1 top-1 w-5.5 h-5.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
+                              <Heart className={`w-2.5 h-2.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                             </button>
                           </div>
                           
-                          <div className="p-2.5 flex-grow flex flex-col justify-between text-left">
+                          <div className="p-2 flex-grow flex flex-col justify-between text-left">
                             <div>
                               <h4 className="text-[10px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                               <div className="flex items-baseline gap-1 mt-1.5">
