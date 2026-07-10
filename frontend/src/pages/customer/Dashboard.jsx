@@ -1945,7 +1945,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     // Services Filter Checks
     if (activeTab === 'Services') {
       const matchesServiceType = selectedServiceTypes.length === 0 ||
-        selectedServiceTypes.some(type => product.tag?.toLowerCase().includes(type.toLowerCase()) || product.name?.toLowerCase().includes(type.toLowerCase()));
+        selectedServiceTypes.includes(product.category);
 
       const matchesLocType = selectedLocTypes.length === 0 ||
         selectedLocTypes.some(loc => product.locationType?.toLowerCase() === loc.toLowerCase());
@@ -1959,7 +1959,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     // Food Filter Checks
     if (activeTab === 'Food') {
       const matchesCuisine = selectedCuisines.length === 0 ||
-        selectedCuisines.some(c => product.cuisine?.toLowerCase().includes(c.toLowerCase()));
+        selectedCuisines.includes(product.category);
 
       let matchesDistance = true;
       if (selectedDistances.length > 0) {
@@ -1981,7 +1981,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     // Stay Filter Checks
     if (activeTab === 'Stay') {
       const matchesAccom = selectedAccomTypes.length === 0 ||
-        selectedAccomTypes.some(type => product.tag?.toLowerCase().includes(type.toLowerCase()) || product.name?.toLowerCase().includes(type.toLowerCase()));
+        selectedAccomTypes.includes(product.category);
 
       let matchesPrice = true;
       if (selectedPrices.length > 0) {
@@ -2003,7 +2003,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     // Travel Filter Checks
     if (activeTab === 'Travel') {
       const matchesTravelType = selectedTravelTypes.length === 0 ||
-        selectedTravelTypes.some(type => product.tag?.toLowerCase().includes(type.toLowerCase()) || product.name?.toLowerCase().includes(type.toLowerCase()));
+        selectedTravelTypes.includes(product.category);
 
       let matchesPrice = true;
       if (selectedPrices.length > 0) {
@@ -3691,7 +3691,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                   {openFilters.serviceType && (
                     <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['IT Services', 'Non-IT', 'Consulting'].map(type => (
+                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Services').map(p => p.category).filter(Boolean))].map(type => (
                         <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
                           <input type="checkbox" checked={selectedServiceTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedServiceTypes, setSelectedServiceTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
                           <span className="font-medium">{type}</span>
@@ -3732,7 +3732,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                   {openFilters.cuisine && (
                     <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['South Indian', 'Mughlai', 'Pub Food', 'Italian'].map(c => (
+                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Food').map(p => p.category).filter(Boolean))].map(c => (
                         <label key={c} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
                           <input type="checkbox" checked={selectedCuisines.includes(c)} onChange={() => handleCheckboxChange(c, selectedCuisines, setSelectedCuisines)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
                           <span className="font-medium">{c}</span>
@@ -3777,7 +3777,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                   {openFilters.accommodationType && (
                     <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Hotels', 'Villas', 'Resorts', 'Treehouse'].map(type => (
+                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Stay').map(p => p.category).filter(Boolean))].map(type => (
                         <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
                           <input type="checkbox" checked={selectedAccomTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedAccomTypes, setSelectedAccomTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
                           <span className="font-medium">{type}</span>
@@ -3823,7 +3823,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                   {openFilters.travelType && (
                     <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Flights', 'Lounges', 'Private Charter'].map(type => (
+                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Travel').map(p => p.category).filter(Boolean))].map(type => (
                         <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
                           <input type="checkbox" checked={selectedTravelTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedTravelTypes, setSelectedTravelTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
                           <span className="font-medium">{type}</span>
