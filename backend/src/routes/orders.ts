@@ -257,7 +257,7 @@ router.post('/', async (req: Request, res: Response) => {
 
       const http = require('http');
       const reqPost = http.request({
-        hostname: 'localhost',
+        hostname: '127.0.0.1',
         port: 8000,
         path: '/api/public/orders',
         method: 'POST',
