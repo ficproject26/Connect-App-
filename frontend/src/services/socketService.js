@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { getBackendUrl } from './apiSetup';
 
 class SocketServiceClient {
   socket = null;
@@ -11,7 +12,7 @@ class SocketServiceClient {
 
     try {
       // Connect to the Node/Express backend server
-      this.socket = io('http://127.0.0.1:8000', {
+      this.socket = io(getBackendUrl(), {
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 3,
         timeout: 5000

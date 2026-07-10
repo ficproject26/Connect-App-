@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Briefcase, MapPin, DollarSign, Calendar, CheckCircle2, ChevronRight } from 'lucide-react';
 import { productService } from '../../services/productService';
+import { getBackendUrl } from '../../services/apiSetup';
 
 export default function JobsModal({ isOpen, onClose }) {
   const [appliedJobId, setAppliedJobId] = useState(null);
@@ -102,7 +103,7 @@ export default function JobsModal({ isOpen, onClose }) {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/orders', {
+      const res = await fetch(`${getBackendUrl()}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

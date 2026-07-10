@@ -1,4 +1,6 @@
-const BACKEND_URL = 'http://127.0.0.1:8000/api';
+import { getBackendUrl } from './apiSetup';
+const BACKEND_URL = `${getBackendUrl()}/api`;
+
 
 // Haversine distance formula
 function getDistance(lat1, lon1, lat2, lon2) {
