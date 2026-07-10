@@ -1920,8 +1920,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     'Food',
     'Stay',
     'Travel',
-    'Jobs',
-    'Membership'
+    'Jobs'
   ];
 
   // Filters logic
