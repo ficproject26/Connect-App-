@@ -35,654 +35,7 @@ import hotelActual from '../../assets/images/hotel_shubha_sai_actual.png';
 import skMockup from '../../assets/images/sk_technologies_mockup.png';
 import shoppingBannerCouple from '../../assets/images/shopping_banner_couple.png';
 
-const initialProducts = [
-  {
-    id: 'tp1',
-    name: 'Apple iPhone 15 128GB Black',
-    category: 'Smartphones',
-    subNavbarCategory: 'Products',
-    price: 64900,
-    originalPrice: 79900,
-    rating: 4.8,
-    reviews: 1420,
-    gender: 'Unisex',
-    color: 'Black',
-    image: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=500&auto=format&fit=crop&q=60',
-    tag: 'Best Seller',
-    discount: '19% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp_phone1',
-    name: 'Apple iPhone 15 256GB Blue',
-    category: 'Smartphones',
-    subNavbarCategory: 'Products',
-    price: 79900,
-    originalPrice: 89900,
-    rating: 4.7,
-    reviews: 960,
-    gender: 'Unisex',
-    color: 'Blue',
-    image: 'https://images.unsplash.com/photo-1616348436168-de43ad0db179?w=500&auto=format&fit=crop&q=60',
-    tag: 'Popular',
-    discount: '11% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp_phone2',
-    name: 'Samsung Galaxy S24 256GB',
-    category: 'Smartphones',
-    subNavbarCategory: 'Products',
-    price: 74999,
-    originalPrice: 84999,
-    rating: 4.6,
-    reviews: 1120,
-    gender: 'Unisex',
-    color: 'Grey',
-    image: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&auto=format&fit=crop&q=60',
-    tag: 'New Launch',
-    discount: '12% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp_phone3',
-    name: 'OnePlus 12R 256GB',
-    category: 'Smartphones',
-    subNavbarCategory: 'Products',
-    price: 39999,
-    originalPrice: 44999,
-    rating: 4.5,
-    reviews: 860,
-    gender: 'Unisex',
-    color: 'Blue',
-    image: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=60',
-    tag: 'Value King',
-    discount: '11% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp_phone4',
-    name: 'Google Pixel 8 128GB',
-    category: 'Smartphones',
-    subNavbarCategory: 'Products',
-    price: 52999,
-    originalPrice: 59999,
-    rating: 4.4,
-    reviews: 720,
-    gender: 'Unisex',
-    color: 'Green',
-    image: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500&auto=format&fit=crop&q=60',
-    tag: 'AI Phone',
-    discount: '12% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp_phone5',
-    name: 'Nothing Phone (2a) 126GB',
-    category: 'Smartphones',
-    subNavbarCategory: 'Products',
-    price: 23999,
-    originalPrice: 27999,
-    rating: 4.3,
-    reviews: 560,
-    gender: 'Unisex',
-    color: 'Black',
-    image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=60',
-    tag: 'Glyph Special',
-    discount: '14% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp2',
-    name: 'Samsung 55" 4K Ultra HD Smart TV',
-    category: 'Television',
-    subNavbarCategory: 'Products',
-    price: 39990,
-    originalPrice: 56000,
-    rating: 4.7,
-    reviews: 985,
-    gender: 'Unisex',
-    color: 'Black',
-    image: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=500&auto=format&fit=crop&q=60',
-    tag: 'Trending',
-    discount: '29% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp3',
-    name: 'Sony WH-1000XM5 Wireless Headphones',
-    category: 'Headphones',
-    subNavbarCategory: 'Products',
-    price: 22990,
-    originalPrice: 29900,
-    rating: 4.9,
-    reviews: 640,
-    gender: 'Unisex',
-    color: 'Black',
-    image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500&auto=format&fit=crop&q=60',
-    tag: 'Top Rated',
-    discount: '23% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'tp4',
-    name: 'Dell Inspiron 14 Core i5 Laptop',
-    category: 'Laptops',
-    subNavbarCategory: 'Products',
-    price: 44990,
-    originalPrice: 54900,
-    rating: 4.6,
-    reviews: 312,
-    gender: 'Unisex',
-    color: 'Black',
-    image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500&auto=format&fit=crop&q=60',
-    tag: 'Popular',
-    discount: '18% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p1',
-    name: 'Adrika Alluring Silk Saree',
-    category: 'Sarees',
-    subNavbarCategory: 'Products',
-    price: 239,
-    originalPrice: 499,
-    rating: 4.2,
-    reviews: 1405,
-    gender: 'Women',
-    color: 'Gold',
-    image: saree1,
-    tag: 'Best Seller',
-    discount: '52% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p2',
-    name: 'Banita Premium Silk Saree',
-    category: 'Sarees',
-    subNavbarCategory: 'Products',
-    price: 329,
-    originalPrice: 699,
-    rating: 4.5,
-    reviews: 874,
-    gender: 'Women',
-    color: 'Green',
-    image: saree2,
-    tag: 'Trending',
-    discount: '53% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p3',
-    name: 'Trendy Refined Georgette Saree',
-    category: 'Sarees',
-    subNavbarCategory: 'Products',
-    price: 286,
-    originalPrice: 599,
-    rating: 4.1,
-    reviews: 420,
-    gender: 'Women',
-    color: 'Pink',
-    image: saree3,
-    tag: 'Popular',
-    discount: '52% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p4',
-    name: 'Adrika Pretty Georgette Saree',
-    category: 'Sarees',
-    subNavbarCategory: 'Products',
-    price: 334,
-    originalPrice: 799,
-    rating: 4.6,
-    reviews: 215,
-    gender: 'Women',
-    color: 'Pink',
-    image: saree4,
-    tag: 'Designer Selection',
-    discount: '58% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p5',
-    name: "Classy Trendy Men's Cotton Shirt",
-    category: 'Shirts',
-    subNavbarCategory: 'Products',
-    price: 148,
-    originalPrice: 299,
-    rating: 3.9,
-    reviews: 3210,
-    gender: 'Men',
-    color: 'White',
-    image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&auto=format&fit=crop&q=60',
-    tag: 'Top Rated',
-    discount: '50% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p6',
-    name: 'Modern Casual Checked Blue Shirt',
-    category: 'Shirts',
-    subNavbarCategory: 'Products',
-    price: 184,
-    originalPrice: 399,
-    rating: 4.0,
-    reviews: 1850,
-    gender: 'Men',
-    color: 'Blue',
-    image: 'https://images.unsplash.com/photo-1589310243389-96a5483213a8?w=500&auto=format&fit=crop&q=60',
-    tag: 'Hot Seller',
-    discount: '53% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p7',
-    name: "Striped Stylish Men's Green Shirt",
-    category: 'Shirts',
-    subNavbarCategory: 'Products',
-    price: 195,
-    originalPrice: 449,
-    rating: 4.2,
-    reviews: 980,
-    gender: 'Men',
-    color: 'Green',
-    image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop&q=60',
-    tag: 'Trending',
-    discount: '56% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p8',
-    name: 'Comfort Sport Running Sneakers',
-    category: 'Shoes',
-    subNavbarCategory: 'Products',
-    price: 399,
-    originalPrice: 899,
-    rating: 4.3,
-    reviews: 1540,
-    gender: 'Men',
-    color: 'Blue',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60',
-    tag: 'Popular',
-    discount: '55% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p9',
-    name: 'Matte Liquid Longstay Red Lipstick',
-    category: 'Beauty',
-    subNavbarCategory: 'Products',
-    price: 120,
-    originalPrice: 249,
-    rating: 4.4,
-    reviews: 730,
-    gender: 'Women',
-    color: 'Red',
-    image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&auto=format&fit=crop&q=60',
-    tag: '1st Order Offer',
-    discount: '51% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p10',
-    name: 'Elegant Leather Shoulder Handbag',
-    category: 'Bags',
-    subNavbarCategory: 'Products',
-    price: 450,
-    originalPrice: 999,
-    rating: 4.2,
-    reviews: 642,
-    gender: 'Women',
-    color: 'Black',
-    image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&auto=format&fit=crop&q=60',
-    tag: 'Premium Buy',
-    discount: '54% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p11',
-    name: 'Heritage Luxury Chronograph Watch',
-    category: 'Watches',
-    subNavbarCategory: 'Products',
-    price: 1450,
-    originalPrice: 2999,
-    rating: 4.9,
-    reviews: 320,
-    gender: 'Men',
-    color: 'Gold',
-    image: luxuryWatch,
-    tag: 'Luxury',
-    discount: '51% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p12',
-    name: 'Kashvi Embroidered Cotton Kurti',
-    category: 'Kurtis',
-    subNavbarCategory: 'Products',
-    price: 384,
-    originalPrice: 799,
-    rating: 4.3,
-    reviews: 1290,
-    gender: 'Women',
-    color: 'White',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=500&auto=format&fit=crop&q=60',
-    tag: 'Bestseller',
-    discount: '51% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p13',
-    name: 'Kids Playful Graphic Yellow Tee',
-    category: 'T-shirts',
-    subNavbarCategory: 'Products',
-    price: 165,
-    originalPrice: 349,
-    rating: 4.1,
-    reviews: 80,
-    gender: 'Kids',
-    color: 'Gold',
-    image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=500&auto=format&fit=crop&q=60',
-    tag: 'Super Soft',
-    discount: '52% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p14',
-    name: 'Pure Cotton Double Floral Bedsheet',
-    category: 'Home Decor',
-    subNavbarCategory: 'Products',
-    price: 299,
-    originalPrice: 599,
-    rating: 4.1,
-    reviews: 450,
-    gender: 'Women',
-    color: 'White',
-    image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500&auto=format&fit=crop&q=60',
-    tag: 'Home Special',
-    discount: '50% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p15',
-    name: 'Wireless Active Noise Cancelling Headset',
-    category: 'Headphones',
-    subNavbarCategory: 'Products',
-    price: 899,
-    originalPrice: 1999,
-    rating: 4.6,
-    reviews: 1120,
-    gender: 'Men',
-    color: 'Black',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60',
-    tag: 'Gadget Pick',
-    discount: '55% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p16',
-    name: 'Hotel Shubha Sai Royal Suite Book',
-    category: 'Stay',
-    subNavbarCategory: 'Stay',
-    price: 749,
-    originalPrice: 1500,
-    rating: 4.9,
-    reviews: 412,
-    gender: 'Women',
-    color: 'Blue',
-    image: hotelActual,
-    tag: 'Verified Partner',
-    discount: '50% off',
-    delivery: 'Instant Confirmation'
-  },
-  {
-    id: 'p17',
-    name: 'SK Technologies Corporate Web Dev',
-    category: 'Services',
-    subNavbarCategory: 'Services',
-    price: 1599,
-    originalPrice: 3200,
-    rating: 5.0,
-    reviews: 98,
-    gender: 'Men',
-    color: 'White',
-    image: skMockup,
-    tag: 'IT Consulting',
-    discount: '50% off',
-    delivery: 'Delivered in 15 days'
-  },
-  {
-    id: 'p18',
-    name: 'Gourmet Buffet Private Dinner Pass',
-    category: 'Food',
-    subNavbarCategory: 'Food',
-    price: 499,
-    originalPrice: 999,
-    rating: 4.8,
-    reviews: 250,
-    gender: 'Men',
-    color: 'Red',
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=60',
-    tag: 'Michelin Partner',
-    discount: '50% off',
-    delivery: 'Free Booking confirmation'
-  },
-  {
-    id: 'p19',
-    name: 'VIP Airport Business Lounge Pass',
-    category: 'Travel',
-    subNavbarCategory: 'Travel',
-    price: 150,
-    originalPrice: 350,
-    rating: 4.7,
-    reviews: 140,
-    gender: 'Women',
-    color: 'Gold',
-    image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=500&auto=format&fit=crop&q=60',
-    tag: 'VIP Access',
-    discount: '57% off',
-    delivery: 'Scan QR at Entry'
-  },
-  {
-    id: 'p20',
-    name: 'Dermatologist Organic Skin Formula',
-    category: 'Beauty',
-    subNavbarCategory: 'Daily Needs',
-    price: 199,
-    originalPrice: 399,
-    rating: 4.3,
-    reviews: 310,
-    gender: 'Women',
-    color: 'White',
-    image: 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=500&auto=format&fit=crop&q=60',
-    tag: 'Daily Essential',
-    discount: '50% off',
-    delivery: 'Free Delivery'
-  },
-  {
-    id: 'p16_1',
-    name: 'Luxury Forest Treehouse Escape',
-    category: 'Stay',
-    subNavbarCategory: 'Stay',
-    price: 1200,
-    originalPrice: 2400,
-    rating: 4.8,
-    reviews: 84,
-    gender: 'Unisex',
-    color: 'Gold',
-    image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=500&auto=format&fit=crop&q=60',
-    tag: 'Treehouse',
-    discount: '50% off',
-    delivery: 'Instant Booking'
-  },
-  {
-    id: 'p16_2',
-    name: 'Private Cliffside Villa',
-    category: 'Stay',
-    subNavbarCategory: 'Stay',
-    price: 2500,
-    originalPrice: 5000,
-    rating: 5.0,
-    reviews: 12,
-    gender: 'Unisex',
-    color: 'Blue',
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&auto=format&fit=crop&q=60',
-    tag: 'Villa',
-    discount: '50% off',
-    delivery: 'Instant Booking'
-  },
-  {
-    id: 'p16_3',
-    name: 'Stargazing Geodesic Dome',
-    category: 'Stay',
-    subNavbarCategory: 'Stay',
-    price: 1800,
-    originalPrice: 3600,
-    rating: 4.7,
-    reviews: 35,
-    gender: 'Unisex',
-    color: 'White',
-    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=500&auto=format&fit=crop&q=60',
-    tag: 'Resorts',
-    discount: '50% off',
-    delivery: 'Instant Booking'
-  },
-  {
-    id: 'p17_1',
-    name: 'Office Housekeeping Solution',
-    category: 'Services',
-    subNavbarCategory: 'Services',
-    price: 450,
-    originalPrice: 900,
-    rating: 4.7,
-    reviews: 120,
-    gender: 'Unisex',
-    color: 'Blue',
-    image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop&q=60',
-    tag: 'Non-IT',
-    discount: '50% off',
-    delivery: 'Delivered in 2 days',
-    locationType: 'On-site'
-  },
-  {
-    id: 'p17_2',
-    name: 'Connect Talent Executive Search',
-    category: 'Services',
-    subNavbarCategory: 'Services',
-    price: 899,
-    originalPrice: 1800,
-    rating: 4.9,
-    reviews: 65,
-    gender: 'Unisex',
-    color: 'Gold',
-    image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&auto=format&fit=crop&q=60',
-    tag: 'Consulting',
-    discount: '50% off',
-    delivery: 'Delivered in 7 days',
-    locationType: 'Hybrid'
-  },
-  {
-    id: 'p18_1',
-    name: 'Neapolitan Pizza Experience Pass',
-    category: 'Food',
-    subNavbarCategory: 'Food',
-    price: 299,
-    originalPrice: 600,
-    rating: 4.6,
-    reviews: 110,
-    gender: 'Unisex',
-    color: 'Red',
-    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60',
-    tag: 'Cafe',
-    discount: '50% off',
-    delivery: 'Instant Confirmation',
-    cuisine: 'Italian',
-    distance: 1.5
-  },
-  {
-    id: 'p18_2',
-    name: 'The Rameshwaram Cafe South Indian Voucher',
-    category: 'Food',
-    subNavbarCategory: 'Food',
-    price: 150,
-    originalPrice: 300,
-    rating: 4.9,
-    reviews: 540,
-    gender: 'Unisex',
-    color: 'Gold',
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=60',
-    tag: 'Luxury Dining',
-    discount: '50% off',
-    delivery: 'Instant Confirmation',
-    cuisine: 'South Indian',
-    distance: 0.8
-  },
-  {
-    id: 'p19_1',
-    name: 'Private Yacht Day Charter',
-    category: 'Travel',
-    subNavbarCategory: 'Travel',
-    price: 4500,
-    originalPrice: 9000,
-    rating: 5.0,
-    reviews: 8,
-    gender: 'Unisex',
-    color: 'Blue',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60',
-    tag: 'Private Charter',
-    discount: '50% off',
-    delivery: 'Confirm Date on Call'
-  },
-  {
-    id: 'p19_2',
-    name: 'Business Class Flight Upgrade Deal',
-    category: 'Travel',
-    subNavbarCategory: 'Travel',
-    price: 1200,
-    originalPrice: 2400,
-    rating: 4.8,
-    reviews: 42,
-    gender: 'Unisex',
-    color: 'White',
-    image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=500&auto=format&fit=crop&q=60',
-    tag: 'Flights',
-    discount: '50% off',
-    delivery: 'Delivered in 24 hrs'
-  },
-  {
-    id: 'p20_1',
-    name: 'Certified Organic Green Veggies Basket',
-    category: 'Daily Needs',
-    subNavbarCategory: 'Daily Needs',
-    price: 120,
-    originalPrice: 240,
-    rating: 4.6,
-    reviews: 195,
-    gender: 'Unisex',
-    color: 'Green',
-    image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500&auto=format&fit=crop&q=60',
-    tag: 'Gourmet',
-    discount: '50% off',
-    delivery: 'Same-day delivery'
-  },
-  {
-    id: 'p20_2',
-    name: 'Premium Farm Fresh Dairy Pack',
-    category: 'Daily Needs',
-    subNavbarCategory: 'Daily Needs',
-    price: 85,
-    originalPrice: 170,
-    rating: 4.5,
-    reviews: 320,
-    gender: 'Unisex',
-    color: 'White',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60',
-    tag: 'Gourmet',
-    discount: '50% off',
-    delivery: 'Same-day delivery'
-  }
-];
+const initialProducts = [];
 
 const getProductDescription = (product) => {
   if (!product) return '';
@@ -3732,7 +3085,160 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
+  // 4. TRENDING PRODUCTS (LEFT)
+  const renderTrendingProducts = () => {
+    const trending = products.filter(p => p.subNavbarCategory === 'Products').slice(0, 4);
+    if (trending.length === 0) return null;
+    return (
+      <div className="space-y-4 text-left w-full">
+        <div className="flex justify-between items-baseline">
+          <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Trending Products</h3>
+          <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All →</button>
+        </div>
 
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {trending.map(product => {
+            const isFavorited = favorites.includes(product.id);
+            return (
+              <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-350 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-0.5">
+                <div className="relative aspect-[0.95/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                  <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
+                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
+                    <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                  </button>
+                </div>
+                
+                <div className="p-3.5 flex-grow flex flex-col justify-between text-left">
+                  <div>
+                    <h4 className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
+                    <div className="flex items-baseline gap-1.5 mt-2">
+                      <span className="text-xs font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                      <span className="text-[9px] text-emerald-600 font-bold">{product.discount}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 flex items-center justify-between gap-1 w-full">
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <span>{product.rating}</span>
+                        <Star className="w-2 h-2 fill-emerald-600 text-emerald-600" />
+                      </div>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          addToCart(product); 
+                        }} 
+                        className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[8px] font-black px-2 py-1 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30 shrink-0"
+                      >
+                        <Plus className="w-2 h-2" />
+                        <span>Add</span>
+                      </button>
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (!cart.find(item => item.id === product.id)) {
+                            addToCart(product);
+                          }
+                          setIsCartOpen(true);
+                        }} 
+                        className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-black px-2 py-1 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
+                      >
+                        <span>Order Now</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // 5. STAY BEST OFFERS (LEFT)
+  const renderStayOffers = () => {
+    const stays = products.filter(p => p.subNavbarCategory === 'Stay').slice(0, 4);
+    if (stays.length === 0) return null;
+    return (
+      <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-200">
+        <div className="flex justify-between items-baseline">
+          <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Stay Best Offers</h3>
+          <button onClick={() => { setSelectedSubNavbarCategory('Stay'); setActiveTab('Stay'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stays.map((stay, idx) => (
+            <div key={idx} onClick={() => setSelectedProduct(stay)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+              <div className="h-28 bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
+                <img src={stay.image} alt={stay.name} className="w-full h-full object-cover" />
+                <span className="absolute left-2.5 top-2.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[7px] font-extrabold px-2 py-0.5 rounded shadow-sm">15% SAVINGS</span>
+              </div>
+              <div className="p-3 flex-1 flex flex-col justify-between text-left">
+                <div className="space-y-1">
+                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{stay.name}</h4>
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-400 font-bold block truncate">{stay.location || 'Bengaluru, India'}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2">
+                  <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-amber-600 dark:text-amber-400">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    <span>{stay.rating || 4.5}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{stay.price.toLocaleString()}</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold block">/ Night</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // 6. POPULAR RESTAURANTS (LEFT)
+  const renderPopularRestaurants = () => {
+    const restaurants = products.filter(p => p.subNavbarCategory === 'Food').slice(0, 4);
+    if (restaurants.length === 0) return null;
+    return (
+      <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-805 dark:text-slate-200">
+        <div className="flex justify-between items-baseline">
+          <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 dark:text-slate-450 uppercase tracking-widest">Popular Restaurants</h3>
+          <button onClick={() => { setSelectedSubNavbarCategory('Food'); setActiveTab('Food'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {restaurants.map((rest, idx) => (
+            <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+              <div className="h-28 bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
+                <img src={rest.image} alt={rest.name} className="w-full h-full object-cover" />
+                <span className="absolute left-2.5 top-2.5 bg-rose-500 text-white text-[7px] font-extrabold px-2 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
+              </div>
+              <div className="p-3 flex-1 flex flex-col justify-between text-left">
+                <div className="space-y-1">
+                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{rest.name}</h4>
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block truncate">{rest.category || 'Gourmet Dining'}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2 text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    <span>{rest.rating || 4.5}</span>
+                  </div>
+                  <div>₹{rest.price.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
 
   // 7. BALANCE CARDS GRID (RIGHT)
@@ -4844,7 +4350,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     };
 
     // Recommended products list: same category or fallback to other smartphones/products
-    const related = initialProducts
+    const related = products
       .filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.category === 'Smartphones'))
       .slice(0, 5);
 
@@ -5354,6 +4860,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Fourth Row: Catalog Sections */}
             <div className="w-full space-y-8">
               {renderTopServices()}
+              {renderTrendingProducts()}
+              {renderStayOffers()}
+              {renderPopularRestaurants()}
             </div>
           </div>
         )}
