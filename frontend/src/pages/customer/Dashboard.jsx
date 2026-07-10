@@ -3537,471 +3537,298 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Filter Sidebar */}
-          <aside className="lg:col-span-3 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 text-slate-800 dark:text-slate-200 rounded-2xl p-5 shadow-xs lg:sticky lg:top-24 space-y-5">
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-150 dark:border-slate-800/60">
-              <div className="flex items-center gap-2 text-slate-800 dark:text-white font-bold">
-                <SlidersHorizontal className="w-4 h-4 text-amber-500" />
-                <span>Filters</span>
+        <div className="flex flex-col gap-6 w-full items-stretch">
+          {/* Horizontal Filters Bar */}
+          <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3.5">
+              <div className="flex items-center gap-1.5 text-slate-850 dark:text-white font-black text-xs mr-1">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                <span>FILTERS</span>
               </div>
-              <button onClick={clearAllFilters} className="text-[11px] font-bold text-amber-500 hover:underline flex items-center gap-1 cursor-pointer">
+
+              {/* Home Tab Filters */}
+              {activeTab === 'Home' && (
+                <>
+                  <select
+                    value={selectedCategories[0] || ""}
+                    onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Categories</option>
+                    {['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedPrices[0] || ""}
+                    onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Prices</option>
+                    <option value="under-199">Under ₹199</option>
+                    <option value="199-399">₹199 - ₹399</option>
+                    <option value="399-599">₹399 - ₹599</option>
+                    <option value="above-599">Above ₹599</option>
+                  </select>
+                </>
+              )}
+
+              {/* Products Tab Filters */}
+              {activeTab === 'Products' && (
+                <>
+                  <select
+                    value={selectedCategories[0] || ""}
+                    onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Categories</option>
+                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Products').map(p => p.category).filter(Boolean))].map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedGenders[0] || ""}
+                    onChange={(e) => setSelectedGenders(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Genders</option>
+                    <option value="Men">Men</option>
+                    <option value="Women">Women</option>
+                    <option value="Kids">Kids</option>
+                  </select>
+                  <select
+                    value={selectedColors[0] || ""}
+                    onChange={(e) => setSelectedColors(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Colors</option>
+                    {['Black', 'White', 'Blue', 'Green', 'Pink', 'Gold', 'Red'].map(col => (
+                      <option key={col} value={col}>{col}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedPrices[0] || ""}
+                    onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Prices</option>
+                    <option value="under-199">Under ₹199</option>
+                    <option value="199-399">₹199 - ₹399</option>
+                    <option value="399-599">₹399 - ₹599</option>
+                    <option value="above-599">Above ₹599</option>
+                  </select>
+                </>
+              )}
+
+              {/* Services Tab Filters */}
+              {activeTab === 'Services' && (
+                <>
+                  <select
+                    value={selectedServiceTypes[0] || ""}
+                    onChange={(e) => setSelectedServiceTypes(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Service Types</option>
+                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Services').map(p => p.category).filter(Boolean))].map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedLocTypes[0] || ""}
+                    onChange={(e) => setSelectedLocTypes(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Locations</option>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="On-site">On-site</option>
+                  </select>
+                </>
+              )}
+
+              {/* Daily Needs Tab Filters */}
+              {activeTab === 'Daily Needs' && (
+                <>
+                  <select
+                    value={selectedDailyNeedsTypes[0] || ""}
+                    onChange={(e) => setSelectedDailyNeedsTypes(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Categories</option>
+                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Daily Needs').map(p => p.category).filter(Boolean))].map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedPrices[0] || ""}
+                    onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Prices</option>
+                    <option value="under-100">Under ₹100</option>
+                    <option value="100-200">₹100 - ₹200</option>
+                    <option value="above-200">Above ₹200</option>
+                  </select>
+                </>
+              )}
+
+              {/* Food Tab Filters */}
+              {activeTab === 'Food' && (
+                <>
+                  <select
+                    value={selectedCuisines[0] || ""}
+                    onChange={(e) => setSelectedCuisines(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Cuisines</option>
+                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Food').map(p => p.category).filter(Boolean))].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedDistances[0] || ""}
+                    onChange={(e) => setSelectedDistances(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Distances</option>
+                    <option value="under-2km">Under 2 km</option>
+                    <option value="2km-5km">2 km - 5 km</option>
+                    <option value="above-5km">Above 5 km</option>
+                  </select>
+                </>
+              )}
+
+              {/* Stay Tab Filters */}
+              {activeTab === 'Stay' && (
+                <>
+                  <select
+                    value={selectedAccomTypes[0] || ""}
+                    onChange={(e) => setSelectedAccomTypes(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Accommodations</option>
+                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Stay').map(p => p.category).filter(Boolean))].map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedPrices[0] || ""}
+                    onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Prices</option>
+                    <option value="under-1000">Under ₹1,000</option>
+                    <option value="1000-2000">₹1,000 - ₹2,000</option>
+                    <option value="2000-5000">₹2,000 - ₹5,000</option>
+                    <option value="above-5000">Above ₹5,000</option>
+                  </select>
+                </>
+              )}
+
+              {/* Travel Tab Filters */}
+              {activeTab === 'Travel' && (
+                <>
+                  <select
+                    value={selectedTravelTypes[0] || ""}
+                    onChange={(e) => setSelectedTravelTypes(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Options</option>
+                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Travel').map(p => p.category).filter(Boolean))].map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedPrices[0] || ""}
+                    onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Prices</option>
+                    <option value="under-500">Under ₹500</option>
+                    <option value="500-2000">₹500 - ₹2,000</option>
+                    <option value="above-2000">Above ₹2,000</option>
+                  </select>
+                </>
+              )}
+
+              {/* Jobs Tab Filters */}
+              {activeTab === 'Jobs' && (
+                <>
+                  <select
+                    value={selectedJobDepts[0] || ""}
+                    onChange={(e) => setSelectedJobDepts(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Departments</option>
+                    {['Operations', 'Business Development', 'Technology'].map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedJobTypes[0] || ""}
+                    onChange={(e) => setSelectedJobTypes(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Job Types</option>
+                    {['Full-time', 'Remote', 'Hybrid'].map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedJobSalaries[0] || ""}
+                    onChange={(e) => setSelectedJobSalaries(e.target.value ? [e.target.value] : [])}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Salaries</option>
+                    <option value="under-15l">Under ₹15L L.P.A</option>
+                    <option value="15l-25l">₹15L - ₹25L L.P.A</option>
+                    <option value="above-25l">Above ₹25L L.P.A</option>
+                  </select>
+                </>
+              )}
+
+              {/* Rating Filter for non-jobs */}
+              {activeTab !== 'Jobs' && (
+                <select
+                  value={selectedRating === null ? "" : selectedRating}
+                  onChange={(e) => setSelectedRating(e.target.value ? parseFloat(e.target.value) : null)}
+                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="">All Ratings</option>
+                  <option value="4.0">4.0 ★ & Above</option>
+                  <option value="4.5">4.5 ★ & Above</option>
+                  <option value="4.8">4.8 ★ & Above</option>
+                </select>
+              )}
+
+              {/* Reset Filters button */}
+              <button 
+                onClick={clearAllFilters} 
+                className="text-xs font-black text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer"
+              >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Reset All</span>
+                <span>Reset</span>
               </button>
             </div>
-
-            {/* Home Tab Filters */}
-            {activeTab === 'Home' && (
-              <>
-                {/* Category Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('category')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Category</span>
-                    {openFilters.category ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.category && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].map(cat => (
-                        <label key={cat} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => handleCheckboxChange(cat, selectedCategories, setSelectedCategories)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{cat}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Price Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('price')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Price</span>
-                    {openFilters.price ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.price && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[
-                        { value: 'under-199', label: 'Under ₹199' },
-                        { value: '199-399', label: '₹199 - ₹399' },
-                        { value: '399-599', label: '₹399 - ₹599' },
-                        { value: 'above-599', label: 'Above ₹599' }
-                      ].map(p => (
-                        <label key={p.value} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedPrices.includes(p.value)} onChange={() => handleCheckboxChange(p.value, selectedPrices, setSelectedPrices)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{p.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Products Tab Filters */}
-            {activeTab === 'Products' && (
-              <>
-                {/* Category Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('category')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Category</span>
-                    {openFilters.category ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.category && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Products').map(p => p.category).filter(Boolean))].map(cat => (
-                        <label key={cat} className="flex items-center gap-2.5 text-xs text-slate-605 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => handleCheckboxChange(cat, selectedCategories, setSelectedCategories)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{cat}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Gender Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('gender')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Gender</span>
-                    {openFilters.gender ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.gender && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Men', 'Women', 'Kids'].map(g => (
-                        <label key={g} className="flex items-center gap-2.5 text-xs text-slate-605 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedGenders.includes(g)} onChange={() => handleCheckboxChange(g, selectedGenders, setSelectedGenders)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{g}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Color Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('color')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-305 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Color</span>
-                    {openFilters.color ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.color && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Black', 'White', 'Blue', 'Green', 'Pink', 'Gold', 'Red'].map(col => (
-                        <label key={col} className="flex items-center gap-2.5 text-xs text-slate-605 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedColors.includes(col)} onChange={() => handleCheckboxChange(col, selectedColors, setSelectedColors)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{col}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Price Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('price')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Price</span>
-                    {openFilters.price ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.price && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[
-                        { value: 'under-199', label: 'Under ₹199' },
-                        { value: '199-399', label: '₹199 - ₹399' },
-                        { value: '399-599', label: '₹399 - ₹599' },
-                        { value: 'above-599', label: 'Above ₹599' }
-                      ].map(p => (
-                        <label key={p.value} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedPrices.includes(p.value)} onChange={() => handleCheckboxChange(p.value, selectedPrices, setSelectedPrices)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{p.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Services Tab Filters */}
-            {activeTab === 'Services' && (
-              <>
-                {/* Service Type Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('serviceType')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Service Type</span>
-                    {openFilters.serviceType ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.serviceType && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Services').map(p => p.category).filter(Boolean))].map(type => (
-                        <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedServiceTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedServiceTypes, setSelectedServiceTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Location Type Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('locationType')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Location Type</span>
-                    {openFilters.locationType ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.locationType && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Remote', 'Hybrid', 'On-site'].map(loc => (
-                        <label key={loc} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedLocTypes.includes(loc)} onChange={() => handleCheckboxChange(loc, selectedLocTypes, setSelectedLocTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{loc}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Food Tab Filters */}
-            {activeTab === 'Food' && (
-              <>
-                {/* Cuisine Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('cuisine')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Cuisine</span>
-                    {openFilters.cuisine ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.cuisine && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Food').map(p => p.category).filter(Boolean))].map(c => (
-                        <label key={c} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedCuisines.includes(c)} onChange={() => handleCheckboxChange(c, selectedCuisines, setSelectedCuisines)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{c}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Distance Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('distance')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Distance</span>
-                    {openFilters.distance ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.distance && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[
-                        { value: 'under-2km', label: 'Under 2 km' },
-                        { value: '2km-5km', label: '2 km - 5 km' },
-                        { value: 'above-5km', label: 'Above 5 km' }
-                      ].map(d => (
-                        <label key={d.value} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedDistances.includes(d.value)} onChange={() => handleCheckboxChange(d.value, selectedDistances, setSelectedDistances)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{d.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Stay Tab Filters */}
-            {activeTab === 'Stay' && (
-              <>
-                {/* Accommodation Type Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('accommodationType')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Accommodation Type</span>
-                    {openFilters.accommodationType ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.accommodationType && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Stay').map(p => p.category).filter(Boolean))].map(type => (
-                        <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedAccomTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedAccomTypes, setSelectedAccomTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Price (Stay) Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('price')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Price per Night</span>
-                    {openFilters.price ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.price && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[
-                        { value: 'under-1000', label: 'Under ₹1,000' },
-                        { value: '1000-2000', label: '₹1,000 - ₹2,000' },
-                        { value: '2000-5000', label: '₹2,000 - ₹5,000' },
-                        { value: 'above-5000', label: 'Above ₹5,000' }
-                      ].map(p => (
-                        <label key={p.value} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedPrices.includes(p.value)} onChange={() => handleCheckboxChange(p.value, selectedPrices, setSelectedPrices)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{p.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Travel Tab Filters */}
-            {activeTab === 'Travel' && (
-              <>
-                {/* Travel Type Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('travelType')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Travel Option</span>
-                    {openFilters.travelType ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.travelType && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Travel').map(p => p.category).filter(Boolean))].map(type => (
-                        <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedTravelTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedTravelTypes, setSelectedTravelTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Price (Travel) Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('price')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Price</span>
-                    {openFilters.price ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.price && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[
-                        { value: 'under-500', label: 'Under ₹500' },
-                        { value: '500-2000', label: '₹500 - ₹2,000' },
-                        { value: 'above-2000', label: 'Above ₹2,000' }
-                      ].map(p => (
-                        <label key={p.value} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedPrices.includes(p.value)} onChange={() => handleCheckboxChange(p.value, selectedPrices, setSelectedPrices)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{p.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Daily Needs Tab Filters */}
-            {activeTab === 'Daily Needs' && (
-              <>
-                {/* Daily Needs Category Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('dailyNeedsType')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Category</span>
-                    {openFilters.dailyNeedsType ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.dailyNeedsType && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[...new Set(products.filter(p => p.subNavbarCategory === 'Daily Needs').map(p => p.category).filter(Boolean))].map(type => (
-                        <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedDailyNeedsTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedDailyNeedsTypes, setSelectedDailyNeedsTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Price (Daily Needs) Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('price')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Price</span>
-                    {openFilters.price ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.price && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[
-                        { value: 'under-100', label: 'Under ₹100' },
-                        { value: '100-200', label: '₹100 - ₹200' },
-                        { value: 'above-200', label: 'Above ₹200' }
-                      ].map(p => (
-                        <label key={p.value} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedPrices.includes(p.value)} onChange={() => handleCheckboxChange(p.value, selectedPrices, setSelectedPrices)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{p.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Jobs Tab Filters */}
-            {activeTab === 'Jobs' && (
-              <>
-                {/* Department Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('department')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Department</span>
-                    {openFilters.department ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.department && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Operations', 'Business Development', 'Technology'].map(dept => (
-                        <label key={dept} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedJobDepts.includes(dept)} onChange={() => handleCheckboxChange(dept, selectedJobDepts, setSelectedJobDepts)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{dept}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Job Type Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('jobType')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Job Type</span>
-                    {openFilters.jobType ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.jobType && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {['Full-time', 'Remote', 'Hybrid'].map(type => (
-                        <label key={type} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedJobTypes.includes(type)} onChange={() => handleCheckboxChange(type, selectedJobTypes, setSelectedJobTypes)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Salary Filter */}
-                <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                  <button onClick={() => toggleFilterSection('salary')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                    <span>Salary Range</span>
-                    {openFilters.salary ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {openFilters.salary && (
-                    <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                      {[
-                        { value: 'under-15l', label: 'Under ₹15L L.P.A' },
-                        { value: '15l-25l', label: '₹15L - ₹25L L.P.A' },
-                        { value: 'above-25l', label: 'Above ₹25L L.P.A' }
-                      ].map(s => (
-                        <label key={s.value} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                          <input type="checkbox" checked={selectedJobSalaries.includes(s.value)} onChange={() => handleCheckboxChange(s.value, selectedJobSalaries, setSelectedJobSalaries)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                          <span className="font-medium">{s.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Rating Filter (Radio Buttons) */}
-            {activeTab !== 'Jobs' && (
-              <div className="border-b border-slate-150 dark:border-slate-800/60 pb-4">
-                <button onClick={() => toggleFilterSection('rating')} className="flex items-center justify-between w-full text-left font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 cursor-pointer">
-                  <span>Rating</span>
-                  {openFilters.rating ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-                {openFilters.rating && (
-                  <div className="space-y-2.5 animate-fade-in pl-1 text-left">
-                    {[
-                      { value: null, label: 'Any Rating' },
-                      { value: 4.0, label: '4.0 ★ & Above' },
-                      { value: 4.5, label: '4.5 ★ & Above' },
-                      { value: 4.8, label: '4.8 ★ & Above' }
-                    ].map(r => (
-                      <label key={r.label} className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 cursor-pointer">
-                        <input type="radio" name="ratingFilter" checked={selectedRating === r.value} onChange={() => setSelectedRating(r.value)} className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/35 w-3.5 h-3.5 accent-amber-500" />
-                        <span className="font-medium">{r.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="pt-4 border-t border-slate-150 dark:border-slate-800/60 flex items-center gap-3 text-xs text-left">
-              <div className="w-8 h-8 rounded-full bg-rose-50 dark:bg-slate-900 flex items-center justify-center text-amber-650 dark:text-amber-400 shrink-0 border border-rose-100 dark:border-slate-850">
-                <ShieldCheck className="w-4.5 h-4.5 text-amber-500" />
-              </div>
-              <div>
-                <div className="font-bold text-slate-800 dark:text-white">Verified Quality</div>
-                <div className="text-[10px] text-slate-400 dark:text-slate-400">100% genuine products only</div>
-              </div>
+            
+            {/* Right Part: Sorting */}
+            <div className="flex items-center gap-2.5 text-xs">
+              <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Sort By:</span>
+              <select 
+                value={sortBy} 
+                onChange={(e) => setSortBy(e.target.value)} 
+                className="bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500 text-slate-750 cursor-pointer font-extrabold"
+              >
+                <option value="default">Relevance / Popularity</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="rating-desc">Top Rated</option>
+              </select>
             </div>
-          </aside>
+          </div>
 
-          {/* Catalog grid or Jobs Board */}
-          <section className="lg:col-span-9 space-y-6">
+          {/* Catalog grid or Jobs Board (spanning full width!) */}
+          <div className="w-full space-y-6">
             {activeTab === 'Jobs' ? (
               appliedJobId ? (
                 /* ================= JOB APPLICATION FORM ================= */
@@ -4259,7 +4086,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 )}
               </>
             )}
-          </section>
+          </div>
         </div>
       </div>
     );
