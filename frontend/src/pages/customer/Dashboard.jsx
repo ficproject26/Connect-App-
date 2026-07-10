@@ -4006,48 +4006,49 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <button onClick={clearAllFilters} className="mt-6 text-xs font-bold text-white bg-amber-400 hover:bg-amber-500 px-5 py-2.5 rounded-md transition-all shadow cursor-pointer">Reset All Filters</button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                     {filteredProducts.map((product) => {
                       const isFavorited = favorites.includes(product.id);
                       return (
-                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
-                          <div className="relative aspect-[1.5/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
+                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-lg overflow-hidden shadow-3xs hover:shadow-xs transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+                          <div className="relative aspect-[1.75/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
                             <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
-                            <span className="absolute left-1 top-1 bg-slate-900/80 text-white text-[6.5px] font-black px-1 py-0.5 rounded uppercase">{product.tag}</span>
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1 top-1 w-5.5 h-5.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
-                              <Heart className={`w-2.5 h-2.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                            <span className="absolute left-1 top-1 bg-slate-900/80 text-white text-[5.5px] font-black px-1 py-0.2 rounded uppercase">{product.tag}</span>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1 top-1 w-4.5 h-4.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
+                              <Heart className={`w-2 h-2 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                             </button>
                           </div>
                           
-                          <div className="p-2 flex-grow flex flex-col justify-between text-left">
+                          <div className="p-1.5 flex-grow flex flex-col justify-between text-left">
                             <div>
-                              <h4 className="text-[10px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
-                              <div className="flex items-baseline gap-1 mt-1.5">
-                                <span className="text-[11px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
-                                <span className="text-[9px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
-                                <span className="text-[8px] text-[#f43397] font-bold">{product.discount}</span>
+                              <h4 className="text-[9px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
+                              <div className="flex items-baseline gap-0.5 mt-1">
+                                <span className="text-[10px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
+                                <span className="text-[8px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                                <span className="text-[7px] text-[#f43397] font-bold">{product.discount}</span>
                               </div>
-                              <div className="flex items-center gap-1 mt-1 text-[9px] text-slate-400 dark:text-slate-500 font-semibold"><Truck className="w-3 h-3 text-slate-400" /><span>{product.delivery}</span></div>
+                              <div className="flex items-center gap-0.5 mt-0.5 text-[8px] text-slate-400 dark:text-slate-500 font-semibold"><Truck className="w-2.5 h-2.5 text-slate-400" /><span>{product.delivery}</span></div>
                             </div>
-                            <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2 pt-2 flex items-center justify-between gap-1 w-full">
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[7px] font-extrabold px-1 py-0.5 rounded flex items-center gap-0.5">
-                                  <span>{product.rating}</span>
-                                  <Star className="w-2 h-2 fill-emerald-600 text-emerald-600" />
+                            <div className="border-t border-slate-100 dark:border-slate-800/60 mt-1.5 pt-1.5 flex flex-col gap-1 w-full">
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-0.5 flex-shrink-0">
+                                  <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[6.5px] font-extrabold px-1 py-0.2 rounded flex items-center gap-0.2">
+                                    <span>{product.rating}</span>
+                                    <Star className="w-1.5 h-1.5 fill-emerald-600 text-emerald-600" />
+                                  </div>
+                                  <span className="text-[7.5px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
                                 </div>
-                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
                               </div>
-                              <div className="flex items-center gap-1">
+                              <div className="grid grid-cols-2 gap-1 w-full">
                                 <button 
                                   onClick={(e) => { 
                                     e.stopPropagation(); 
                                     addToCart(product); 
                                     triggerNotification(`${product.name} added to cart!`); 
                                   }} 
-                                  className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[8px] font-black px-2 py-1 rounded-md transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
+                                  className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-500 text-slate-900 text-[7.5px] font-black py-0.8 rounded-sm transition-all cursor-pointer uppercase shadow-3xs border border-amber-500/20"
                                 >
-                                  <Plus className="w-3 h-3" />
-                                  <span>Add</span>
+                                  <span>+ Add</span>
                                 </button>
                                 <button 
                                   onClick={(e) => { 
@@ -4057,9 +4058,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     }
                                     setIsCartOpen(true);
                                   }} 
-                                  className="inline-flex items-center bg-[#10b981] hover:bg-emerald-700 text-white text-[8px] font-black px-2 py-1 rounded-md transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
+                                  className="inline-flex items-center justify-center bg-[#10b981] hover:bg-emerald-700 text-white text-[7.5px] font-black py-0.8 rounded-sm transition-all cursor-pointer uppercase shadow-3xs border border-emerald-750/20"
                                 >
-                                  <span>Order Now</span>
+                                  <span>Buy</span>
                                 </button>
                               </div>
                             </div>
