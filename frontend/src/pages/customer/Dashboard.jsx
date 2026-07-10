@@ -3086,16 +3086,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // 4. TRENDING PRODUCTS (LEFT)
   const renderTrendingProducts = () => {
-    const trending = products.filter(p => p.subNavbarCategory === 'Products').slice(0, 4);
+    const trending = products.slice(0, 8);
     if (trending.length === 0) return null;
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Trending Products</h3>
+          <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Trending Products & Services</h3>
           <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All →</button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {trending.map(product => {
             const isFavorited = favorites.includes(product.id);
             return (
