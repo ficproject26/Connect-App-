@@ -64,8 +64,10 @@
 }
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-sans antialiased overflow-x-hidden transition-colors duration-300;
+  html, body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-sans antialiased transition-colors duration-300;
+    overflow-x: hidden !important;
+    max-width: 100% !important;
   }
 }
 

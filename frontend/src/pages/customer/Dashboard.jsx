@@ -2085,7 +2085,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   // RENDER HELPERS
   const renderHeaderIcons = (isMobile = false) => {
     return (
-      <div className="flex items-center gap-3 md:gap-4">
+      <div className={`flex items-center ${isMobile ? 'gap-1.5' : 'gap-3 md:gap-4'}`}>
         {/* Theme Toggle Button */}
         <button 
           onClick={toggleTheme}
@@ -2843,7 +2843,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         className="relative"
         onMouseLeave={handleMouseLeave}
       >
-        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-3 flex items-center justify-start md:justify-center gap-6 overflow-x-auto no-scrollbar shadow-xs transition-colors">
+        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-3 flex items-center justify-start md:justify-center gap-6 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
           {subNavbarCategories.map((cat) => {
             const isActive = activeTab === cat;
             return (
