@@ -2113,7 +2113,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           {isNotificationsOpen && (
             <>
               <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
-              <div className={`absolute ${isMobile ? '-right-16' : 'right-0'} mt-2 w-80 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
+              <div className={`${isMobile ? 'fixed top-16 left-4 right-4' : 'absolute right-0 mt-2 w-80'} bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
                 <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
                   <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
                   {unreadCount > 0 && (
