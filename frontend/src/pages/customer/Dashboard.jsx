@@ -148,6 +148,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchCategory, setSearchCategory] = useState('All');
+  const [isSearchCategoryDropdownOpen, setIsSearchCategoryDropdownOpen] = useState(false);
+  const [is360ModalOpen, setIs360ModalOpen] = useState(false);
+  const [isArModalOpen, setIsArModalOpen] = useState(false);
+  const [rotationAngle, setRotationAngle] = useState(0);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
   const [selectedSubNavbarCategory, setSelectedSubNavbarCategory] = useState('All');
   const [sortBy, setSortBy] = useState('default');
   const [favorites, setFavorites] = useState([]);
@@ -1934,9 +1940,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Filtered & Sorted products list
   let filteredProducts = products.filter(product => {
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = (searchQuery === '' || 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      product.category.toLowerCase().includes(searchQuery.toLowerCase());
+      product.category.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (searchCategory === 'All' || product.subNavbarCategory === searchCategory);
 
     const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
       product.subNavbarCategory === selectedSubNavbarCategory;
@@ -2228,9 +2235,40 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         {/* Search Input in middle */}
         <div className="relative w-full md:max-w-xl flex items-center border border-slate-300 dark:border-slate-700 rounded-full bg-slate-50/50 dark:bg-slate-800/50 pl-4 py-1 pr-1.5 focus-within:border-amber-400 transition-all">
-          <div className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 pr-3 mr-3 shrink-0 cursor-pointer select-none">
-            <span>All</span>
+          <div 
+            onClick={() => setIsSearchCategoryDropdownOpen(!isSearchCategoryDropdownOpen)}
+            className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 pr-3 mr-3 shrink-0 cursor-pointer select-none relative"
+          >
+            <span>{searchCategory}</span>
             <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+            
+            {isSearchCategoryDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 w-44 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg py-1 z-50 text-left">
+                {['All', 'Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSearchCategory(cat);
+                      setIsSearchCategoryDropdownOpen(false);
+                      if (cat !== 'All') {
+                        setActiveTab(cat);
+                        setSelectedSubNavbarCategory(cat);
+                      } else {
+                        setActiveTab('Home');
+                        setSelectedSubNavbarCategory('All');
+                      }
+                    }}
+                    className={`w-full px-3 py-1.5 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-900/50 flex items-center justify-between transition-colors ${
+                      searchCategory === cat ? 'text-amber-500 bg-amber-500/5' : 'text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    {searchCategory === cat && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <input 
             type="text"
@@ -3173,24 +3211,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stays.map((stay, idx) => (
-            <div key={idx} onClick={() => setSelectedProduct(stay)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
-              <div className="h-28 bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
+            <div key={idx} onClick={() => setSelectedProduct(stay)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+              <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
                 <img src={stay.image} alt={stay.name} className="w-full h-full object-cover" />
-                <span className="absolute left-2.5 top-2.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[7px] font-extrabold px-2 py-0.5 rounded shadow-sm">15% SAVINGS</span>
+                <span className="absolute left-1.5 top-1.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">15% SAVINGS</span>
               </div>
-              <div className="p-3 flex-1 flex flex-col justify-between text-left">
+              <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
                 <div className="space-y-1">
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{stay.name}</h4>
-                  <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-400 font-bold block truncate">{stay.location || 'Bengaluru, India'}</span>
+                  <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{stay.name}</h4>
+                  <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block truncate">{stay.location || 'Bengaluru, India'}</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2">
-                  <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-amber-600 dark:text-amber-400">
-                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                  <div className="flex items-center gap-0.5 text-[8px] font-extrabold text-amber-600 dark:text-amber-400">
+                    <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <span>{stay.rating || 4.5}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{stay.price.toLocaleString()}</span>
-                    <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold block">/ Night</span>
+                    <span className="text-[7px] text-slate-450 dark:text-slate-500 font-semibold block">/ Night</span>
                   </div>
                 </div>
               </div>
@@ -3214,19 +3252,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {restaurants.map((rest, idx) => (
-            <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
-              <div className="h-28 bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
+            <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+              <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
                 <img src={rest.image} alt={rest.name} className="w-full h-full object-cover" />
-                <span className="absolute left-2.5 top-2.5 bg-rose-500 text-white text-[7px] font-extrabold px-2 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
+                <span className="absolute left-1.5 top-1.5 bg-rose-500 text-white text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
               </div>
-              <div className="p-3 flex-1 flex flex-col justify-between text-left">
+              <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
                 <div className="space-y-1">
-                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{rest.name}</h4>
+                  <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{rest.name}</h4>
                   <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block truncate">{rest.category || 'Gourmet Dining'}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2 text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2 text-[8px] font-bold text-slate-500 dark:text-slate-450">
                   <div className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <span>{rest.rating || 4.5}</span>
                   </div>
                   <div>₹{rest.price.toLocaleString()}</div>
@@ -4006,49 +4044,48 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <button onClick={clearAllFilters} className="mt-6 text-xs font-bold text-white bg-amber-400 hover:bg-amber-500 px-5 py-2.5 rounded-md transition-all shadow cursor-pointer">Reset All Filters</button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
                     {filteredProducts.map((product) => {
                       const isFavorited = favorites.includes(product.id);
                       return (
-                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-lg overflow-hidden shadow-3xs hover:shadow-xs transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
-                          <div className="relative aspect-[1.75/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
+                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+                          <div className="relative aspect-[4/3] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
                             <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
-                            <span className="absolute left-1 top-1 bg-slate-900/80 text-white text-[5.5px] font-black px-1 py-0.2 rounded uppercase">{product.tag}</span>
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1 top-1 w-4.5 h-4.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
-                              <Heart className={`w-2 h-2 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                            <span className="absolute left-1.5 top-1.5 bg-slate-900/80 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase">{product.tag}</span>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1.5 top-1.5 w-6 h-6 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
+                              <Heart className={`w-3 h-3 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                             </button>
                           </div>
                           
-                          <div className="p-1.5 flex-grow flex flex-col justify-between text-left">
+                          <div className="p-2.5 flex-grow flex flex-col justify-between text-left">
                             <div>
-                              <h4 className="text-[9px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
-                              <div className="flex items-baseline gap-0.5 mt-1">
-                                <span className="text-[10px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
-                                <span className="text-[8px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
-                                <span className="text-[7px] text-[#f43397] font-bold">{product.discount}</span>
+                              <h4 className="text-[10px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
+                              <div className="flex items-baseline gap-1 mt-1.5">
+                                <span className="text-[11px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
+                                <span className="text-[9px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                                <span className="text-[8px] text-[#f43397] font-bold">{product.discount}</span>
                               </div>
-                              <div className="flex items-center gap-0.5 mt-0.5 text-[8px] text-slate-400 dark:text-slate-500 font-semibold"><Truck className="w-2.5 h-2.5 text-slate-400" /><span>{product.delivery}</span></div>
+                              <div className="flex items-center gap-1 mt-1 text-[9px] text-slate-400 dark:text-slate-500 font-semibold"><Truck className="w-3 h-3 text-slate-400" /><span>{product.delivery}</span></div>
                             </div>
-                            <div className="border-t border-slate-100 dark:border-slate-800/60 mt-1.5 pt-1.5 flex flex-col gap-1 w-full">
-                              <div className="flex items-center justify-between gap-1">
-                                <div className="flex items-center gap-0.5 flex-shrink-0">
-                                  <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[6.5px] font-extrabold px-1 py-0.2 rounded flex items-center gap-0.2">
-                                    <span>{product.rating}</span>
-                                    <Star className="w-1.5 h-1.5 fill-emerald-600 text-emerald-600" />
-                                  </div>
-                                  <span className="text-[7.5px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
+                            <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2 pt-2 flex items-center justify-between gap-1 w-full">
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[7px] font-extrabold px-1 py-0.5 rounded flex items-center gap-0.5">
+                                  <span>{product.rating}</span>
+                                  <Star className="w-2 h-2 fill-emerald-600 text-emerald-600" />
                                 </div>
+                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
                               </div>
-                              <div className="grid grid-cols-2 gap-1 w-full">
+                              <div className="flex items-center gap-1">
                                 <button 
                                   onClick={(e) => { 
                                     e.stopPropagation(); 
                                     addToCart(product); 
                                     triggerNotification(`${product.name} added to cart!`); 
                                   }} 
-                                  className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-500 text-slate-900 text-[7.5px] font-black py-0.8 rounded-sm transition-all cursor-pointer uppercase shadow-3xs border border-amber-500/20"
+                                  className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[8px] font-black px-2 py-1 rounded-md transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
                                 >
-                                  <span>+ Add</span>
+                                  <Plus className="w-3 h-3" />
+                                  <span>Add</span>
                                 </button>
                                 <button 
                                   onClick={(e) => { 
@@ -4058,9 +4095,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     }
                                     setIsCartOpen(true);
                                   }} 
-                                  className="inline-flex items-center justify-center bg-[#10b981] hover:bg-emerald-700 text-white text-[7.5px] font-black py-0.8 rounded-sm transition-all cursor-pointer uppercase shadow-3xs border border-emerald-750/20"
+                                  className="inline-flex items-center bg-[#10b981] hover:bg-emerald-700 text-white text-[8px] font-black px-2 py-1 rounded-md transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
                                 >
-                                  <span>Buy</span>
+                                  <span>Order Now</span>
                                 </button>
                               </div>
                             </div>
@@ -4173,7 +4210,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div className="flex items-center gap-1.5 flex-wrap">
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span>
-            <button onClick={() => { setSelectedProduct(null); setActiveTab('Products'); setSelectedSubNavbarCategory('Products'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Products</button>
+            <button onClick={() => { 
+              const mainCat = selectedProduct.subNavbarCategory || 'Products';
+              setSelectedProduct(null); 
+              setActiveTab(mainCat); 
+              setSelectedSubNavbarCategory(mainCat); 
+            }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+              {selectedProduct.subNavbarCategory || 'Products'}
+            </button>
             <span>&gt;</span>
             <span className="hover:text-amber-500 transition-colors">{selectedProduct.category}</span>
             <span>&gt;</span>
@@ -4222,7 +4266,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     />
                   </button>
                 ))}
-                <div className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
                   <span>+3</span>
                   <span>More</span>
                 </div>
@@ -4253,11 +4297,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             {/* Media helpers underneath */}
             <div className="flex justify-center gap-4 mt-6">
-              <button onClick={() => triggerNotification("Entering 360° Interactive view...")} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
+              <button onClick={() => setIs360ModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
                 <svg className="w-4 h-4 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>
                 <span>View in 360°</span>
               </button>
-              <button onClick={() => triggerNotification("Launching AR View on mobile device...")} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
+              <button onClick={() => setIsArModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
                 <svg className="w-4 h-4 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 <span>AR View</span>
               </button>
