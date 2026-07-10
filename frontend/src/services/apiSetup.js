@@ -9,7 +9,7 @@ export const getBackendUrl = () => {
     hostname.startsWith('192.168.') || 
     hostname.startsWith('10.')
   ) {
-    return `http://${hostname || 'localhost'}:8000`;
+    return `http://${hostname || 'localhost'}:8001`;
   }
   
   // If running in production, connect to deployed Render backend URL
