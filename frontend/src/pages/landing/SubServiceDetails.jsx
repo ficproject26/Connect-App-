@@ -13,6 +13,7 @@ import luxury3dMockup from '../../assets/images/luxury_3d_design.png';
 const hospitalsData = [
   {
     id: 'hosp-apollo',
+    vendorId: '2l64elf7emqhm2o0m',
     name: 'Apollo Hospitals',
     address: 'Bannerghatta Road, Bangalore',
     rating: 4.8,
@@ -31,6 +32,7 @@ const hospitalsData = [
   },
   {
     id: 'hosp-manipal',
+    vendorId: '2l64elf7emqhm2o0m',
     name: 'Manipal Hospital',
     address: 'HAL Airport Road, Bangalore',
     rating: 4.7,
@@ -49,6 +51,7 @@ const hospitalsData = [
   },
   {
     id: 'hosp-fortis',
+    vendorId: '2l64elf7emqhm2o0m',
     name: 'Fortis Hospital',
     address: 'Cunningham Road, Bangalore',
     rating: 4.9,
@@ -67,6 +70,7 @@ const hospitalsData = [
   },
   {
     id: 'hosp-narayana',
+    vendorId: '2l64elf7emqhm2o0m',
     name: 'Narayana Health',
     address: 'Bommasandra Industrial Area, Bangalore',
     rating: 4.8,

@@ -1,4 +1,4 @@
-import { getBackendUrl } from './apiSetup';
+import { getBackendUrl, getVendorBackendUrl } from './apiSetup';
 const BACKEND_URL = `${getBackendUrl()}/api`;
 
 
@@ -329,9 +329,9 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
     orders.unshift(newOrder);
     localStorage.setItem('connect_fallback_orders', JSON.stringify(orders));
 
-    // Attempt fallback sync to vendor backend on port 8000
+    // Attempt fallback sync to vendor backend
     try {
-      fetch('http://localhost:8000/api/public/orders', {
+      fetch(`${getVendorBackendUrl()}/api/public/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

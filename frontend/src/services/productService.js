@@ -1,9 +1,9 @@
-import { getBackendUrl } from './apiSetup';
+import { getVendorBackendUrl } from './apiSetup';
 
 export const productService = {
   getProducts: async () => {
     try {
-      const res = await fetch(`${getBackendUrl()}/api/public/products`);
+      const res = await fetch(`${getVendorBackendUrl()}/api/public/products`);
       if (res.ok) {
         return await res.json();
       }
