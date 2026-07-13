@@ -329,6 +329,37 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
     orders.unshift(newOrder);
     localStorage.setItem('connect_fallback_orders', JSON.stringify(orders));
 
+    // Attempt fallback sync to vendor backend on port 8000
+    try {
+      fetch('http://localhost:8000/api/public/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderId,
+          order_number: orderId,
+          vendorId: body.vendor_id || 'v1',
+          memberId: 'cust_dhanush',
+          memberName: body.customer_name || 'Customer',
+          type: body.type || 'Order',
+          items: body.items || [],
+          totalAmount: body.amount || 0,
+          finalAmount: body.amount || 0,
+          candidateEmail: body.candidateEmail,
+          candidateResume: body.candidateResume,
+          appointmentDate: body.appointmentDate,
+          appointmentTimeSlot: body.appointmentTimeSlot,
+          doctorName: body.doctorName,
+          tableNumber: body.tableNumber,
+          roomNumber: body.roomNumber,
+          prescriptionUrl: body.prescriptionUrl
+        })
+      }).then(r => r.json())
+        .then(data => console.log('Fallback sync response:', data))
+        .catch(err => console.warn('Fallback sync to vendor backend failed:', err));
+    } catch (e) {
+      console.warn(e);
+    }
+
     // Emulate Auto assignment timer
     setTimeout(() => {
       const partners = JSON.parse(localStorage.getItem('connect_fallback_partners'));

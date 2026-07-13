@@ -71,6 +71,16 @@ export interface Order {
     | 'Approved'
     | 'Enrolled';
   created_at?: string;
+  type?: string;
+  appointmentDate?: string;
+  appointmentTimeSlot?: string;
+  doctorName?: string;
+  tableNumber?: string;
+  roomNumber?: string;
+  prescriptionUrl?: string;
+  candidateEmail?: string;
+  candidateResume?: string;
+  items?: any[];
 }
 
 export interface DeliveryAssignment {

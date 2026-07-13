@@ -181,7 +181,9 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   const {
     vendor_id, customer_name, customer_phone, customer_address,
-    product_details, amount, customer_latitude, customer_longitude
+    product_details, amount, customer_latitude, customer_longitude,
+    type, appointmentDate, appointmentTimeSlot, doctorName,
+    tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items
   } = req.body;
 
   if (!customer_name || !customer_phone || !customer_address || amount === undefined || amount === null) {
@@ -206,7 +208,17 @@ router.post('/', async (req: Request, res: Response) => {
       customer_longitude: customer_longitude || 77.6250,
       product_details: product_details || 'Generic Connect Item',
       amount,
-      status: 'Order Received'
+      status: 'Order Received',
+      type: type || 'Order',
+      appointmentDate,
+      appointmentTimeSlot,
+      doctorName,
+      tableNumber,
+      roomNumber,
+      prescriptionUrl,
+      candidateEmail,
+      candidateResume,
+      items: items || []
     });
 
     // Log status history
@@ -242,7 +254,8 @@ router.post('/', async (req: Request, res: Response) => {
         vendorId: vendor_id || 'v1',
         memberId: 'cust_dhanush',
         memberName: customer_name,
-        items: req.body.items || [{
+        type: type || 'Order',
+        items: items || [{
           productId: 'v_prod_mock',
           name: product_details || 'Generic Connect Item',
           price: amount,
@@ -251,8 +264,14 @@ router.post('/', async (req: Request, res: Response) => {
         totalAmount: amount,
         discountApplied: 0,
         finalAmount: amount,
-        candidateEmail: req.body.candidateEmail,
-        candidateResume: req.body.candidateResume
+        candidateEmail: candidateEmail || req.body.candidateEmail,
+        candidateResume: candidateResume || req.body.candidateResume,
+        appointmentDate,
+        appointmentTimeSlot,
+        doctorName,
+        tableNumber,
+        roomNumber,
+        prescriptionUrl
       });
 
       const http = require('http');

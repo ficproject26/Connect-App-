@@ -319,6 +319,10 @@ export default function SubServiceDetails({ title, onBack }) {
           customer_longitude: 77.6289,
           product_details: `Appointment with ${bookingDoctor} at ${selectedHospital?.name}`,
           amount: fee,
+          type: 'Appointment',
+          appointmentDate: bookingDate,
+          appointmentTimeSlot: bookingTime,
+          doctorName: bookingDoctor,
           items: [{
             productId: productId,
             name: `Appointment with ${bookingDoctor}`,
