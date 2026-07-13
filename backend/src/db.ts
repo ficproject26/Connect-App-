@@ -81,6 +81,11 @@ export interface Order {
   candidateEmail?: string;
   candidateResume?: string;
   items?: any[];
+  vendorId?: string;
+  memberId?: string;
+  memberName?: string;
+  totalAmount?: number;
+  finalAmount?: number;
 }
 
 export interface DeliveryAssignment {
