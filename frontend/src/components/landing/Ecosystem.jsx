@@ -86,11 +86,10 @@ export default function Ecosystem({ onCardClick }) {
       const scrolled = -rect.top; // px scrolled into section
       const progress = Math.min(Math.max(scrolled / totalScrollable, 0), 1);
 
-      // Divide the scroll space into (pillars.length + 1) segments:
-      // Step 0: Globe only / Welcome text
+      // Divide the scroll space into pillars.length segments:
       // Step 1..7: Render pillars 1 to 7 one by one in center
-      const currentStep = Math.floor(progress * (pillars.length + 1));
-      setVisibleCount(Math.min(currentStep, pillars.length));
+      const currentStep = Math.floor(progress * pillars.length);
+      setVisibleCount(Math.min(currentStep + 1, pillars.length));
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -174,29 +173,7 @@ export default function Ecosystem({ onCardClick }) {
           {/* Main Workspace: Centered Interactive Card transition area */}
           <div className="flex-1 flex items-center justify-center my-auto min-h-[380px] w-full relative">
             <AnimatePresence mode="wait">
-              {visibleCount === 0 ? (
-                <motion.div
-                  key="welcome-prompt"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute flex flex-col items-center justify-center text-center p-6 pointer-events-none"
-                >
-                  <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
-                    <div className="w-3.5 h-3.5 bg-amber-400 rounded-full animate-ping" />
-                  </div>
-                  <p className="text-amber-400/95 text-[10px] font-black uppercase tracking-[0.25em]">
-                    Interactive Journey
-                  </p>
-                  <h3 className="text-white font-black text-2xl mt-3 max-w-[320px] tracking-tight">
-                    Scroll down to reveal
-                  </h3>
-                  <span className="text-slate-500 text-xs mt-3 block font-medium">
-                    (scroll to reveal the ecosystem pillars)
-                  </span>
-                </motion.div>
-              ) : (
+              {activePillar && (
                 <motion.div
                   key={activePillar.id}
                   initial={{ opacity: 0, y: 40, scale: 0.92 }}
