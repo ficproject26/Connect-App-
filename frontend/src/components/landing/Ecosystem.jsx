@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Briefcase, ShoppingBag, Truck, Utensils, BedDouble, Plane, UserCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import worldGlobe from '../../assets/images/world_globe.jpg';
 
 const pillars = [
@@ -70,7 +71,7 @@ const pillars = [
 
 export default function Ecosystem({ onCardClick }) {
   const containerRef = useRef(null);
-  const [visibleCount, setVisibleCount] = useState(0); // 0 (globe only), 1 to pillars.length
+  const [visibleCount, setVisibleCount] = useState(0); // 0 (welcome), 1 to pillars.length
 
   useEffect(() => {
     const handleScroll = () => {
@@ -86,8 +87,8 @@ export default function Ecosystem({ onCardClick }) {
       const progress = Math.min(Math.max(scrolled / totalScrollable, 0), 1);
 
       // Divide the scroll space into (pillars.length + 1) segments:
-      // Step 0: Globe only
-      // Step 1..7: Accumulate cards 1 to 7
+      // Step 0: Globe only / Welcome text
+      // Step 1..7: Render pillars 1 to 7 one by one in center
       const currentStep = Math.floor(progress * (pillars.length + 1));
       setVisibleCount(Math.min(currentStep, pillars.length));
     };
@@ -101,7 +102,8 @@ export default function Ecosystem({ onCardClick }) {
     };
   }, []);
 
-  const latestIdx = visibleCount - 1; // -1 at step 0 (globe only)
+  const latestIdx = visibleCount - 1; // -1 at step 0 (welcome)
+  const activePillar = latestIdx >= 0 ? pillars[latestIdx] : null;
 
   return (
     <section
@@ -124,11 +126,9 @@ export default function Ecosystem({ onCardClick }) {
               src={worldGlobe}
               alt="World Network"
               className="w-full h-full opacity-35 rounded-full animate-globe-spin object-cover"
-
               style={{ filter: 'brightness(1.1) saturate(1.3)' }}
             />
           </div>
-
 
           {/* Radial fade — edges dark */}
           <div className="absolute inset-0 bg-radial-fade" />
@@ -137,13 +137,13 @@ export default function Ecosystem({ onCardClick }) {
           <div 
             className="absolute top-[20%] left-[20%] w-96 h-96 rounded-full blur-[140px] opacity-15 transition-all duration-700" 
             style={{ 
-              background: latestIdx >= 0 ? pillars[latestIdx].accent : '#f59e0b'
+              background: activePillar ? activePillar.accent : '#f59e0b'
             }} 
           />
           <div 
             className="absolute bottom-[20%] right-[20%] w-96 h-96 rounded-full blur-[140px] opacity-15 transition-all duration-700" 
             style={{ 
-              background: latestIdx >= 0 ? pillars[latestIdx].accent : '#818cf8'
+              background: activePillar ? activePillar.accent : '#818cf8'
             }} 
           />
         </div>
@@ -171,101 +171,105 @@ export default function Ecosystem({ onCardClick }) {
             </div>
           </div>
 
-          {/* Main Workspace: Grid Accumulation Layout */}
-          <div className="flex-1 flex items-center justify-center my-auto min-h-[360px] w-full relative">
-            
-            {/* Step 0: Welcome / Instruction Overlay */}
-            {visibleCount === 0 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 animate-float pointer-events-none">
-                <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
-                  <div className="w-3.5 h-3.5 bg-amber-400 rounded-full animate-ping" />
-                </div>
-                <p className="text-amber-400/95 text-[10px] font-black uppercase tracking-[0.25em]">
-                  Interactive Journey
-                </p>
-                <h3 className="text-white font-black text-2xl mt-3 max-w-[320px] tracking-tight">
-                  Scroll down to reveal
-                </h3>
-                <span className="text-slate-500 text-xs mt-3 block font-medium">
-                  (scroll to reveal the ecosystem pillars)
-                </span>
-              </div>
-            )}
-
-            {/* Grid layout containing accumulating cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 w-full relative z-20">
-              {pillars.map((pillar, idx) => {
-                const Icon = pillar.icon;
-                const isVisible = idx < visibleCount;
-                const isLatest = idx === latestIdx;
-
-                return (
-                  <div
-                    key={pillar.id}
-                    onClick={() => isVisible && onCardClick(pillar.title)}
-                    style={{
-                      opacity: isVisible ? 1 : 0,
-                      transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.95)',
-                      pointerEvents: isVisible ? 'auto' : 'none',
-                      transition: 'opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)',
-                      borderColor: isVisible ? (isLatest ? `${pillar.accent}60` : `${pillar.accent}30`) : 'rgba(255,255,255,0.05)',
-                      boxShadow: isVisible && isLatest ? `0 15px 30px -10px ${pillar.accent}30` : 'none',
-                    }}
-                    className={`relative rounded-2xl p-4 sm:p-6 flex flex-col justify-between cursor-pointer group
-                      bg-slate-950/85 backdrop-blur-md border
-                      hover:bg-slate-950 hover:scale-[1.02] hover:-translate-y-1
-                      transition-all duration-300 overflow-hidden select-none
-                      h-[125px] sm:h-[200px] lg:h-[235px] w-full`}
-
-                  >
-                    {/* Glowing highlight on active card */}
-                    <div
-                      className="absolute -top-10 -left-10 w-28 h-28 rounded-full blur-3xl opacity-20 pointer-events-none transition-all duration-500 group-hover:scale-125"
-                      style={{ background: pillar.accent }}
-                    />
-
-                    {/* Card Header: Icon and Category Tag (hidden on mobile to prevent overflow) */}
-                    <div className="flex items-start justify-between relative z-10 w-full">
-                      <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center ${pillar.iconBg} shadow-inner transition-transform duration-300 group-hover:scale-115 shrink-0`}>
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <span
-                        className="hidden sm:inline-block text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full shrink-0"
-                        style={{ background: `${pillar.accent}15`, color: pillar.accent }}
-                      >
-                        {pillar.tag}
-                      </span>
-                    </div>
-
-                    {/* Content Area */}
-                    <div className="text-left relative z-10 w-full mt-2 sm:mt-4 flex-grow flex flex-col justify-start">
-                      <h3 className="text-sm sm:text-base lg:text-lg font-extrabold text-white tracking-tight leading-snug">
-                        {pillar.title}
-                      </h3>
-                      {/* Short Description (hidden on mobile to keep layout compact) */}
-                      <p className="hidden sm:block mt-1.5 text-slate-400 text-[11px] lg:text-xs leading-relaxed line-clamp-2 lg:line-clamp-3">
-                        {pillar.desc}
-                      </p>
-                    </div>
-
-                    {/* Interactive Card Footer (hidden on mobile) */}
-                    <div className="hidden sm:flex items-center justify-between pt-2 border-t border-white/5 mt-3 relative z-10 w-full">
-                      <span
-                        className="text-[11px] font-black flex items-center gap-1 transition-colors duration-200"
-                        style={{ color: pillar.accent }}
-                      >
-                        Explore
-                        <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                      </span>
-                      <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-bold">
-                        {String(idx + 1).padStart(2, '0')} / {String(pillars.length).padStart(2, '0')}
-                      </span>
-                    </div>
+          {/* Main Workspace: Centered Interactive Card transition area */}
+          <div className="flex-1 flex items-center justify-center my-auto min-h-[380px] w-full relative">
+            <AnimatePresence mode="wait">
+              {visibleCount === 0 ? (
+                <motion.div
+                  key="welcome-prompt"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute flex flex-col items-center justify-center text-center p-6 pointer-events-none"
+                >
+                  <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+                    <div className="w-3.5 h-3.5 bg-amber-400 rounded-full animate-ping" />
                   </div>
-                );
-              })}
-            </div>
+                  <p className="text-amber-400/95 text-[10px] font-black uppercase tracking-[0.25em]">
+                    Interactive Journey
+                  </p>
+                  <h3 className="text-white font-black text-2xl mt-3 max-w-[320px] tracking-tight">
+                    Scroll down to reveal
+                  </h3>
+                  <span className="text-slate-500 text-xs mt-3 block font-medium">
+                    (scroll to reveal the ecosystem pillars)
+                  </span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={activePillar.id}
+                  initial={{ opacity: 0, y: 40, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -40, scale: 0.92 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 18 }}
+                  onClick={() => onCardClick(activePillar.title)}
+                  className="absolute w-full max-w-[460px] p-6 sm:p-8 rounded-3xl cursor-pointer group bg-slate-950/75 backdrop-blur-xl border select-none text-center flex flex-col items-center justify-between min-h-[300px]"
+                  style={{
+                    borderColor: `${activePillar.accent}30`,
+                    boxShadow: `0 25px 50px -12px ${activePillar.accent}25, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                  }}
+                >
+                  {/* Circular Icon container with accent glow */}
+                  <div 
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center border shadow-lg transition-transform duration-300 group-hover:scale-110 mb-5 shrink-0"
+                    style={{
+                      backgroundColor: `${activePillar.accent}15`,
+                      borderColor: `${activePillar.accent}40`,
+                      color: activePillar.accent
+                    }}
+                  >
+                    {React.createElement(activePillar.icon, { className: "w-8 h-8" })}
+                  </div>
 
+                  {/* Index indicator */}
+                  <div className="text-[10px] font-mono tracking-[0.2em] uppercase mb-2 font-bold" style={{ color: activePillar.accent }}>
+                    Pillar {String(visibleCount).padStart(2, '0')} / 07
+                  </div>
+
+                  {/* Text area */}
+                  <div className="flex-grow flex flex-col justify-center mb-6">
+                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                      {activePillar.title}
+                    </h3>
+                    <p className="mt-3 text-slate-350 text-xs sm:text-sm leading-relaxed max-w-sm">
+                      {activePillar.desc}
+                    </p>
+                  </div>
+
+                  {/* Footer Pill and Explore Link */}
+                  <div className="w-full flex items-center justify-between pt-5 border-t border-white/5 mt-auto">
+                    <span
+                      className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full"
+                      style={{ backgroundColor: `${activePillar.accent}15`, color: activePillar.accent }}
+                    >
+                      {activePillar.tag}
+                    </span>
+                    <span
+                      className="text-xs font-black flex items-center gap-1 transition-colors duration-200"
+                      style={{ color: activePillar.accent }}
+                    >
+                      Explore Pillar
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Indicator Dots at Bottom */}
+          <div className="w-full flex justify-center items-center gap-2 mt-4 shrink-0 relative z-20">
+            {pillars.map((_, i) => (
+              <div 
+                key={i}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  visibleCount === i + 1 
+                    ? 'w-7 bg-amber-400' 
+                    : 'w-2 bg-white/20'
+                }`}
+              />
+            ))}
           </div>
 
         </div>
