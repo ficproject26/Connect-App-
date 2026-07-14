@@ -187,7 +187,7 @@ export default function Ecosystem({ onCardClick }) {
       ref={containerRef}
       id="services"
       className="relative bg-[#020b18]"
-      style={{ height: '200vh' }}
+      style={{ height: '100vh' }}
     >
       {/* ── STICKY FRAME ── */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between">
