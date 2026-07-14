@@ -105,6 +105,7 @@ export default function AppRoutes({
         <LandingPage
           onJoinClick={() => setCurrentPage('join-now')}
           onCategoryClick={handleCategoryClick}
+          theme={theme}
         />
       )}
     </LandingLayout>

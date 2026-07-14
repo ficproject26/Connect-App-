@@ -76,24 +76,24 @@ const pillars = [
   },
 ];
 
-export default function Ecosystem({ onCardClick }) {
+export default function Ecosystem({ onCardClick, theme }) {
   const containerRef = useRef(null);
 
   return (
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-[#020b18] py-12 md:py-20 overflow-hidden"
+      className="relative bg-slate-50 dark:bg-[#020b18] py-12 md:py-20 overflow-hidden transition-colors duration-300"
     >
       {/* ── GLOBE BACKGROUND ── */}
-      <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-20">
-        <div className="absolute inset-0 bg-[#020b18]" />
+      <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-300">
+        <div className="absolute inset-0 bg-transparent" />
         {/* Slow spinning background globe */}
         <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[min(90vw,800px)] aspect-square overflow-hidden rounded-full z-0">
           <img
             src={worldGlobe}
             alt="World Network"
-            className="w-full h-full opacity-30 rounded-full animate-globe-spin object-cover"
+            className="w-full h-full opacity-15 dark:opacity-30 rounded-full animate-globe-spin object-cover transition-opacity duration-300"
             style={{ filter: 'brightness(1.1) saturate(1.3)' }}
           />
         </div>
@@ -105,16 +105,16 @@ export default function Ecosystem({ onCardClick }) {
         
         {/* Header */}
         <div className="w-full text-center max-w-2xl mx-auto mb-10 md:mb-16 flex flex-col items-center">
-          <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-amber-400/90">
+          <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-amber-500 dark:text-amber-400/90 transition-colors duration-300">
             One Membership · Seven Pillars
           </span>
-          <h2 className="mt-3 text-3xl md:text-5xl font-extrabold font-sans tracking-tight text-white leading-none">
+          <h2 className="mt-3 text-3xl md:text-5xl font-extrabold font-sans tracking-tight text-slate-900 dark:text-white leading-none transition-colors duration-300">
             Our{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-amber-200 to-amber-400">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-amber-300 to-amber-500 dark:from-amber-400 dark:via-amber-200 dark:to-amber-400">
               Ecosystem
             </span>
           </h2>
-          <p className="mt-4 text-slate-400 text-xs md:text-sm leading-relaxed max-w-md">
+          <p className="mt-4 text-slate-600 dark:text-slate-400 text-xs md:text-sm leading-relaxed max-w-md transition-colors duration-300">
             Scroll down to explore each pillar — a premium world of services, products, dining, travel, and careers.
           </p>
         </div>
@@ -122,7 +122,7 @@ export default function Ecosystem({ onCardClick }) {
         {/* Timeline Layout */}
         <div className="relative w-full">
           {/* Central Vertical Line */}
-          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-amber-500 via-sky-500 to-violet-500 z-0 opacity-30" />
+          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-amber-500 via-sky-500 to-violet-500 z-0 opacity-20 dark:opacity-30 transition-opacity duration-300" />
 
           {/* Pillars List */}
           <div className="space-y-12 md:space-y-18">
@@ -136,11 +136,11 @@ export default function Ecosystem({ onCardClick }) {
                 >
                   {/* Timeline Glowing Node */}
                   <div
-                    className="absolute left-8 md:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-[#020b18] border-2 flex items-center justify-center z-25 transition-all duration-500"
+                    className="absolute left-8 md:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center z-25 transition-all duration-500"
                     style={{
                       borderColor: pillar.accent,
                       color: pillar.accent,
-                      boxShadow: `0 0 12px ${pillar.accent}40`,
+                      boxShadow: theme === 'dark' ? `0 0 12px ${pillar.accent}40` : `0 0 8px ${pillar.accent}20`,
                     }}
                   >
                     {React.createElement(pillar.icon, { className: "w-4.5 h-4.5" })}
@@ -157,17 +157,17 @@ export default function Ecosystem({ onCardClick }) {
                       className="w-full max-w-xs md:max-w-sm md:ml-auto md:mr-12 lg:mr-20 cursor-pointer text-left"
                     >
                       <div
-                        className="w-full p-5 md:p-6 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+                        className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] shadow-slate-100"
                         style={{
-                          borderColor: `${pillar.accent}20`,
-                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+                          borderColor: theme === 'dark' ? `${pillar.accent}20` : `${pillar.accent}35`,
+                          boxShadow: theme === 'dark' ? `inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
                         }}
                       >
                         {/* Title & Description */}
-                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight">
+                        <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight transition-colors duration-300">
                           {pillar.title}
                         </h3>
-                        <p className="mt-2.5 text-slate-300 text-xs leading-relaxed">
+                        <p className="mt-2.5 text-slate-650 dark:text-slate-300 text-xs leading-relaxed transition-colors duration-300">
                           {pillar.desc}
                         </p>
 
@@ -191,10 +191,10 @@ export default function Ecosystem({ onCardClick }) {
                         )}
 
                         {/* Footer Divider & Action */}
-                        <div className="w-full flex items-center justify-between pt-4 border-t border-white/5 mt-5">
+                        <div className="w-full flex items-center justify-between pt-4 border-t border-slate-150 dark:border-white/5 mt-5 transition-colors duration-300">
                           <span
                             className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
-                            style={{ backgroundColor: `${pillar.accent}15`, color: pillar.accent }}
+                            style={{ backgroundColor: theme === 'dark' ? `${pillar.accent}15` : `${pillar.accent}10`, color: pillar.accent }}
                           >
                             {pillar.tag}
                           </span>
@@ -223,17 +223,17 @@ export default function Ecosystem({ onCardClick }) {
                       className="w-full max-w-xs md:max-w-sm md:mr-auto md:ml-12 lg:ml-20 cursor-pointer text-left"
                     >
                       <div
-                        className="w-full p-5 md:p-6 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+                        className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] shadow-slate-100"
                         style={{
-                          borderColor: `${pillar.accent}20`,
-                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+                          borderColor: theme === 'dark' ? `${pillar.accent}20` : `${pillar.accent}35`,
+                          boxShadow: theme === 'dark' ? `inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
                         }}
                       >
                         {/* Title & Description */}
-                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight">
+                        <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight transition-colors duration-300">
                           {pillar.title}
                         </h3>
-                        <p className="mt-2.5 text-slate-300 text-xs leading-relaxed">
+                        <p className="mt-2.5 text-slate-650 dark:text-slate-300 text-xs leading-relaxed transition-colors duration-300">
                           {pillar.desc}
                         </p>
 
@@ -257,10 +257,10 @@ export default function Ecosystem({ onCardClick }) {
                         )}
 
                         {/* Footer Divider & Action */}
-                        <div className="w-full flex items-center justify-between pt-4 border-t border-white/5 mt-5">
+                        <div className="w-full flex items-center justify-between pt-4 border-t border-slate-150 dark:border-white/5 mt-5 transition-colors duration-300">
                           <span
                             className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
-                            style={{ backgroundColor: `${pillar.accent}15`, color: pillar.accent }}
+                            style={{ backgroundColor: theme === 'dark' ? `${pillar.accent}15` : `${pillar.accent}10`, color: pillar.accent }}
                           >
                             {pillar.tag}
                           </span>

@@ -8,14 +8,14 @@ import MobileApp from '../../components/landing/MobileApp';
 import CTA from '../../components/landing/CTA';
 import BranchLocations from '../../components/landing/BranchLocations';
 
-export default function LandingPage({ onJoinClick, onCategoryClick }) {
+export default function LandingPage({ onJoinClick, onCategoryClick, theme }) {
   return (
     <>
       {/* Hero Section with stacked credit cards and world map */}
       <Hero onJoinClick={onJoinClick} />
 
       {/* 6-Pillar Ecosystem Grid */}
-      <Ecosystem onCardClick={onCategoryClick} />
+      <Ecosystem onCardClick={onCategoryClick} theme={theme} />
 
       {/* Pricing Tiers Selection Cards */}
       <Pricing onSelectTier={onJoinClick} />
