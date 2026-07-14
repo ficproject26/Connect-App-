@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Check, X, Star, RefreshCw } from 'lucide-react';
-import { motion, useTransform, useMotionValueEvent, AnimatePresence, useMotionValue } from 'framer-motion';
+import React from 'react';
+import { Check, X, Star } from 'lucide-react';
 import diamondPattern from '../../assets/images/diamond_pattern.png';
 import goldPattern from '../../assets/images/gold_pattern.png';
 
@@ -106,64 +105,6 @@ const PremiumLaceBorder = ({ tier }) => {
 };
 
 export default function Pricing({ onSelectTier }) {
-  const containerRef = useRef(null);
-  const scrollProgress = useMotionValue(0);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const totalScrollable = rect.height - windowHeight;
-      if (totalScrollable <= 0) return;
-
-      const scrolled = -rect.top; // px scrolled into section
-      const progress = Math.min(Math.max(scrolled / totalScrollable, 0), 1);
-      scrollProgress.set(progress);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    handleScroll();
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [scrollProgress]);
-
-  useMotionValueEvent(scrollProgress, "change", (latest) => {
-    let index = 0;
-    if (latest < 0.33) {
-      index = 0;
-    } else if (latest < 0.66) {
-      index = 1;
-    } else {
-      index = 2;
-    }
-    if (index !== activeIndex) {
-      setActiveIndex(index);
-    }
-  });
-
-  const handleCardClick = (index, planName) => {
-    if (index !== activeIndex) {
-      if (containerRef.current) {
-        const element = containerRef.current;
-        const rect = element.getBoundingClientRect();
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const containerTop = rect.top + scrollTop;
-        const containerHeight = rect.height;
-        const targetProgress = index === 0 ? 0.15 : index === 1 ? 0.5 : 0.85;
-        const targetScroll = containerTop + targetProgress * (containerHeight - window.innerHeight);
-        window.scrollTo({
-          top: targetScroll,
-          behavior: 'smooth'
-        });
-      }
-    }
-  };
-
   const plans = [
     {
       name: 'Silver Tier',
@@ -173,12 +114,16 @@ export default function Pricing({ onSelectTier }) {
         { text: '10% Off All Vendors', included: true },
         { text: '2 Daily Delivery Slots', included: true },
         { text: 'No Lounge Access', included: false },
+        { text: 'Standard Customer Support', included: true },
+        { text: 'Everyday Delivery Partner Fees Appy', included: true },
       ],
       buttonText: 'Select Silver',
       featured: false,
       dark: false,
       isSilver: true,
-      cardGradient: 'from-slate-200 via-slate-100 to-white border-slate-300',
+      cardGradient: 'from-slate-200 via-slate-100 to-white border-slate-300 text-slate-800',
+      badgeClass: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+      accentColor: '#64748B'
     },
     {
       name: 'Gold Elite',
@@ -186,282 +131,186 @@ export default function Pricing({ onSelectTier }) {
       cardNumber: '5412 8841 2921 2045',
       features: [
         { text: '20% Off All Vendors', included: true },
-        { text: 'Priority Support', included: true },
+        { text: 'Priority Customer Support', included: true },
         { text: '5 Monthly Lounge Passes', included: true },
+        { text: 'Exclusive Invite Only Local Events', included: true },
+        { text: 'No Booking & Convenice Fees', included: true },
       ],
       buttonText: 'Select Gold',
       featured: true,
       dark: false,
       isSilver: false,
-      cardGradient: 'from-[#9c781a] via-[#e5c158] to-[#fffae6] border-yellow-300',
+      cardGradient: 'from-[#9c781a] via-[#e5c158] to-[#fffae6] border-yellow-300 text-slate-900',
+      badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-brand-gold-light',
+      accentColor: '#D4AF37'
     },
     {
       name: 'Diamond Prestige',
       price: '249',
       cardNumber: '3782 8841 2921 3099',
       features: [
-        { text: 'Unlimited VIP Access', included: true, vip: true },
-        { text: 'Dedicated Concierge', included: true, vip: true },
-        { text: 'Airport Limo Transfer', included: true, vip: true },
+        { text: 'Unlimited VIP Lounge Access', included: true, vip: true },
+        { text: 'Dedicated Lifestyle Concierge', included: true, vip: true },
+        { text: 'Airport Limo Transfer & Escort', included: true, vip: true },
+        { text: 'Waived Delivery Fees Everywhere', included: true },
+        { text: 'Complimentary Partner Offers', included: true },
       ],
       buttonText: 'Select Diamond',
       featured: false,
       dark: true,
       isSilver: false,
-      cardGradient: 'from-[#101726] via-[#090d16] to-[#020305] border-slate-800',
+      cardGradient: 'from-[#101726] via-[#090d16] to-[#020305] border-slate-800 text-white',
+      badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200',
+      accentColor: '#AA7C11'
     },
-  ];
-
-  const activePlan = plans[activeIndex];
-
-  // Motion Values for Card 0 (Silver)
-  // Silver is active in front initially, then slides straight up and exits on scroll
-  const x0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [0, 0, 0, 0]);
-  const y0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [0, 0, -450, -450]);
-  const z0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [0, 0, 100, 100]);
-  const scale0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [1, 1, 0.9, 0.9]);
-  const opacity0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [1, 1, 0, 0]);
-  const rotateX0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [15, 15, 20, 20]);
-  const rotateY0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [-25, -25, -20, -20]);
-  const rotateZ0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [5, 5, 0, 0]);
-
-  // Motion Values for Card 1 (Gold)
-  // Gold is visible stacked behind Silver initially, then moves to front active position, then slides straight up and exits.
-  const x1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [30, 30, 0, 0, 0, 0]);
-  const y1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-20, -20, 0, 0, -450, -450]);
-  const z1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-80, -80, 0, 0, 100, 100]);
-  const scale1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.93, 0.93, 1, 1, 0.9, 0.9]);
-  const opacity1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.85, 0.85, 1, 1, 0, 0]);
-  const rotateX1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [12, 12, 15, 15, 20, 20]);
-  const rotateY1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-23, -23, -25, -25, -20, -20]);
-  const rotateZ1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [4, 4, 5, 5, 0, 0]);
-
-  // Motion Values for Card 2 (Diamond)
-  // Diamond is visible stacked behind Gold initially, then moves to middle, then moves to front active position.
-  const x2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [60, 60, 30, 30, 0, 0]);
-  const y2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-40, -40, -20, -20, 0, 0]);
-  const z2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-160, -160, -80, -80, 0, 0]);
-  const scale2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.86, 0.86, 0.93, 0.93, 1, 1]);
-  const opacity2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.7, 0.7, 0.85, 0.85, 1, 1]);
-  const rotateX2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [10, 10, 12, 12, 15, 15]);
-  const rotateY2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-20, -20, -23, -23, -25, -25]);
-  const rotateZ2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [3, 3, 4, 4, 5, 5]);
-
-  const cardsTransforms = [
-    { x: x0, y: y0, z: z0, scale: scale0, opacity: opacity0, rotateX: rotateX0, rotateY: rotateY0, rotateZ: rotateZ0 },
-    { x: x1, y: y1, z: z1, scale: scale1, opacity: opacity1, rotateX: rotateX1, rotateY: rotateY1, rotateZ: rotateZ1 },
-    { x: x2, y: y2, z: z2, scale: scale2, opacity: opacity2, rotateX: rotateX2, rotateY: rotateY2, rotateZ: rotateZ2 }
   ];
 
   return (
     <section 
-      ref={containerRef} 
       id="pricing" 
-      className="relative h-[140vh] bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300"
+      className="py-20 bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300 relative overflow-hidden"
     >
-      {/* Sticky viewport frame wrapper */}
-      <div className="sticky top-0 h-screen w-full flex flex-col justify-center items-center overflow-hidden z-10">
+      {/* Background radial glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-slate-200/50 dark:bg-slate-900/10 rounded-full blur-[140px] pointer-events-none z-0" />
+
+      <div className="w-full px-6 md:px-16 lg:px-24 relative z-10 max-w-7xl mx-auto">
         
-        {/* Background radial glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-slate-200/50 dark:bg-slate-900/10 rounded-full blur-[140px] pointer-events-none z-0" />
+        {/* Section Header */}
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <span className="text-xs font-bold text-brand-gold uppercase tracking-widest">Pricing Tiers</span>
+          <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight text-slate-900 dark:text-white mt-2">
+            Choose Your Prestige
+          </h2>
+          <p className="mt-4 text-slate-500 dark:text-slate-400 text-sm md:text-base leading-relaxed">
+            Select the membership tier that fits your lifestyle. Get priority booking, heavy discounts, and luxury perks.
+          </p>
+        </div>
 
-        <div className="w-full px-6 md:px-16 lg:px-24 relative z-10 flex flex-col h-full max-h-[85vh] justify-between py-6">
-          
-          {/* Section Header */}
-          <div className="text-center max-w-2xl mx-auto mb-4 md:mb-8 shrink-0">
-            <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight text-slate-900 dark:text-white">
-              Choose Your Prestige
-            </h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Scroll down to explore tiers and details.
-            </p>
-          </div>
+        {/* Side-by-Side Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch justify-center max-w-6xl mx-auto">
+          {plans.map((plan, i) => (
+            <div 
+              key={plan.name}
+              className={`flex flex-col rounded-3xl border border-slate-200/55 dark:border-slate-800/60 shadow-xl overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl flex-grow ${
+                plan.featured ? 'ring-2 ring-amber-400 dark:ring-amber-500 shadow-amber-400/10' : ''
+              }`}
+            >
+              {/* Card visual mockup at the top */}
+              <div 
+                className="relative aspect-[1.586/1] w-full p-4 flex flex-col justify-between shadow-inner select-none overflow-hidden"
+              >
+                {/* Background Card Color/Pattern */}
+                <div className={`absolute inset-0 bg-gradient-to-tr ${plan.cardGradient} z-0`} />
+                {plan.name === 'Diamond Prestige' && (
+                  <div 
+                    className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 rounded-2xl pointer-events-none z-0"
+                    style={{ backgroundImage: `url(${diamondPattern})` }}
+                  />
+                )}
+                {plan.name === 'Gold Elite' && (
+                  <div 
+                    className="absolute inset-0 w-full h-full bg-cover bg-center opacity-[0.38] rounded-2xl pointer-events-none z-0 mix-blend-overlay"
+                    style={{ backgroundImage: `url(${goldPattern})` }}
+                  />
+                )}
+                {/* Premium Lace Border */}
+                <PremiumLaceBorder tier={plan.name} />
 
-          {/* Interactive Split Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center justify-center flex-grow">
-            
-            {/* Left: Dynamic details container */}
-            <div className="lg:col-span-5 order-2 lg:order-1 flex flex-col justify-center w-full max-w-md mx-auto">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeIndex}
-                  initial={{ opacity: 0, x: -25 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 25 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-800/50 p-5 md:p-6 shadow-xl flex flex-col z-10"
-                >
+                {/* Left EMV Chip */}
+                <div className="absolute left-[12%] bottom-[18%] z-10">
+                  <GoldChip />
+                </div>
+
+                {/* Contactless symbol */}
+                <div className="absolute right-5 top-4 z-10 flex items-center space-x-1.5">
+                  <span className={`text-[8px] font-bold tracking-wider opacity-80 uppercase ${
+                    plan.isSilver ? 'text-slate-500' : 'text-[#d4af37]'
+                  }`}>
+                    {plan.name.split(' ')[0]}
+                  </span>
+                  <span className="text-[9px] text-slate-400 opacity-60">📶</span>
+                </div>
+
+                {/* Large Center 3D Logo */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
+                  <svg className="w-12 h-8 filter drop-shadow-[0_1.5px_4px_rgba(0,0,0,0.6)]" viewBox="0 0 100 70" fill={`url(#pricingDiamondGrid-${plan.name})`} xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="50,5 90,26 50,65 10,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
+                    <polygon points="50,5 70,26 50,65 30,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
+                    <line x1="10" y1="26" x2="90" y2="26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
+                    <line x1="30" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
+                    <line x1="70" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
+                    <defs>
+                      <linearGradient id={`pricingDiamondGrid-${plan.name}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={plan.isSilver ? "#FFFFFF" : "#FFF9E6"} />
+                        <stop offset="40%" stopColor={plan.isSilver ? "#CBD5E1" : "#F5D061"} />
+                        <stop offset="100%" stopColor={plan.isSilver ? "#64748B" : "#805B07"} />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <span className={`text-[11px] font-extrabold tracking-[0.25em] mt-1.5 uppercase font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${
+                    plan.isSilver 
+                      ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-350 to-slate-500'
+                      : 'text-transparent bg-clip-text bg-gradient-to-r from-[#FFF9E6] via-[#D4AF37] to-[#805B07]'
+                  }`}>
+                    CONNECT
+                  </span>
+                </div>
+              </div>
+
+              {/* Card Details Pane */}
+              <div className="p-6 flex flex-col flex-grow justify-between text-left relative z-10">
+                <div>
                   {/* Badge & Price */}
-                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      activeIndex === 0 
-                        ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-350'
-                        : activeIndex === 1
-                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-brand-gold-light'
-                        : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200'
-                    }`}>
-                      {activePlan.name}
+                  <div className="flex items-center justify-between mb-5 pb-5 border-b border-slate-100 dark:border-slate-800/80">
+                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${plan.badgeClass}`}>
+                      {plan.name}
                     </span>
                     <div className="flex items-baseline">
-                      <span className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white">
-                        ${activePlan.price}
+                      <span className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
+                        ${plan.price}
                       </span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">/mo</span>
                     </div>
                   </div>
 
                   {/* Plan Features */}
-                  <h3 className="text-sm font-bold tracking-wider text-slate-400 dark:text-slate-450 uppercase mb-3 select-none">
+                  <h3 className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase mb-4 select-none">
                     Membership Benefits
                   </h3>
-                  <ul className="space-y-2.5 mb-5">
-                    {activePlan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start space-x-2.5 text-xs">
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-650 dark:text-slate-300">
                         {feature.vip ? (
                           <Star className="w-4 h-4 text-brand-gold fill-brand-gold shrink-0 mt-0.5" />
                         ) : feature.included ? (
                           <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                         ) : (
-                          <X className="w-4 h-4 text-slate-350 dark:text-slate-605 shrink-0 mt-0.5" />
+                          <X className="w-4 h-4 text-slate-350 dark:text-slate-600 shrink-0 mt-0.5" />
                         )}
-                        <span className={!feature.included ? 'text-slate-400 dark:text-slate-655 line-through' : 'text-slate-600 dark:text-slate-300'}>
+                        <span className={!feature.included ? 'text-slate-405 dark:text-slate-500 line-through' : ''}>
                           {feature.text}
                         </span>
                       </li>
                     ))}
                   </ul>
+                </div>
 
-                  {/* CTA button */}
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onSelectTier) onSelectTier(activePlan.name);
-                    }}
-                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold tracking-wide transition-all shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer ${
-                      activeIndex === 1
-                        ? 'bg-gradient-gold text-slate-900 hover:brightness-105'
-                        : activeIndex === 2
-                        ? 'bg-white text-slate-900 hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
-                        : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600'
-                    }`}
-                  >
-                    {activePlan.buttonText}
-                  </button>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Right: 3D Stack container */}
-            <div className="lg:col-span-7 order-1 lg:order-2 flex items-center justify-center w-full max-w-md lg:max-w-lg mx-auto py-4 lg:py-0">
-              <div 
-                className="relative w-full aspect-[1.586/1] max-w-[360px] md:max-w-[400px] h-[220px] md:h-[250px] mx-auto flex items-center justify-center scale-90 sm:scale-95 md:scale-100 origin-center"
-                style={{
-                  perspective: '1200px',
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                {plans.map((plan, i) => {
-                  const isActive = i === activeIndex;
-                  const t = cardsTransforms[i];
-
-                  return (
-                    <motion.div
-                      key={plan.name}
-                      style={{
-                        x: t.x,
-                        y: t.y,
-                        z: t.z,
-                        scale: t.scale,
-                        opacity: t.opacity,
-                        rotateX: t.rotateX,
-                        rotateY: t.rotateY,
-                        rotateZ: t.rotateZ,
-                        transformStyle: 'preserve-3d',
-                        zIndex: 10 - i
-                      }}
-                      onClick={() => handleCardClick(i, plan.name)}
-                      className="absolute w-full h-full cursor-pointer pointer-events-auto"
-                      transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                    >
-                      <div className="relative w-full h-full select-none">
-                        {/* ==================== FRONT OF CARD ==================== */}
-                        <div
-                          className={`absolute inset-0 w-full h-full rounded-2xl border p-5 flex flex-col justify-between shadow-lg hover:shadow-xl transition-shadow duration-350 bg-gradient-to-tr ${
-                            plan.cardGradient
-                          }`}
-                        >
-                          {plan.name === 'Diamond Prestige' && (
-                            <div 
-                              className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 rounded-2xl pointer-events-none z-0"
-                              style={{ backgroundImage: `url(${diamondPattern})` }}
-                            />
-                          )}
-                          {plan.name === 'Gold Elite' && (
-                            <div 
-                              className="absolute inset-0 w-full h-full bg-cover bg-center opacity-[0.38] rounded-2xl pointer-events-none z-0 mix-blend-overlay"
-                              style={{ backgroundImage: `url(${goldPattern})` }}
-                            />
-                          )}
-                          {/* Premium Lace Border */}
-                          <PremiumLaceBorder tier={plan.name} />
-                          
-                          {/* Left EMV Chip */}
-                          <div className="absolute left-[15%] bottom-[20%] z-20">
-                            <GoldChip />
-                          </div>
-
-                          {/* Contactless symbol */}
-                          <div className="absolute right-6 top-5 z-20 flex items-center space-x-1.5">
-                            <span className={`text-[8px] font-bold tracking-wider opacity-85 uppercase ${
-                              plan.isSilver ? 'text-slate-400' : 'text-[#d4af37]'
-                            }`}>
-                              {plan.name.split(' ')[0]}
-                            </span>
-                            <span className="text-[10px] text-slate-400 opacity-60">📶</span>
-                          </div>
-
-
-
-                          {/* Large Center 3D Logo */}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
-                            <svg className="w-14 h-10 filter drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]" viewBox="0 0 100 70" fill={`url(#${plan.isSilver ? 'silverPricingDiamondGradCent' : 'goldPricingDiamondGradCent'})`} xmlns="http://www.w3.org/2000/svg">
-                              <polygon points="50,5 90,26 50,65 10,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
-                              <polygon points="50,5 70,26 50,65 30,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
-                              <line x1="10" y1="26" x2="90" y2="26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
-                              <line x1="30" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
-                              <line x1="70" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
-                              <defs>
-                                <linearGradient id="goldPricingDiamondGradCent" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#FFF9E6" />
-                                  <stop offset="30%" stopColor="#F5D061" />
-                                  <stop offset="70%" stopColor="#D4AF37" />
-                                  <stop offset="100%" stopColor="#805B07" />
-                                </linearGradient>
-                                <linearGradient id="silverPricingDiamondGradCent" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#FFFFFF" />
-                                  <stop offset="40%" stopColor="#CBD5E1" />
-                                  <stop offset="100%" stopColor="#64748B" />
-                                </linearGradient>
-                              </defs>
-                            </svg>
-                            <span className={`text-[13px] md:text-[15px] font-extrabold tracking-[0.3em] mt-2 uppercase font-sans drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.8)] ${
-                              plan.isSilver 
-                                ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-300 to-slate-500'
-                                : 'text-transparent bg-clip-text bg-gradient-to-r from-[#FFF9E6] via-[#D4AF37] to-[#805B07]'
-                            }`}>
-                              CONNECT
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                {/* CTA button */}
+                <button 
+                  onClick={() => onSelectTier(plan.name)}
+                  className={`w-full py-3 px-4 rounded-xl text-xs font-bold tracking-wide transition-all shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer mt-auto text-center ${
+                    plan.featured
+                      ? 'bg-gradient-gold text-slate-900 hover:brightness-105'
+                      : plan.dark
+                      ? 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100'
+                      : 'bg-slate-105 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {plan.buttonText}
+                </button>
               </div>
             </div>
-
-          </div>
-
+          ))}
         </div>
 
       </div>
