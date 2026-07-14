@@ -163,16 +163,8 @@ export default function Ecosystem({ onCardClick }) {
                           boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
                         }}
                       >
-                        {/* Big Index */}
-                        <div
-                          className="text-2xl md:text-3xl font-extrabold font-mono opacity-80 tracking-tight"
-                          style={{ color: pillar.accent }}
-                        >
-                          {String(idx + 1).padStart(2, '0')}
-                        </div>
-
                         {/* Title & Description */}
-                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight mt-1.5">
+                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight">
                           {pillar.title}
                         </h3>
                         <p className="mt-2.5 text-slate-300 text-xs leading-relaxed">
@@ -237,16 +229,8 @@ export default function Ecosystem({ onCardClick }) {
                           boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
                         }}
                       >
-                        {/* Big Index */}
-                        <div
-                          className="text-2xl md:text-3xl font-extrabold font-mono opacity-80 tracking-tight"
-                          style={{ color: pillar.accent }}
-                        >
-                          {String(idx + 1).padStart(2, '0')}
-                        </div>
-
                         {/* Title & Description */}
-                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight mt-1.5">
+                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight">
                           {pillar.title}
                         </h3>
                         <p className="mt-2.5 text-slate-300 text-xs leading-relaxed">
