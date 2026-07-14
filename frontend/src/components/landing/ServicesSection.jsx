@@ -46,7 +46,7 @@ export default function ServicesSection({ onCategoryClick }) {
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-[#dbeafe] via-[#f0f7ff] to-[#dbeafe]/60 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative overflow-hidden transition-colors duration-300">
+    <section className="pt-8 pb-24 bg-gradient-to-b from-[#dbeafe] via-[#f0f7ff] to-[#dbeafe]/60 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 relative overflow-hidden transition-colors duration-300">
       {/* Background abstract radial glows */}
       <div className="absolute top-[30%] right-[5%] w-[600px] h-[600px] bg-blue-300/40 dark:bg-blue-900/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[10%] left-[5%] w-[600px] h-[600px] bg-brand-gold/10 dark:bg-brand-gold/5 rounded-full blur-[120px] pointer-events-none" />
