@@ -296,6 +296,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Product Detail Modal State
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const mainScrollRef = useRef(null);
 
   useEffect(() => {
     setSelectedProduct(null);
@@ -308,9 +309,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   useEffect(() => {
     setActiveProductImage(null);
     setActiveThumbnailIndex(0);
-    const mainEl = document.querySelector('main');
-    if (mainEl) {
-      mainEl.scrollTop = 0;
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
     }
   }, [selectedProduct]);
 
@@ -4726,7 +4726,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       {renderSubNavbar()}
 
       {/* -------------------- MAIN SCROLLABLE WRAPPER -------------------- */}
-      <main className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto no-scrollbar w-full">
+      <main ref={mainScrollRef} className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto no-scrollbar w-full">
         {selectedProduct ? (
           renderProductDetailsPage()
         ) : isMarketplaceView ? (
