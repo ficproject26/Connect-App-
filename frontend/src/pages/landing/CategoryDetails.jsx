@@ -30,6 +30,21 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('default');
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchDbCategories = async () => {
+      try {
+        const res = await fetch('http://localhost:5001/api/admin/categories');
+        if (res.ok) {
+          setDbCategories(await res.json());
+        }
+      } catch (err) {
+        console.warn("Failed to fetch dynamic categories in customer app", err);
+      }
+    };
+    fetchDbCategories();
+  }, []);
 
   // Geolocation States
   const [userLocation, setUserLocation] = useState(null);
@@ -278,7 +293,24 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
     }
 
     // Otherwise, group vendor products into subcategories dynamically
+    const dbSubcats = dbCategories
+      .filter(c => {
+        let main = c.name;
+        if (main === 'Restaurants') main = 'Food';
+        if (main === 'Hotels') main = 'Stay';
+        if (main === 'Stores') main = 'Products';
+        return main.toLowerCase() === category.toLowerCase();
+      })
+      .map(c => c.subcategory)
+      .filter(Boolean);
+
     const grouped = {};
+    dbSubcats.forEach(sub => {
+      if (!grouped[sub]) {
+        grouped[sub] = [];
+      }
+    });
+
     matchingProducts.forEach(p => {
       const subcat = p.category || 'General';
       if (!grouped[subcat]) {
@@ -289,10 +321,12 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
       }
     });
 
-    const newSubCategories = Object.keys(grouped).map(subcat => ({
-      title: subcat,
-      items: grouped[subcat]
-    }));
+    const newSubCategories = Object.keys(grouped)
+      .map(subcat => ({
+        title: subcat,
+        items: grouped[subcat]
+      }))
+      .filter(sub => sub.items.length > 0 || dbSubcats.includes(sub.title));
 
     // Build partner list ONLY from vendorProducts
     const mergedPartners = [];

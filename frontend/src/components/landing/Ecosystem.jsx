@@ -287,7 +287,7 @@ export default function Ecosystem({ onCardClick }) {
                     <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
                       {activePillar.title}
                     </h3>
-                    <p className="mt-3 text-slate-350 text-xs sm:text-sm leading-relaxed max-w-sm">
+                    <p className="mt-3 text-slate-300 text-xs sm:text-sm leading-relaxed max-w-sm">
                       {activePillar.desc}
                     </p>
                   </div>

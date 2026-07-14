@@ -479,7 +479,7 @@ export default function HowItWorks() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         className={`transition-colors duration-300 ${
-                          isArrowActive ? "" : "text-slate-350 dark:text-slate-700"
+                          isArrowActive ? "" : "text-slate-400 dark:text-slate-700"
                         }`}
                         style={isArrowActive ? {
                           filter: 'drop-shadow(0 0 3px rgba(212, 175, 55, 0.6))'
@@ -625,7 +625,7 @@ export default function HowItWorks() {
                             ? `${stepStyles[idx].badgeActiveCls} scale-115 shadow-xl ring-4`
                             : isCompleted
                             ? 'bg-brand-gold/20 text-brand-gold-light border-brand-gold/45 scale-100 shadow-md'
-                            : 'bg-slate-800 text-slate-550 border-slate-700 scale-95'
+                            : 'bg-slate-800 text-slate-400 border-slate-700 scale-95'
                         }`}
                       >
                         {step.number}
@@ -652,7 +652,7 @@ export default function HowItWorks() {
                             ? `${stepStyles[idx].badgeActiveCls} scale-115 shadow-xl ring-4`
                             : isCompleted
                             ? 'bg-brand-gold/20 text-brand-gold-light border-brand-gold/45 scale-100 shadow-md'
-                            : 'bg-slate-800 text-slate-555 border-slate-700 scale-95'
+                            : 'bg-slate-800 text-slate-400 border-slate-700 scale-95'
                         }`}
                       >
                         {step.number}
@@ -663,7 +663,7 @@ export default function HowItWorks() {
                         isCurrent
                           ? stepStyles[idx].cardActiveCls
                           : isCompleted
-                          ? 'bg-slate-900 border-slate-805 opacity-90 scale-100 shadow-sm'
+                          ? 'bg-slate-900 border-slate-800 opacity-90 scale-100 shadow-sm'
                           : 'bg-slate-900/20 border-slate-800/40 opacity-40 scale-[0.97] shadow-none pointer-events-none'
                       }`}>
                         {/* Icon */}
@@ -720,7 +720,7 @@ export default function HowItWorks() {
                         ? `${stepStyles[idx].badgeActiveCls} scale-110 shadow-lg ring-2`
                         : isCompleted
                         ? 'bg-brand-gold/20 text-brand-gold-light border-brand-gold/45 scale-100 shadow-sm'
-                        : 'bg-slate-800 text-slate-550 border-slate-700 scale-95'
+                        : 'bg-slate-800 text-slate-400 border-slate-700 scale-95'
                     }`}
                   >
                     {step.number}
@@ -731,7 +731,7 @@ export default function HowItWorks() {
                     isCurrent
                       ? stepStyles[idx].cardActiveCls
                       : isCompleted
-                      ? 'bg-slate-900 border-slate-805 opacity-90 scale-100 shadow-sm'
+                      ? 'bg-slate-900 border-slate-800 opacity-90 scale-100 shadow-sm'
                       : 'bg-slate-900/20 border-slate-800/40 opacity-40 scale-[0.97] shadow-none pointer-events-none'
                   }`}>
                     {/* Icon */}

@@ -67,7 +67,7 @@ export default function Hero({ onJoinClick }) {
         {/* Centered Main Heading */}
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white leading-tight font-sans max-w-5xl">
           Everything Connected.
-          <span className="block text-gradient-gold mt-2 min-h-[1.2em] text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl lg:whitespace-nowrap">
+          <span translate="no" className="notranslate block text-gradient-gold mt-2 min-h-[1.2em] text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl lg:whitespace-nowrap">
             {typedText}
             <span className="inline-block w-[3px] h-[0.85em] bg-brand-gold ml-1 animate-pulse" style={{ verticalAlign: 'middle' }} />
           </span>
@@ -99,7 +99,7 @@ export default function Hero({ onJoinClick }) {
             }}
             className="inline-flex items-center space-x-2.5 text-xs md:text-sm font-bold text-slate-300 hover:text-brand-gold transition-colors cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-slate-350 group-hover:border-[#FFC107] group-hover:text-[#FFC107] transition-all">
+            <div className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-slate-400 group-hover:border-[#FFC107] group-hover:text-[#FFC107] transition-all">
               <svg className="w-3.5 h-3.5 fill-current ml-0.5" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
