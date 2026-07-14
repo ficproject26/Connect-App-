@@ -72,114 +72,38 @@ const pillars = [
 export default function Ecosystem({ onCardClick }) {
   const containerRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(1); // 1 to pillars.length
-  const visibleCountRef = useRef(1);
 
   useEffect(() => {
-    visibleCountRef.current = visibleCount;
-  }, [visibleCount]);
-
-  useEffect(() => {
-    let lastTouchY = 0;
-    let isTransitioning = false;
-
-    const handleWheel = (e) => {
+    const handleScroll = () => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
+      const totalScrollable = rect.height - windowHeight;
+      if (totalScrollable <= 0) return;
 
-      // Check if the sticky container is at the top of the viewport
-      // rect.top is the top of the parent section. If it is <= 5 and rect.bottom >= windowHeight - 5,
-      // the sticky child is currently locked in the viewport.
-      const isStickyActive = rect.top <= 5 && rect.bottom >= windowHeight - 5;
+      const currentScroll = -rect.top;
+      const progress = Math.min(Math.max(currentScroll / totalScrollable, 0), 1);
 
-      if (isStickyActive) {
-        const delta = e.deltaY;
-        const current = visibleCountRef.current;
-
-        // Scroll down: Go to next card
-        if (delta > 0 && current < pillars.length) {
-          e.preventDefault();
-          if (!isTransitioning) {
-            isTransitioning = true;
-            setVisibleCount(current + 1);
-            setTimeout(() => { isTransitioning = false; }, 300);
-          }
-          return;
-        }
-
-        // Scroll up: Go to previous card
-        if (delta < 0 && current > 1) {
-          e.preventDefault();
-          if (!isTransitioning) {
-            isTransitioning = true;
-            setVisibleCount(current - 1);
-            setTimeout(() => { isTransitioning = false; }, 300);
-          }
-          return;
-        }
+      // Divide scroll progress [0, 1] into pillars.length equal zones
+      const zoneSize = 1 / pillars.length;
+      let activeIndex = Math.floor(progress / zoneSize);
+      if (activeIndex >= pillars.length) {
+        activeIndex = pillars.length - 1;
       }
+      setVisibleCount(activeIndex + 1);
     };
 
-    const handleTouchStart = (e) => {
-      if (e.touches.length === 1) {
-        lastTouchY = e.touches[0].clientY;
-      }
-    };
-
-    const handleTouchMove = (e) => {
-      if (!containerRef.current || e.touches.length !== 1) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const isStickyActive = rect.top <= 5 && rect.bottom >= windowHeight - 5;
-
-      if (isStickyActive) {
-        const currentY = e.touches[0].clientY;
-        const deltaY = lastTouchY - currentY; // positive: swipe up (scroll down)
-        const current = visibleCountRef.current;
-
-        // Swipe up (scroll down): Go to next card
-        if (deltaY > 30 && current < pillars.length) {
-          e.preventDefault();
-          if (!isTransitioning) {
-            isTransitioning = true;
-            setVisibleCount(current + 1);
-            lastTouchY = currentY;
-            setTimeout(() => { isTransitioning = false; }, 300);
-          }
-          return;
-        }
-
-        // Swipe down (scroll up): Go to previous card
-        if (deltaY < -30 && current > 1) {
-          e.preventDefault();
-          if (!isTransitioning) {
-            isTransitioning = true;
-            setVisibleCount(current - 1);
-            lastTouchY = currentY;
-            setTimeout(() => { isTransitioning = false; }, 300);
-          }
-          return;
-        }
-
-        // If swipe gesture is active and not at edges, prevent default page scrolling
-        if ((deltaY > 0 && current < pillars.length) || (deltaY < 0 && current > 1)) {
-          e.preventDefault();
-        }
-      }
-    };
-
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    handleScroll();
 
     return () => {
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
     };
   }, []);
 
-  const latestIdx = visibleCount - 1; // -1 at step 0 (welcome)
+  const latestIdx = visibleCount - 1;
   const activePillar = latestIdx >= 0 ? pillars[latestIdx] : null;
 
   return (
@@ -187,7 +111,7 @@ export default function Ecosystem({ onCardClick }) {
       ref={containerRef}
       id="services"
       className="relative bg-[#020b18]"
-      style={{ height: '100vh' }}
+      style={{ height: '350vh' }}
     >
       {/* ── STICKY FRAME ── */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between">
