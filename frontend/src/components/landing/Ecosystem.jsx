@@ -83,7 +83,7 @@ export default function Ecosystem({ onCardClick }) {
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-[#020b18] py-20 md:py-32 overflow-hidden"
+      className="relative bg-[#020b18] py-12 md:py-20 overflow-hidden"
     >
       {/* ── GLOBE BACKGROUND ── */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-20">
@@ -104,7 +104,7 @@ export default function Ecosystem({ onCardClick }) {
       <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-12">
         
         {/* Header */}
-        <div className="w-full text-center max-w-2xl mx-auto mb-16 md:mb-28 flex flex-col items-center">
+        <div className="w-full text-center max-w-2xl mx-auto mb-10 md:mb-16 flex flex-col items-center">
           <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-amber-400/90">
             One Membership · Seven Pillars
           </span>
@@ -125,7 +125,7 @@ export default function Ecosystem({ onCardClick }) {
           <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-amber-500 via-sky-500 to-violet-500 z-0 opacity-30" />
 
           {/* Pillars List */}
-          <div className="space-y-16 md:space-y-28">
+          <div className="space-y-12 md:space-y-18">
             {pillars.map((pillar, idx) => {
               const isEven = idx % 2 === 1;
               
@@ -154,10 +154,10 @@ export default function Ecosystem({ onCardClick }) {
                       viewport={{ once: true, margin: "-100px" }}
                       transition={{ type: "spring", stiffness: 100, damping: 15 }}
                       onClick={() => onCardClick(pillar.title)}
-                      className="w-full max-w-md md:ml-auto cursor-pointer text-left"
+                      className="w-full max-w-xs md:max-w-sm md:ml-auto cursor-pointer text-left"
                     >
                       <div
-                        className="w-full p-6 md:p-8 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+                        className="w-full p-5 md:p-6 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
                         style={{
                           borderColor: `${pillar.accent}20`,
                           boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
@@ -165,23 +165,23 @@ export default function Ecosystem({ onCardClick }) {
                       >
                         {/* Big Index */}
                         <div
-                          className="text-3xl md:text-4xl font-extrabold font-mono opacity-80 tracking-tight"
+                          className="text-2xl md:text-3xl font-extrabold font-mono opacity-80 tracking-tight"
                           style={{ color: pillar.accent }}
                         >
                           {String(idx + 1).padStart(2, '0')}
                         </div>
 
                         {/* Title & Description */}
-                        <h3 className="text-xl md:text-2xl font-black text-white tracking-tight mt-2">
+                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight mt-1.5">
                           {pillar.title}
                         </h3>
-                        <p className="mt-3 text-slate-300 text-xs md:text-sm leading-relaxed">
+                        <p className="mt-2.5 text-slate-300 text-xs leading-relaxed">
                           {pillar.desc}
                         </p>
 
                         {/* Category Tags */}
                         {pillar.categories && (
-                          <div className="flex flex-wrap gap-1.5 mt-5">
+                          <div className="flex flex-wrap gap-1.5 mt-4">
                             {pillar.categories.map((cat, cIdx) => (
                               <span
                                 key={cIdx}
@@ -199,7 +199,7 @@ export default function Ecosystem({ onCardClick }) {
                         )}
 
                         {/* Footer Divider & Action */}
-                        <div className="w-full flex items-center justify-between pt-5 border-t border-white/5 mt-6">
+                        <div className="w-full flex items-center justify-between pt-4 border-t border-white/5 mt-5">
                           <span
                             className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
                             style={{ backgroundColor: `${pillar.accent}15`, color: pillar.accent }}
@@ -228,10 +228,10 @@ export default function Ecosystem({ onCardClick }) {
                       viewport={{ once: true, margin: "-100px" }}
                       transition={{ type: "spring", stiffness: 100, damping: 15 }}
                       onClick={() => onCardClick(pillar.title)}
-                      className="w-full max-w-md md:mr-auto cursor-pointer text-left"
+                      className="w-full max-w-xs md:max-w-sm md:mr-auto cursor-pointer text-left"
                     >
                       <div
-                        className="w-full p-6 md:p-8 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+                        className="w-full p-5 md:p-6 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
                         style={{
                           borderColor: `${pillar.accent}20`,
                           boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
@@ -239,23 +239,23 @@ export default function Ecosystem({ onCardClick }) {
                       >
                         {/* Big Index */}
                         <div
-                          className="text-3xl md:text-4xl font-extrabold font-mono opacity-80 tracking-tight"
+                          className="text-2xl md:text-3xl font-extrabold font-mono opacity-80 tracking-tight"
                           style={{ color: pillar.accent }}
                         >
                           {String(idx + 1).padStart(2, '0')}
                         </div>
 
                         {/* Title & Description */}
-                        <h3 className="text-xl md:text-2xl font-black text-white tracking-tight mt-2">
+                        <h3 className="text-lg md:text-xl font-black text-white tracking-tight mt-1.5">
                           {pillar.title}
                         </h3>
-                        <p className="mt-3 text-slate-300 text-xs md:text-sm leading-relaxed">
+                        <p className="mt-2.5 text-slate-300 text-xs leading-relaxed">
                           {pillar.desc}
                         </p>
 
                         {/* Category Tags */}
                         {pillar.categories && (
-                          <div className="flex flex-wrap gap-1.5 mt-5">
+                          <div className="flex flex-wrap gap-1.5 mt-4">
                             {pillar.categories.map((cat, cIdx) => (
                               <span
                                 key={cIdx}
@@ -273,7 +273,7 @@ export default function Ecosystem({ onCardClick }) {
                         )}
 
                         {/* Footer Divider & Action */}
-                        <div className="w-full flex items-center justify-between pt-5 border-t border-white/5 mt-6">
+                        <div className="w-full flex items-center justify-between pt-4 border-t border-white/5 mt-5">
                           <span
                             className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
                             style={{ backgroundColor: `${pillar.accent}15`, color: pillar.accent }}
