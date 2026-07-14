@@ -132,7 +132,7 @@ export default function Ecosystem({ onCardClick }) {
               return (
                 <div
                   key={pillar.id}
-                  className="relative flex flex-col md:grid md:grid-cols-2 gap-8 md:gap-x-20 lg:gap-x-28 items-center pl-16 md:pl-0 pr-0 w-full group"
+                  className="relative flex flex-col md:grid md:grid-cols-2 gap-8 md:gap-x-32 lg:gap-x-48 items-center pl-16 md:pl-0 pr-0 w-full group"
                 >
                   {/* Timeline Glowing Node */}
                   <div
@@ -154,7 +154,7 @@ export default function Ecosystem({ onCardClick }) {
                       viewport={{ once: true, margin: "-100px" }}
                       transition={{ type: "spring", stiffness: 100, damping: 15 }}
                       onClick={() => onCardClick(pillar.title)}
-                      className="w-full max-w-xs md:max-w-sm md:ml-auto md:mr-6 lg:mr-10 cursor-pointer text-left"
+                      className="w-full max-w-xs md:max-w-sm md:ml-auto md:mr-12 lg:mr-20 cursor-pointer text-left"
                     >
                       <div
                         className="w-full p-5 md:p-6 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
@@ -228,7 +228,7 @@ export default function Ecosystem({ onCardClick }) {
                       viewport={{ once: true, margin: "-100px" }}
                       transition={{ type: "spring", stiffness: 100, damping: 15 }}
                       onClick={() => onCardClick(pillar.title)}
-                      className="w-full max-w-xs md:max-w-sm md:mr-auto md:ml-6 lg:ml-10 cursor-pointer text-left"
+                      className="w-full max-w-xs md:max-w-sm md:mr-auto md:ml-12 lg:ml-20 cursor-pointer text-left"
                     >
                       <div
                         className="w-full p-5 md:p-6 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
