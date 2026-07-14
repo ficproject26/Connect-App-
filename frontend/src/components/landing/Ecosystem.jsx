@@ -71,33 +71,111 @@ const pillars = [
 
 export default function Ecosystem({ onCardClick }) {
   const containerRef = useRef(null);
-  const [visibleCount, setVisibleCount] = useState(0); // 0 (welcome), 1 to pillars.length
+  const [visibleCount, setVisibleCount] = useState(1); // 1 to pillars.length
+  const visibleCountRef = useRef(1);
 
   useEffect(() => {
-    const handleScroll = () => {
+    visibleCountRef.current = visibleCount;
+  }, [visibleCount]);
+
+  useEffect(() => {
+    let lastTouchY = 0;
+    let isTransitioning = false;
+
+    const handleWheel = (e) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
 
-      // Section starts when top hits viewport top
-      const totalScrollable = rect.height - windowHeight;
-      if (totalScrollable <= 0) return;
+      // Check if the sticky container is at the top of the viewport
+      // rect.top is the top of the parent section. If it is <= 5 and rect.bottom >= windowHeight - 5,
+      // the sticky child is currently locked in the viewport.
+      const isStickyActive = rect.top <= 5 && rect.bottom >= windowHeight - 5;
 
-      const scrolled = -rect.top; // px scrolled into section
-      const progress = Math.min(Math.max(scrolled / totalScrollable, 0), 1);
+      if (isStickyActive) {
+        const delta = e.deltaY;
+        const current = visibleCountRef.current;
 
-      // Divide the scroll space into pillars.length segments:
-      // Step 1..7: Render pillars 1 to 7 one by one in center
-      const currentStep = Math.floor(progress * pillars.length);
-      setVisibleCount(Math.min(currentStep + 1, pillars.length));
+        // Scroll down: Go to next card
+        if (delta > 0 && current < pillars.length) {
+          e.preventDefault();
+          if (!isTransitioning) {
+            isTransitioning = true;
+            setVisibleCount(current + 1);
+            setTimeout(() => { isTransitioning = false; }, 300);
+          }
+          return;
+        }
+
+        // Scroll up: Go to previous card
+        if (delta < 0 && current > 1) {
+          e.preventDefault();
+          if (!isTransitioning) {
+            isTransitioning = true;
+            setVisibleCount(current - 1);
+            setTimeout(() => { isTransitioning = false; }, 300);
+          }
+          return;
+        }
+      }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    handleScroll();
+    const handleTouchStart = (e) => {
+      if (e.touches.length === 1) {
+        lastTouchY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (!containerRef.current || e.touches.length !== 1) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const isStickyActive = rect.top <= 5 && rect.bottom >= windowHeight - 5;
+
+      if (isStickyActive) {
+        const currentY = e.touches[0].clientY;
+        const deltaY = lastTouchY - currentY; // positive: swipe up (scroll down)
+        const current = visibleCountRef.current;
+
+        // Swipe up (scroll down): Go to next card
+        if (deltaY > 30 && current < pillars.length) {
+          e.preventDefault();
+          if (!isTransitioning) {
+            isTransitioning = true;
+            setVisibleCount(current + 1);
+            lastTouchY = currentY;
+            setTimeout(() => { isTransitioning = false; }, 300);
+          }
+          return;
+        }
+
+        // Swipe down (scroll up): Go to previous card
+        if (deltaY < -30 && current > 1) {
+          e.preventDefault();
+          if (!isTransitioning) {
+            isTransitioning = true;
+            setVisibleCount(current - 1);
+            lastTouchY = currentY;
+            setTimeout(() => { isTransitioning = false; }, 300);
+          }
+          return;
+        }
+
+        // If swipe gesture is active and not at edges, prevent default page scrolling
+        if ((deltaY > 0 && current < pillars.length) || (deltaY < 0 && current > 1)) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
     };
   }, []);
 
