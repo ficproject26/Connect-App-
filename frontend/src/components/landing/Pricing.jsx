@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Check, X, Star, RefreshCw } from 'lucide-react';
-import { motion, useScroll, useTransform, useMotionValueEvent, AnimatePresence } from 'framer-motion';
+import { motion, useTransform, useMotionValueEvent, AnimatePresence, useMotionValue } from 'framer-motion';
 import diamondPattern from '../../assets/images/diamond_pattern.png';
 import goldPattern from '../../assets/images/gold_pattern.png';
 
@@ -107,16 +107,32 @@ const PremiumLaceBorder = ({ tier }) => {
 
 export default function Pricing({ onSelectTier }) {
   const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"],
-  });
-
-
-
+  const scrollProgress = useMotionValue(0);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const totalScrollable = rect.height - windowHeight;
+      if (totalScrollable <= 0) return;
+
+      const scrolled = -rect.top; // px scrolled into section
+      const progress = Math.min(Math.max(scrolled / totalScrollable, 0), 1);
+      scrollProgress.set(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    handleScroll();
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [scrollProgress]);
+
+  useMotionValueEvent(scrollProgress, "change", (latest) => {
     let index = 0;
     if (latest < 0.33) {
       index = 0;
@@ -200,36 +216,36 @@ export default function Pricing({ onSelectTier }) {
 
   // Motion Values for Card 0 (Silver)
   // Silver is active in front initially, then slides straight up and exits on scroll
-  const x0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [0, 0, 0, 0]);
-  const y0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [0, 0, -450, -450]);
-  const z0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [0, 0, 100, 100]);
-  const scale0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [1, 1, 0.9, 0.9]);
-  const opacity0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [1, 1, 0, 0]);
-  const rotateX0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [15, 15, 20, 20]);
-  const rotateY0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [-25, -25, -20, -20]);
-  const rotateZ0 = useTransform(scrollYProgress, [0, 0.25, 0.4, 1.0], [5, 5, 0, 0]);
+  const x0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [0, 0, 0, 0]);
+  const y0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [0, 0, -450, -450]);
+  const z0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [0, 0, 100, 100]);
+  const scale0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [1, 1, 0.9, 0.9]);
+  const opacity0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [1, 1, 0, 0]);
+  const rotateX0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [15, 15, 20, 20]);
+  const rotateY0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [-25, -25, -20, -20]);
+  const rotateZ0 = useTransform(scrollProgress, [0, 0.25, 0.4, 1.0], [5, 5, 0, 0]);
 
   // Motion Values for Card 1 (Gold)
   // Gold is visible stacked behind Silver initially, then moves to front active position, then slides straight up and exits.
-  const x1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [30, 30, 0, 0, 0, 0]);
-  const y1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-20, -20, 0, 0, -450, -450]);
-  const z1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-80, -80, 0, 0, 100, 100]);
-  const scale1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.93, 0.93, 1, 1, 0.9, 0.9]);
-  const opacity1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.85, 0.85, 1, 1, 0, 0]);
-  const rotateX1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [12, 12, 15, 15, 20, 20]);
-  const rotateY1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-23, -23, -25, -25, -20, -20]);
-  const rotateZ1 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [4, 4, 5, 5, 0, 0]);
+  const x1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [30, 30, 0, 0, 0, 0]);
+  const y1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-20, -20, 0, 0, -450, -450]);
+  const z1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-80, -80, 0, 0, 100, 100]);
+  const scale1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.93, 0.93, 1, 1, 0.9, 0.9]);
+  const opacity1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.85, 0.85, 1, 1, 0, 0]);
+  const rotateX1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [12, 12, 15, 15, 20, 20]);
+  const rotateY1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-23, -23, -25, -25, -20, -20]);
+  const rotateZ1 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [4, 4, 5, 5, 0, 0]);
 
   // Motion Values for Card 2 (Diamond)
   // Diamond is visible stacked behind Gold initially, then moves to middle, then moves to front active position.
-  const x2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [60, 60, 30, 30, 0, 0]);
-  const y2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-40, -40, -20, -20, 0, 0]);
-  const z2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-160, -160, -80, -80, 0, 0]);
-  const scale2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.86, 0.86, 0.93, 0.93, 1, 1]);
-  const opacity2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.7, 0.7, 0.85, 0.85, 1, 1]);
-  const rotateX2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [10, 10, 12, 12, 15, 15]);
-  const rotateY2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-20, -20, -23, -23, -25, -25]);
-  const rotateZ2 = useTransform(scrollYProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [3, 3, 4, 4, 5, 5]);
+  const x2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [60, 60, 30, 30, 0, 0]);
+  const y2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-40, -40, -20, -20, 0, 0]);
+  const z2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-160, -160, -80, -80, 0, 0]);
+  const scale2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.86, 0.86, 0.93, 0.93, 1, 1]);
+  const opacity2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [0.7, 0.7, 0.85, 0.85, 1, 1]);
+  const rotateX2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [10, 10, 12, 12, 15, 15]);
+  const rotateY2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [-20, -20, -23, -23, -25, -25]);
+  const rotateZ2 = useTransform(scrollProgress, [0, 0.25, 0.4, 0.65, 0.8, 1.0], [3, 3, 4, 4, 5, 5]);
 
   const cardsTransforms = [
     { x: x0, y: y0, z: z0, scale: scale0, opacity: opacity0, rotateX: rotateX0, rotateY: rotateY0, rotateZ: rotateZ0 },

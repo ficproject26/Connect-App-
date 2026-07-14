@@ -93,8 +93,12 @@ export default function Ecosystem({ onCardClick }) {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
 
   const latestIdx = visibleCount - 1; // -1 at step 0 (globe only)
@@ -104,7 +108,7 @@ export default function Ecosystem({ onCardClick }) {
       ref={containerRef}
       id="services"
       className="relative bg-[#020b18]"
-      style={{ height: `${(pillars.length + 2) * 100}vh` }}
+      style={{ height: '240vh' }}
     >
       {/* ── STICKY FRAME ── */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between">
