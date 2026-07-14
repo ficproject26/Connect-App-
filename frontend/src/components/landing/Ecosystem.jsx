@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Briefcase, ShoppingBag, Truck, Utensils, BedDouble, Plane, UserCheck } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import worldGlobe from '../../assets/images/world_globe.jpg';
 
 const pillars = [
@@ -78,211 +78,229 @@ const pillars = [
 
 export default function Ecosystem({ onCardClick }) {
   const containerRef = useRef(null);
-  const [visibleCount, setVisibleCount] = useState(1); // 1 to pillars.length
-  const visibleCountRef = useRef(1);
-
-  useEffect(() => {
-    visibleCountRef.current = visibleCount;
-  }, [visibleCount]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const totalScrollable = rect.height - windowHeight;
-      if (totalScrollable <= 0) return;
-
-      const currentScroll = -rect.top;
-      const progress = Math.min(Math.max(currentScroll / totalScrollable, 0), 1);
-
-      // Divide scroll progress [0, 1] into pillars.length equal zones
-      const zoneSize = 1 / pillars.length;
-      let activeIndex = Math.floor(progress / zoneSize);
-      if (activeIndex >= pillars.length) {
-        activeIndex = pillars.length - 1;
-      }
-      setVisibleCount(activeIndex + 1);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    handleScroll();
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, []);
-
-  const latestIdx = visibleCount - 1;
-  const activePillar = latestIdx >= 0 ? pillars[latestIdx] : null;
 
   return (
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-[#020b18]"
-      style={{ height: '350vh' }}
+      className="relative bg-[#020b18] py-20 md:py-32 overflow-hidden"
     >
-      {/* ── STICKY FRAME ── */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between">
-        
-        {/* ── GLOBE BACKGROUND ── */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          {/* Dark base */}
-          <div className="absolute inset-0 bg-[#020b18]" />
-
-          {/* Globe image container — centered and rounded to clip black corners */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(85vw,650px)] aspect-square select-none pointer-events-none overflow-hidden rounded-full z-0">
-            <img
-              src={worldGlobe}
-              alt="World Network"
-              className="w-full h-full opacity-35 rounded-full animate-globe-spin object-cover"
-              style={{ filter: 'brightness(1.1) saturate(1.3)' }}
-            />
-          </div>
-
-          {/* Radial fade — edges dark */}
-          <div className="absolute inset-0 bg-radial-fade" />
-
-          {/* Ambient glow blobs matching active card accent */}
-          <div 
-            className="absolute top-[20%] left-[20%] w-96 h-96 rounded-full blur-[140px] opacity-15 transition-all duration-700" 
-            style={{ 
-              background: activePillar ? activePillar.accent : '#f59e0b'
-            }} 
-          />
-          <div 
-            className="absolute bottom-[20%] right-[20%] w-96 h-96 rounded-full blur-[140px] opacity-15 transition-all duration-700" 
-            style={{ 
-              background: activePillar ? activePillar.accent : '#818cf8'
-            }} 
+      {/* ── GLOBE BACKGROUND ── */}
+      <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-20">
+        <div className="absolute inset-0 bg-[#020b18]" />
+        {/* Slow spinning background globe */}
+        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[min(90vw,800px)] aspect-square overflow-hidden rounded-full z-0">
+          <img
+            src={worldGlobe}
+            alt="World Network"
+            className="w-full h-full opacity-30 rounded-full animate-globe-spin object-cover"
+            style={{ filter: 'brightness(1.1) saturate(1.3)' }}
           />
         </div>
+        <div className="absolute inset-0 bg-radial-fade" />
+      </div>
 
-        {/* ── CONTENT CONTAINER ── */}
-        <div className="relative z-10 flex flex-col h-full max-w-7xl mx-auto w-full px-6 md:px-12 py-10 lg:py-16 justify-between">
-          
-          {/* Header */}
-          <div className="w-full flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-              <div className="max-w-xl text-left">
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-400/90">
-                  One Membership · Seven Pillars
-                </span>
-                <h2 className="mt-2 text-3xl md:text-5xl font-extrabold font-sans tracking-tight text-white leading-none">
-                  Our{' '}
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-amber-200 to-amber-400">
-                    Ecosystem
-                  </span>
-                </h2>
-              </div>
-              <p className="text-slate-400 text-xs md:text-sm leading-relaxed max-w-sm text-left">
-                Scroll down to unlock each pillar — a world of services, products, dining, travel, and careers.
-              </p>
-            </div>
-          </div>
+      {/* ── CONTENT WRAPPER ── */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-12">
+        
+        {/* Header */}
+        <div className="w-full text-center max-w-2xl mx-auto mb-16 md:mb-28 flex flex-col items-center">
+          <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-amber-400/90">
+            One Membership · Seven Pillars
+          </span>
+          <h2 className="mt-3 text-3xl md:text-5xl font-extrabold font-sans tracking-tight text-white leading-none">
+            Our{' '}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-amber-200 to-amber-400">
+              Ecosystem
+            </span>
+          </h2>
+          <p className="mt-4 text-slate-400 text-xs md:text-sm leading-relaxed max-w-md">
+            Scroll down to explore each pillar — a premium world of services, products, dining, travel, and careers.
+          </p>
+        </div>
 
-          {/* Main Workspace: Centered Interactive Card transition area */}
-          <div className="flex-1 flex items-center justify-center my-auto min-h-[380px] w-full relative">
-            <AnimatePresence mode="wait">
-              {activePillar && (
-                <motion.div
-                  key={activePillar.id}
-                  initial={{ opacity: 0, y: 40, scale: 0.92 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -40, scale: 0.92 }}
-                  transition={{ type: "spring", stiffness: 120, damping: 18 }}
-                  onClick={() => onCardClick(activePillar.title)}
-                  className="absolute w-full max-w-[460px] p-6 sm:p-8 rounded-3xl cursor-pointer group bg-slate-950/75 backdrop-blur-xl border select-none text-center flex flex-col items-center justify-between min-h-[300px]"
-                  style={{
-                    borderColor: `${activePillar.accent}30`,
-                    boxShadow: `0 25px 50px -12px ${activePillar.accent}25, inset 0 1px 0 rgba(255,255,255,0.05)`,
-                  }}
+        {/* Timeline Layout */}
+        <div className="relative w-full">
+          {/* Central Vertical Line */}
+          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-amber-500 via-sky-500 to-violet-500 z-0 opacity-30" />
+
+          {/* Pillars List */}
+          <div className="space-y-16 md:space-y-28">
+            {pillars.map((pillar, idx) => {
+              const isEven = idx % 2 === 1;
+              
+              return (
+                <div
+                  key={pillar.id}
+                  className="relative flex flex-col md:grid md:grid-cols-2 gap-8 md:gap-x-16 lg:gap-x-24 items-center pl-16 md:pl-0 pr-0 w-full group"
                 >
-                  {/* Circular Icon container with accent glow */}
-                  <div 
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center border shadow-lg transition-transform duration-300 group-hover:scale-110 mb-5 shrink-0"
+                  {/* Timeline Glowing Node */}
+                  <div
+                    className="absolute left-8 md:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-[#020b18] border-2 flex items-center justify-center z-25 transition-all duration-500"
                     style={{
-                      backgroundColor: `${activePillar.accent}15`,
-                      borderColor: `${activePillar.accent}40`,
-                      color: activePillar.accent
+                      borderColor: pillar.accent,
+                      color: pillar.accent,
+                      boxShadow: `0 0 12px ${pillar.accent}40`,
                     }}
                   >
-                    {React.createElement(activePillar.icon, { className: "w-8 h-8" })}
+                    {React.createElement(pillar.icon, { className: "w-4.5 h-4.5" })}
                   </div>
 
-                  {/* Index indicator */}
-                  <div className="text-[10px] font-mono tracking-[0.2em] uppercase mb-2 font-bold" style={{ color: activePillar.accent }}>
-                    Pillar {String(visibleCount).padStart(2, '0')} / 07
-                  </div>
+                  {/* Left Column (Odd pillars) */}
+                  {!isEven ? (
+                    <motion.div
+                      initial={{ opacity: 0, x: -35 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-100px" }}
+                      transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                      onClick={() => onCardClick(pillar.title)}
+                      className="w-full max-w-md md:ml-auto cursor-pointer text-left"
+                    >
+                      <div
+                        className="w-full p-6 md:p-8 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+                        style={{
+                          borderColor: `${pillar.accent}20`,
+                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+                        }}
+                      >
+                        {/* Big Index */}
+                        <div
+                          className="text-3xl md:text-4xl font-extrabold font-mono opacity-80 tracking-tight"
+                          style={{ color: pillar.accent }}
+                        >
+                          {String(idx + 1).padStart(2, '0')}
+                        </div>
 
-                  {/* Text area */}
-                  <div className="flex-grow flex flex-col justify-center mb-6">
-                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
-                      {activePillar.title}
-                    </h3>
-                    <p className="mt-3 text-slate-300 text-xs sm:text-sm leading-relaxed max-w-sm">
-                      {activePillar.desc}
-                    </p>
+                        {/* Title & Description */}
+                        <h3 className="text-xl md:text-2xl font-black text-white tracking-tight mt-2">
+                          {pillar.title}
+                        </h3>
+                        <p className="mt-3 text-slate-300 text-xs md:text-sm leading-relaxed">
+                          {pillar.desc}
+                        </p>
 
-                    {/* Category tags/chips inside the card */}
-                    {activePillar.categories && (
-                      <div className="flex flex-wrap gap-1.5 justify-center mt-5">
-                        {activePillar.categories.map((cat, idx) => (
+                        {/* Category Tags */}
+                        {pillar.categories && (
+                          <div className="flex flex-wrap gap-1.5 mt-5">
+                            {pillar.categories.map((cat, cIdx) => (
+                              <span
+                                key={cIdx}
+                                className="text-[9px] md:text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300"
+                                style={{
+                                  backgroundColor: `${pillar.accent}08`,
+                                  borderColor: `${pillar.accent}20`,
+                                  color: `${pillar.accent}`
+                                }}
+                              >
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Footer Divider & Action */}
+                        <div className="w-full flex items-center justify-between pt-5 border-t border-white/5 mt-6">
                           <span
-                            key={idx}
-                            className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300 hover:scale-[1.05]"
-                            style={{
-                              backgroundColor: `${activePillar.accent}08`,
-                              borderColor: `${activePillar.accent}20`,
-                              color: `${activePillar.accent}`
-                            }}
+                            className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
+                            style={{ backgroundColor: `${pillar.accent}15`, color: pillar.accent }}
                           >
-                            {cat}
+                            {pillar.tag}
                           </span>
-                        ))}
+                          <span
+                            className="text-xs font-bold flex items-center gap-1 transition-colors duration-200"
+                            style={{ color: pillar.accent }}
+                          >
+                            Explore Pillar
+                            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                          </span>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    </motion.div>
+                  ) : (
+                    <div className="hidden md:block pointer-events-none" />
+                  )}
 
-                  {/* Footer Pill and Explore Link */}
-                  <div className="w-full flex items-center justify-between pt-5 border-t border-white/5 mt-auto">
-                    <span
-                      className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full"
-                      style={{ backgroundColor: `${activePillar.accent}15`, color: activePillar.accent }}
+                  {/* Right Column (Even pillars) */}
+                  {isEven ? (
+                    <motion.div
+                      initial={{ opacity: 0, x: 35 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-100px" }}
+                      transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                      onClick={() => onCardClick(pillar.title)}
+                      className="w-full max-w-md md:mr-auto cursor-pointer text-left"
                     >
-                      {activePillar.tag}
-                    </span>
-                    <span
-                      className="text-xs font-black flex items-center gap-1 transition-colors duration-200"
-                      style={{ color: activePillar.accent }}
-                    >
-                      Explore Pillar
-                      <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                    </span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                      <div
+                        className="w-full p-6 md:p-8 rounded-3xl bg-slate-950/75 backdrop-blur-xl border transition-all duration-300 hover:-translate-y-1.5 shadow-xl hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+                        style={{
+                          borderColor: `${pillar.accent}20`,
+                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
+                        }}
+                      >
+                        {/* Big Index */}
+                        <div
+                          className="text-3xl md:text-4xl font-extrabold font-mono opacity-80 tracking-tight"
+                          style={{ color: pillar.accent }}
+                        >
+                          {String(idx + 1).padStart(2, '0')}
+                        </div>
 
-          {/* Indicator Dots at Bottom */}
-          <div className="w-full flex justify-center items-center gap-2 mt-4 shrink-0 relative z-20">
-            {pillars.map((_, i) => (
-              <div 
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  visibleCount === i + 1 
-                    ? 'w-7 bg-amber-400' 
-                    : 'w-2 bg-white/20'
-                }`}
-              />
-            ))}
+                        {/* Title & Description */}
+                        <h3 className="text-xl md:text-2xl font-black text-white tracking-tight mt-2">
+                          {pillar.title}
+                        </h3>
+                        <p className="mt-3 text-slate-300 text-xs md:text-sm leading-relaxed">
+                          {pillar.desc}
+                        </p>
+
+                        {/* Category Tags */}
+                        {pillar.categories && (
+                          <div className="flex flex-wrap gap-1.5 mt-5">
+                            {pillar.categories.map((cat, cIdx) => (
+                              <span
+                                key={cIdx}
+                                className="text-[9px] md:text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300"
+                                style={{
+                                  backgroundColor: `${pillar.accent}08`,
+                                  borderColor: `${pillar.accent}20`,
+                                  color: `${pillar.accent}`
+                                }}
+                              >
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Footer Divider & Action */}
+                        <div className="w-full flex items-center justify-between pt-5 border-t border-white/5 mt-6">
+                          <span
+                            className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
+                            style={{ backgroundColor: `${pillar.accent}15`, color: pillar.accent }}
+                          >
+                            {pillar.tag}
+                          </span>
+                          <span
+                            className="text-xs font-bold flex items-center gap-1 transition-colors duration-200"
+                            style={{ color: pillar.accent }}
+                          >
+                            Explore Pillar
+                            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div className="hidden md:block pointer-events-none" />
+                  )}
+
+                </div>
+              );
+            })}
           </div>
 
         </div>
+
       </div>
     </section>
   );
