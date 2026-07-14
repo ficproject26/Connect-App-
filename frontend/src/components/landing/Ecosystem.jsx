@@ -199,7 +199,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                       }`}
                     >
                       <div
-                        className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] shadow-slate-100"
+                        className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-lg shadow-slate-200/60 dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
                         style={{
                           borderColor: theme === 'dark' ? `${pillar.accent}20` : `${pillar.accent}35`,
                           boxShadow: theme === 'dark' ? `inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
@@ -209,7 +209,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                         <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight transition-colors duration-300">
                           {pillar.title}
                         </h3>
-                        <p className="mt-2.5 text-slate-650 dark:text-slate-300 text-xs leading-relaxed transition-colors duration-300">
+                        <p className="mt-2.5 text-slate-700 dark:text-slate-300 text-xs leading-relaxed transition-colors duration-300">
                           {pillar.desc}
                         </p>
 
@@ -233,7 +233,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                         )}
 
                         {/* Footer Divider & Action */}
-                        <div className="w-full flex items-center justify-between pt-4 border-t border-slate-150 dark:border-white/5 mt-5 transition-colors duration-300">
+                        <div className="w-full flex items-center justify-between pt-4 border-t border-slate-200 dark:border-white/5 mt-5 transition-colors duration-300">
                           <span
                             className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
                             style={{ backgroundColor: theme === 'dark' ? `${pillar.accent}15` : `${pillar.accent}10`, color: pillar.accent }}
@@ -265,7 +265,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                       }`}
                     >
                       <div
-                        className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] shadow-slate-100"
+                        className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-lg shadow-slate-200/60 dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
                         style={{
                           borderColor: theme === 'dark' ? `${pillar.accent}20` : `${pillar.accent}35`,
                           boxShadow: theme === 'dark' ? `inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
@@ -275,7 +275,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                         <h3 className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight transition-colors duration-300">
                           {pillar.title}
                         </h3>
-                        <p className="mt-2.5 text-slate-650 dark:text-slate-300 text-xs leading-relaxed transition-colors duration-300">
+                        <p className="mt-2.5 text-slate-700 dark:text-slate-300 text-xs leading-relaxed transition-colors duration-300">
                           {pillar.desc}
                         </p>
 
@@ -299,7 +299,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                         )}
 
                         {/* Footer Divider & Action */}
-                        <div className="w-full flex items-center justify-between pt-4 border-t border-slate-150 dark:border-white/5 mt-5 transition-colors duration-300">
+                        <div className="w-full flex items-center justify-between pt-4 border-t border-slate-200 dark:border-white/5 mt-5 transition-colors duration-300">
                           <span
                             className="text-[9px] md:text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
                             style={{ backgroundColor: theme === 'dark' ? `${pillar.accent}15` : `${pillar.accent}10`, color: pillar.accent }}
