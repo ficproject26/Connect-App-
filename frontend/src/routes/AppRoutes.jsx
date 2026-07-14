@@ -4,7 +4,7 @@ import LandingLayout from '../layouts/LandingLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import CustomerLayout from '../layouts/CustomerLayout';
 // Pages
-import StorytellingPage from '../pages/landing/StorytellingPage';
+import LandingPage from '../pages/landing/LandingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import JoinNowPage from '../pages/auth/JoinNowPage';
 import CustomerDashboard from '../pages/customer/Dashboard';
@@ -102,9 +102,10 @@ export default function AppRoutes({
           onBack={handleHomeNavigate}
         />
       ) : (
-        <StorytellingPage
+        <LandingPage
           onJoinClick={() => setCurrentPage('join-now')}
           onCategoryClick={handleCategoryClick}
+          theme={theme}
         />
       )}
     </LandingLayout>
