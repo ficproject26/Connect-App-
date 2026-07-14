@@ -257,7 +257,7 @@ export default function Pricing({ onSelectTier }) {
     <section 
       ref={containerRef} 
       id="pricing" 
-      className="relative h-[180vh] bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300"
+      className="relative h-[140vh] bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300"
     >
       {/* Sticky viewport frame wrapper */}
       <div className="sticky top-0 h-screen w-full flex flex-col justify-center items-center overflow-hidden z-10">
