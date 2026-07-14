@@ -1,6 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Briefcase, ShoppingBag, Truck, Utensils, BedDouble, Plane, UserCheck } from 'lucide-react';
-import { motion } from 'framer-motion';
 import worldGlobe from '../../assets/images/world_globe.jpg';
 
 const pillars = [
@@ -78,6 +77,43 @@ const pillars = [
 
 export default function Ecosystem({ onCardClick, theme }) {
   const containerRef = useRef(null);
+  const rowRefs = useRef([]);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const centerY = window.innerHeight / 2;
+      let closestIdx = 0;
+      let minDistance = Infinity;
+
+      rowRefs.current.forEach((rowEl, idx) => {
+        if (!rowEl) return;
+        const rect = rowEl.getBoundingClientRect();
+        // Distance of row vertical center from viewport vertical center
+        const rowCenterY = rect.top + rect.height / 2;
+        const distance = Math.abs(rowCenterY - centerY);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestIdx = idx;
+        }
+      });
+
+      setActiveIdx(closestIdx);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    
+    // Run initially with a small delay for page layout rendering
+    const timer = setTimeout(handleScroll, 100);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      clearTimeout(timer);
+    };
+  }, []);
 
   return (
     <section
@@ -128,19 +164,25 @@ export default function Ecosystem({ onCardClick, theme }) {
           <div className="space-y-12 md:space-y-18">
             {pillars.map((pillar, idx) => {
               const isEven = idx % 2 === 1;
+              const isActive = idx === activeIdx;
               
               return (
                 <div
                   key={pillar.id}
+                  ref={el => rowRefs.current[idx] = el}
                   className="relative flex flex-col md:grid md:grid-cols-2 gap-8 md:gap-x-32 lg:gap-x-48 items-center pl-16 md:pl-0 pr-0 w-full group"
                 >
                   {/* Timeline Glowing Node */}
                   <div
-                    className="absolute left-8 md:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center z-25 transition-all duration-500"
+                    className={`absolute left-8 md:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center z-25 transition-all duration-500 ${
+                      isActive ? 'scale-110 opacity-100' : 'scale-90 opacity-40'
+                    }`}
                     style={{
-                      borderColor: pillar.accent,
-                      color: pillar.accent,
-                      boxShadow: theme === 'dark' ? `0 0 12px ${pillar.accent}40` : `0 0 8px ${pillar.accent}20`,
+                      borderColor: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'),
+                      color: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)'),
+                      boxShadow: isActive 
+                        ? (theme === 'dark' ? `0 0 16px ${pillar.accent}60` : `0 0 10px ${pillar.accent}30`)
+                        : 'none',
                     }}
                   >
                     {React.createElement(pillar.icon, { className: "w-4.5 h-4.5" })}
@@ -148,13 +190,13 @@ export default function Ecosystem({ onCardClick, theme }) {
 
                   {/* Left Column (Odd pillars) */}
                   {!isEven ? (
-                    <motion.div
-                      initial={{ opacity: 0, x: -35 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true, margin: "-100px" }}
-                      transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                      onClick={() => onCardClick(pillar.title)}
-                      className="w-full max-w-xs md:max-w-sm md:ml-auto md:mr-12 lg:mr-20 cursor-pointer text-left"
+                    <div
+                      onClick={() => isActive && onCardClick(pillar.title)}
+                      className={`w-full max-w-xs md:max-w-sm md:ml-auto md:mr-12 lg:mr-20 text-left transition-all duration-500 transform ${
+                        isActive 
+                          ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto cursor-pointer' 
+                          : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+                      }`}
                     >
                       <div
                         className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] shadow-slate-100"
@@ -207,20 +249,20 @@ export default function Ecosystem({ onCardClick, theme }) {
                           </span>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ) : (
                     <div className="hidden md:block pointer-events-none" />
                   )}
 
                   {/* Right Column (Even pillars) */}
                   {isEven ? (
-                    <motion.div
-                      initial={{ opacity: 0, x: 35 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true, margin: "-100px" }}
-                      transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                      onClick={() => onCardClick(pillar.title)}
-                      className="w-full max-w-xs md:max-w-sm md:mr-auto md:ml-12 lg:ml-20 cursor-pointer text-left"
+                    <div
+                      onClick={() => isActive && onCardClick(pillar.title)}
+                      className={`w-full max-w-xs md:max-w-sm md:mr-auto md:ml-12 lg:ml-20 text-left transition-all duration-500 transform ${
+                        isActive 
+                          ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto cursor-pointer' 
+                          : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+                      }`}
                     >
                       <div
                         className="w-full p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-950/75 border transition-all duration-300 hover:-translate-y-1.5 shadow-md dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] shadow-slate-100"
@@ -273,7 +315,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                           </span>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ) : (
                     <div className="hidden md:block pointer-events-none" />
                   )}
