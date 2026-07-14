@@ -12,6 +12,7 @@ const pillars = [
     title: 'Services',
     desc: 'From salon visits to plumbing, get priority booking and flat rates with top professionals across 19 categories.',
     tag: '19 Categories',
+    categories: ['IT Services', 'Non-IT Services', 'Job Consulting', 'Business Consulting']
   },
   {
     id: 'products',
@@ -21,6 +22,7 @@ const pillars = [
     title: 'Products',
     desc: 'Exclusive pricing on electronics, fashion, furniture, and lifestyle goods from 500+ partner brands.',
     tag: '16 Categories',
+    categories: ['Fashion & Luxury', 'Electronics & Gadgets', 'Home & Interiors']
   },
   {
     id: 'daily-needs',
@@ -30,6 +32,7 @@ const pillars = [
     title: 'Daily Needs',
     desc: 'Groceries, dairy, pharmacy, and household essentials delivered at your door with zero convenience fees.',
     tag: '12 Categories',
+    categories: ['Gourmet & Fresh', 'Personal Health', 'Express Conveniences']
   },
   {
     id: 'food',
@@ -39,6 +42,7 @@ const pillars = [
     title: 'Food',
     desc: 'Dine like royalty with 20%+ off at premium restaurants, cafes, and cloud kitchens in your city.',
     tag: '16 Categories',
+    categories: ['Luxury Dining', 'Casual & Cafes', 'Private Catering']
   },
   {
     id: 'stay',
@@ -48,6 +52,7 @@ const pillars = [
     title: 'Stay',
     desc: 'Luxury hotels, resorts, homestays and wellness retreats with member-only corporate rates.',
     tag: '16 Categories',
+    categories: ['Villas & Resorts', 'Boutique Hoteliers', 'Unique Getaways']
   },
   {
     id: 'travel',
@@ -57,6 +62,7 @@ const pillars = [
     title: 'Travel',
     desc: 'Flights, trains, cab services, tour packages, and visa assistance — all in one ecosystem.',
     tag: '19 Categories',
+    categories: ['Business Class', 'Lounges & Transit', 'Bespoke Expeditions']
   },
   {
     id: 'jobs',
@@ -66,12 +72,18 @@ const pillars = [
     title: 'Jobs',
     desc: 'Explore 23 career categories spanning banking, IT, healthcare, government and freelance roles.',
     tag: '23 Categories',
+    categories: ['Banking & IT', 'Healthcare & Gov', 'Freelance Roles']
   },
 ];
 
 export default function Ecosystem({ onCardClick }) {
   const containerRef = useRef(null);
   const [visibleCount, setVisibleCount] = useState(1); // 1 to pillars.length
+  const visibleCountRef = useRef(1);
+
+  useEffect(() => {
+    visibleCountRef.current = visibleCount;
+  }, [visibleCount]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -214,6 +226,25 @@ export default function Ecosystem({ onCardClick }) {
                     <p className="mt-3 text-slate-300 text-xs sm:text-sm leading-relaxed max-w-sm">
                       {activePillar.desc}
                     </p>
+
+                    {/* Category tags/chips inside the card */}
+                    {activePillar.categories && (
+                      <div className="flex flex-wrap gap-1.5 justify-center mt-5">
+                        {activePillar.categories.map((cat, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-300 hover:scale-[1.05]"
+                            style={{
+                              backgroundColor: `${activePillar.accent}08`,
+                              borderColor: `${activePillar.accent}20`,
+                              color: `${activePillar.accent}`
+                            }}
+                          >
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer Pill and Explore Link */}
