@@ -303,6 +303,53 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const [activeProductImage, setActiveProductImage] = useState(null);
   const [activeThumbnailIndex, setActiveThumbnailIndex] = useState(0);
+
+  // Synchronize selectedProduct gallery details and scroll position on change
+  useEffect(() => {
+    setActiveProductImage(null);
+    setActiveThumbnailIndex(0);
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+      mainEl.scrollTop = 0;
+    }
+  }, [selectedProduct]);
+
+  // Keep track of the last pushed product ID to avoid duplicate pushState calls on popstate
+  const lastPushedProductIdRef = useRef(null);
+
+  useEffect(() => {
+    const currentId = selectedProduct ? selectedProduct.id : null;
+    if (currentId !== lastPushedProductIdRef.current) {
+      if (selectedProduct) {
+        window.history.pushState({ productId: selectedProduct.id }, '');
+      } else {
+        if (lastPushedProductIdRef.current !== null) {
+          window.history.pushState(null, '');
+        }
+      }
+      lastPushedProductIdRef.current = currentId;
+    }
+  }, [selectedProduct]);
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const stateId = event.state && event.state.productId ? event.state.productId : null;
+      lastPushedProductIdRef.current = stateId;
+      
+      if (stateId) {
+        const prod = products.find(p => p.id === stateId || String(p.id) === String(stateId));
+        if (prod) {
+          setSelectedProduct(prod);
+          return;
+        }
+      }
+      setSelectedProduct(null);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [products]);
+
   const [activeJobCategory, setActiveJobCategory] = useState('ALL');
   const [activeServiceCategory, setActiveServiceCategory] = useState('ALL');
   const [activeProductCategory, setActiveProductCategory] = useState('ALL');
