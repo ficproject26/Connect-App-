@@ -245,7 +245,7 @@ export default function Ecosystem({ onCardClick, theme }) {
           </div>
 
           {/* 3D Cover Flow Cards Carousel Deck */}
-          <div className="relative w-full max-w-4xl h-[480px] perspective-1200 transform-style-3d flex items-center justify-center overflow-visible">
+          <div className="relative z-30 w-full max-w-4xl h-[480px] perspective-1200 transform-style-3d flex items-center justify-center overflow-visible pointer-events-auto">
             {pillars.map((pillar, idx) => {
               let diff = idx - activeIdx;
               if (diff > Math.floor(pillars.length / 2)) {
@@ -273,7 +273,12 @@ export default function Ecosystem({ onCardClick, theme }) {
               return (
                 <div
                   key={pillar.id}
-                  onClick={() => isVisible && onCardClick(pillar.title)}
+                  onClick={(e) => {
+                    console.log('Ecosystem card clicked:', pillar.title, 'isVisible:', isVisible);
+                    if (isVisible && onCardClick) {
+                      onCardClick(pillar.title);
+                    }
+                  }}
                   className={`absolute w-[280px] sm:w-[350px] transform-style-3d text-left cursor-pointer transition-all duration-800 ease-out ${cardClass}`}
                   style={{
                     transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
