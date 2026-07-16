@@ -93,24 +93,20 @@ export default function Ecosystem({ onCardClick, theme }) {
         setIsScrolling(false);
       }, 800); // DNA is hidden 800ms after user stops scrolling
 
-      const centerY = window.innerHeight / 2;
-      let closestIdx = 0;
-      let minDistance = Infinity;
-
-      rowRefs.current.forEach((rowEl, idx) => {
-        if (!rowEl) return;
-        const rect = rowEl.getBoundingClientRect();
-        // Distance of row vertical center from viewport vertical center
-        const rowCenterY = rect.top + rect.height / 2;
-        const distance = Math.abs(rowCenterY - centerY);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestIdx = idx;
-        }
-      });
-
-      setActiveIdx(closestIdx);
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      
+      const sectionHeight = rect.height;
+      const viewportHeight = window.innerHeight;
+      
+      const scrolled = -rect.top; 
+      const scrollRange = sectionHeight - viewportHeight;
+      
+      if (scrollRange > 0) {
+        const progress = Math.max(0, Math.min(0.99, scrolled / scrollRange));
+        const newActiveIdx = Math.floor(progress * pillars.length);
+        setActiveIdx(newActiveIdx);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -205,6 +201,30 @@ export default function Ecosystem({ onCardClick, theme }) {
                 />
               </div>
             ))}
+          </div>
+
+          {/* Centered Statically Positioned Timeline Nodes (Aligns with background DNA line) */}
+          <div className="absolute left-1/2 top-[8%] bottom-[8%] -translate-x-1/2 w-10 z-10 pointer-events-none flex flex-col justify-between items-center py-4">
+            {pillars.map((pillar, idx) => {
+              const isActive = idx === activeIdx;
+              return (
+                <div 
+                  key={pillar.id}
+                  className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs ${
+                    isActive ? 'scale-110 opacity-100' : 'scale-75 opacity-35'
+                  }`}
+                  style={{
+                    borderColor: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
+                    color: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)'),
+                    boxShadow: isActive 
+                      ? (theme === 'dark' ? `0 0 14px ${pillar.accent}50` : `0 0 8px ${pillar.accent}20`)
+                      : 'none',
+                  }}
+                >
+                  {React.createElement(pillar.icon, { className: "w-4 h-4" })}
+                </div>
+              );
+            })}
           </div>
 
           {/* 3D Cover Flow Cards Carousel Deck */}
@@ -319,30 +339,13 @@ export default function Ecosystem({ onCardClick, theme }) {
           </div>
         </div>
 
-        {/* Scroll Markers / Spacers (invisible markers that track scroll depth along the timeline) */}
+        {/* Scroll Markers / Spacers (invisible markers that provide scroll depth for sticky interaction) */}
         <div className="w-full flex flex-col items-center justify-start pointer-events-none mt-[-20vh] pb-[35vh]">
-          {pillars.map((pillar, idx) => (
+          {pillars.map((pillar) => (
             <div 
               key={pillar.id}
-              ref={el => rowRefs.current[idx] = el}
-              className="h-[50vh] w-full flex items-center justify-center"
-            >
-              {/* Timeline Glowing Node centered horizontally */}
-              <div 
-                className={`w-10 h-10 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs ${
-                  idx === activeIdx ? 'scale-110 opacity-100' : 'scale-90 opacity-40'
-                }`}
-                style={{
-                  borderColor: idx === activeIdx ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'),
-                  color: idx === activeIdx ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)'),
-                  boxShadow: idx === activeIdx 
-                    ? (theme === 'dark' ? `0 0 16px ${pillar.accent}60` : `0 0 10px ${pillar.accent}30`)
-                    : 'none',
-                }}
-              >
-                {React.createElement(pillar.icon, { className: "w-4.5 h-4.5" })}
-              </div>
-            </div>
+              className="h-[50vh] w-full"
+            />
           ))}
         </div>
 
