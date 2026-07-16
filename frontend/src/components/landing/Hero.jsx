@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Star, Globe, Gift, Tag, Headphones } from 'lucide-react';
 import ConnectionNetwork from './ConnectionNetwork';
 import WorldMap from './WorldMap';
-import earthCurve from '../../assets/images/earth_curve.png';
+import rotatingEarthVideo from '../../assets/videos/i_need_to_rotate_continuassly_.mp4';
 
 export default function Hero({ onJoinClick }) {
   const [typedText, setTypedText] = useState('');
@@ -109,12 +109,15 @@ export default function Hero({ onJoinClick }) {
         </div>
       </div>
 
-      {/* Photorealistic Earth Curved Horizon Image Asset */}
-      <div className="absolute bottom-[-30px] sm:bottom-[-60px] md:bottom-[-100px] lg:bottom-[-150px] left-1/2 -translate-x-1/2 w-[140%] min-w-[1200px] max-w-[1800px] aspect-square pointer-events-none z-[16] flex justify-center">
-        <img 
-          src={earthCurve} 
-          alt="Curved Earth Horizon with City Lights" 
-          className="w-full h-full object-bottom opacity-95 select-none animate-spin-earth" 
+      {/* Photorealistic Earth Curved Horizon Video Asset */}
+      <div className="absolute bottom-[-30px] sm:bottom-[-60px] md:bottom-[-100px] lg:bottom-[-150px] left-1/2 -translate-x-1/2 w-[140%] min-w-[1200px] max-w-[1800px] aspect-square pointer-events-none z-[16] flex justify-center overflow-hidden">
+        <video
+          src={rotatingEarthVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover opacity-95 select-none"
         />
       </div>
 
