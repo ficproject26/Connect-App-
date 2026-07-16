@@ -134,7 +134,7 @@ export default function Ecosystem({ onCardClick, theme }) {
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-slate-50 dark:bg-[#020b18] py-12 md:py-20 overflow-hidden transition-colors duration-300 min-h-[300vh]"
+      className="relative bg-slate-50 dark:bg-[#020b18] py-12 md:py-20 overflow-hidden transition-colors duration-300 min-h-[180vh]"
     >
       {/* ── GLOBE BACKGROUND ── */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-300">
@@ -337,11 +337,11 @@ export default function Ecosystem({ onCardClick, theme }) {
         </div>
 
         {/* Scroll Markers / Spacers (invisible markers that provide scroll depth for sticky interaction) */}
-        <div className="w-full flex flex-col items-center justify-start pointer-events-none mt-[-20vh] pb-[35vh]">
-          {pillars.map((pillar) => (
+        <div className="w-full flex flex-col items-center justify-start pointer-events-none mt-[-20vh] pb-[10vh]">
+          {Array.from({ length: 3 }).map((_, idx) => (
             <div 
-              key={pillar.id}
-              className="h-[50vh] w-full"
+              key={idx}
+              className="h-[45vh] w-full"
             />
           ))}
         </div>
