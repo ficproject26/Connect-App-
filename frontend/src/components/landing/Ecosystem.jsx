@@ -241,49 +241,24 @@ export default function Ecosystem({ onCardClick, theme }) {
               const isRight = diff === 1;
               const isVisible = Math.abs(diff) <= 1;
 
-              // Calculate 3D transforms based on offset diff
-              let transformStr = '';
-              let opacityVal = 0;
-              let zIndexVal = 10;
-              let pointerEventsVal = 'none';
-
+               // Determine CSS class based on circular diff offset
+              let cardClass = '';
               if (isActive) {
-                transformStr = 'translateX(0) translateY(0) scale(1) rotateY(0deg) translateZ(0)';
-                opacityVal = 1;
-                zIndexVal = 30;
-                pointerEventsVal = 'auto';
+                cardClass = 'carousel-card-center';
               } else if (isLeft) {
-                // Inactive Left card rotated in single direction and offset vertically upwards
-                transformStr = 'translateX(-150px) md:translateX(-250px) translateY(-65px) scale(0.85) rotateY(20deg) translateZ(-80px)';
-                opacityVal = 0.55;
-                zIndexVal = 20;
-                pointerEventsVal = 'auto';
+                cardClass = 'carousel-card-left';
               } else if (isRight) {
-                // Inactive Right card rotated in single direction and offset vertically downwards
-                transformStr = 'translateX(150px) md:translateX(250px) translateY(65px) scale(0.85) rotateY(20deg) translateZ(-80px)';
-                opacityVal = 0.55;
-                zIndexVal = 20;
-                pointerEventsVal = 'auto';
+                cardClass = 'carousel-card-right';
               } else {
-                // Hidden cards shifted further out horizontally and vertically
-                transformStr = diff < 0
-                  ? 'translateX(-300px) md:translateX(-480px) translateY(-130px) scale(0.65) rotateY(20deg) translateZ(-150px)'
-                  : 'translateX(300px) md:translateX(480px) translateY(130px) scale(0.65) rotateY(20deg) translateZ(-150px)';
-                opacityVal = 0;
-                zIndexVal = 10;
-                pointerEventsVal = 'none';
+                cardClass = diff < 0 ? 'carousel-card-hidden-left' : 'carousel-card-hidden-right';
               }
 
               return (
                 <div
                   key={pillar.id}
                   onClick={() => isVisible && onCardClick(pillar.title)}
-                  className="absolute w-[280px] sm:w-[350px] transform-style-3d text-left cursor-pointer"
+                  className={`absolute w-[280px] sm:w-[350px] transform-style-3d text-left cursor-pointer transition-all duration-800 ease-out ${cardClass}`}
                   style={{
-                    transform: transformStr,
-                    opacity: opacityVal,
-                    zIndex: zIndexVal,
-                    pointerEvents: pointerEventsVal,
                     transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
                 >

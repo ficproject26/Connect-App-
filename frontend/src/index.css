@@ -273,36 +273,59 @@
 }
 
 /* 3D Ecosystem Card Scroll Rotation Transitions */
-.ecosystem-card-transition {
-  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s ease-out;
-  transform-style: preserve-3d;
-  perspective: 1000px;
-}
-
-.ecosystem-card-left-inactive {
-  opacity: 0;
-  transform: rotateY(20deg) rotateX(-5deg) scale(0.92) translateX(-30px);
-  pointer-events: none;
-}
-
-.ecosystem-card-left-active {
+.carousel-card-center {
   opacity: 1;
-  transform: rotateY(0deg) rotateX(0deg) scale(1) translateX(0);
+  z-index: 30;
   pointer-events: auto;
-  cursor: pointer;
+  transform: translateX(0) translateY(0) scale(1) rotateY(0deg) translateZ(0);
 }
 
-.ecosystem-card-right-inactive {
+.carousel-card-left {
+  opacity: 0.55;
+  z-index: 20;
+  pointer-events: auto;
+  transform: translateX(-140px) translateY(-60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+}
+@media (min-width: 768px) {
+  .carousel-card-left {
+    transform: translateX(-260px) translateY(-60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+  }
+}
+
+.carousel-card-right {
+  opacity: 0.55;
+  z-index: 20;
+  pointer-events: auto;
+  transform: translateX(140px) translateY(60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+}
+@media (min-width: 768px) {
+  .carousel-card-right {
+    transform: translateX(260px) translateY(60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+  }
+}
+
+.carousel-card-hidden-left {
   opacity: 0;
-  transform: rotateY(20deg) rotateX(-5deg) scale(0.92) translateX(30px);
+  z-index: 10;
   pointer-events: none;
+  transform: translateX(-280px) translateY(-120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+}
+@media (min-width: 768px) {
+  .carousel-card-hidden-left {
+    transform: translateX(-480px) translateY(-120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+  }
 }
 
-.ecosystem-card-right-active {
-  opacity: 1;
-  transform: rotateY(0deg) rotateX(0deg) scale(1) translateX(0);
-  pointer-events: auto;
-  cursor: pointer;
+.carousel-card-hidden-right {
+  opacity: 0;
+  z-index: 10;
+  pointer-events: none;
+  transform: translateX(280px) translateY(120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+}
+@media (min-width: 768px) {
+  .carousel-card-hidden-right {
+    transform: translateX(480px) translateY(120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+  }
 }
 
 
