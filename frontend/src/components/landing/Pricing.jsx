@@ -249,7 +249,7 @@ export default function Pricing({ onSelectTier }) {
             <div 
               key={plan.name}
               onClick={() => handleCardClick(i)}
-              className="flip-card-container w-full h-[540px] flex flex-col cursor-pointer"
+              className="flip-card-container w-full h-[440px] flex flex-col cursor-pointer"
             >
               <div className={`flip-card-inner ${flippedCards[i] ? 'flipped' : ''} ${
                 plan.featured ? 'ring-2 ring-amber-400 dark:ring-amber-500 rounded-3xl shadow-amber-400/10' : ''
