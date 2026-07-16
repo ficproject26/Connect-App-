@@ -6,6 +6,7 @@ import { productService } from '../../services/productService';
 import { socketService } from '../../services/socketService';
 import useCustomer from '../../hooks/useCustomer';
 import WalletPage from './Wallet';
+import Offers from './Offers';
 
 // Fix leaflet marker default icon issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -2153,7 +2154,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         {/* Offers */}
         <button 
-          onClick={() => triggerNotification("Opening exclusive member offers page...")}
+          onClick={() => {
+            setSelectedProduct(null);
+            setActiveTab('Offers');
+            setSelectedSubNavbarCategory('Offers');
+            setSelectedCategories([]);
+            setHoveredLink(null);
+          }}
           className="relative flex flex-col items-center gap-1 p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
           title="Exclusive Offers"
         >
@@ -4984,6 +4991,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <main ref={mainScrollRef} className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto no-scrollbar w-full">
         {selectedProduct ? (
           renderProductDetailsPage()
+        ) : activeTab === 'Offers' ? (
+          <Offers />
         ) : isMarketplaceView ? (
           /* SEARCH / CATEGORY DIRECT CATALOG VIEW */
           renderCatalogSection()
