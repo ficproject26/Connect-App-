@@ -284,11 +284,11 @@
   opacity: 0.55;
   z-index: 20;
   pointer-events: auto;
-  transform: translateX(-140px) translateY(-60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+  transform: translateX(-160px) translateY(-60px) scale(0.85) rotateY(20deg) translateZ(-80px);
 }
 @media (min-width: 768px) {
   .carousel-card-left {
-    transform: translateX(-260px) translateY(-60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+    transform: translateX(-380px) translateY(-60px) scale(0.85) rotateY(20deg) translateZ(-80px);
   }
 }
 
@@ -296,11 +296,11 @@
   opacity: 0.55;
   z-index: 20;
   pointer-events: auto;
-  transform: translateX(140px) translateY(60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+  transform: translateX(160px) translateY(60px) scale(0.85) rotateY(20deg) translateZ(-80px);
 }
 @media (min-width: 768px) {
   .carousel-card-right {
-    transform: translateX(260px) translateY(60px) scale(0.85) rotateY(20deg) translateZ(-80px);
+    transform: translateX(380px) translateY(60px) scale(0.85) rotateY(20deg) translateZ(-80px);
   }
 }
 
@@ -308,11 +308,11 @@
   opacity: 0;
   z-index: 10;
   pointer-events: none;
-  transform: translateX(-280px) translateY(-120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+  transform: translateX(-300px) translateY(-120px) scale(0.65) rotateY(20deg) translateZ(-150px);
 }
 @media (min-width: 768px) {
   .carousel-card-hidden-left {
-    transform: translateX(-480px) translateY(-120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+    transform: translateX(-600px) translateY(-120px) scale(0.65) rotateY(20deg) translateZ(-150px);
   }
 }
 
@@ -320,11 +320,11 @@
   opacity: 0;
   z-index: 10;
   pointer-events: none;
-  transform: translateX(280px) translateY(120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+  transform: translateX(300px) translateY(120px) scale(0.65) rotateY(20deg) translateZ(-150px);
 }
 @media (min-width: 768px) {
   .carousel-card-hidden-right {
-    transform: translateX(480px) translateY(120px) scale(0.65) rotateY(20deg) translateZ(-150px);
+    transform: translateX(600px) translateY(120px) scale(0.65) rotateY(20deg) translateZ(-150px);
   }
 }
 
