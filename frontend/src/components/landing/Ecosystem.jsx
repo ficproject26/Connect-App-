@@ -208,7 +208,7 @@ export default function Ecosystem({ onCardClick, theme }) {
           </div>
 
           {/* 3D Cover Flow Cards Carousel Deck */}
-          <div className="relative w-full max-w-4xl h-[380px] perspective-1200 transform-style-3d flex items-center justify-center overflow-visible">
+          <div className="relative w-full max-w-4xl h-[480px] perspective-1200 transform-style-3d flex items-center justify-center overflow-visible">
             {pillars.map((pillar, idx) => {
               const diff = idx - activeIdx;
               const isActive = diff === 0;
@@ -223,27 +223,27 @@ export default function Ecosystem({ onCardClick, theme }) {
               let pointerEventsVal = 'none';
 
               if (isActive) {
-                transformStr = 'translateX(0) scale(1) rotateY(0deg) translateZ(0)';
+                transformStr = 'translateX(0) translateY(0) scale(1) rotateY(0deg) translateZ(0)';
                 opacityVal = 1;
                 zIndexVal = 30;
                 pointerEventsVal = 'auto';
               } else if (isLeft) {
-                // Inactive Left card rotated in single direction (Y-axis 20deg)
-                transformStr = 'translateX(-150px) md:translateX(-250px) scale(0.85) rotateY(20deg) translateZ(-80px)';
+                // Inactive Left card rotated in single direction and offset vertically upwards
+                transformStr = 'translateX(-150px) md:translateX(-250px) translateY(-65px) scale(0.85) rotateY(20deg) translateZ(-80px)';
                 opacityVal = 0.55;
                 zIndexVal = 20;
                 pointerEventsVal = 'auto';
               } else if (isRight) {
-                // Inactive Right card rotated in single direction (Y-axis 20deg)
-                transformStr = 'translateX(150px) md:translateX(250px) scale(0.85) rotateY(20deg) translateZ(-80px)';
+                // Inactive Right card rotated in single direction and offset vertically downwards
+                transformStr = 'translateX(150px) md:translateX(250px) translateY(65px) scale(0.85) rotateY(20deg) translateZ(-80px)';
                 opacityVal = 0.55;
                 zIndexVal = 20;
                 pointerEventsVal = 'auto';
               } else {
-                // Hidden cards shifted further out
+                // Hidden cards shifted further out horizontally and vertically
                 transformStr = diff < 0
-                  ? 'translateX(-300px) md:translateX(-480px) scale(0.65) rotateY(20deg) translateZ(-150px)'
-                  : 'translateX(300px) md:translateX(480px) scale(0.65) rotateY(20deg) translateZ(-150px)';
+                  ? 'translateX(-300px) md:translateX(-480px) translateY(-130px) scale(0.65) rotateY(20deg) translateZ(-150px)'
+                  : 'translateX(300px) md:translateX(480px) translateY(130px) scale(0.65) rotateY(20deg) translateZ(-150px)';
                 opacityVal = 0;
                 zIndexVal = 10;
                 pointerEventsVal = 'none';
