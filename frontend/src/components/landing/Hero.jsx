@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Star, Globe, Gift, Tag, Headphones } from 'lucide-react';
 import ConnectionNetwork from './ConnectionNetwork';
 import WorldMap from './WorldMap';
-import rotatingEarthVideo from '../../assets/videos/i_need_to_rotate_continuassly_.mp4';
+import earth4K from '../../assets/images/earth_4k.png';
 
 export default function Hero({ onJoinClick }) {
   const [typedText, setTypedText] = useState('');
@@ -109,15 +109,12 @@ export default function Hero({ onJoinClick }) {
         </div>
       </div>
 
-      {/* Photorealistic Earth Curved Horizon Video Asset */}
-      <div className="absolute inset-0 w-full h-full pointer-events-none z-[16] overflow-hidden">
-        <video
-          src={rotatingEarthVideo}
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover opacity-75 select-none"
+      {/* 4K Rotating Earth Background Image */}
+      <div className="absolute inset-0 w-full h-full pointer-events-none z-[16] overflow-hidden flex items-center justify-center">
+        <img
+          src={earth4K}
+          alt="Rotating 4K Earth Globe"
+          className="w-full h-full object-contain opacity-75 select-none animate-globe-spin"
         />
         {/* Subtle dark gradient overlay to ensure text contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#030814]/40 via-transparent to-[#030814]" />
