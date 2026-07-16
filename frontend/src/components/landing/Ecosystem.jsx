@@ -336,15 +336,7 @@ export default function Ecosystem({ onCardClick, theme }) {
           </div>
         </div>
 
-        {/* Scroll Markers / Spacers (invisible markers that provide scroll depth for sticky interaction) */}
-        <div className="w-full flex flex-col items-center justify-start pointer-events-none mt-[-20vh] pb-[10vh]">
-          {Array.from({ length: 3 }).map((_, idx) => (
-            <div 
-              key={idx}
-              className="h-[45vh] w-full"
-            />
-          ))}
-        </div>
+
 
       </div>
     </section>
