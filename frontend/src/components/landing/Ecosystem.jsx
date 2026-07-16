@@ -230,7 +230,12 @@ export default function Ecosystem({ onCardClick, theme }) {
           {/* 3D Cover Flow Cards Carousel Deck */}
           <div className="relative w-full max-w-4xl h-[480px] perspective-1200 transform-style-3d flex items-center justify-center overflow-visible">
             {pillars.map((pillar, idx) => {
-              const diff = idx - activeIdx;
+              let diff = idx - activeIdx;
+              if (diff > Math.floor(pillars.length / 2)) {
+                diff -= pillars.length;
+              } else if (diff < -Math.floor(pillars.length / 2)) {
+                diff += pillars.length;
+              }
               const isActive = diff === 0;
               const isLeft = diff === -1;
               const isRight = diff === 1;
