@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Briefcase, ShoppingBag, Truck, Utensils, BedDouble, Plane, UserCheck } from 'lucide-react';
 import worldGlobe from '../../assets/images/world_globe.jpg';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const pillars = [
   {
@@ -83,53 +87,64 @@ export default function Ecosystem({ onCardClick, theme }) {
   const scrollTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      // Set scrolling status to true
-      setIsScrolling(true);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-      }, 800); // DNA is hidden 800ms after user stops scrolling
+    if (!containerRef.current) return;
 
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate progress of section passing through viewport
-      const start = viewportHeight;
-      const end = -rect.height;
-      const total = start - end;
-      
-      if (total > 0) {
-        const current = start - rect.top;
-        const progress = Math.max(0, Math.min(0.99, current / total));
-        // Map viewport range linearly to all 7 pillars (0 to 6)
-        const newActiveIdx = Math.floor(progress * pillars.length);
-        setActiveIdx(newActiveIdx);
-      }
-    };
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        id: 'ecosystem-trigger',
+        trigger: containerRef.current,
+        start: 'top top',
+        end: '+=350%',
+        pin: true,
+        scrub: true,
+        anticipatePin: 1,
+        onUpdate: (self) => {
+          setIsScrolling(true);
+          if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+          }
+          scrollTimeoutRef.current = setTimeout(() => {
+            setIsScrolling(false);
+          }, 800);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    
-    // Run initially with a small delay for page layout rendering
-    const timer = setTimeout(handleScroll, 100);
+          const progress = self.progress;
+          // Map progress linearly to the 7 cards
+          const newActiveIdx = Math.min(6, Math.floor(progress * pillars.length));
+          setActiveIdx(newActiveIdx);
+        }
+      });
+    });
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      ctx.revert();
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
-      clearTimeout(timer);
     };
-  }, []);  return (
+  }, []);
+
+  const handleSelectIndex = (idx) => {
+    if (!containerRef.current) return;
+    const trigger = ScrollTrigger.getById('ecosystem-trigger');
+    if (trigger) {
+      const start = trigger.start;
+      const end = trigger.end;
+      // Calculate scroll position corresponding to index 0 to 6
+      const targetScroll = start + (idx / (pillars.length - 1)) * (end - start);
+      window.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+      });
+    } else {
+      setActiveIdx(idx);
+    }
+  };
+
+  return (
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-slate-50 dark:bg-[#020b18] py-10 md:py-12 overflow-hidden transition-colors duration-300 w-full min-h-screen flex flex-col justify-center items-center z-10 select-none"
+      className="relative bg-slate-50 dark:bg-[#020b18] overflow-hidden transition-colors duration-300 w-full h-screen flex flex-col justify-center items-center z-10 select-none"
     >
         
         {/* ── GLOBE BACKGROUND ── */}
@@ -216,7 +231,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                   onClick={(e) => {
                     e.stopPropagation();
                     console.log('Node clicked:', pillar.title, 'idx:', idx);
-                    setActiveIdx(idx);
+                    handleSelectIndex(idx);
                   }}
                   className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs cursor-pointer pointer-events-auto ${
                     isActive ? 'scale-110 opacity-100' : 'scale-75 opacity-35 hover:opacity-75'
@@ -265,7 +280,7 @@ export default function Ecosystem({ onCardClick, theme }) {
                     if (isActive) {
                       if (onCardClick) onCardClick(pillar.title);
                     } else {
-                      setActiveIdx(idx);
+                      handleSelectIndex(idx);
                     }
                   }}
                   className={`absolute w-[280px] sm:w-[350px] transform-style-3d text-left cursor-pointer transition-all duration-800 ease-out ${cardClass}`}
