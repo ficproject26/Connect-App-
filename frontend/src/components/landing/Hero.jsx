@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Star, Globe, Gift, Tag, Headphones } from 'lucide-react';
 import ConnectionNetwork from './ConnectionNetwork';
 import WorldMap from './WorldMap';
-import earth4K from '../../assets/images/earth_4k.png';
+import earth4K from '../../assets/images/earth_4k.jpg';
 
 export default function Hero({ onJoinClick }) {
   const [typedText, setTypedText] = useState('');
@@ -114,10 +114,10 @@ export default function Hero({ onJoinClick }) {
         <img
           src={earth4K}
           alt="Rotating 4K Earth Globe"
-          className="w-full h-full object-contain opacity-75 select-none animate-globe-spin"
+          className="w-full h-full object-cover opacity-90 select-none scale-[1.15] animate-globe-spin"
         />
         {/* Subtle dark gradient overlay to ensure text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#030814]/40 via-transparent to-[#030814]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#030814]/35 via-transparent to-[#030814]" />
       </div>
 
 
