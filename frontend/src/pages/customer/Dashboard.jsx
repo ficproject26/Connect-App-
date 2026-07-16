@@ -4896,7 +4896,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* 4. Recommended for You */}
             {renderRecommendedForYou()}
 
-            {/* 5. Trust Badges */}
+            {/* 5. All Products & Services */}
+            <div className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800/60">
+              <div className="mb-6 text-left">
+                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Connect Catalog</span>
+                <h3 className="text-lg font-black text-slate-850 dark:text-white tracking-tight uppercase mt-1">
+                  Explore All Products & Services
+                </h3>
+              </div>
+              {renderCatalogSection()}
+            </div>
+
+            {/* 6. Trust Badges */}
             {renderTrustBadges()}
           </div>
         )}
