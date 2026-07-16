@@ -264,6 +264,10 @@
   perspective: 500px;
 }
 
+.perspective-1200 {
+  perspective: 1200px;
+}
+
 .transform-style-3d {
   transform-style: preserve-3d;
 }
