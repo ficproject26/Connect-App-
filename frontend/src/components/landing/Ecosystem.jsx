@@ -128,7 +128,7 @@ export default function Ecosystem({ onCardClick, theme }) {
     <section
       ref={containerRef}
       id="services"
-      className="relative w-full h-[280vh]"
+      className="relative w-full h-[400vh]"
     >
       {/* Sticky Screen Viewport Container */}
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-slate-50 dark:bg-[#020b18] transition-colors duration-300 flex flex-col justify-center items-center py-6 md:py-10 z-10">
