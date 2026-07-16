@@ -110,14 +110,14 @@ export default function Hero({ onJoinClick }) {
       </div>
 
       {/* Photorealistic Earth Curved Horizon Video Asset */}
-      <div className="absolute bottom-[-30px] sm:bottom-[-60px] md:bottom-[-100px] lg:bottom-[-150px] left-1/2 -translate-x-1/2 w-[140%] min-w-[1200px] max-w-[1800px] aspect-square pointer-events-none z-[16] flex justify-center overflow-hidden">
+      <div className="absolute bottom-[20px] sm:bottom-[40px] md:bottom-[60px] left-1/2 -translate-x-1/2 w-[90%] max-w-[850px] aspect-video pointer-events-none z-[16] flex justify-center overflow-hidden">
         <video
           src={rotatingEarthVideo}
           autoPlay
           loop
           muted
           playsInline
-          className="w-full h-full object-cover opacity-95 select-none"
+          className="w-full h-full object-contain opacity-95 select-none"
         />
       </div>
 
