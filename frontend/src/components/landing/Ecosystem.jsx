@@ -78,7 +78,7 @@ const pillars = [
 export default function Ecosystem({ onCardClick, theme }) {
   const containerRef = useRef(null);
   const rowRefs = useRef([]);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(1);
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef(null);
 
@@ -104,7 +104,14 @@ export default function Ecosystem({ onCardClick, theme }) {
       
       if (scrollRange > 0) {
         const progress = Math.max(0, Math.min(0.99, scrolled / scrollRange));
-        const newActiveIdx = Math.floor(progress * pillars.length);
+        // Map scroll range to 3 steps (0, 1, 2)
+        const step = Math.floor(progress * 3);
+        
+        let newActiveIdx = 1;
+        if (step === 0) newActiveIdx = 1;      // Group 1: Services (idx 0), Products (idx 1), Daily Needs (idx 2)
+        else if (step === 1) newActiveIdx = 4; // Group 2: Food (idx 3), Stay (idx 4), Travel (idx 5)
+        else if (step === 2) newActiveIdx = 6; // Group 3: Jobs (idx 6)
+        
         setActiveIdx(newActiveIdx);
       }
     };
@@ -206,17 +213,27 @@ export default function Ecosystem({ onCardClick, theme }) {
           {/* Centered Statically Positioned Timeline Nodes (Aligns with background DNA line) */}
           <div className="absolute left-1/2 top-[8%] bottom-[8%] -translate-x-1/2 w-10 z-10 pointer-events-none flex flex-col justify-between items-center py-4">
             {pillars.map((pillar, idx) => {
-              const isActive = idx === activeIdx;
+              const isCenterNode = idx === activeIdx;
+              const isLeftNode = idx === (activeIdx - 1 + pillars.length) % pillars.length;
+              const isRightNode = idx === (activeIdx + 1) % pillars.length;
+              const isNodeActive = isCenterNode || isLeftNode || isRightNode;
+
+              let scaleClass = 'scale-75 opacity-30';
+              if (isCenterNode) scaleClass = 'scale-110 opacity-100';
+              else if (isNodeActive) scaleClass = 'scale-90 opacity-60';
+
               return (
                 <div 
                   key={pillar.id}
-                  className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs ${
-                    isActive ? 'scale-110 opacity-100' : 'scale-75 opacity-35'
-                  }`}
+                  className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs ${scaleClass}`}
                   style={{
-                    borderColor: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
-                    color: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)'),
-                    boxShadow: isActive 
+                    borderColor: isCenterNode 
+                      ? pillar.accent 
+                      : (isNodeActive ? `${pillar.accent}80` : (theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)')),
+                    color: isCenterNode 
+                      ? pillar.accent 
+                      : (isNodeActive ? `${pillar.accent}90` : (theme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)')),
+                    boxShadow: isCenterNode 
                       ? (theme === 'dark' ? `0 0 14px ${pillar.accent}50` : `0 0 8px ${pillar.accent}20`)
                       : 'none',
                   }}
