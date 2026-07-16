@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Check, X, Star } from 'lucide-react';
 import diamondPattern from '../../assets/images/diamond_pattern.png';
 import goldPattern from '../../assets/images/gold_pattern.png';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 // Gold Chip Component
 const GoldChip = () => (
@@ -165,18 +169,71 @@ export default function Pricing({ onSelectTier }) {
     },
   ];
 
+  const [flippedCards, setFlippedCards] = useState([false, false, false]);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        id: 'pricing-trigger',
+        trigger: containerRef.current,
+        start: 'top top',
+        end: '+=180%',
+        pin: true,
+        scrub: true,
+        anticipatePin: 1,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          let flips = [false, false, false];
+          if (progress > 0.15) flips[0] = true;
+          if (progress > 0.50) flips[1] = true;
+          if (progress > 0.85) flips[2] = true;
+          setFlippedCards(flips);
+        }
+      });
+    });
+
+    return () => {
+      ctx.revert();
+    };
+  }, []);
+
+  const handleCardClick = (idx) => {
+    if (!containerRef.current) return;
+    const trigger = ScrollTrigger.getById('pricing-trigger');
+    if (trigger) {
+      const start = trigger.start;
+      const end = trigger.end;
+      const progressVal = idx === 0 ? 0.3 : idx === 1 ? 0.65 : 0.95;
+      const targetScroll = start + progressVal * (end - start);
+      window.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+      });
+    } else {
+      setFlippedCards(prev => {
+        const copy = [...prev];
+        copy[idx] = !copy[idx];
+        return copy;
+      });
+    }
+  };
+
   return (
     <section 
+      ref={containerRef}
       id="pricing" 
-      className="py-20 bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300 relative overflow-hidden"
+      className="bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300 relative overflow-hidden w-full h-screen flex flex-col justify-center items-center select-none"
     >
       {/* Background radial glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-slate-200/50 dark:bg-slate-900/10 rounded-full blur-[140px] pointer-events-none z-0" />
 
-      <div className="w-full px-6 md:px-16 lg:px-24 relative z-10 max-w-7xl mx-auto">
+      <div className="w-full px-6 md:px-16 lg:px-24 relative z-10 max-w-7xl mx-auto flex flex-col items-center justify-center">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="text-xs font-bold text-brand-gold uppercase tracking-widest">Pricing Tiers</span>
           <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight text-slate-900 dark:text-white mt-2">
             Choose Your Prestige
@@ -187,127 +244,155 @@ export default function Pricing({ onSelectTier }) {
         </div>
 
         {/* Side-by-Side Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch justify-center max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch justify-center max-w-6xl mx-auto w-full">
           {plans.map((plan, i) => (
             <div 
               key={plan.name}
-              className={`flex flex-col rounded-3xl border border-slate-200/55 dark:border-slate-800/60 shadow-xl overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl flex-grow ${
-                plan.featured ? 'ring-2 ring-amber-400 dark:ring-amber-500 shadow-amber-400/10' : ''
-              }`}
+              onClick={() => handleCardClick(i)}
+              className="flip-card-container w-full h-[540px] flex flex-col cursor-pointer"
             >
-              {/* Card visual mockup at the top */}
-              <div 
-                className="relative aspect-[1.586/1] w-full p-4 flex flex-col justify-between shadow-inner select-none overflow-hidden"
-              >
-                {/* Background Card Color/Pattern */}
-                <div className={`absolute inset-0 bg-gradient-to-tr ${plan.cardGradient} z-0`} />
-                {plan.name === 'Diamond Prestige' && (
-                  <div 
-                    className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 rounded-2xl pointer-events-none z-0"
-                    style={{ backgroundImage: `url(${diamondPattern})` }}
-                  />
-                )}
-                {plan.name === 'Gold Elite' && (
-                  <div 
-                    className="absolute inset-0 w-full h-full bg-cover bg-center opacity-[0.38] rounded-2xl pointer-events-none z-0 mix-blend-overlay"
-                    style={{ backgroundImage: `url(${goldPattern})` }}
-                  />
-                )}
-                {/* Premium Lace Border */}
-                <PremiumLaceBorder tier={plan.name} />
+              <div className={`flip-card-inner ${flippedCards[i] ? 'flipped' : ''} ${
+                plan.featured ? 'ring-2 ring-amber-400 dark:ring-amber-500 rounded-3xl shadow-amber-400/10' : ''
+              }`}>
+                
+                {/* ── CARD FRONT (Credit Card Mockup + Pricing Intro) ── */}
+                <div className="flip-card-front flex flex-col justify-between p-6 bg-white/70 dark:bg-slate-900/70 border border-slate-200/55 dark:border-slate-800/60 shadow-xl backdrop-blur-md">
+                  
+                  {/* Credit Card Artwork Container */}
+                  <div className="relative aspect-[1.586/1] w-full p-4 flex flex-col justify-between shadow-inner overflow-hidden rounded-2xl">
+                    {/* Background Card Color/Pattern */}
+                    <div className={`absolute inset-0 bg-gradient-to-tr ${plan.cardGradient} z-0`} />
+                    {plan.name === 'Diamond Prestige' && (
+                      <div 
+                        className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 pointer-events-none z-0"
+                        style={{ backgroundImage: `url(${diamondPattern})` }}
+                      />
+                    )}
+                    {plan.name === 'Gold Elite' && (
+                      <div 
+                        className="absolute inset-0 w-full h-full bg-cover bg-center opacity-[0.38] pointer-events-none z-0 mix-blend-overlay"
+                        style={{ backgroundImage: `url(${goldPattern})` }}
+                      />
+                    )}
+                    
+                    {/* Premium Lace Border */}
+                    <PremiumLaceBorder tier={plan.name} />
 
-                {/* Left EMV Chip */}
-                <div className="absolute left-[12%] bottom-[18%] z-10">
-                  <GoldChip />
-                </div>
+                    {/* Left EMV Chip */}
+                    <div className="absolute left-[12%] bottom-[18%] z-10">
+                      <GoldChip />
+                    </div>
 
-                {/* Contactless symbol */}
-                <div className="absolute right-5 top-4 z-10 flex items-center space-x-1.5">
-                  <span className={`text-[8px] font-bold tracking-wider opacity-80 uppercase ${
-                    plan.isSilver ? 'text-slate-500' : 'text-[#d4af37]'
-                  }`}>
-                    {plan.name.split(' ')[0]}
-                  </span>
-                  <span className="text-[9px] text-slate-400 opacity-60">📶</span>
-                </div>
+                    {/* Contactless symbol */}
+                    <div className="absolute right-5 top-4 z-10 flex items-center space-x-1.5">
+                      <span className={`text-[8px] font-bold tracking-wider opacity-80 uppercase ${
+                        plan.isSilver ? 'text-slate-500' : 'text-[#d4af37]'
+                      }`}>
+                        {plan.name.split(' ')[0]}
+                      </span>
+                      <span className="text-[9px] text-slate-400 opacity-60">📶</span>
+                    </div>
 
-                {/* Large Center 3D Logo */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
-                  <svg className="w-12 h-8 filter drop-shadow-[0_1.5px_4px_rgba(0,0,0,0.6)]" viewBox="0 0 100 70" fill={`url(#pricingDiamondGrid-${plan.name})`} xmlns="http://www.w3.org/2000/svg">
-                    <polygon points="50,5 90,26 50,65 10,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
-                    <polygon points="50,5 70,26 50,65 30,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
-                    <line x1="10" y1="26" x2="90" y2="26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
-                    <line x1="30" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
-                    <line x1="70" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
-                    <defs>
-                      <linearGradient id={`pricingDiamondGrid-${plan.name}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={plan.isSilver ? "#FFFFFF" : "#FFF9E6"} />
-                        <stop offset="40%" stopColor={plan.isSilver ? "#CBD5E1" : "#F5D061"} />
-                        <stop offset="100%" stopColor={plan.isSilver ? "#64748B" : "#805B07"} />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <span className={`text-[11px] font-extrabold tracking-[0.25em] mt-1.5 uppercase font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${
-                    plan.isSilver 
-                      ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-350 to-slate-500'
-                      : 'text-transparent bg-clip-text bg-gradient-to-r from-[#FFF9E6] via-[#D4AF37] to-[#805B07]'
-                  }`}>
-                    CONNECT
-                  </span>
-                </div>
-              </div>
+                    {/* Large Center 3D Logo */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
+                      <svg className="w-12 h-8 filter drop-shadow-[0_1.5px_4px_rgba(0,0,0,0.6)]" viewBox="0 0 100 70" fill={`url(#pricingDiamondGrid-${plan.name})`} xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,5 90,26 50,65 10,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
+                        <polygon points="50,5 70,26 50,65 30,26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
+                        <line x1="10" y1="26" x2="90" y2="26" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1.2" />
+                        <line x1="30" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
+                        <line x1="70" y1="26" x2="50" y2="5" stroke={plan.isSilver ? "#64748B" : "#AA7C11"} strokeWidth="1" />
+                        <defs>
+                          <linearGradient id={`pricingDiamondGrid-${plan.name}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={plan.isSilver ? "#FFFFFF" : "#FFF9E6"} />
+                            <stop offset="40%" stopColor={plan.isSilver ? "#CBD5E1" : "#F5D061"} />
+                            <stop offset="100%" stopColor={plan.isSilver ? "#64748B" : "#805B07"} />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <span className={`text-[11px] font-extrabold tracking-[0.25em] mt-1.5 uppercase font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${
+                        plan.isSilver 
+                          ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-350 to-slate-500'
+                          : 'text-transparent bg-clip-text bg-gradient-to-r from-[#FFF9E6] via-[#D4AF37] to-[#805B07]'
+                      }`}>
+                        CONNECT
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Card Details Pane */}
-              <div className="p-6 flex flex-col flex-grow justify-between text-left relative z-10">
-                <div>
-                  {/* Badge & Price */}
-                  <div className="flex items-center justify-between mb-5 pb-5 border-b border-slate-100 dark:border-slate-800/80">
-                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${plan.badgeClass}`}>
+                  {/* Card Visual Front Info */}
+                  <div className="flex flex-col items-center justify-center flex-grow py-5 text-center">
+                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${plan.badgeClass} mb-3.5`}>
                       {plan.name}
                     </span>
-                    <div className="flex items-baseline">
-                      <span className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
+                    <div className="flex items-baseline mb-3.5">
+                      <span className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
                         ${plan.price}
                       </span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">/mo</span>
                     </div>
+                    <span className="text-[10px] font-bold tracking-widest text-amber-500 uppercase animate-pulse">
+                      Scroll or Click for Benefits
+                    </span>
                   </div>
 
-                  {/* Plan Features */}
-                  <h3 className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase mb-4 select-none">
-                    Membership Benefits
-                  </h3>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-650 dark:text-slate-300">
-                        {feature.vip ? (
-                          <Star className="w-4 h-4 text-brand-gold fill-brand-gold shrink-0 mt-0.5" />
-                        ) : feature.included ? (
-                          <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        ) : (
-                          <X className="w-4 h-4 text-slate-350 dark:text-slate-600 shrink-0 mt-0.5" />
-                        )}
-                        <span className={!feature.included ? 'text-slate-405 dark:text-slate-500 line-through' : ''}>
-                          {feature.text}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
 
-                {/* CTA button */}
-                <button 
-                  onClick={() => onSelectTier(plan.name)}
-                  className={`w-full py-3 px-4 rounded-xl text-xs font-bold tracking-wide transition-all shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer mt-auto text-center ${
-                    plan.featured
-                      ? 'bg-gradient-gold text-slate-900 hover:brightness-105'
-                      : plan.dark
-                      ? 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100'
-                      : 'bg-slate-105 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {plan.buttonText}
-                </button>
+                {/* ── CARD BACK (Benefits Details + Button) ── */}
+                <div className="flip-card-back flex flex-col justify-between p-6 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 shadow-2xl">
+                  <div>
+                    {/* Badge & Price */}
+                    <div className="flex items-center justify-between mb-5 pb-5 border-b border-slate-100 dark:border-slate-800/80">
+                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${plan.badgeClass}`}>
+                        {plan.name}
+                      </span>
+                      <div className="flex items-baseline">
+                        <span className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
+                          ${plan.price}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">/mo</span>
+                      </div>
+                    </div>
+
+                    {/* Plan Features */}
+                    <h3 className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase mb-4 select-none">
+                      Membership Benefits
+                    </h3>
+                    <ul className="space-y-3 mb-8">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-650 dark:text-slate-350">
+                          {feature.vip ? (
+                            <Star className="w-4 h-4 text-brand-gold fill-brand-gold shrink-0 mt-0.5" />
+                          ) : feature.included ? (
+                            <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          ) : (
+                            <X className="w-4 h-4 text-slate-350 dark:text-slate-600 shrink-0 mt-0.5" />
+                          )}
+                          <span className={!feature.included ? 'text-slate-400 dark:text-slate-500 line-through' : ''}>
+                            {feature.text}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* CTA button */}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectTier(plan.name);
+                    }}
+                    className={`w-full py-3 px-4 rounded-xl text-xs font-bold tracking-wide transition-all shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer mt-auto text-center ${
+                      plan.featured
+                        ? 'bg-gradient-gold text-slate-900 hover:brightness-105'
+                        : plan.dark
+                        ? 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100'
+                        : 'bg-slate-105 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {plan.buttonText}
+                  </button>
+                </div>
+
               </div>
             </div>
           ))}
