@@ -129,7 +129,7 @@ export default function Ecosystem({ onCardClick, theme }) {
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-slate-50 dark:bg-[#020b18] py-12 md:py-16 overflow-hidden transition-colors duration-300 w-full h-auto"
+      className="relative bg-slate-50 dark:bg-[#020b18] py-10 md:py-12 overflow-hidden transition-colors duration-300 w-full h-auto max-h-[750px]"
     >
       {/* ── GLOBE BACKGROUND ── */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-300">
