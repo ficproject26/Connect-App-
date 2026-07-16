@@ -2807,7 +2807,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         className="relative"
         onMouseLeave={handleMouseLeave}
       >
-        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-2.5 flex items-center justify-start md:justify-center gap-6 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
+        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-8 py-2.5 flex items-center justify-start md:justify-center gap-10 sm:gap-12 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
           {subNavbarCategories.map((cat) => {
             const isActive = activeTab === cat;
             const Icon = icons[cat] || ShoppingBag;
@@ -3770,22 +3770,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     });
 
     return (
-      <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-10 text-slate-800 dark:text-slate-200">
-        {/* Section title */}
-        <div className="text-left mb-6">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-            {activeTab === 'Jobs' ? 'Careers' : 'Connect Marketplace Catalog'}
-          </h3>
-          <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white font-sans tracking-tight mt-1">
-            {activeTab === 'Jobs' ? 'Join the Connect Circle' : (activeTab === 'Home' ? 'Select & Order Pillar Deals' : activeTab)}
-          </h2>
-          {activeTab === 'Jobs' && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed max-w-xl">
-              Help us build India's most premium luxury and everyday convenience ecosystem.
-            </p>
-          )}
-        </div>
-
+      <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-6 text-slate-800 dark:text-slate-200">
         <div className="flex flex-col gap-6 w-full items-stretch">
           {/* Horizontal Filters Bar */}
           <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">

@@ -79,9 +79,20 @@ export default function Ecosystem({ onCardClick, theme }) {
   const containerRef = useRef(null);
   const rowRefs = useRef([]);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
+      // Set scrolling status to true
+      setIsScrolling(true);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 800); // DNA is hidden 800ms after user stops scrolling
+
       const centerY = window.innerHeight / 2;
       let closestIdx = 0;
       let minDistance = Infinity;
@@ -111,6 +122,9 @@ export default function Ecosystem({ onCardClick, theme }) {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
       clearTimeout(timer);
     };
   }, []);
@@ -157,8 +171,12 @@ export default function Ecosystem({ onCardClick, theme }) {
 
         {/* Timeline Layout */}
         <div className="relative w-full">
-          {/* DNA Double Helix Timeline Line (Redesigned matching mockup image) */}
-          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 -translate-x-1/2 w-16 z-0 pointer-events-none flex flex-col justify-between items-center py-6 overflow-hidden perspective-500 transform-style-3d opacity-65 dark:opacity-85">
+          {/* DNA Double Helix Timeline Line (Redesigned matching vector icon style) */}
+          <div 
+            className={`absolute left-8 md:left-1/2 top-0 bottom-0 -translate-x-1/2 w-16 z-0 pointer-events-none flex flex-col justify-between items-center py-6 overflow-hidden perspective-500 transform-style-3d transition-all duration-700 ${
+              isScrolling ? 'opacity-35 dark:opacity-50 scale-100' : 'opacity-0 scale-95'
+            }`}
+          >
             {Array.from({ length: 55 }).map((_, i) => (
               <div 
                 key={i}
@@ -168,28 +186,21 @@ export default function Ecosystem({ onCardClick, theme }) {
                   transformStyle: 'preserve-3d'
                 }}
               >
-                {/* Left 3D Red/Rose Nucleotide Ball */}
+                {/* Left Simple Nucleotide Ball */}
                 <div 
-                  className="w-3 h-3 rounded-full shrink-0" 
+                  className="w-2.5 h-2.5 rounded-full bg-slate-600 dark:bg-slate-350 shrink-0" 
                   style={{ 
-                    background: 'radial-gradient(circle at 30% 30%, #fecdd3 0%, #e11d48 60%, #881337 100%)',
-                    boxShadow: '0 0 10px rgba(225, 29, 72, 0.8), inset 0 -1px 2px rgba(0,0,0,0.4)',
                     transform: 'translateZ(12px)'
                   }} 
                 />
-                {/* Gradient Connection Bar */}
+                {/* Connection Bar */}
                 <div 
-                  className="flex-grow h-[1.5px] mx-1 opacity-70" 
-                  style={{
-                    background: 'linear-gradient(to right, rgba(225, 29, 72, 0.5), rgba(37, 99, 235, 0.5))'
-                  }}
+                  className="flex-grow h-[1px] bg-slate-300 dark:bg-slate-700 mx-1.5 opacity-60" 
                 />
-                {/* Right 3D Blue/Indigo Nucleotide Ball */}
+                {/* Right Simple Nucleotide Ball */}
                 <div 
-                  className="w-3 h-3 rounded-full shrink-0" 
+                  className="w-2.5 h-2.5 rounded-full bg-slate-600 dark:bg-slate-350 shrink-0" 
                   style={{ 
-                    background: 'radial-gradient(circle at 30% 30%, #bfdbfe 0%, #2563eb 60%, #1e3a8a 100%)',
-                    boxShadow: '0 0 10px rgba(37, 99, 235, 0.8), inset 0 -1px 2px rgba(0,0,0,0.4)',
                     transform: 'translateZ(-12px)'
                   }} 
                 />
