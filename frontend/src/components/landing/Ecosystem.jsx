@@ -78,7 +78,7 @@ const pillars = [
 export default function Ecosystem({ onCardClick, theme }) {
   const containerRef = useRef(null);
   const rowRefs = useRef([]);
-  const [activeIdx, setActiveIdx] = useState(1);
+  const [activeIdx, setActiveIdx] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef(null);
 
@@ -105,14 +105,8 @@ export default function Ecosystem({ onCardClick, theme }) {
       if (total > 0) {
         const current = start - rect.top;
         const progress = Math.max(0, Math.min(0.99, current / total));
-        // Map viewport range to 3 steps (0, 1, 2)
-        const step = Math.floor(progress * 3);
-        
-        let newActiveIdx = 1;
-        if (step === 0) newActiveIdx = 1;      // Group 1: Services (idx 0), Products (idx 1), Daily Needs (idx 2)
-        else if (step === 1) newActiveIdx = 4; // Group 2: Food (idx 3), Stay (idx 4), Travel (idx 5)
-        else if (step === 2) newActiveIdx = 6; // Group 3: Jobs (idx 6)
-        
+        // Map viewport range linearly to all 7 pillars (0 to 6)
+        const newActiveIdx = Math.floor(progress * pillars.length);
         setActiveIdx(newActiveIdx);
       }
     };
@@ -214,27 +208,17 @@ export default function Ecosystem({ onCardClick, theme }) {
           {/* Centered Statically Positioned Timeline Nodes (Aligns with background DNA line) */}
           <div className="absolute left-1/2 top-[8%] bottom-[8%] -translate-x-1/2 w-10 z-10 pointer-events-none flex flex-col justify-between items-center py-4">
             {pillars.map((pillar, idx) => {
-              const isCenterNode = idx === activeIdx;
-              const isLeftNode = idx === (activeIdx - 1 + pillars.length) % pillars.length;
-              const isRightNode = idx === (activeIdx + 1) % pillars.length;
-              const isNodeActive = isCenterNode || isLeftNode || isRightNode;
-
-              let scaleClass = 'scale-75 opacity-30';
-              if (isCenterNode) scaleClass = 'scale-110 opacity-100';
-              else if (isNodeActive) scaleClass = 'scale-90 opacity-60';
-
+              const isActive = idx === activeIdx;
               return (
                 <div 
                   key={pillar.id}
-                  className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs ${scaleClass}`}
+                  className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs ${
+                    isActive ? 'scale-110 opacity-100' : 'scale-75 opacity-35'
+                  }`}
                   style={{
-                    borderColor: isCenterNode 
-                      ? pillar.accent 
-                      : (isNodeActive ? `${pillar.accent}80` : (theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)')),
-                    color: isCenterNode 
-                      ? pillar.accent 
-                      : (isNodeActive ? `${pillar.accent}90` : (theme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)')),
-                    boxShadow: isCenterNode 
+                    borderColor: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
+                    color: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)'),
+                    boxShadow: isActive 
                       ? (theme === 'dark' ? `0 0 14px ${pillar.accent}50` : `0 0 8px ${pillar.accent}20`)
                       : 'none',
                   }}
@@ -248,18 +232,13 @@ export default function Ecosystem({ onCardClick, theme }) {
           {/* 3D Cover Flow Cards Carousel Deck */}
           <div className="relative z-30 w-full max-w-4xl h-[480px] perspective-1200 transform-style-3d flex items-center justify-center overflow-visible pointer-events-auto">
             {pillars.map((pillar, idx) => {
-              let diff = idx - activeIdx;
-              if (diff > Math.floor(pillars.length / 2)) {
-                diff -= pillars.length;
-              } else if (diff < -Math.floor(pillars.length / 2)) {
-                diff += pillars.length;
-              }
+              const diff = idx - activeIdx;
               const isActive = diff === 0;
               const isLeft = diff === -1;
               const isRight = diff === 1;
               const isVisible = Math.abs(diff) <= 1;
 
-               // Determine CSS class based on circular diff offset
+               // Determine CSS class based on linear diff offset
               let cardClass = '';
               if (isActive) {
                 cardClass = 'carousel-card-center';
@@ -276,18 +255,11 @@ export default function Ecosystem({ onCardClick, theme }) {
                   key={pillar.id}
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('Ecosystem card clicked:', pillar.title, 'isVisible:', isVisible);
-                    
-                    // Determine step group index
-                    let targetIdx = 1;
-                    if (idx >= 0 && idx <= 2) targetIdx = 1;
-                    else if (idx >= 3 && idx <= 5) targetIdx = 4;
-                    else if (idx === 6) targetIdx = 6;
-                    
+                    console.log('Ecosystem card clicked:', pillar.title, 'idx:', idx, 'isActive:', isActive);
                     if (isActive) {
                       if (onCardClick) onCardClick(pillar.title);
                     } else {
-                      setActiveIdx(targetIdx);
+                      setActiveIdx(idx);
                     }
                   }}
                   className={`absolute w-[280px] sm:w-[350px] transform-style-3d text-left cursor-pointer transition-all duration-800 ease-out ${cardClass}`}
