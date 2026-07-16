@@ -109,12 +109,12 @@ export default function Hero({ onJoinClick }) {
         </div>
       </div>
 
-      {/* 4K Rotating Earth Background Image */}
+      {/* 4K Earth Background Image */}
       <div className="absolute inset-0 w-full h-full pointer-events-none z-[16] overflow-hidden flex items-center justify-center">
         <img
           src={earth4K}
-          alt="Rotating 4K Earth Globe"
-          className="w-full h-full object-cover opacity-90 select-none scale-[1.15] animate-globe-spin"
+          alt="4K Earth Globe"
+          className="w-full h-full object-cover opacity-90 select-none"
         />
         {/* Subtle dark gradient overlay to ensure text contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#030814]/35 via-transparent to-[#030814]" />
