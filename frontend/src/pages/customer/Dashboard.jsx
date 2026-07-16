@@ -22,7 +22,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, Home, ArrowRight
+  Gem, CheckCircle2, Home, ArrowRight, Tag
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';

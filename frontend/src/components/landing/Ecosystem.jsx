@@ -157,33 +157,40 @@ export default function Ecosystem({ onCardClick, theme }) {
 
         {/* Timeline Layout */}
         <div className="relative w-full">
-          {/* DNA Double Helix Timeline Line */}
-          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 -translate-x-1/2 w-14 z-0 pointer-events-none flex flex-col justify-between items-center py-4 overflow-hidden perspective-500 transform-style-3d opacity-25 dark:opacity-40">
-            {Array.from({ length: 45 }).map((_, i) => (
+          {/* DNA Double Helix Timeline Line (Redesigned matching mockup image) */}
+          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 -translate-x-1/2 w-16 z-0 pointer-events-none flex flex-col justify-between items-center py-6 overflow-hidden perspective-500 transform-style-3d opacity-65 dark:opacity-85">
+            {Array.from({ length: 55 }).map((_, i) => (
               <div 
                 key={i}
-                className="w-10 h-0.5 relative flex items-center justify-between animate-dna-rotate"
+                className="w-12 h-3 relative flex items-center justify-between animate-dna-rotate"
                 style={{
                   animationDelay: `${i * -0.12}s`,
                   transformStyle: 'preserve-3d'
                 }}
               >
-                {/* Left nucleotide node */}
+                {/* Left 3D Red/Rose Nucleotide Ball */}
                 <div 
-                  className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] shrink-0" 
+                  className="w-3 h-3 rounded-full shrink-0" 
                   style={{ 
-                    color: `hsl(${i * 8}, 85%, 60%)`, 
-                    backgroundColor: 'currentColor' 
+                    background: 'radial-gradient(circle at 30% 30%, #fecdd3 0%, #e11d48 60%, #881337 100%)',
+                    boxShadow: '0 0 10px rgba(225, 29, 72, 0.8), inset 0 -1px 2px rgba(0,0,0,0.4)',
+                    transform: 'translateZ(12px)'
                   }} 
                 />
-                {/* Connection bar */}
-                <div className="flex-grow h-[1px] bg-slate-350/50 dark:bg-slate-750/30 mx-1" />
-                {/* Right nucleotide node */}
+                {/* Gradient Connection Bar */}
                 <div 
-                  className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] shrink-0" 
+                  className="flex-grow h-[1.5px] mx-1 opacity-70" 
+                  style={{
+                    background: 'linear-gradient(to right, rgba(225, 29, 72, 0.5), rgba(37, 99, 235, 0.5))'
+                  }}
+                />
+                {/* Right 3D Blue/Indigo Nucleotide Ball */}
+                <div 
+                  className="w-3 h-3 rounded-full shrink-0" 
                   style={{ 
-                    color: `hsl(${(i * 8 + 180) % 360}, 85%, 60%)`, 
-                    backgroundColor: 'currentColor' 
+                    background: 'radial-gradient(circle at 30% 30%, #bfdbfe 0%, #2563eb 60%, #1e3a8a 100%)',
+                    boxShadow: '0 0 10px rgba(37, 99, 235, 0.8), inset 0 -1px 2px rgba(0,0,0,0.4)',
+                    transform: 'translateZ(-12px)'
                   }} 
                 />
               </div>
