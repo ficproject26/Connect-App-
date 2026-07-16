@@ -95,16 +95,17 @@ export default function Ecosystem({ onCardClick, theme }) {
 
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      
-      const sectionHeight = rect.height;
       const viewportHeight = window.innerHeight;
       
-      const scrolled = -rect.top; 
-      const scrollRange = sectionHeight - viewportHeight;
+      // Calculate progress of section passing through viewport
+      const start = viewportHeight;
+      const end = -rect.height;
+      const total = start - end;
       
-      if (scrollRange > 0) {
-        const progress = Math.max(0, Math.min(0.99, scrolled / scrollRange));
-        // Map scroll range to 3 steps (0, 1, 2)
+      if (total > 0) {
+        const current = start - rect.top;
+        const progress = Math.max(0, Math.min(0.99, current / total));
+        // Map viewport range to 3 steps (0, 1, 2)
         const step = Math.floor(progress * 3);
         
         let newActiveIdx = 1;
@@ -134,7 +135,7 @@ export default function Ecosystem({ onCardClick, theme }) {
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-slate-50 dark:bg-[#020b18] py-12 md:py-20 overflow-hidden transition-colors duration-300 min-h-[120vh]"
+      className="relative bg-slate-50 dark:bg-[#020b18] py-12 md:py-16 overflow-hidden transition-colors duration-300 w-full h-auto"
     >
       {/* ── GLOBE BACKGROUND ── */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-300">
@@ -170,8 +171,8 @@ export default function Ecosystem({ onCardClick, theme }) {
           </p>
         </div>
 
-        {/* Sticky Deck Container for DNA line and 3D Cards Carousel */}
-        <div className="sticky top-[12vh] h-[72vh] w-full flex flex-col justify-center items-center overflow-visible z-10 select-none">
+        {/* Deck Container for DNA line and 3D Cards Carousel */}
+        <div className="relative min-h-[500px] w-full flex flex-col justify-center items-center overflow-visible z-10 select-none mt-4 pb-8">
           
           {/* DNA Double Helix Timeline Line (Centered background) */}
           <div 
@@ -274,9 +275,19 @@ export default function Ecosystem({ onCardClick, theme }) {
                 <div
                   key={pillar.id}
                   onClick={(e) => {
+                    e.stopPropagation();
                     console.log('Ecosystem card clicked:', pillar.title, 'isVisible:', isVisible);
-                    if (isVisible && onCardClick) {
-                      onCardClick(pillar.title);
+                    
+                    // Determine step group index
+                    let targetIdx = 1;
+                    if (idx >= 0 && idx <= 2) targetIdx = 1;
+                    else if (idx >= 3 && idx <= 5) targetIdx = 4;
+                    else if (idx === 6) targetIdx = 6;
+                    
+                    if (isActive) {
+                      if (onCardClick) onCardClick(pillar.title);
+                    } else {
+                      setActiveIdx(targetIdx);
                     }
                   }}
                   className={`absolute w-[280px] sm:w-[350px] transform-style-3d text-left cursor-pointer transition-all duration-800 ease-out ${cardClass}`}
