@@ -157,8 +157,38 @@ export default function Ecosystem({ onCardClick, theme }) {
 
         {/* Timeline Layout */}
         <div className="relative w-full">
-          {/* Central Vertical Line */}
-          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-amber-500 via-sky-500 to-violet-500 z-0 opacity-20 dark:opacity-30 transition-opacity duration-300" />
+          {/* DNA Double Helix Timeline Line */}
+          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 -translate-x-1/2 w-14 z-0 pointer-events-none flex flex-col justify-between items-center py-4 overflow-hidden perspective-500 transform-style-3d opacity-25 dark:opacity-40">
+            {Array.from({ length: 45 }).map((_, i) => (
+              <div 
+                key={i}
+                className="w-10 h-0.5 relative flex items-center justify-between animate-dna-rotate"
+                style={{
+                  animationDelay: `${i * -0.12}s`,
+                  transformStyle: 'preserve-3d'
+                }}
+              >
+                {/* Left nucleotide node */}
+                <div 
+                  className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] shrink-0" 
+                  style={{ 
+                    color: `hsl(${i * 8}, 85%, 60%)`, 
+                    backgroundColor: 'currentColor' 
+                  }} 
+                />
+                {/* Connection bar */}
+                <div className="flex-grow h-[1px] bg-slate-350/50 dark:bg-slate-750/30 mx-1" />
+                {/* Right nucleotide node */}
+                <div 
+                  className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] shrink-0" 
+                  style={{ 
+                    color: `hsl(${(i * 8 + 180) % 360}, 85%, 60%)`, 
+                    backgroundColor: 'currentColor' 
+                  }} 
+                />
+              </div>
+            ))}
+          </div>
 
           {/* Pillars List */}
           <div className="space-y-12 md:space-y-18">
@@ -192,10 +222,10 @@ export default function Ecosystem({ onCardClick, theme }) {
                   {!isEven ? (
                     <div
                       onClick={() => isActive && onCardClick(pillar.title)}
-                      className={`w-full max-w-xs md:max-w-sm md:ml-auto md:mr-12 lg:mr-20 text-left transition-all duration-500 transform ${
+                      className={`w-full max-w-xs md:max-w-sm md:ml-auto md:mr-12 lg:mr-20 text-left ecosystem-card-transition ${
                         isActive 
-                          ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto cursor-pointer' 
-                          : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+                          ? 'ecosystem-card-left-active' 
+                          : 'ecosystem-card-left-inactive'
                       }`}
                     >
                       <div
@@ -258,10 +288,10 @@ export default function Ecosystem({ onCardClick, theme }) {
                   {isEven ? (
                     <div
                       onClick={() => isActive && onCardClick(pillar.title)}
-                      className={`w-full max-w-xs md:max-w-sm md:mr-auto md:ml-12 lg:ml-20 text-left transition-all duration-500 transform ${
+                      className={`w-full max-w-xs md:max-w-sm md:mr-auto md:ml-12 lg:ml-20 text-left ecosystem-card-transition ${
                         isActive 
-                          ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto cursor-pointer' 
-                          : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+                          ? 'ecosystem-card-right-active' 
+                          : 'ecosystem-card-right-inactive'
                       }`}
                     >
                       <div

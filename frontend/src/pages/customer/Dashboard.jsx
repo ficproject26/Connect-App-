@@ -22,7 +22,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2
+  Gem, CheckCircle2, Home, ArrowRight
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -34,6 +34,7 @@ import logoImg from '../../assets/images/forge india logo.jpg';
 import hotelActual from '../../assets/images/hotel_shubha_sai_actual.png';
 import skMockup from '../../assets/images/sk_technologies_mockup.png';
 import shoppingBannerCouple from '../../assets/images/shopping_banner_couple.png';
+import phoneMockupDashboard from '../../assets/images/phone_mockup_dashboard.png';
 
 const initialProducts = [];
 
@@ -1967,13 +1968,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   // Sub-navbar categories
   const subNavbarCategories = [
     'Home',
-    'Services',
     'Products',
+    'Services',
     'Daily Needs',
     'Food',
     'Stay',
     'Travel',
-    'Jobs'
+    'Jobs',
+    'Membership'
   ];
 
   // Filters logic
@@ -2138,29 +2140,78 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   // RENDER HELPERS
   const renderHeaderIcons = (isMobile = false) => {
     return (
-      <div className={`flex items-center ${isMobile ? 'gap-1.5' : 'gap-3 md:gap-4'}`}>
+      <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-5 lg:gap-6'}`}>
         {/* Theme Toggle Button */}
         <button 
           onClick={toggleTheme}
-          className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
+          className="flex flex-col items-center gap-1 p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {theme === 'dark' ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5" />}
+          {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+          {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Theme</span>}
+        </button>
+
+        {/* Offers */}
+        <button 
+          onClick={() => triggerNotification("Opening exclusive member offers page...")}
+          className="relative flex flex-col items-center gap-1 p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          title="Exclusive Offers"
+        >
+          <div className="relative">
+            <Tag className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+              3
+            </span>
+          </div>
+          {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Offers</span>}
+        </button>
+
+        {/* Wishlist */}
+        <button 
+          onClick={() => setIsWishlistOpen(true)}
+          className="relative flex flex-col items-center gap-1 p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          title="My Wishlist"
+        >
+          <div className="relative">
+            <Heart className={`w-5 h-5 text-slate-700 dark:text-slate-300 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+            {favorites.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+                {favorites.length}
+              </span>
+            )}
+          </div>
+          {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Wishlist</span>}
+        </button>
+
+        {/* Cart */}
+        <button 
+          onClick={() => setIsCartOpen(true)}
+          className="relative flex flex-col items-center gap-1 p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          title="My Cart"
+        >
+          <div className="relative">
+            <ShoppingCart className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+              {cart.length || 2}
+            </span>
+          </div>
+          {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Cart</span>}
         </button>
 
         {/* Notifications */}
         <div className="relative">
           <button 
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
+            className="relative flex flex-col items-center gap-1 p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
             title="Notifications"
           >
-            <Bell className="w-4.5 h-4.5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-                {unreadCount}
+            <div className="relative">
+              <Bell className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+                {unreadCount || 3}
               </span>
-            )}
+            </div>
+            {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Notifications</span>}
           </button>
 
           {isNotificationsOpen && (
@@ -2203,75 +2254,103 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </>
           )}
         </div>
-
-        {/* Wishlist */}
-        <button 
-          onClick={() => setIsWishlistOpen(true)}
-          className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
-          title="My Wishlist"
-        >
-          <Heart className="w-4.5 h-4.5" />
-          {favorites.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-              {favorites.length}
-            </span>
-          )}
-        </button>
-
-        {/* Cart */}
-        <button 
-          onClick={() => setIsCartOpen(true)}
-          className="relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
-          title="My Cart"
-        >
-          <ShoppingCart className="w-4.5 h-4.5" />
-          {cart.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FFC107] text-[#0b1e36] text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-              {cart.length}
-            </span>
-          )}
-        </button>
-
-        {/* Profile Avatar / Badge */}
-        <div 
-          onClick={() => setIsProfileModalOpen(true)}
-          className="flex items-center gap-2 cursor-pointer select-none pl-2 border-l border-slate-200 dark:border-slate-800/60"
-        >
-          <div className="relative">
-            <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-950/40 text-[#f43397] flex items-center justify-center font-bold text-sm border border-rose-200 dark:border-rose-900/40 shrink-0">
-              {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-            </div>
-            {/* Membership Symbol Overlay badge */}
-            <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-white dark:border-slate-900 flex items-center justify-center ${tier.badgeBg} shadow-xs shrink-0`}>
-              <tier.icon className={`w-2.5 h-2.5 ${tier.badgeText}`} />
-            </div>
-          </div>
-          <div className="hidden sm:flex flex-col text-left leading-none">
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[80px]">
-              {(currentUser?.name || profileName).split(' ')[0]}
-            </span>
-            <span className={`text-[8px] font-bold uppercase mt-0.5 ${tier.colorClass}`}>
-              {tier.name}
-            </span>
-          </div>
-        </div>
       </div>
     );
   };
 
   const renderDashboardHeader = () => {
     return (
-      <header className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-3.5 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors">
-        {/* Top Row: Logo & Mobile Icons */}
-        <div className="flex items-center justify-between w-full md:w-auto">
+      <header className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors">
+        {/* Left Row: Logo & Mobile Icons */}
+        <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
           {/* Logo */}
           <div className="flex items-center gap-2.5 select-none cursor-pointer" onClick={clearAllFilters}>
-            <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60">
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60">
               <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
             </div>
-            <div className="flex flex-col leading-none text-left">
-              <span className="text-sm font-black tracking-wide text-[#0b1e36] dark:text-white font-sans">Connect App</span>
-            </div>
+            <span className="text-sm sm:text-base font-black tracking-wide text-slate-900 dark:text-white font-sans">Connect App</span>
+          </div>
+
+          {/* Location Selector (aligned inline on desktop) */}
+          <div className="relative shrink-0 hidden md:block">
+            <button 
+              onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800/60 rounded-full bg-slate-50/20 dark:bg-[#0a192f]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-[10px] font-bold text-slate-700 dark:text-slate-200 transition-colors"
+            >
+              <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span>{selectedLocation.city}, India</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {isLocationDropdownOpen && (
+              <>
+                <div 
+                  onClick={() => setIsLocationDropdownOpen(false)}
+                  className="fixed inset-0 z-40 bg-transparent" 
+                />
+                <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 text-slate-800 dark:text-slate-200">
+                  <div className="relative flex items-center border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl px-2.5 py-1.5 focus-within:border-[#FFC107]">
+                    <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
+                    <input 
+                      type="text"
+                      placeholder="Search area or city..."
+                      value={locationSearchQuery}
+                      onChange={(e) => setLocationSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && locationSearchQuery.trim() !== '') {
+                          const query = locationSearchQuery.trim();
+                          const updated = { city: query, state: 'Karnataka', area: 'Custom Area' };
+                          setSelectedLocation(updated);
+                          setIsLocationDropdownOpen(false);
+                          setLocationSearchQuery('');
+                          triggerNotification(`Switched location to ${query}`);
+                        }
+                      }}
+                      className="w-full text-xs bg-transparent focus:outline-none text-slate-850 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+                    />
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                          const detected = { city: 'Bangalore', state: 'Karnataka', area: 'HSR Layout' };
+                          setSelectedLocation(detected);
+                          setIsLocationDropdownOpen(false);
+                          triggerNotification("Located: Bangalore, India");
+                        });
+                      }
+                    }}
+                    className="mt-3 w-full flex items-center gap-2 py-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-100/50 transition-colors cursor-pointer px-3"
+                  >
+                    <span className="text-xs font-bold">Use Current Location</span>
+                  </button>
+
+                  <div className="mt-3.5 text-left">
+                    <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Popular Cities</h4>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['Bangalore', 'Chennai', 'Hyderabad', 'Mumbai', 'Delhi', 'Coimbatore'].map((cityName) => (
+                        <button
+                          key={cityName}
+                          onClick={() => {
+                            setSelectedLocation({ city: cityName, state: 'India', area: 'City Center' });
+                            setIsLocationDropdownOpen(false);
+                            triggerNotification(`Switched location to ${cityName}`);
+                          }}
+                          className={`text-[9px] font-extrabold py-1 px-1.5 rounded-lg border transition-all cursor-pointer ${
+                            selectedLocation.city === cityName 
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {cityName}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Icons shown only on mobile */}
@@ -2281,255 +2360,44 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         </div>
 
         {/* Search Input in middle */}
-        <div className="relative w-full md:max-w-xl flex items-center border border-slate-300 dark:border-slate-700 rounded-full bg-slate-50/50 dark:bg-slate-800/50 pl-4 py-1 pr-1.5 focus-within:border-amber-400 transition-all">
-          <div 
-            onClick={() => setIsSearchCategoryDropdownOpen(!isSearchCategoryDropdownOpen)}
-            className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 pr-3 mr-3 shrink-0 cursor-pointer select-none relative"
-          >
-            <span>{searchCategory}</span>
-            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-            
-            {isSearchCategoryDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-44 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg py-1 z-50 text-left">
-                {['All', 'Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSearchCategory(cat);
-                      setIsSearchCategoryDropdownOpen(false);
-                      if (cat !== 'All') {
-                        setActiveTab(cat);
-                        setSelectedSubNavbarCategory(cat);
-                      } else {
-                        setActiveTab('Home');
-                        setSelectedSubNavbarCategory('All');
-                      }
-                    }}
-                    className={`w-full px-3 py-1.5 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-900/50 flex items-center justify-between transition-colors ${
-                      searchCategory === cat ? 'text-amber-500 bg-amber-500/5' : 'text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <span>{cat}</span>
-                    {searchCategory === cat && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="relative w-full md:max-w-xl flex items-center border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50/50 dark:bg-slate-900/50 pl-4 py-1.5 pr-1.5 focus-within:border-[#FFC107] focus-within:ring-1 focus-within:ring-[#FFC107]/20 transition-all">
           <input 
             type="text"
-            placeholder="Search for products, services, food, travel and more..."
+            placeholder="Search for products, services, food, hotels, travel and more..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs bg-transparent focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-1"
+            className="w-full text-xs bg-transparent focus:outline-none text-slate-850 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-1"
           />
-          <button className="w-8.5 h-8.5 rounded-full bg-[#FFC107] hover:bg-amber-500 text-[#0b1e36] flex items-center justify-center shrink-0 cursor-pointer shadow-xs transition-colors">
-            <Search className="w-4 h-4" />
+          <button className="w-8 h-8 rounded-full bg-[#FFC107] hover:bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 cursor-pointer transition-colors shadow-xs">
+            <Search className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Location Selector & Desktop Icons */}
-        <div className="flex items-center justify-between gap-5 w-full md:w-auto">
-          {/* Location Selector Button & Dropdown */}
-          <div className="relative shrink-0 w-full md:w-auto">
-            <button 
-              onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1 border border-slate-200 dark:border-slate-800/60 rounded-xl bg-slate-50/20 dark:bg-[#0a192f]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-left transition-colors w-full md:w-auto"
-            >
-              <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-              <div className="leading-tight pr-1 flex-grow">
-                <div className="text-[10px] font-extrabold text-slate-800 dark:text-white">
-                  {selectedLocation.city}, {selectedLocation.state}
-                </div>
-                <div className="text-[8px] text-slate-400 dark:text-slate-500 font-bold mt-0.5 truncate max-w-[200px] md:max-w-[110px]">
-                  {selectedLocation.area}
-                </div>
-              </div>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 dark:text-slate-500 transition-transform duration-200 ${isLocationDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isLocationDropdownOpen && (
-              <>
-                {/* Overlay to close on click outside */}
-                <div 
-                  onClick={() => setIsLocationDropdownOpen(false)}
-                  className="fixed inset-0 z-40 bg-transparent" 
-                />
-                
-                {/* Dropdown Card */}
-                <div className="absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-0 mt-2 w-full max-w-[320px] md:w-76 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200">
-                  {/* Search box */}
-                  <div className="relative flex items-center border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl px-2.5 py-1.5 focus-within:border-amber-400">
-                    <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-                    <input 
-                      type="text"
-                      placeholder="Search area, city or pincode..."
-                      value={locationSearchQuery}
-                      onChange={(e) => setLocationSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && locationSearchQuery.trim() !== '') {
-                          const query = locationSearchQuery.trim();
-                          const updated = {
-                            city: query,
-                            state: 'Karnataka',
-                            area: 'Custom Area'
-                          };
-                          setSelectedLocation(updated);
-                          setRecentLocations(prev => [updated, ...prev.filter(item => item.city !== query)].slice(0, 3));
-                          setIsLocationDropdownOpen(false);
-                          setLocationSearchQuery('');
-                          triggerNotification(`Switched location to ${query}`);
-                        }
-                      }}
-                      className="w-full text-xs bg-transparent focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
-                    />
-                  </div>
-
-                  {/* Detect Location Button */}
-                  <button 
-                    onClick={() => {
-                      if (navigator.geolocation) {
-                        triggerNotification("Detecting current location...");
-                        navigator.geolocation.getCurrentPosition(
-                          async (position) => {
-                            const { latitude, longitude } = position.coords;
-                            try {
-                              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                              const data = await response.json();
-                              if (data && data.address) {
-                                const city = data.address.city || data.address.town || data.address.village || 'Bangalore';
-                                const state = data.address.state || 'Karnataka';
-                                const area = data.address.neighbourhood || data.address.suburb || data.address.road || 'HSR Layout, Sector 3';
-                                const detected = { city, state, area };
-                                setSelectedLocation(detected);
-                                setRecentLocations(prev => [detected, ...prev.filter(item => item.area !== detected.area)].slice(0, 3));
-                                setIsLocationDropdownOpen(false);
-                                triggerNotification(`Located: ${area}, ${city}`);
-                              } else {
-                                throw new Error('No address found');
-                              }
-                            } catch (err) {
-                              console.warn("Reverse geocoding failed, falling back:", err);
-                              const detected = {
-                                city: 'Bangalore',
-                                state: 'Karnataka',
-                                area: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`
-                              };
-                              setSelectedLocation(detected);
-                              setRecentLocations(prev => [detected, ...prev.filter(item => item.area !== detected.area)].slice(0, 3));
-                              setIsLocationDropdownOpen(false);
-                              triggerNotification("Located via GPS coordinates");
-                            }
-                          },
-                          (error) => {
-                            console.error("Geolocation failed:", error);
-                            triggerNotification("Location permission denied or timeout.");
-                          },
-                          { enableHighAccuracy: true, timeout: 5000 }
-                        );
-                      } else {
-                        triggerNotification("Geolocation not supported by browser.");
-                      }
-                    }}
-                    className="mt-3 w-full flex items-center gap-2 py-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-950/40 border border-blue-100/50 dark:border-blue-900/30 transition-colors cursor-pointer text-left px-3"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-blue-550/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                        <circle cx="12" cy="12" r="10" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8M8 12h8" />
-                      </svg>
-                    </div>
-                    <div className="text-left leading-none">
-                      <span className="text-xs font-extrabold block">Use Current Location</span>
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">Detect my current location</span>
-                    </div>
-                  </button>
-
-                  {/* Recent Locations */}
-                  {recentLocations.length > 0 && (
-                    <div className="mt-3.5 text-left">
-                      <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Recent Locations</h4>
-                      <div className="space-y-2.5">
-                        {recentLocations.map((loc, idx) => (
-                          <div 
-                            key={idx}
-                            className="flex items-center justify-between gap-3 group/item cursor-pointer"
-                            onClick={() => {
-                              setSelectedLocation(loc);
-                              setIsLocationDropdownOpen(false);
-                              triggerNotification(`Switched to ${loc.city}`);
-                            }}
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors" />
-                              <div className="leading-tight text-left min-w-0">
-                                <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block truncate">{loc.city}, {loc.state}</span>
-                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold block truncate mt-0.5">{loc.area}</span>
-                              </div>
-                            </div>
-                            <button 
-                              onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRecentLocations(prev => prev.filter((_, i) => i !== idx));
-                              }}
-                              className="p-1 hover:text-red-500 text-slate-350 dark:text-slate-600 transition-colors cursor-pointer"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Popular Cities */}
-                  <div className="mt-3.5 text-left">
-                    <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Popular Cities</h4>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { name: 'Bangalore', state: 'Karnataka', area: 'Koramangala, 5th Block' },
-                        { name: 'Chennai', state: 'Tamil Nadu', area: 'Anna Nagar' },
-                        { name: 'Hyderabad', state: 'Telangana', area: 'Gachibowli' },
-                        { name: 'Coimbatore', state: 'Tamil Nadu', area: 'Gandhipuram' },
-                        { name: 'Mumbai', state: 'Maharashtra', area: 'Bandra West' },
-                        { name: 'Delhi', state: 'Delhi', area: 'Connaught Place' }
-                      ].map((city) => (
-                        <button
-                          key={city.name}
-                          onClick={() => {
-                            setSelectedLocation({ city: city.name, state: city.state, area: city.area });
-                            setRecentLocations(prev => [city, ...prev.filter(item => item.city !== city.name)].slice(0, 3));
-                            setIsLocationDropdownOpen(false);
-                            triggerNotification(`Switched location to ${city.name}`);
-                          }}
-                          className={`text-[9px] font-extrabold py-1 px-1.5 rounded-lg border transition-all cursor-pointer text-center truncate ${
-                            selectedLocation.city === city.name 
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800/60 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:text-slate-800 dark:hover:text-slate-200'
-                          }`}
-                        >
-                          {city.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* View All Cities */}
-                  <button 
-                    onClick={() => triggerNotification("Opening city directory selector...")}
-                    className="mt-3.5 w-full text-center text-[9px] font-black uppercase tracking-wider text-amber-500 hover:text-amber-600 hover:underline cursor-pointer"
-                  >
-                    View All Cities →
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
+        {/* User Profile avatar box & Desktop Icons */}
+        <div className="flex items-center gap-5 w-full md:w-auto justify-end">
           {/* Icons shown only on desktop */}
           <div className="hidden md:flex items-center">
             {renderHeaderIcons(false)}
+          </div>
+
+          {/* User Profile */}
+          <div 
+            onClick={() => setIsProfileModalOpen(true)}
+            className="flex items-center gap-2.5 cursor-pointer select-none pl-4 border-l border-slate-200 dark:border-slate-800/60 shrink-0"
+          >
+            <img 
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
+              alt="User Profile" 
+              className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-800/60 shadow-xs"
+            />
+            <div className="flex flex-col text-left leading-tight">
+              <span className="text-xs font-black text-slate-800 dark:text-white">
+                Hi, {(currentUser?.name || profileName).split(' ')[0]}
+              </span>
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                Welcome to Connect
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -2922,14 +2790,27 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const renderSubNavbar = () => {
+    const icons = {
+      'Home': Home,
+      'Products': ShoppingBag,
+      'Services': Settings,
+      'Daily Needs': Truck,
+      'Food': Utensils,
+      'Stay': BedDouble,
+      'Travel': Plane,
+      'Jobs': Briefcase,
+      'Membership': Award
+    };
+
     return (
       <div 
         className="relative"
         onMouseLeave={handleMouseLeave}
       >
-        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-3 flex items-center justify-start md:justify-center gap-6 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
+        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-6 py-2.5 flex items-center justify-start md:justify-center gap-6 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
           {subNavbarCategories.map((cat) => {
             const isActive = activeTab === cat;
+            const Icon = icons[cat] || ShoppingBag;
             return (
               <button
                 key={cat}
@@ -2941,22 +2822,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   setSelectedCategories([]);
                   setHoveredLink(null);
                 }}
-                className={`relative group text-xs font-extrabold uppercase tracking-wider px-3.5 py-3 transition-all shrink-0 cursor-pointer ${
+                className={`relative group text-xs font-bold uppercase tracking-wider px-2 py-3 transition-all shrink-0 cursor-pointer flex items-center gap-2 border-b-2 ${
                   isActive 
-                    ? 'text-amber-500 dark:text-amber-400' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400'
+                    ? 'text-amber-500 dark:text-amber-400 border-amber-500 dark:border-amber-400' 
+                    : 'text-slate-600 dark:text-slate-400 border-transparent hover:text-amber-500 dark:hover:text-amber-400'
                 }`}
               >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400 group-hover:text-amber-500'}`} />
                 <span>{cat}</span>
-                <svg
-                  className={`absolute bottom-[-1px] left-1/2 -translate-x-1/2 w-2.5 h-1.5 text-amber-500 dark:text-amber-400 transition-all duration-200 ${
-                    isActive ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-1 scale-50 group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100'
-                  }`}
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 8l-6 6h12z" />
-                </svg>
               </button>
             );
           })}
@@ -3004,122 +2877,413 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
-  // 1. WELCOME BANNER (LEFT)
-  const renderWelcomeBanner = () => {
+  // Redesigned Customer Dashboard Sections
+
+  const renderHeroBanner = () => {
     return (
-      <div className="bg-gradient-to-r from-[#051329] via-[#0a2246] to-[#051329] text-white rounded-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6 relative shadow-md overflow-hidden text-left w-full select-none h-full">
-        <div className="space-y-4 z-10 flex-grow">
-          <div>
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-none">Welcome Back,</span>
-            <h1 className="text-2xl md:text-3xl font-black text-white font-sans tracking-tight mt-1 flex items-center gap-1.5 leading-none">
-              <span>{currentUser?.name || profileName}</span>
-              <span className="animate-bounce">👋</span>
-            </h1>
-          </div>
-          
-          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full uppercase tracking-wider text-[9px] font-extrabold ${
-            tier.name.toLowerCase().includes('silver') ? 'bg-slate-400/20 border border-slate-400/30 text-slate-300' :
-            tier.name.toLowerCase().includes('diamond') ? 'bg-cyan-400/20 border border-cyan-400/30 text-cyan-300' :
-            'bg-amber-400/20 border border-amber-400/30 text-amber-400'
-          }`}>
-            <tier.icon className="w-2.5 h-2.5 fill-current animate-pulse" />
-            <span>{tier.name}</span>
-          </div>
+      <div className="w-full bg-gradient-to-r from-rose-100 via-indigo-100 to-sky-100 text-slate-900 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8 relative shadow-xs overflow-hidden text-left select-none min-h-[300px] border border-slate-200/40">
+        {/* Background Decorative Blobs */}
+        <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] bg-indigo-200/30 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[250px] h-[250px] bg-rose-200/30 rounded-full blur-[70px] pointer-events-none" />
 
-          <div className="flex flex-col sm:flex-row gap-x-8 gap-y-1.5 text-xs text-slate-300 dark:text-slate-300 font-bold">
-            <div className="flex items-center gap-1 cursor-pointer" onClick={() => {
-              navigator.clipboard.writeText('CON12345678');
-              triggerNotification("Copied Member ID!");
-            }}>
-              <span>Member ID: CON12345678</span>
-              <Copy className="w-3.5 h-3.5 opacity-60 hover:opacity-100 transition-opacity" />
-            </div>
-            <div>Valid Till : 31 Dec 2026</div>
-          </div>
+        {/* Left Side text content */}
+        <div className="space-y-5 z-10 flex-grow max-w-xl">
+          <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#AA7C11] block">
+            Everything You Need,
+          </span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#0b132b] leading-tight font-sans">
+            All in <span className="text-indigo-600">One Place.</span>
+          </h1>
+          <p className="text-xs sm:text-sm md:text-base text-slate-600 font-semibold leading-relaxed max-w-md">
+            Shop, Book, Eat, Stay, Travel and much more.
+          </p>
 
-          <div className="flex flex-wrap gap-3 pt-2">
+          <div className="flex flex-wrap gap-4 pt-2">
             <button 
-              onClick={() => setShowBenefitsModal(true)}
-              className="text-[10px] font-black uppercase tracking-wider border border-white/20 hover:border-amber-400 hover:text-amber-400 text-white px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+              onClick={() => {
+                setActiveTab('Services');
+                setSelectedSubNavbarCategory('Services');
+                triggerNotification("Explore our premium services catalog!");
+              }}
+              className="inline-flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-950 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none"
             >
-              View Benefits
+              <span>Explore Services</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setShowUpgradeModal(true)}
-              className="text-[10px] font-black uppercase tracking-wider bg-transparent border border-white/20 hover:border-amber-400 hover:text-amber-400 text-white px-5 py-2.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+              className="inline-flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-755 bg-white hover:bg-slate-50 px-6 py-3.5 rounded-full transition-all border border-slate-350 shadow-2xs hover:scale-[1.02] duration-300 cursor-pointer"
             >
-              <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-              <span>Upgrade Membership</span>
+              <span>Become a Member</span>
+              <Award className="w-4 h-4 text-amber-500 fill-current ml-1" />
             </button>
           </div>
         </div>
 
-        {/* Mockup Card (Right) */}
-        <div className={`shrink-0 relative w-64 aspect-[1.58/1] rounded-2xl p-4 overflow-hidden shadow-xl border z-10 flex flex-col justify-between ${cardStyle.cardBg} ${cardStyle.cardText} ${cardStyle.cardBorder}`}>
-          <div className="flex justify-between items-start">
-            <div className="flex flex-col leading-none">
-              <span className={`text-xs font-black uppercase tracking-widest font-serif ${cardStyle.brandText}`}>Forge India</span>
-              <span className={`text-[7px] font-bold uppercase tracking-wider mt-0.5 ${cardStyle.subText}`}>Ecosystem</span>
-            </div>
-            <div className={`text-[7px] font-extrabold px-2 py-0.5 rounded-full uppercase ${cardStyle.badgeBg}`}>
-              {tier.name}
-            </div>
+        {/* Right Side Graphics: Phone Mockup & Floating Bubbles */}
+        <div className="flex-grow flex items-center justify-center relative w-full max-w-[380px] h-[250px] shrink-0 mt-6 md:mt-0">
+          {/* Main phone mockup wrapper */}
+          <div className="w-[170px] h-[250px] flex items-center justify-center relative z-10 transition-transform duration-500 hover:scale-[1.03]">
+            <img 
+              src={phoneMockupDashboard} 
+              alt="Connect Mobile Mockup" 
+              className="h-full object-contain drop-shadow-[0_15px_30px_rgba(15,23,42,0.12)] select-none" 
+            />
           </div>
 
-          <div className="flex justify-between items-end gap-2">
-            <div className="space-y-1 text-left leading-none">
-              <div className={`text-[7px] font-bold uppercase tracking-wider ${cardStyle.subText}`}>MEMBER PASS</div>
-              <div className={`text-xs font-mono font-black ${cardStyle.accentText}`}>CONN-8812-0495</div>
-            </div>
-            <div className={`flex flex-col items-center gap-0.5 bg-white/40 p-1.5 rounded-lg border border-white/20`}>
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=CON12345678" alt="QR" className="w-8 h-8 rounded bg-white p-0.5" />
-              <span className={`text-[5px] font-black uppercase tracking-widest leading-none ${cardStyle.accentText}`}>Tap to View</span>
-            </div>
+          {/* Floating Bubble Icons (staggered float animations) */}
+          <div className="absolute left-[15%] top-[15%] w-10 h-10 rounded-full bg-white text-emerald-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20">
+            <ShoppingCart className="w-4.5 h-4.5" />
+          </div>
+          <div className="absolute left-[10%] bottom-[15%] w-11 h-11 rounded-full bg-white text-blue-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '0.8s' }}>
+            <Plane className="w-4.5 h-4.5" />
+          </div>
+          <div className="absolute right-[15%] top-[20%] w-9 h-9 rounded-full bg-white text-orange-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '1.5s' }}>
+            <Utensils className="w-4.5 h-4.5" />
+          </div>
+          <div className="absolute right-[12%] bottom-[20%] w-10 h-10 rounded-full bg-white text-violet-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '2.2s' }}>
+            <Settings className="w-4.5 h-4.5" />
           </div>
         </div>
-
-        {/* Decorative backdrop blobs */}
-        <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-blue-500/10 blur-xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 rounded-full bg-amber-400/5 blur-3xl pointer-events-none" />
       </div>
     );
   };
 
-  // 2. EXCLUSIVE OFFERS (LEFT)
-  const renderExclusiveOffers = () => {
-    const offers = [
-      { id: 'o1', brand: 'Zomato', discount: '25% OFF', desc: 'On Restaurant Bills', date: 'Valid till 30 May 2024', color: 'bg-red-500/10 text-red-600 border border-red-500/20', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&auto=format&fit=crop&q=60' },
-      { id: 'o2', brand: 'Marriott', discount: '20% OFF', desc: 'On Hotel Bookings', date: 'Valid till 28 May 2024', color: 'bg-slate-900/10 text-slate-800 border border-slate-900/20', image: hotelActual },
-      { id: 'o3', brand: 'ixigo', discount: '15% OFF', desc: 'On Flight Bookings', date: 'Valid till 31 May 2024', color: 'bg-orange-500/10 text-orange-600 border border-orange-500/20', image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=200&auto=format&fit=crop&q=60' },
-      { id: 'o4', brand: 'Reliance Digital', discount: '10% OFF', desc: 'On Electronics', date: 'Valid till 31 May 2024', color: 'bg-blue-500/10 text-blue-600 border border-blue-500/20', image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=200&auto=format&fit=crop&q=60' },
+  const renderTopCategoriesGrid = () => {
+    const categories = [
+      { id: 'Products', title: 'Products', count: '3,200+ Items', icon: ShoppingBag, color: 'text-red-500 bg-red-50 border-red-150' },
+      { id: 'Services', title: 'Services', count: '1,200+ Services', icon: Settings, color: 'text-blue-500 bg-blue-50 border-blue-150' },
+      { id: 'Daily Needs', title: 'Daily Needs', count: '1,800+ Items', icon: Truck, color: 'text-emerald-500 bg-emerald-50 border-emerald-150' },
+      { id: 'Food', title: 'Food', count: '2,500+ Options', icon: Utensils, color: 'text-orange-500 bg-orange-50 border-orange-150' },
+      { id: 'Stay', title: 'Stay', count: '800+ Hotels', icon: BedDouble, color: 'text-purple-500 bg-purple-50 border-purple-150' },
+      { id: 'Travel', title: 'Travel', count: '1,000+ Trips', icon: Plane, color: 'text-sky-500 bg-sky-50 border-sky-150' },
+      { id: 'Jobs', title: 'Jobs', count: '2,000+ Jobs', icon: Briefcase, color: 'text-amber-500 bg-amber-50 border-amber-150' },
+      { id: 'More', title: 'More', count: 'See all', icon: SlidersHorizontal, color: 'text-slate-500 bg-slate-50 border-slate-150' }
     ];
+
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Exclusive Offers For You</h3>
-          <button onClick={() => triggerNotification("Showing all offers...")} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
+          <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Top Categories</h3>
+          <button 
+            onClick={() => {
+              setActiveTab('Services');
+              setSelectedSubNavbarCategory('Services');
+            }} 
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
+          >
+            View All &gt;
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {offers.map(offer => (
-            <div key={offer.id} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 text-slate-800 dark:text-slate-200 rounded-2xl p-3 shadow-xs flex flex-col justify-between h-[230px] transition-all hover:shadow-md">
-              <div className="space-y-2 text-left">
-                <div className="flex justify-between items-center gap-1.5">
-                  <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded ${offer.color}`}>{offer.discount}</span>
-                  <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate">{offer.brand}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <div 
+                key={cat.id} 
+                onClick={() => {
+                  if (cat.id === 'More') {
+                    setActiveTab('Services');
+                    setSelectedSubNavbarCategory('Services');
+                  } else {
+                    setActiveTab(cat.id);
+                    setSelectedSubNavbarCategory(cat.id);
+                  }
+                  triggerNotification(`Loading ${cat.title} Category...`);
+                }}
+                className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 rounded-3xl p-4 text-center flex flex-col items-center justify-center transition-all duration-300 shadow-3xs hover:shadow-md hover:-translate-y-1 cursor-pointer"
+              >
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-3 ${cat.color.split(' ').slice(1).join(' ')}`}>
+                  <Icon className={`w-5.5 h-5.5 ${cat.color.split(' ')[0]}`} />
                 </div>
-                <div className="h-24 rounded-lg overflow-hidden relative border border-slate-100 bg-slate-50 flex items-center justify-center">
-                  <img src={offer.image} alt={offer.brand} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/5" />
-                </div>
-                <div className="text-[10px] font-extrabold text-slate-700 dark:text-slate-200 mt-1 line-clamp-1 leading-none">{offer.desc}</div>
+                <span className="text-xs font-black text-slate-850 dark:text-white block leading-tight">{cat.title}</span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 block mt-1 leading-none">{cat.count}</span>
               </div>
-              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2.5 mt-2">
-                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold">{offer.date}</span>
-                <button onClick={() => triggerNotification(`${offer.brand} Coupon Claimed!`)} className="text-[9px] font-black uppercase bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-[#0b1e36] px-2.5 py-1.5 rounded transition-all cursor-pointer">Claim</button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderExclusiveOffers = () => {
+    const offers = [
+      { 
+        id: 'o1', 
+        brand: 'Food', 
+        discount: 'FLAT 20% OFF', 
+        desc: 'On all food orders', 
+        code: 'FOOD20', 
+        bg: 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/35', 
+        tagColor: 'bg-rose-500 text-white', 
+        btnColor: 'bg-rose-500 hover:bg-rose-600 text-white',
+        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=250&auto=format&fit=crop&q=80' 
+      },
+      { 
+        id: 'o2', 
+        brand: 'Services', 
+        discount: '15% OFF', 
+        desc: 'On all services', 
+        code: 'SERV15', 
+        bg: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/35', 
+        tagColor: 'bg-blue-500 text-white', 
+        btnColor: 'bg-blue-500 hover:bg-blue-600 text-white',
+        image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=250&auto=format&fit=crop&q=80' 
+      },
+      { 
+        id: 'o3', 
+        brand: 'Stay', 
+        discount: 'UP TO 30% OFF', 
+        desc: 'On hotel bookings', 
+        code: 'STAY30', 
+        bg: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/35', 
+        tagColor: 'bg-emerald-500 text-white', 
+        btnColor: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        image: hotelActual 
+      },
+      { 
+        id: 'o4', 
+        brand: 'Travel', 
+        discount: 'EXTRA 10% OFF', 
+        desc: 'On travel bookings', 
+        code: 'TRAVEL10', 
+        bg: 'bg-indigo-50/70 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/35', 
+        tagColor: 'bg-indigo-500 text-white', 
+        btnColor: 'bg-indigo-500 hover:bg-indigo-600 text-white',
+        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=250&auto=format&fit=crop&q=80' 
+      },
+    ];
+
+    return (
+      <div className="space-y-4 text-left w-full">
+        <div className="flex justify-between items-baseline">
+          <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Exclusive Offers for You</h3>
+          <button 
+            onClick={() => triggerNotification("Opening offers directory...")} 
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
+          >
+            View All Offers &gt;
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {offers.map(offer => (
+            <div 
+              key={offer.id} 
+              className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-4 h-[150px] transition-all duration-300 hover:shadow-md ${offer.bg}`}
+            >
+              <div className="flex flex-col justify-between items-start text-left max-w-[60%] h-full">
+                <div className="space-y-1.5">
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${offer.tagColor}`}>
+                    {offer.discount}
+                  </span>
+                  <p className="text-xs font-black text-slate-850 dark:text-white leading-tight mt-1">
+                    {offer.desc}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase dark:text-slate-500">Code:</span>
+                  <span className="text-[10px] font-black font-mono border-dashed border border-slate-350 dark:border-slate-700 px-2 py-0.5 rounded bg-white/60 dark:bg-slate-900/60 text-slate-800 dark:text-slate-200">
+                    {offer.code}
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-[100px] h-full rounded-2xl overflow-hidden relative shadow-3xs shrink-0 bg-slate-100 flex items-center justify-center">
+                <img src={offer.image} alt={offer.brand} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/5" />
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderRecommendedForYou = () => {
+    const recommendedItems = [
+      {
+        id: 'rec-1',
+        name: 'iPhone 15 (128GB)',
+        category: 'Mobiles',
+        price: 79900,
+        originalPrice: 90800,
+        discount: '12% OFF',
+        rating: 4.6,
+        image: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=300&auto=format&fit=crop&q=80',
+        tag: 'Products'
+      },
+      {
+        id: 'rec-2',
+        name: 'AC Repair Service',
+        category: 'Home Services',
+        price: 499,
+        originalPrice: 899,
+        discount: '44% OFF',
+        rating: 4.7,
+        image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=80',
+        tag: 'Services'
+      },
+      {
+        id: 'rec-3',
+        name: "Domino's Pizza",
+        category: 'Food',
+        price: 249,
+        originalPrice: 310,
+        discount: '20% OFF',
+        rating: 4.5,
+        image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&auto=format&fit=crop&q=80',
+        tag: 'Food'
+      },
+      {
+        id: 'rec-4',
+        name: 'Radisson Blu Hotel',
+        category: 'Hotels',
+        price: 4999,
+        originalPrice: 7500,
+        discount: '33% OFF',
+        rating: 4.6,
+        image: hotelActual,
+        tag: 'Stay'
+      },
+      {
+        id: 'rec-5',
+        name: 'Goa Trip Package',
+        category: 'Travel',
+        price: 8999,
+        originalPrice: 12500,
+        discount: '28% OFF',
+        rating: 4.8,
+        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&auto=format&fit=crop&q=80',
+        tag: 'Travel'
+      },
+      {
+        id: 'rec-6',
+        name: 'UI/UX Designer',
+        category: 'Full Time',
+        price: 35000,
+        originalPrice: 45000,
+        discount: 'Salary',
+        rating: 4.4,
+        image: skMockup,
+        tag: 'Jobs'
+      }
+    ];
+
+    return (
+      <div className="space-y-4 text-left w-full">
+        <div className="flex justify-between items-baseline">
+          <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Recommended for You</h3>
+          <button 
+            onClick={() => triggerNotification("Opening search directory...")} 
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
+          >
+            View All &gt;
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
+          {recommendedItems.map(item => {
+            const isFavorited = favorites.includes(item.id);
+            return (
+              <div 
+                key={item.id} 
+                onClick={() => {
+                  const p = products.find(prod => prod.name === item.name) || {
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    originalPrice: item.originalPrice,
+                    image: item.image,
+                    rating: item.rating,
+                    tag: item.tag,
+                    category: item.category,
+                    discount: item.discount,
+                    reviews: 148,
+                    subNavbarCategory: item.tag
+                  };
+                  setSelectedProduct(p);
+                  triggerNotification(`Loading details for ${item.name}...`);
+                }}
+                className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
+              >
+                <div className="relative aspect-[1.1/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                  
+                  {/* Rating star on left top */}
+                  <div className="absolute left-2.5 top-2.5 bg-white/90 backdrop-blur-xs text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-3xs">
+                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                    <span>{item.rating}</span>
+                  </div>
+
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      toggleFavorite(item.id); 
+                    }} 
+                    className="absolute right-2.5 top-2.5 w-7 h-7 rounded-full bg-white/90 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105"
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                  </button>
+                </div>
+                
+                <div className="p-3 flex-grow flex flex-col justify-between text-left">
+                  <div>
+                    <h4 className="text-[11px] font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-indigo-500 transition-colors">{item.name}</h4>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold block mt-1 leading-none">{item.category}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 w-full">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-850 dark:text-white">
+                        ₹{item.price.toLocaleString()}
+                        {item.tag === 'Stay' && <span className="text-[8px] font-bold text-slate-400">/night</span>}
+                        {item.tag === 'Jobs' && <span className="text-[8px] font-bold text-slate-400">/month</span>}
+                      </span>
+                    </div>
+                    {item.discount && (
+                      <span className="text-[9px] text-emerald-600 font-black tracking-wide shrink-0">
+                        {item.discount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTrustBadges = () => {
+    const badges = [
+      { title: '100% Secure', subtitle: 'Payments', icon: ShieldCheck, color: 'text-emerald-500' },
+      { title: 'Best Prices', subtitle: 'Guaranteed', icon: Percent, color: 'text-amber-500' },
+      { title: 'Wide Selection', subtitle: 'Of Products', icon: ShoppingBag, color: 'text-blue-500' },
+      { title: '24/7 Support', subtitle: 'Customer Service', icon: LifeBuoy, color: 'text-cyan-500' },
+      { title: 'Easy Returns', subtitle: 'Hassle Free', icon: RefreshCw, color: 'text-purple-500' },
+      { title: 'Fast Delivery', subtitle: 'On Time', icon: Truck, color: 'text-indigo-500' }
+    ];
+
+    return (
+      <div className="w-full bg-white dark:bg-[#0a192f] border border-slate-200/60 dark:border-slate-800/80 rounded-3xl p-4 shadow-3xs mt-6 transition-all duration-300">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center justify-center">
+          {badges.map((b, idx) => {
+            const Icon = b.icon;
+            return (
+              <div key={idx} className="flex items-center gap-3 justify-center text-left">
+                <div className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
+                  <Icon className={`w-4.5 h-4.5 ${b.color}`} />
+                </div>
+                <div className="leading-tight">
+                  <span className="text-[10px] font-black text-slate-850 dark:text-white block">{b.title}</span>
+                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 block mt-0.5 uppercase tracking-wider">{b.subtitle}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -4735,38 +4899,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         ) : (
           /* MOCKUP MATCHING HOMEPAGE ADAPTIVE DASHBOARD VIEW */
           <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
-            {/* Top Row: Welcome Banner & Shopping Promo Banner */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-stretch">
-              <div className="lg:col-span-7 w-full flex">
-                {renderWelcomeBanner()}
-              </div>
-              <div className="lg:col-span-5 w-full flex">
-                {renderShoppingPromoBanner()}
-              </div>
-            </div>
+            {/* 1. Combined Hero Banner */}
+            {renderHeroBanner()}
 
-            {/* Second Row: Rewards & Cashbacks & Referral Widget */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-stretch">
-              <div className="lg:col-span-7 w-full flex">
-                {renderRewardsCashback()}
-              </div>
-              <div className="lg:col-span-5 w-full flex">
-                {renderReferFriends()}
-              </div>
-            </div>
+            {/* 2. Top Categories Grid */}
+            {renderTopCategoriesGrid()}
 
-            {/* Third Row: Exclusive Member Offers */}
-            <div className="w-full">
-              {renderExclusiveOffers()}
-            </div>
+            {/* 3. Exclusive Offers for You */}
+            {renderExclusiveOffers()}
 
-            {/* Fourth Row: Catalog Sections */}
-            <div className="w-full space-y-8">
-              {renderTopServices()}
-              {renderTrendingProducts()}
-              {renderStayOffers()}
-              {renderPopularRestaurants()}
-            </div>
+            {/* 4. Recommended for You */}
+            {renderRecommendedForYou()}
+
+            {/* 5. Trust Badges */}
+            {renderTrustBadges()}
           </div>
         )}
       </main>
