@@ -96,19 +96,18 @@ export default function Ecosystem({ onCardClick, theme }) {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const scrollRange = rect.height - viewportHeight;
       
-      if (scrollRange > 0) {
-        if (rect.top > 0) {
-          // Force active card to index 0 (Services) when section enters
-          setActiveIdx(0);
-        } else {
-          const scrolled = -rect.top;
-          const progress = Math.max(0, Math.min(0.99, scrolled / scrollRange));
-          // Map range linearly to the 7 cards
-          const newActiveIdx = Math.floor(progress * pillars.length);
-          setActiveIdx(newActiveIdx);
-        }
+      // Calculate progress of section passing through viewport
+      const start = viewportHeight;
+      const end = -rect.height;
+      const total = start - end;
+      
+      if (total > 0) {
+        const current = start - rect.top;
+        const progress = Math.max(0, Math.min(0.99, current / total));
+        // Map viewport range linearly to all 7 pillars (0 to 6)
+        const newActiveIdx = Math.floor(progress * pillars.length);
+        setActiveIdx(newActiveIdx);
       }
     };
 
@@ -130,10 +129,8 @@ export default function Ecosystem({ onCardClick, theme }) {
     <section
       ref={containerRef}
       id="services"
-      className="relative w-full h-[220vh]"
+      className="relative bg-slate-50 dark:bg-[#020b18] py-10 md:py-12 overflow-hidden transition-colors duration-300 w-full min-h-screen flex flex-col justify-center items-center z-10 select-none"
     >
-      {/* Sticky Screen Viewport Container */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-slate-50 dark:bg-[#020b18] transition-colors duration-300 flex flex-col justify-center items-center py-6 md:py-10 z-10 select-none">
         
         {/* ── GLOBE BACKGROUND ── */}
         <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-300">
@@ -210,14 +207,19 @@ export default function Ecosystem({ onCardClick, theme }) {
           </div>
 
           {/* Centered Statically Positioned Timeline Nodes (Aligns with background DNA line) */}
-          <div className="absolute left-1/2 top-[8%] bottom-[8%] -translate-x-1/2 w-10 z-10 pointer-events-none flex flex-col justify-between items-center py-4">
+          <div className="absolute left-1/2 top-[8%] bottom-[8%] -translate-x-1/2 w-10 z-10 pointer-events-auto flex flex-col justify-between items-center py-4">
             {pillars.map((pillar, idx) => {
               const isActive = idx === activeIdx;
               return (
                 <div 
                   key={pillar.id}
-                  className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs ${
-                    isActive ? 'scale-110 opacity-100' : 'scale-75 opacity-35'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Node clicked:', pillar.title, 'idx:', idx);
+                    setActiveIdx(idx);
+                  }}
+                  className={`w-9 h-9 rounded-full bg-white dark:bg-[#020b18] border-2 flex items-center justify-center transition-all duration-500 shadow-xs cursor-pointer pointer-events-auto ${
+                    isActive ? 'scale-110 opacity-100' : 'scale-75 opacity-35 hover:opacity-75'
                   }`}
                   style={{
                     borderColor: isActive ? pillar.accent : (theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'),
@@ -329,7 +331,6 @@ export default function Ecosystem({ onCardClick, theme }) {
         </div>
 
       </div>
-    </div>
   </section>
   );
 }
