@@ -96,18 +96,17 @@ export default function Ecosystem({ onCardClick, theme }) {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
+      const scrollRange = rect.height - viewportHeight;
       
-      // Calculate progress of section passing through viewport
-      const start = viewportHeight;
-      const end = -rect.height;
-      const total = start - end;
-      
-      if (total > 0) {
-        const current = start - rect.top;
-        const progress = Math.max(0, Math.min(0.99, current / total));
-        // Map viewport range linearly to all 7 pillars (0 to 6)
-        const newActiveIdx = Math.floor(progress * pillars.length);
-        setActiveIdx(newActiveIdx);
+      if (scrollRange > 0) {
+        if (rect.top > 0) {
+          setActiveIdx(0);
+        } else {
+          const scrolled = -rect.top;
+          const progress = Math.max(0, Math.min(0.99, scrolled / scrollRange));
+          const newActiveIdx = Math.floor(progress * pillars.length);
+          setActiveIdx(newActiveIdx);
+        }
       }
     };
 
@@ -129,44 +128,47 @@ export default function Ecosystem({ onCardClick, theme }) {
     <section
       ref={containerRef}
       id="services"
-      className="relative bg-slate-50 dark:bg-[#020b18] py-12 md:py-16 overflow-hidden transition-colors duration-300 w-full h-auto"
+      className="relative w-full h-[280vh]"
     >
-      {/* ── GLOBE BACKGROUND ── */}
-      <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-300">
-        <div className="absolute inset-0 bg-transparent" />
-        {/* Slow spinning background globe */}
-        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[min(90vw,800px)] aspect-square overflow-hidden rounded-full z-0">
-          <img
-            src={worldGlobe}
-            alt="World Network"
-            className="w-full h-full opacity-15 dark:opacity-30 rounded-full animate-globe-spin object-cover transition-opacity duration-300"
-            style={{ filter: 'brightness(1.1) saturate(1.3)' }}
-          />
-        </div>
-        <div className="absolute inset-0 bg-radial-fade" />
-      </div>
-
-      {/* ── CONTENT WRAPPER ── */}
-      <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-12 h-full flex flex-col items-center">
+      {/* Sticky Screen Viewport Container */}
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-slate-50 dark:bg-[#020b18] transition-colors duration-300 flex flex-col justify-center items-center py-6 md:py-10 z-10">
         
-        {/* Header */}
-        <div className="w-full text-center max-w-2xl mx-auto mb-6 flex flex-col items-center">
-          <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-amber-500 dark:text-amber-400/90 transition-colors duration-300">
-            One Membership · Seven Pillars
-          </span>
-          <h2 className="mt-3 text-3xl md:text-5xl font-extrabold font-sans tracking-tight text-slate-900 dark:text-white leading-none transition-colors duration-300">
-            Our{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-amber-300 to-amber-500 dark:from-amber-400 dark:via-amber-200 dark:to-amber-400">
-              Ecosystem
-            </span>
-          </h2>
-          <p className="mt-4 text-slate-600 dark:text-slate-400 text-xs md:text-sm leading-relaxed max-w-md transition-colors duration-300">
-            Scroll down to explore each pillar — a premium world of services, products, dining, travel, and careers.
-          </p>
+        {/* ── GLOBE BACKGROUND ── */}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-300">
+          <div className="absolute inset-0 bg-transparent" />
+          {/* Slow spinning background globe */}
+          <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[min(90vw,800px)] aspect-square overflow-hidden rounded-full z-0">
+            <img
+              src={worldGlobe}
+              alt="World Network"
+              className="w-full h-full opacity-15 dark:opacity-30 rounded-full animate-globe-spin object-cover transition-opacity duration-300"
+              style={{ filter: 'brightness(1.1) saturate(1.3)' }}
+            />
+          </div>
+          <div className="absolute inset-0 bg-radial-fade" />
         </div>
 
-        {/* Deck Container for DNA line and 3D Cards Carousel */}
-        <div className="relative min-h-[500px] w-full flex flex-col justify-center items-center overflow-visible z-10 select-none mt-4 pb-8">
+        {/* ── CONTENT WRAPPER ── */}
+        <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-12 w-full h-full flex flex-col justify-between items-center">
+          
+          {/* Header */}
+          <div className="w-full text-center max-w-2xl mx-auto mb-2 flex flex-col items-center">
+            <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-amber-500 dark:text-amber-400/90 transition-colors duration-300">
+              One Membership · Seven Pillars
+            </span>
+            <h2 className="mt-2 text-3xl md:text-5xl font-extrabold font-sans tracking-tight text-slate-900 dark:text-white leading-none transition-colors duration-300">
+              Our{' '}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-amber-300 to-amber-500 dark:from-amber-400 dark:via-amber-200 dark:to-amber-400">
+                Ecosystem
+              </span>
+            </h2>
+            <p className="mt-3 text-slate-600 dark:text-slate-400 text-xs md:text-sm leading-relaxed max-w-md transition-colors duration-300">
+              Scroll down to explore each pillar — a premium world of services, products, dining, travel, and careers.
+            </p>
+          </div>
+
+          {/* Sticky Deck Container for DNA line and 3D Cards Carousel */}
+          <div className="relative h-[480px] w-full flex flex-col justify-center items-center overflow-visible z-10 select-none">
           
           {/* DNA Double Helix Timeline Line (Centered background) */}
           <div 
@@ -326,6 +328,7 @@ export default function Ecosystem({ onCardClick, theme }) {
 
 
 
+      </div>
       </div>
     </section>
   );
