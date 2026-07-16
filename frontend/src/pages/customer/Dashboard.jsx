@@ -2920,28 +2920,134 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
         </div>
 
-        {/* Right Side Graphics: Phone Mockup & Floating Bubbles */}
+        {/* Right Side Graphics: Membership Card & Floating Bubbles */}
         <div className="flex-grow flex items-center justify-center relative w-full max-w-[380px] h-[250px] shrink-0 mt-6 md:mt-0">
-          {/* Main phone mockup wrapper */}
-          <div className="w-[170px] h-[250px] flex items-center justify-center relative z-10 transition-transform duration-500 hover:scale-[1.03]">
-            <img 
-              src={phoneMockupDashboard} 
-              alt="Connect Mobile Mockup" 
-              className="h-full object-contain drop-shadow-[0_15px_30px_rgba(15,23,42,0.12)] select-none" 
-            />
+          {/* Main membership card mockup wrapper */}
+          <div className="w-full max-w-[320px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.03] select-none shadow-lg rounded-2xl">
+            <div
+              onClick={() => setIsCardFlipped(!isCardFlipped)}
+              className="relative w-full h-full rounded-2xl cursor-pointer"
+              style={{
+                perspective: '1000px',
+                transformStyle: 'preserve-3d'
+              }}
+            >
+              <div
+                className="absolute inset-0 w-full h-full rounded-2xl transition-transform duration-700"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transform: isCardFlipped ? 'rotateY(180deg)' : 'none'
+                }}
+              >
+                {/* FRONT FACE */}
+                <div
+                  className={`absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border flex flex-col justify-between text-left shadow-lg ${
+                    (membershipTier === 'Silver Tier' 
+                      ? 'from-slate-400 via-slate-100 to-slate-500 text-slate-900 border-slate-300 bg-gradient-to-tr' 
+                      : membershipTier === 'Diamond Prestige' 
+                      ? 'from-cyan-800 via-cyan-100 to-cyan-900 text-white border-cyan-300 bg-gradient-to-tr' 
+                      : 'from-[#eed48f] via-[#fff3d4] to-[#eed48f] text-[#5c3e07] border-amber-300 bg-gradient-to-tr')
+                  }`}
+                  style={{ backfaceVisibility: 'hidden' }}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col leading-none">
+                      <span className={`text-[11px] font-black uppercase tracking-widest font-serif ${
+                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#704f05]'
+                      }`}>Connect</span>
+                      <span className={`text-[6px] font-bold uppercase tracking-wider mt-0.5 ${
+                        membershipTier === 'Diamond Prestige' ? 'text-cyan-200' : 'text-[#916b14]'
+                      }`}>Forge India Ecosystem</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className={`text-[7px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-white/20 bg-white/10 ${
+                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#5c3e07]'
+                      }`}>
+                        {membershipTier || 'Gold Elite'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center flex-grow py-2">
+                    <div className="flex items-center gap-1.5">
+                      <Gem className={`w-6 h-6 fill-current animate-pulse ${
+                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#5c3e07]'
+                      }`} />
+                      <span className={`text-base font-black uppercase tracking-widest font-serif ${
+                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#704f05]'
+                      }`}>CONNECT</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-end leading-none">
+                    <div className="flex flex-col gap-0.5 text-left">
+                      <span className={`text-[6px] font-bold uppercase tracking-wider ${
+                        membershipTier === 'Diamond Prestige' ? 'text-cyan-250' : 'text-[#916b14]'
+                      }`}>CONN ID</span>
+                      <span className="text-[10px] font-bold font-mono tracking-wider">CONN-8812-0495-2038</span>
+                      <span className="text-[9px] font-bold uppercase mt-1">{profileName}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 text-right">
+                      <span className={`text-[6px] font-bold uppercase tracking-wider ${
+                        membershipTier === 'Diamond Prestige' ? 'text-cyan-250' : 'text-[#916b14]'
+                      }`}>EXP DATE</span>
+                      <span className="text-[10px] font-bold font-mono">12/2028</span>
+                    </div>
+                  </div>
+
+                  {/* Highlights and glares */}
+                  <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full ${
+                    membershipTier === 'Diamond Prestige' ? 'bg-cyan-400/20' : 'bg-yellow-400/20'
+                  } blur-xl pointer-events-none`} />
+                </div>
+
+                {/* BACK FACE */}
+                <div
+                  className="absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border bg-[#0a1120] text-slate-200 border-slate-800 flex flex-col justify-between text-left shadow-lg"
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)'
+                  }}
+                >
+                  <div className="space-y-3">
+                    {/* Magnetic stripe */}
+                    <div className="h-6 bg-slate-950 -mx-4 mt-1" />
+                    
+                    <div className="flex justify-between items-start gap-4">
+                      {/* Hologram */}
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-500 opacity-60 flex items-center justify-center p-0.5">
+                        <div className="w-full h-full border border-white/20 rounded bg-white/10" />
+                      </div>
+                      
+                      <div className="flex flex-col text-right leading-none">
+                        <span className="text-[5px] text-slate-500 font-bold uppercase tracking-wider">Authorized Signature</span>
+                        <div className="w-24 h-5 bg-slate-800 border border-slate-700/80 rounded mt-1.5 flex items-center px-2">
+                          <span className="text-[8px] font-bold font-serif italic text-slate-400 select-none">{profileName}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-[6px] text-slate-500 leading-tight text-center mt-2">
+                    This card is non-transferable and remains property of Forge India Connect. 
+                    Subject to terms and conditions.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Floating Bubble Icons (staggered float animations) */}
-          <div className="absolute left-[15%] top-[15%] w-10 h-10 rounded-full bg-white text-emerald-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20">
+          <div className="absolute left-[5%] top-[5%] w-9 h-9 rounded-full bg-white text-emerald-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20">
             <ShoppingCart className="w-4.5 h-4.5" />
           </div>
-          <div className="absolute left-[10%] bottom-[15%] w-11 h-11 rounded-full bg-white text-blue-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '0.8s' }}>
+          <div className="absolute left-[0%] bottom-[5%] w-10 h-10 rounded-full bg-white text-blue-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '0.8s' }}>
             <Plane className="w-4.5 h-4.5" />
           </div>
-          <div className="absolute right-[15%] top-[20%] w-9 h-9 rounded-full bg-white text-orange-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '1.5s' }}>
+          <div className="absolute right-[5%] top-[10%] w-8 h-8 rounded-full bg-white text-orange-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '1.5s' }}>
             <Utensils className="w-4.5 h-4.5" />
           </div>
-          <div className="absolute right-[12%] bottom-[20%] w-10 h-10 rounded-full bg-white text-violet-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '2.2s' }}>
+          <div className="absolute right-[2%] bottom-[10%] w-9 h-9 rounded-full bg-white text-violet-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '2.2s' }}>
             <Settings className="w-4.5 h-4.5" />
           </div>
         </div>
