@@ -83,7 +83,7 @@ export default function Offers() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 text-left animate-fade-in p-4 sm:p-6 bg-white dark:bg-slate-950 border border-slate-150/45 dark:border-slate-850 rounded-3xl text-slate-800 dark:text-slate-100 shadow-2xs">
+    <div className="max-w-6xl mx-auto space-y-8 text-left animate-fade-in text-slate-800 dark:text-slate-100">
       
       {/* Header Banner */}
       <div className="relative overflow-hidden bg-gradient-to-r from-violet-50/50 via-indigo-50/25 to-white dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-950 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 sm:p-8 flex items-center justify-between shadow-3xs">
