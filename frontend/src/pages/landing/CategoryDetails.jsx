@@ -413,6 +413,15 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
 
   const getProductHighlights = (product) => {
     if (!product) return [];
+    if (product.description) {
+      const lines = product.description
+        .split('\n')
+        .map(line => line.trim().replace(/^[\s\-\*\u2022\u25E6\u2023\u2043\u25CB\u25C9\u25A0\u25A1\u2714\u2713]+/g, '').trim())
+        .filter(Boolean);
+      if (lines.length > 0) {
+        return lines;
+      }
+    }
     const categoryName = (product.category || '').toLowerCase();
     if (categoryName.includes('smartphone') || categoryName.includes('phone')) {
       return [

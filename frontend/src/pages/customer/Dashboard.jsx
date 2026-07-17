@@ -23,7 +23,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, Home, ArrowRight, Tag
+  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -167,6 +167,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   }, [membershipTier]);
 
   const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!isCardFlipped) {
+        setActiveHeroSlide((prev) => (prev + 1) % 5);
+      }
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [isCardFlipped]);
 
   // Category-specific Filter States
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([]);
@@ -2267,25 +2277,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const renderDashboardHeader = () => {
     return (
-      <header className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors">
-        {/* Left Row: Logo & Mobile Icons */}
-        <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
+      <header className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-2.5 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
+        {/* Row 1 for Mobile / Left Section for Desktop */}
+        <div className="flex items-center justify-between md:justify-start gap-4 w-full md:w-auto">
           {/* Logo */}
-          <div className="flex items-center gap-2.5 select-none cursor-pointer" onClick={clearAllFilters}>
+          <div className="flex items-center gap-2 select-none cursor-pointer" onClick={clearAllFilters}>
             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60">
               <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
             </div>
-            <span className="text-sm sm:text-base font-black tracking-wide text-slate-900 dark:text-white font-sans">Connect App</span>
+            <span className="text-sm font-black tracking-wide text-slate-900 dark:text-white font-sans whitespace-nowrap">Connect App</span>
           </div>
 
-          {/* Location Selector (aligned inline on desktop) */}
-          <div className="relative shrink-0 hidden md:block">
+          {/* Location Selector (now fully responsive!) */}
+          <div className="relative shrink-0">
             <button 
               onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
               className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800/60 rounded-full bg-slate-50/20 dark:bg-[#0a192f]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-[10px] font-bold text-slate-700 dark:text-slate-200 transition-colors"
             >
               <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-              <span>{selectedLocation.city}, India</span>
+              <span className="truncate max-w-[80px]">{selectedLocation.city}</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
@@ -2360,49 +2370,51 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             )}
           </div>
 
-          {/* Icons shown only on mobile */}
-          <div className="flex md:hidden items-center">
+          {/* Icons & Mini Profile shown inline on mobile */}
+          <div className="flex md:hidden items-center gap-2">
             {renderHeaderIcons(true)}
+            <div onClick={() => setIsProfileModalOpen(true)} className="cursor-pointer ml-1">
+              <img 
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
+                alt="Profile" 
+                className="w-7.5 h-7.5 rounded-full object-cover border border-slate-200 dark:border-slate-800/60 shadow-xs"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Search Input in middle */}
-        <div className="relative w-full md:max-w-xl flex items-center border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50/50 dark:bg-slate-900/50 pl-4 py-1.5 pr-1.5 focus-within:border-[#FFC107] focus-within:ring-1 focus-within:ring-[#FFC107]/20 transition-all">
+        {/* Row 2 for Mobile / Middle Section for Desktop (Search) */}
+        <div className="relative w-full md:max-w-xl flex items-center border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50/50 dark:bg-slate-900/50 pl-4 py-1 pr-1 focus-within:border-[#FFC107] focus-within:ring-1 focus-within:ring-[#FFC107]/20 transition-all">
           <input 
             type="text"
-            placeholder="Search for products, services, food, hotels, travel and more..."
+            placeholder="Search products, services, food, hotels..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full text-xs bg-transparent focus:outline-none text-slate-850 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-1"
           />
-          <button className="w-8 h-8 rounded-full bg-[#FFC107] hover:bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 cursor-pointer transition-colors shadow-xs">
-            <Search className="w-3.5 h-3.5" />
+          <button className="w-7 h-7 rounded-full bg-[#FFC107] hover:bg-amber-500 text-slate-955 flex items-center justify-center shrink-0 cursor-pointer transition-colors shadow-xs">
+            <Search className="w-3 h-3" />
           </button>
         </div>
 
-        {/* User Profile avatar box & Desktop Icons */}
-        <div className="flex items-center gap-5 w-full md:w-auto justify-end">
-          {/* Icons shown only on desktop */}
-          <div className="hidden md:flex items-center">
-            {renderHeaderIcons(false)}
-          </div>
-
-          {/* User Profile */}
+        {/* Desktop Only Right Section (Icons & Profile) */}
+        <div className="hidden md:flex items-center gap-4 shrink-0">
+          {renderHeaderIcons(false)}
           <div 
             onClick={() => setIsProfileModalOpen(true)}
-            className="flex items-center gap-2.5 cursor-pointer select-none pl-4 border-l border-slate-200 dark:border-slate-800/60 shrink-0"
+            className="flex items-center gap-2.5 cursor-pointer select-none pl-4 border-l border-slate-200 dark:border-slate-800/60"
           >
             <img 
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
               alt="User Profile" 
-              className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-800/60 shadow-xs"
+              className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800/60 shadow-xs"
             />
             <div className="flex flex-col text-left leading-tight">
               <span className="text-xs font-black text-slate-800 dark:text-white">
                 Hi, {(currentUser?.name || profileName).split(' ')[0]}
               </span>
-              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
-                Welcome to Connect
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">
+                Welcome
               </span>
             </div>
           </div>
@@ -2887,6 +2899,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   // Redesigned Customer Dashboard Sections
 
   const renderHeroBanner = () => {
+    const totalSlides = 5;
+
+    const nextSlide = () => {
+      setActiveHeroSlide((prev) => (prev + 1) % totalSlides);
+    };
+
+    const prevSlide = () => {
+      setActiveHeroSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+    };
+
     return (
       <div className="w-full bg-gradient-to-r from-rose-100 via-indigo-100 to-sky-100 text-slate-900 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8 relative shadow-xs overflow-hidden text-left select-none min-h-[300px] border border-slate-200/40">
         {/* Background Decorative Blobs */}
@@ -2912,7 +2934,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 setSelectedSubNavbarCategory('Services');
                 triggerNotification("Explore our premium services catalog!");
               }}
-              className="inline-flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-950 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none"
+              className="inline-flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-955 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none"
             >
               <span>Explore Services</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -2927,135 +2949,437 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
         </div>
 
-        {/* Right Side Graphics: Membership Card & Floating Bubbles */}
-        <div className="flex-grow flex items-center justify-center relative w-full max-w-[380px] h-[250px] shrink-0 mt-6 md:mt-0">
-          {/* Main membership card mockup wrapper */}
-          <div className="w-full max-w-[320px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.03] select-none shadow-lg rounded-2xl">
-            <div
-              onClick={() => setIsCardFlipped(!isCardFlipped)}
-              className="relative w-full h-full rounded-2xl cursor-pointer"
-              style={{
-                perspective: '1000px',
-                transformStyle: 'preserve-3d'
-              }}
-            >
-              <div
-                className="absolute inset-0 w-full h-full rounded-2xl transition-transform duration-700"
-                style={{
-                  transformStyle: 'preserve-3d',
-                  transform: isCardFlipped ? 'rotateY(180deg)' : 'none'
-                }}
-              >
-                {/* FRONT FACE */}
+        {/* Right Side Graphics: Membership Card & Slider Carousel */}
+        <div className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[380px] h-[280px] shrink-0 mt-6 md:mt-0 select-none">
+          {/* Card Frame Wrapper */}
+          <div className="w-full max-w-[320px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] shadow-lg rounded-2xl bg-transparent">
+            
+            {/* Slide 0: Membership Card */}
+            {activeHeroSlide === 0 && (
+              <div className="w-full h-full animate-fade-in">
                 <div
-                  className={`absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border flex flex-col justify-between text-left shadow-lg ${
-                    (membershipTier === 'Silver Tier' 
-                      ? 'from-slate-400 via-slate-100 to-slate-500 text-slate-900 border-slate-300 bg-gradient-to-tr' 
-                      : membershipTier === 'Diamond Prestige' 
-                      ? 'from-cyan-800 via-cyan-100 to-cyan-900 text-white border-cyan-300 bg-gradient-to-tr' 
-                      : 'from-[#eed48f] via-[#fff3d4] to-[#eed48f] text-[#5c3e07] border-amber-300 bg-gradient-to-tr')
-                  }`}
-                  style={{ backfaceVisibility: 'hidden' }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col leading-none">
-                      <span className={`text-[11px] font-black uppercase tracking-widest font-serif ${
-                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#704f05]'
-                      }`}>Connect</span>
-                      <span className={`text-[6px] font-bold uppercase tracking-wider mt-0.5 ${
-                        membershipTier === 'Diamond Prestige' ? 'text-cyan-200' : 'text-[#916b14]'
-                      }`}>Forge India Ecosystem</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className={`text-[7px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-white/20 bg-white/10 ${
-                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#5c3e07]'
-                      }`}>
-                        {membershipTier || 'Gold Elite'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center flex-grow py-2">
-                    <div className="flex items-center gap-1.5">
-                      <Gem className={`w-6 h-6 fill-current animate-pulse ${
-                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#5c3e07]'
-                      }`} />
-                      <span className={`text-base font-black uppercase tracking-widest font-serif ${
-                        membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#704f05]'
-                      }`}>CONNECT</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-end leading-none">
-                    <div className="flex flex-col gap-0.5 text-left">
-                      <span className={`text-[6px] font-bold uppercase tracking-wider ${
-                        membershipTier === 'Diamond Prestige' ? 'text-cyan-250' : 'text-[#916b14]'
-                      }`}>CONN ID</span>
-                      <span className="text-[10px] font-bold font-mono tracking-wider">CONN-8812-0495-2038</span>
-                      <span className="text-[9px] font-bold uppercase mt-1">{profileName}</span>
-                    </div>
-                    <div className="flex flex-col gap-0.5 text-right">
-                      <span className={`text-[6px] font-bold uppercase tracking-wider ${
-                        membershipTier === 'Diamond Prestige' ? 'text-cyan-250' : 'text-[#916b14]'
-                      }`}>EXP DATE</span>
-                      <span className="text-[10px] font-bold font-mono">12/2028</span>
-                    </div>
-                  </div>
-
-                  {/* Highlights and glares */}
-                  <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full ${
-                    membershipTier === 'Diamond Prestige' ? 'bg-cyan-400/20' : 'bg-yellow-400/20'
-                  } blur-xl pointer-events-none`} />
-                </div>
-
-                {/* BACK FACE */}
-                <div
-                  className="absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border bg-[#0a1120] text-slate-200 border-slate-800 flex flex-col justify-between text-left shadow-lg"
+                  onClick={() => setIsCardFlipped(!isCardFlipped)}
+                  className="relative w-full h-full rounded-2xl cursor-pointer"
                   style={{
-                    backfaceVisibility: 'hidden',
-                    transform: 'rotateY(180deg)'
+                    perspective: '1000px',
+                    transformStyle: 'preserve-3d'
                   }}
                 >
-                  <div className="space-y-3">
-                    {/* Magnetic stripe */}
-                    <div className="h-6 bg-slate-950 -mx-4 mt-1" />
-                    
-                    <div className="flex justify-between items-start gap-4">
-                      {/* Hologram */}
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-500 opacity-60 flex items-center justify-center p-0.5">
-                        <div className="w-full h-full border border-white/20 rounded bg-white/10" />
-                      </div>
-                      
-                      <div className="flex flex-col text-right leading-none">
-                        <span className="text-[5px] text-slate-500 font-bold uppercase tracking-wider">Authorized Signature</span>
-                        <div className="w-24 h-5 bg-slate-800 border border-slate-700/80 rounded mt-1.5 flex items-center px-2">
-                          <span className="text-[8px] font-bold font-serif italic text-slate-400 select-none">{profileName}</span>
+                  <div
+                    className="absolute inset-0 w-full h-full rounded-2xl transition-transform duration-700"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transform: isCardFlipped ? 'rotateY(180deg)' : 'none'
+                    }}
+                  >
+                    {/* FRONT FACE */}
+                    <div
+                      className={`absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border flex flex-col justify-between text-left shadow-lg ${
+                        (membershipTier === 'Silver Tier' 
+                          ? 'from-slate-400 via-slate-100 to-slate-500 text-slate-900 border-slate-300 bg-gradient-to-tr' 
+                          : membershipTier === 'Diamond Prestige' 
+                          ? 'from-cyan-800 via-cyan-100 to-cyan-900 text-white border-cyan-300 bg-gradient-to-tr' 
+                          : 'from-[#eed48f] via-[#fff3d4] to-[#eed48f] text-[#5c3e07] border-amber-300 bg-gradient-to-tr')
+                      }`}
+                      style={{ backfaceVisibility: 'hidden' }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col leading-none">
+                          <span className={`text-[11px] font-black uppercase tracking-widest font-serif ${
+                            membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#704f05]'
+                          }`}>Connect</span>
+                          <span className={`text-[6px] font-bold uppercase tracking-wider mt-0.5 ${
+                            membershipTier === 'Diamond Prestige' ? 'text-cyan-200' : 'text-[#916b14]'
+                          }`}>Forge India Ecosystem</span>
                         </div>
+                        <div className="flex items-center">
+                          <span className={`text-[7px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-white/20 bg-white/10 ${
+                            membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#5c3e07]'
+                          }`}>
+                            {membershipTier || 'Gold Elite'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-center justify-center flex-grow py-2">
+                        <div className="flex items-center gap-1.5">
+                          <Gem className={`w-6 h-6 fill-current animate-pulse ${
+                            membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#5c3e07]'
+                          }`} />
+                          <span className={`text-base font-black uppercase tracking-widest font-serif ${
+                            membershipTier === 'Diamond Prestige' ? 'text-white' : 'text-[#704f05]'
+                          }`}>CONNECT</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-end leading-none">
+                        <div className="flex flex-col gap-0.5 text-left">
+                          <span className={`text-[6px] font-bold uppercase tracking-wider ${
+                            membershipTier === 'Diamond Prestige' ? 'text-cyan-250' : 'text-[#916b14]'
+                          }`}>CONN ID</span>
+                          <span className="text-[10px] font-bold font-mono tracking-wider">CONN-8812-0495-2038</span>
+                          <span className="text-[9px] font-bold uppercase mt-1">{profileName}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 text-right">
+                          <span className={`text-[6px] font-bold uppercase tracking-wider ${
+                            membershipTier === 'Diamond Prestige' ? 'text-cyan-250' : 'text-[#916b14]'
+                          }`}>EXP DATE</span>
+                          <span className="text-[10px] font-bold font-mono">12/2028</span>
+                        </div>
+                      </div>
+
+                      {/* Highlights and glares */}
+                      <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full ${
+                        membershipTier === 'Diamond Prestige' ? 'bg-cyan-400/20' : 'bg-yellow-400/20'
+                      } blur-xl pointer-events-none`} />
+                    </div>
+
+                    {/* BACK FACE */}
+                    <div
+                      className="absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border bg-[#0a1120] text-slate-200 border-slate-800 flex flex-col justify-between text-left shadow-lg"
+                      style={{
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)'
+                      }}
+                    >
+                      <div className="space-y-3">
+                        <div className="h-6 bg-slate-950 -mx-4 mt-1" />
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-500 opacity-60 flex items-center justify-center p-0.5">
+                            <div className="w-full h-full border border-white/20 rounded bg-white/10" />
+                          </div>
+                          <div className="flex flex-col text-right leading-none">
+                            <span className="text-[5px] text-slate-500 font-bold uppercase tracking-wider">Authorized Signature</span>
+                            <div className="w-24 h-5 bg-slate-800 border border-slate-700/80 rounded mt-1.5 flex items-center px-2">
+                              <span className="text-[8px] font-bold font-serif italic text-slate-400 select-none">{profileName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-[6px] text-slate-500 leading-tight text-center mt-2">
+                        This card is non-transferable and remains property of Forge India Connect. 
+                        Subject to terms and conditions.
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div className="text-[6px] text-slate-500 leading-tight text-center mt-2">
-                    This card is non-transferable and remains property of Forge India Connect. 
-                    Subject to terms and conditions.
-                  </div>
+                {/* Floating Bubble Icons (shown only on active card) */}
+                <div className="absolute left-[5%] top-[5%] w-9 h-9 rounded-full bg-white text-emerald-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20">
+                  <ShoppingCart className="w-4.5 h-4.5" />
+                </div>
+                <div className="absolute left-[0%] bottom-[5%] w-10 h-10 rounded-full bg-white text-blue-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '0.8s' }}>
+                  <Plane className="w-4.5 h-4.5" />
+                </div>
+                <div className="absolute right-[5%] top-[10%] w-8 h-8 rounded-full bg-white text-orange-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '1.5s' }}>
+                  <Utensils className="w-4.5 h-4.5" />
+                </div>
+                <div className="absolute right-[2%] bottom-[10%] w-9 h-9 rounded-full bg-white text-violet-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '2.2s' }}>
+                  <Settings className="w-4.5 h-4.5" />
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Slide 1: Domino's Pizza Offer */}
+            {activeHeroSlide === 1 && (
+              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
+                {/* Clock indicator in top right */}
+                <div className="absolute top-2.5 right-2.5 bg-red-650 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                  <span>Limited Time</span>
+                </div>
+
+                {/* Left Side Info content */}
+                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1">
+                    {/* Logo block */}
+                    <div className="flex items-center gap-1.5 font-bold tracking-tight text-white font-sans text-xs">
+                      <div className="flex gap-[1px] rotate-[-20deg] scale-80 origin-center shrink-0">
+                        {/* Domino left: red with 2 dots */}
+                        <div className="w-3.5 h-3.5 bg-red-600 rounded-sm relative flex items-center justify-center shadow-xs">
+                          <div className="w-0.75 h-0.75 bg-white rounded-full absolute top-0.75 left-0.75" />
+                          <div className="w-0.75 h-0.75 bg-white rounded-full absolute bottom-0.75 right-0.75" />
+                        </div>
+                        {/* Domino right: blue with 1 dot */}
+                        <div className="w-3.5 h-3.5 bg-blue-600 rounded-sm relative flex items-center justify-center shadow-xs">
+                          <div className="w-0.75 h-0.75 bg-white rounded-full" />
+                        </div>
+                      </div>
+                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Domino's</span>
+                    </div>
+
+                    {/* Gold Tag */}
+                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                      ★ Exclusive Offer
+                    </div>
+
+                    {/* Headline info */}
+                    <div className="pt-1.5 leading-tight">
+                      <h3 className="text-sm font-black text-white leading-none">
+                        Flat <span className="text-[#FFC107]">50% OFF</span>
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-350 mt-1">On all Pizza Orders</p>
+                    </div>
+                  </div>
+
+                  {/* Delivery indicators */}
+                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Truck className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>Free Delivery</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <ShoppingBag className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>No Minimum Order</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <button 
+                    onClick={() => {
+                      setActiveTab('Food');
+                      setSelectedSubNavbarCategory('Food');
+                      triggerNotification("Welcome to Domino's! Explore our pizza catalog.");
+                    }}
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                  >
+                    <span>Order Now</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+
+                {/* Right Side pizza picture */}
+                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                  <img 
+                    src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" 
+                    alt="Pizza Special Offer" 
+                    className="w-full h-full object-cover" 
+                  />
+                  {/* Left edge shadow blending overlay */}
+                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0e0e0e] to-transparent z-10" />
+                </div>
+              </div>
+            )}
+
+            {/* Slide 2: Radisson Blu Hotel Stay */}
+            {activeHeroSlide === 2 && (
+              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
+                {/* Clock indicator in top right */}
+                <div className="absolute top-2.5 right-2.5 bg-red-600 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                  <span>Limited Time</span>
+                </div>
+
+                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1">
+                    {/* Logo block */}
+                    <div className="flex items-center gap-1 font-bold text-white text-xs">
+                      <BedDouble className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Radisson Blu</span>
+                    </div>
+
+                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                      ★ Member Privilege
+                    </div>
+
+                    <div className="pt-1.5 leading-tight">
+                      <h3 className="text-sm font-black text-white leading-none">
+                        Extra <span className="text-[#FFC107]">30% OFF</span>
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-350 mt-1">On Luxury Suites & Stays</p>
+                    </div>
+                  </div>
+
+                  {/* Indicators */}
+                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>Free Welcome Drinks</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>Complimentary Breakfast</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      setActiveTab('Stay');
+                      setSelectedSubNavbarCategory('Stay');
+                      triggerNotification("Explore partner hotels and luxury stays.");
+                    }}
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                  >
+                    <span>Book Now</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+
+                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                  <img 
+                    src={hotelActual} 
+                    alt="Radisson Suite Stay" 
+                    className="w-full h-full object-cover" 
+                  />
+                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#07111e] to-transparent z-10" />
+                </div>
+              </div>
+            )}
+
+            {/* Slide 3: Air India Travels */}
+            {activeHeroSlide === 3 && (
+              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
+                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1 font-bold text-white text-xs">
+                      <Plane className="w-3.5 h-3.5 text-[#FFC107] shrink-0 animate-pulse" />
+                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Air India</span>
+                    </div>
+
+                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                      ★ Flight Special
+                    </div>
+
+                    <div className="pt-1.5 leading-tight">
+                      <h3 className="text-sm font-black text-white leading-none">
+                        Save <span className="text-[#FFC107]">₹2,000</span>
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-350 mt-1">On International Bookings</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>Extra Baggage Allowance</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>Free Preferred Seat Select</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      setActiveTab('Travel');
+                      setSelectedSubNavbarCategory('Travel');
+                      triggerNotification("Search and book flights at member rates.");
+                    }}
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                  >
+                    <span>Claim Now</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+
+                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                  <img 
+                    src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80" 
+                    alt="Flight Travel Offer" 
+                    className="w-full h-full object-cover" 
+                  />
+                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#160608] to-transparent z-10" />
+                </div>
+              </div>
+            )}
+
+            {/* Slide 4: Urban Connect Services */}
+            {activeHeroSlide === 4 && (
+              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
+                {/* Clock indicator in top right */}
+                <div className="absolute top-2.5 right-2.5 bg-red-600 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                  <span>Limited Time</span>
+                </div>
+
+                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1 font-bold text-white text-xs">
+                      <Settings className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Urban Connect</span>
+                    </div>
+
+                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                      ★ Partner Deal
+                    </div>
+
+                    <div className="pt-1.5 leading-tight">
+                      <h3 className="text-sm font-black text-white leading-none">
+                        Flat <span className="text-[#FFC107]">25% OFF</span>
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-350 mt-1">On all Home Services</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>Verified Industry Experts</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                      <span>100% Insured Deliveries</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      setActiveTab('Services');
+                      setSelectedSubNavbarCategory('Services');
+                      triggerNotification("Book cleaning, salon, plumbing services.");
+                    }}
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                  >
+                    <span>Book Now</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+
+                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                  <img 
+                    src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80" 
+                    alt="Home Services Special" 
+                    className="w-full h-full object-cover" 
+                  />
+                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0e0717] to-transparent z-10" />
+                </div>
+              </div>
+            )}
+
+            {/* Slider Navigation Arrows (placed right at edges) */}
+            <button 
+              type="button"
+              onClick={prevSlide}
+              className="absolute left-[-14px] top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-md hover:scale-105 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all z-20 cursor-pointer text-slate-700 dark:text-slate-300"
+              aria-label="Previous Slide"
+            >
+              <ChevronLeft className="w-4 h-4 shrink-0" />
+            </button>
+            <button 
+              type="button"
+              onClick={nextSlide}
+              className="absolute right-[-14px] top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-md hover:scale-105 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all z-20 cursor-pointer text-slate-700 dark:text-slate-300"
+              aria-label="Next Slide"
+            >
+              <ChevronRight className="w-4 h-4 shrink-0" />
+            </button>
           </div>
 
-          {/* Floating Bubble Icons (staggered float animations) */}
-          <div className="absolute left-[5%] top-[5%] w-9 h-9 rounded-full bg-white text-emerald-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20">
-            <ShoppingCart className="w-4.5 h-4.5" />
-          </div>
-          <div className="absolute left-[0%] bottom-[5%] w-10 h-10 rounded-full bg-white text-blue-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '0.8s' }}>
-            <Plane className="w-4.5 h-4.5" />
-          </div>
-          <div className="absolute right-[5%] top-[10%] w-8 h-8 rounded-full bg-white text-orange-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '1.5s' }}>
-            <Utensils className="w-4.5 h-4.5" />
-          </div>
-          <div className="absolute right-[2%] bottom-[10%] w-9 h-9 rounded-full bg-white text-violet-500 shadow-md border border-slate-100 flex items-center justify-center animate-float pointer-events-none z-20" style={{ animationDelay: '2.2s' }}>
-            <Settings className="w-4.5 h-4.5" />
+          {/* Slider Dots indicators */}
+          <div className="flex gap-2 justify-center mt-3 z-20 relative">
+            {Array.from({ length: totalSlides }).map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveHeroSlide(idx)}
+                className={`w-2 h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
+                  activeHeroSlide === idx 
+                    ? 'bg-blue-650 dark:bg-blue-500 w-5' 
+                    : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-650'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -3453,11 +3777,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Trending Products & Services</h3>
+          <h3 className="text-xs font-black text-slate-500 dark:text-slate-350 uppercase tracking-widest">Trending Products & Services</h3>
           <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All →</button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
           {trending.map(product => {
             const isFavorited = favorites.includes(product.id);
             return (
@@ -3472,11 +3796,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 
                 <div className="p-3.5 flex-grow flex flex-col justify-between text-left">
                   <div>
-                    <h4 className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
+                    <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                     <div className="flex items-baseline gap-1.5 mt-2">
-                      <span className="text-xs font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
-                      <span className="text-[9px] text-emerald-600 font-bold">{product.discount}</span>
+                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                      <span className="text-[9.5px] text-emerald-600 font-bold">{product.discount}</span>
                     </div>
                   </div>
                   
@@ -3484,9 +3808,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                         <span>{product.rating}</span>
-                        <Star className="w-2 h-2 fill-emerald-600 text-emerald-600" />
+                        <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
                       </div>
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <button 
@@ -3494,9 +3818,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           e.stopPropagation(); 
                           addToCart(product); 
                         }} 
-                        className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[8px] font-black px-2 py-1 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30 shrink-0"
+                        className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30 shrink-0"
                       >
-                        <Plus className="w-2 h-2" />
+                        <Plus className="w-3 h-3" />
                         <span>Add</span>
                       </button>
                       <button 
@@ -3507,7 +3831,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           }
                           setIsCartOpen(true);
                         }} 
-                        className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-black px-2 py-1 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
+                        className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
                       >
                         <span>Order Now</span>
                       </button>
@@ -4353,7 +4677,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <button onClick={clearAllFilters} className="mt-6 text-xs font-bold text-white bg-amber-400 hover:bg-amber-500 px-5 py-2.5 rounded-md transition-all shadow cursor-pointer">Reset All Filters</button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
                     {filteredProducts.map((product) => {
                       const isFavorited = favorites.includes(product.id);
                       return (
@@ -4366,23 +4690,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             </button>
                           </div>
                           
-                          <div className="p-2.5 flex-grow flex flex-col justify-between text-left">
+                          <div className="p-3.5 flex-grow flex flex-col justify-between text-left">
                             <div>
-                              <h4 className="text-[10px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
+                              <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                               <div className="flex items-baseline gap-1 mt-1.5">
-                                <span className="text-[11px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
-                                <span className="text-[9px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
-                                <span className="text-[8px] text-[#f43397] font-bold">{product.discount}</span>
+                                <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
+                                <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                                <span className="text-[9.5px] text-[#f43397] font-bold">{product.discount}</span>
                               </div>
-                              <div className="flex items-center gap-1 mt-1 text-[9px] text-slate-400 dark:text-slate-500 font-semibold"><Truck className="w-3 h-3 text-slate-400" /><span>{product.delivery}</span></div>
                             </div>
-                            <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2 pt-2 flex items-center justify-between gap-1 w-full">
+                            <div className="border-t border-slate-100 dark:border-slate-800/60 mt-3 pt-2.5 flex items-center justify-between gap-1 w-full">
                               <div className="flex items-center gap-1 flex-shrink-0">
-                                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[7px] font-extrabold px-1 py-0.5 rounded flex items-center gap-0.5">
+                                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                   <span>{product.rating}</span>
-                                  <Star className="w-2 h-2 fill-emerald-600 text-emerald-600" />
+                                  <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
                                 </div>
-                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
+                                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <button 
@@ -4391,7 +4714,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     addToCart(product); 
                                     triggerNotification(`${product.name} added to cart!`); 
                                   }} 
-                                  className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[8px] font-black px-2 py-1 rounded-md transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
+                                  className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
                                 >
                                   <Plus className="w-3 h-3" />
                                   <span>Add</span>
@@ -4404,7 +4727,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     }
                                     setIsCartOpen(true);
                                   }} 
-                                  className="inline-flex items-center bg-[#10b981] hover:bg-emerald-700 text-white text-[8px] font-black px-2 py-1 rounded-md transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
+                                  className="inline-flex items-center bg-[#10b981] hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
                                 >
                                   <span>Order Now</span>
                                 </button>
@@ -4446,6 +4769,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
     // Dynamic highlights based on category
     const getProductHighlights = (product) => {
+      if (product.description) {
+        const lines = product.description
+          .split('\n')
+          .map(line => line.trim().replace(/^[\s\-\*\u2022\u25E6\u2023\u2043\u25CB\u25C9\u25A0\u25A1\u2714\u2713]+/g, '').trim())
+          .filter(Boolean);
+        if (lines.length > 0) {
+          return lines;
+        }
+      }
       if (product.category === 'Smartphones') {
         return [
           "6.1-inch Super Retina XDR display",
@@ -4898,7 +5230,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         {related.length > 0 && (
           <div className="space-y-4 text-left">
             <h3 className="text-sm font-black text-slate-850 dark:text-white uppercase tracking-tight">Customers Also Bought</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
               {related.map((prod) => {
                 const isFavorited = favorites.includes(prod.id);
                 return (
@@ -4921,17 +5253,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div className="p-3.5 flex-grow flex flex-col justify-between">
                       <div>
-                        <h4 className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{prod.name}</h4>
+                        <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{prod.name}</h4>
                         <div className="flex items-baseline gap-1.5 mt-2">
-                          <span className="text-xs font-black text-slate-800 dark:text-white">₹{prod.price.toLocaleString()}</span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through">₹{prod.originalPrice.toLocaleString()}</span>
-                          <span className="text-[9px] text-[#f43397] font-black">{prod.discount}</span>
+                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{prod.price.toLocaleString()}</span>
+                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{prod.originalPrice.toLocaleString()}</span>
+                          <span className="text-[9.5px] text-[#f43397] font-black">{prod.discount}</span>
                         </div>
                       </div>
                       <div className="border-t border-slate-100 dark:border-slate-800/60 mt-3 pt-2.5 flex items-center justify-between gap-1 w-full">
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Star className="w-3 h-3 fill-emerald-600 text-emerald-600 animate-pulse" />
-                          <span className="text-[8px] font-bold text-slate-700 dark:text-slate-350">{prod.rating}</span>
+                          <span className="text-[9px] font-bold text-slate-700 dark:text-slate-350">{prod.rating}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <button 
@@ -4939,7 +5271,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               e.stopPropagation(); 
                               addToCart(prod); 
                             }} 
-                            className="bg-amber-400 hover:bg-amber-500 text-slate-955 text-[8px] font-black px-2 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0"
+                            className="bg-amber-400 hover:bg-amber-500 text-slate-955 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0"
                           >
                             + Add
                           </button>
@@ -4951,7 +5283,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               }
                               setIsCartOpen(true);
                             }} 
-                            className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-black px-2 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
+                            className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
                           >
                             Order Now
                           </button>
