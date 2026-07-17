@@ -113,7 +113,27 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       try {
         const res = await productService.getProducts();
         if (res && res.success && Array.isArray(res.products)) {
-          setProducts(res.products);
+          const patched = res.products.map(p => {
+            const updated = { ...p };
+            // Correct Eggs category
+            if (p.name && p.name.toLowerCase().includes('egg') && p.category === 'Rice') {
+              updated.category = 'Eggs';
+            }
+            // Correct doctor images
+            if (p.subNavbarCategory === 'Services' && (!p.image || p.image.includes('unsplash.com/photo-1523275335684-37898b6baf30'))) {
+              if (p.name && p.name.toLowerCase().includes('robert')) {
+                updated.image = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60';
+              } else if (p.name && p.name.toLowerCase().includes('james')) {
+                updated.image = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60';
+              } else if (p.name && p.name.toLowerCase().includes('emily')) {
+                updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
+              } else {
+                updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
+              }
+            }
+            return updated;
+          });
+          setProducts(patched);
         }
       } catch (err) {
         console.warn("Failed to load vendor products dynamically:", err);
