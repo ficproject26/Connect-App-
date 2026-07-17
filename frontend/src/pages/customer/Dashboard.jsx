@@ -626,14 +626,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Hover Mega Menu State & Handlers
   const [hoveredLink, setHoveredLink] = useState(null);
+  const enterTimeoutRef = React.useRef(null);
   const leaveTimeoutRef = React.useRef(null);
 
   const handleMouseEnter = (linkName) => {
     if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
-    setHoveredLink(linkName);
+    if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
+    
+    enterTimeoutRef.current = setTimeout(() => {
+      setHoveredLink(linkName);
+    }, 500); // 500ms delay: show only if cursor stops/pauses on the tab
   };
 
   const handleMouseLeave = () => {
+    if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
+    if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+    
     leaveTimeoutRef.current = setTimeout(() => {
       setHoveredLink(null);
     }, 150);
@@ -2864,6 +2872,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 key={cat}
                 onMouseEnter={() => handleMouseEnter(cat)}
                 onClick={() => {
+                  if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
+                  if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
                   setSelectedProduct(null);
                   setActiveTab(cat);
                   setSelectedSubNavbarCategory(cat);
