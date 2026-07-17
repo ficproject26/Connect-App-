@@ -1412,7 +1412,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Filters State
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedGenders, setSelectedGenders] = useState([]);
+  const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedPrices, setSelectedPrices] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
@@ -1420,7 +1420,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   // Accordion Toggle States
   const [openFilters, setOpenFilters] = useState({
     category: true,
-    gender: true,
+    brand: true,
     color: true,
     price: true,
     rating: true,
@@ -1958,7 +1958,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const clearAllFilters = () => {
     setSelectedProduct(null);
     setSelectedCategories([]);
-    setSelectedGenders([]);
+    setSelectedBrands([]);
     setSelectedColors([]);
     setSelectedPrices([]);
     setSelectedRating(null);
@@ -2119,8 +2119,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         ? selectedCategories.includes(product.subNavbarCategory) 
         : selectedCategories.includes(product.category));
 
-    const matchesGenderFilter = selectedGenders.length === 0 || 
-      selectedGenders.includes(product.gender);
+    const matchesBrandFilter = selectedBrands.length === 0 || 
+      selectedBrands.includes(product.vendorName);
 
     const matchesColorFilter = selectedColors.length === 0 || 
       selectedColors.includes(product.color);
@@ -2140,7 +2140,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       product.rating >= selectedRating;
 
     return matchesSearch && matchesSubNavbar && matchesCategoryFilter && 
-           matchesGenderFilter && matchesColorFilter && matchesPriceFilter && matchesRatingFilter;
+           matchesBrandFilter && matchesColorFilter && matchesPriceFilter && matchesRatingFilter;
   });
 
   if (sortBy === 'price-asc') {
@@ -2450,7 +2450,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <span className="text-xs font-black text-slate-800 dark:text-white">
                 Hi, {(currentUser?.name || profileName).split(' ')[0]}
               </span>
-              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">
+              <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider">
                 Welcome
               </span>
             </div>
@@ -2990,11 +2990,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         {/* Right Side Graphics: Slider Carousel (Large size!) */}
         <div className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] h-[340px] shrink-0 mt-6 md:mt-0 select-none">
           {/* Card Frame Wrapper (larger max-width!) */}
-          <div className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] shadow-lg rounded-2xl overflow-hidden bg-transparent">
+          <div className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent">
             
             {/* Slide 0: Domino's Pizza Offer */}
             {activeHeroSlide === 0 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
+              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
                 <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
                   <Clock className="w-3 h-3 shrink-0" />
@@ -3075,7 +3075,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             {/* Slide 1: Radisson Blu Hotel Stay */}
             {activeHeroSlide === 1 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
+              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
                 <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
                   <Clock className="w-3 h-3 shrink-0" />
@@ -3140,7 +3140,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             {/* Slide 2: Air India Travels */}
             {activeHeroSlide === 2 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
+              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Left Side Info content */}
                 <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1.5">
@@ -3198,7 +3198,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             {/* Slide 3: Urban Connect Services */}
             {activeHeroSlide === 3 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
+              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
                 <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
                   <Clock className="w-3 h-3 shrink-0" />
@@ -3566,8 +3566,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
                   
                   {/* Rating star on left top */}
-                  <div className="absolute left-2.5 top-2.5 bg-white/90 backdrop-blur-xs text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-3xs">
-                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                  <div className="absolute left-2.5 top-2.5 bg-white/90 backdrop-blur-xs text-slate-900 text-[11px] font-black px-2.5 py-1 rounded-full flex items-center gap-0.5 shadow-3xs">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span>{item.rating}</span>
                   </div>
 
@@ -3723,11 +3723,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   
                   <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 flex flex-col gap-2 w-full">
                     <div className="flex items-center gap-1 select-none">
-                      <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <span>{product.rating}</span>
-                        <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
+                        <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
                       </div>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
                     </div>
                     <div className="flex items-center gap-1.5 w-full">
                       <button 
@@ -4175,14 +4175,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     ))}
                   </select>
                   <select
-                    value={selectedGenders[0] || ""}
-                    onChange={(e) => setSelectedGenders(e.target.value ? [e.target.value] : [])}
+                    value={selectedBrands[0] || ""}
+                    onChange={(e) => setSelectedBrands(e.target.value ? [e.target.value] : [])}
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
-                    <option value="">All Genders</option>
-                    <option value="Men">Men</option>
-                    <option value="Women">Women</option>
-                    <option value="Kids">Kids</option>
+                    <option value="">All Brands</option>
+                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Products').map(p => p.vendorName).filter(Boolean))].map(brand => (
+                      <option key={brand} value={brand}>{brand}</option>
+                    ))}
                   </select>
                   <select
                     value={selectedColors[0] || ""}
@@ -4618,11 +4618,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             </div>
                             <div className="border-t border-slate-100 dark:border-slate-800/60 mt-3 pt-2.5 flex items-center justify-between gap-1 w-full">
                               <div className="flex items-center gap-1 flex-shrink-0">
-                                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-455 border border-emerald-100 dark:border-emerald-900/30 text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-0.5">
                                   <span>{product.rating}</span>
-                                  <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
+                                  <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
                                 </div>
-                                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">({product.reviews})</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <button 
