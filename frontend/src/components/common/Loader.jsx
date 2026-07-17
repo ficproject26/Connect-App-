@@ -49,8 +49,8 @@ export default function SplashLoader({ onComplete }) {
         </div>
 
         {/* Text Logo */}
-        <h1 className="mt-6 text-3xl font-light tracking-[0.4em] uppercase text-white font-sans">
-          C O N N E C T
+        <h1 className="mt-6 text-2xl sm:text-3xl font-light tracking-[0.3em] sm:tracking-[0.4em] uppercase text-white font-sans whitespace-nowrap">
+          CONNECT
         </h1>
         
         <p className="mt-2 text-xs tracking-[0.2em] uppercase text-slate-400 font-sans">
