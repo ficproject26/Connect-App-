@@ -203,30 +203,6 @@
   0%  { opacity: 0; transform: translateY(-8px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-
-/* Services Portfolio Hover & Transition for Desktop / Mobile */
-.services-details-content {
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (min-width: 1024px) {
-  .services-details-content {
-    max-height: 0;
-    opacity: 0;
-  }
-  .group:hover .services-details-content {
-    max-height: 300px;
-    opacity: 1;
-  }
-}
-
-@media (max-width: 1023px) {
-  .services-details-content {
-    max-height: 300px;
-    opacity: 1;
-  }
-}
-
 .animate-slide-up {
   animation: slideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

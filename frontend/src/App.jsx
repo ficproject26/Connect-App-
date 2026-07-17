@@ -16,15 +16,58 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState(() => {
     try {
       const user = localStorage.getItem('connect_current_user');
-      return user ? 'dashboard' : 'home';
+      if (user) return 'dashboard';
+      return localStorage.getItem('connect_current_page') || 'home';
     } catch (e) {
       return 'home';
     }
   }); // 'home' | 'details' | 'sub-details' | 'login' | 'join-now'
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [activeSubService, setActiveSubService] = useState(null);
+
+  const [activeCategory, setActiveCategory] = useState(() => {
+    try {
+      return localStorage.getItem('connect_active_category') || null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [activeSubService, setActiveSubService] = useState(() => {
+    try {
+      return localStorage.getItem('connect_active_sub_service') || null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   const [isJobsOpen, setIsJobsOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  // Persist Page Routing State
+  useEffect(() => {
+    try {
+      localStorage.setItem('connect_current_page', currentPage);
+    } catch (e) {}
+  }, [currentPage]);
+
+  useEffect(() => {
+    try {
+      if (activeCategory) {
+        localStorage.setItem('connect_active_category', activeCategory);
+      } else {
+        localStorage.removeItem('connect_active_category');
+      }
+    } catch (e) {}
+  }, [activeCategory]);
+
+  useEffect(() => {
+    try {
+      if (activeSubService) {
+        localStorage.setItem('connect_active_sub_service', activeSubService);
+      } else {
+        localStorage.removeItem('connect_active_sub_service');
+      }
+    } catch (e) {}
+  }, [activeSubService]);
 
   useEffect(() => {
     if (theme === 'dark') {

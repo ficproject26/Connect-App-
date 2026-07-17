@@ -97,7 +97,7 @@ export default function ServicesSection({ onCategoryClick }) {
                 </div>
 
                 {/* Collapsible details visible on hover */}
-                <div className="services-details-content overflow-hidden">
+                <div className="max-h-[350px] opacity-100 overflow-hidden transition-all duration-500 ease-in-out lg:max-h-0 lg:opacity-0 lg:group-hover:max-h-[350px] lg:group-hover:opacity-100">
                   {/* Divider */}
                   <div className="w-full h-[1px] bg-slate-100 dark:bg-slate-800/60 my-2.5 sm:my-4" />
 
