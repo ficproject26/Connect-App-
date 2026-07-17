@@ -624,10 +624,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       setTimeout(() => {
         const mainEl = document.querySelector('main');
         if (mainEl) {
-          mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          mainEl.scrollTop = 0;
         }
+        window.scrollTo(0, 0);
       }, 50);
     }
   }, [selectedProduct]);
