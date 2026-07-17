@@ -3093,14 +3093,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
 
                 {/* Right Side pizza picture */}
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0e0e]">
                   <img 
                     src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" 
                     alt="Pizza Special Offer" 
                     className="w-full h-full object-cover rounded-r-2xl" 
                   />
-                  {/* Left edge shadow blending overlay */}
-                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0e0e0e] to-transparent z-10" />
                 </div>
               </div>
             )}
@@ -3159,13 +3157,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#07111e]">
                   <img 
                     src={hotelActual} 
                     alt="Radisson Suite Stay" 
                     className="w-full h-full object-cover rounded-r-2xl" 
                   />
-                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#07111e] to-transparent z-10" />
                 </div>
               </div>
             )}
@@ -3217,13 +3214,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#160608]">
                   <img 
                     src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80" 
                     alt="Flight Travel Offer" 
                     className="w-full h-full object-cover rounded-r-2xl" 
                   />
-                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#160608] to-transparent z-10" />
                 </div>
               </div>
             )}
@@ -3280,13 +3276,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
                   <img 
                     src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80" 
                     alt="Home Services Special" 
                     className="w-full h-full object-cover rounded-r-2xl" 
                   />
-                  <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0e0717] to-transparent z-10" />
                 </div>
               </div>
             )}
