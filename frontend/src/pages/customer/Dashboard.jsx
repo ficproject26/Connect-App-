@@ -3215,24 +3215,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
               </div>
             )}
-
-            {/* Slider Navigation Arrows (placed right at edges) */}
-            <button 
-              type="button"
-              onClick={prevSlide}
-              className="absolute left-[-14px] top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-md hover:scale-105 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all z-20 cursor-pointer text-slate-700 dark:text-slate-300"
-              aria-label="Previous Slide"
-            >
-              <ChevronLeft className="w-4 h-4 shrink-0" />
-            </button>
-            <button 
-              type="button"
-              onClick={nextSlide}
-              className="absolute right-[-14px] top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-md hover:scale-105 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all z-20 cursor-pointer text-slate-700 dark:text-slate-300"
-              aria-label="Next Slide"
-            >
-              <ChevronRight className="w-4 h-4 shrink-0" />
-            </button>
           </div>
 
           {/* Slider Dots indicators */}
