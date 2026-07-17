@@ -2027,6 +2027,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Filtered & Sorted products list
   let filteredProducts = products.filter(product => {
+    const normalizeCity = (city) => {
+      if (!city) return 'bangalore';
+      const c = city.toLowerCase();
+      if (c === 'bengaluru' || c === 'bangalore') return 'bangalore';
+      return c;
+    };
+
+    const matchesLocation = !selectedLocation?.city || 
+      normalizeCity(product.vendorCity) === normalizeCity(selectedLocation.city);
+
     const matchesSearch = (searchQuery === '' || 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       product.category.toLowerCase().includes(searchQuery.toLowerCase())) &&
@@ -2046,7 +2056,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesServiceType && matchesLocType && matchesRatingFilter;
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesServiceType && matchesLocType && matchesRatingFilter;
     }
 
     // Food Filter Checks
@@ -2068,7 +2078,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesCuisine && matchesDistance && matchesRatingFilter;
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesCuisine && matchesDistance && matchesRatingFilter;
     }
 
     // Stay Filter Checks
@@ -2090,7 +2100,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesAccom && matchesPrice && matchesRatingFilter;
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesAccom && matchesPrice && matchesRatingFilter;
     }
 
     // Travel Filter Checks
@@ -2111,7 +2121,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesTravelType && matchesPrice && matchesRatingFilter;
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && matchesPrice && matchesRatingFilter;
     }
 
     // Daily Needs Filter Checks
@@ -2132,7 +2142,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesDailyNeedsType && matchesPrice && matchesRatingFilter;
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesDailyNeedsType && matchesPrice && matchesRatingFilter;
     }
 
     // Default Products / Other tabs Filter Checks
@@ -2161,7 +2171,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const matchesRatingFilter = selectedRating === null || 
       product.rating >= selectedRating;
 
-    return matchesSearch && matchesSubNavbar && matchesCategoryFilter && 
+    return matchesSearch && matchesSubNavbar && matchesLocation && matchesCategoryFilter && 
            matchesBrandFilter && matchesColorFilter && matchesPriceFilter && matchesRatingFilter;
   });
 
@@ -2265,7 +2275,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           {isNotificationsOpen && (
             <>
               <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
-              <div className={`${isMobile ? 'fixed top-16 left-4 right-4' : 'absolute right-0 mt-2 w-80'} bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
+              <div className={`${isMobile ? 'fixed top-16 left-4 right-4' : 'absolute right-0 mt-2 w-80'} bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
                 <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
                   <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
                   {unreadCount > 0 && (
@@ -2308,7 +2318,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const renderDashboardHeader = () => {
     return (
-      <header className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-2.5 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
+      <header className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-2.5 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
         {/* Row 1 for Mobile / Left Section for Desktop */}
         <div className="flex items-center justify-between md:justify-start gap-4 w-full md:w-auto">
           {/* Logo */}
@@ -2323,7 +2333,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div className="relative shrink-0">
             <button 
               onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800/60 rounded-full bg-slate-50/20 dark:bg-[#0a192f]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-[10px] font-bold text-slate-700 dark:text-slate-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800/60 rounded-full bg-slate-50/20 dark:bg-[#0b1329]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-[10px] font-bold text-slate-700 dark:text-slate-200 transition-colors"
             >
               <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span className="truncate max-w-[80px]">{selectedLocation.city}</span>
@@ -2336,7 +2346,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   onClick={() => setIsLocationDropdownOpen(false)}
                   className="fixed inset-0 z-40 bg-transparent" 
                 />
-                <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 text-slate-800 dark:text-slate-200">
+                <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 text-slate-800 dark:text-slate-200">
                   <div className="relative flex items-center border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl px-2.5 py-1.5 focus-within:border-[#FFC107]">
                     <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                     <input 
@@ -2885,7 +2895,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         className="relative"
         onMouseLeave={handleMouseLeave}
       >
-        <nav className="bg-white dark:bg-[#0a192f] border-b border-slate-200 dark:border-slate-800/60 px-8 py-2.5 flex items-center justify-start md:justify-center gap-10 sm:gap-12 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
+        <nav className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-8 py-2.5 flex items-center justify-start md:justify-center gap-10 sm:gap-12 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
           {subNavbarCategories.map((cat) => {
             const isActive = activeTab === cat;
             const Icon = icons[cat] || ShoppingBag;
@@ -2921,7 +2931,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div
             onMouseEnter={() => handleMouseEnter(hoveredLink)}
             onMouseLeave={handleMouseLeave}
-            className="absolute top-[calc(100%+2px)] left-6 right-6 bg-white/95 dark:bg-[#0a192f]/95 backdrop-blur-md shadow-2xl border border-slate-200/80 dark:border-slate-800/60 rounded-2xl py-8 px-8 z-50 flex transition-all duration-300 ease-out text-slate-800 dark:text-slate-200"
+            className="absolute top-[calc(100%+2px)] left-6 right-6 bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-md shadow-2xl border border-slate-200/80 dark:border-slate-800/60 rounded-2xl py-8 px-8 z-50 flex transition-all duration-300 ease-out text-slate-800 dark:text-slate-200"
           >
             {hoveredLink === 'Services' ? (
               renderSidebarMegaMenu(activeServiceCategory, setActiveServiceCategory, serviceMegaMenuData)
@@ -3369,7 +3379,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         discount: 'FLAT 20% OFF', 
         desc: 'On all food orders', 
         code: 'FOOD20', 
-        bg: 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/35', 
+        bg: 'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50', 
         tagColor: 'bg-rose-500 text-white', 
         btnColor: 'bg-rose-500 hover:bg-rose-600 text-white',
         image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=250&auto=format&fit=crop&q=80' 
@@ -3380,7 +3390,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         discount: '15% OFF', 
         desc: 'On all services', 
         code: 'SERV15', 
-        bg: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/35', 
+        bg: 'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50', 
         tagColor: 'bg-blue-500 text-white', 
         btnColor: 'bg-blue-500 hover:bg-blue-600 text-white',
         image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=250&auto=format&fit=crop&q=80' 
@@ -3391,7 +3401,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         discount: 'UP TO 30% OFF', 
         desc: 'On hotel bookings', 
         code: 'STAY30', 
-        bg: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/35', 
+        bg: 'bg-emerald-50/70 dark:bg-[#041c12] border-emerald-100 dark:border-[#0e3a24]/50', 
         tagColor: 'bg-emerald-500 text-white', 
         btnColor: 'bg-emerald-500 hover:bg-emerald-600 text-white',
         image: hotelActual 
@@ -3402,10 +3412,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         discount: 'EXTRA 10% OFF', 
         desc: 'On travel bookings', 
         code: 'TRAVEL10', 
-        bg: 'bg-indigo-50/70 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/35', 
+        bg: 'bg-indigo-50/70 dark:bg-[#160824] border-indigo-100 dark:border-[#2f114d]/50', 
         tagColor: 'bg-indigo-500 text-white', 
         btnColor: 'bg-indigo-500 hover:bg-indigo-600 text-white',
-        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=250&auto=format&fit=crop&q=80' 
+        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=250&auto=format&fit=crop&0=80' 
       },
     ];
 
@@ -3644,7 +3654,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     ];
 
     return (
-      <div className="w-full bg-white dark:bg-[#0a192f] border border-slate-200/60 dark:border-slate-800/80 rounded-3xl p-4 shadow-3xs mt-6 transition-all duration-300">
+      <div className="w-full bg-white dark:bg-[#0b1329] border border-slate-200/60 dark:border-slate-800/80 rounded-3xl p-4 shadow-3xs mt-6 transition-all duration-300">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center justify-center">
           {badges.map((b, idx) => {
             const Icon = b.icon;
@@ -3694,7 +3704,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   setSelectedCategories([]);
                   triggerNotification(`Showing Services`);
                 }}
-                className="flex flex-col items-center bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer group text-slate-800 dark:text-slate-200"
+                className="flex flex-col items-center bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer group text-slate-800 dark:text-slate-200"
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${service.color} shadow-xs group-hover:scale-105 transition-transform`}>
                   <IconComponent className="w-5 h-5" />
@@ -3724,7 +3734,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           {trending.map(product => {
             const isFavorited = favorites.includes(product.id);
             return (
-              <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-350 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-0.5">
+              <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-350 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-0.5">
                 <div className="relative aspect-[0.95/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
                   <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
                   <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
@@ -3798,7 +3808,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stays.map((stay, idx) => (
-            <div key={idx} onClick={() => setSelectedProduct(stay)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+            <div key={idx} onClick={() => setSelectedProduct(stay)} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
                 <img src={stay.image} alt={stay.name} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">15% SAVINGS</span>
@@ -3839,7 +3849,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {restaurants.map((rest, idx) => (
-            <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+            <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
                 <img src={rest.image} alt={rest.name} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-rose-500 text-white text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
@@ -3870,7 +3880,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return (
       <div className="grid grid-cols-2 gap-4">
         {/* Wallet */}
-        <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 flex flex-col justify-between text-left shadow-xs transition-shadow hover:shadow-sm text-slate-800 dark:text-slate-200">
+        <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 flex flex-col justify-between text-left shadow-xs transition-shadow hover:shadow-sm text-slate-800 dark:text-slate-200">
           <div className="w-8.5 h-8.5 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center border border-blue-500/20 shrink-0">
             <Wallet className="w-4.5 h-4.5" />
           </div>
@@ -3885,7 +3895,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         </div>
 
         {/* Savings */}
-        <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 flex flex-col justify-between text-left shadow-xs transition-shadow hover:shadow-sm text-slate-800 dark:text-slate-200 dark:text-slate-200">
+        <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 flex flex-col justify-between text-left shadow-xs transition-shadow hover:shadow-sm text-slate-800 dark:text-slate-200 dark:text-slate-200">
           <div className="w-8.5 h-8.5 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center border border-emerald-500/20 shrink-0">
             <Percent className="w-4.5 h-4.5" />
           </div>
@@ -3900,7 +3910,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         </div>
 
         {/* Points */}
-        <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 flex flex-col justify-between text-left shadow-xs transition-shadow hover:shadow-sm text-slate-800 dark:text-slate-200 dark:text-slate-200">
+        <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 flex flex-col justify-between text-left shadow-xs transition-shadow hover:shadow-sm text-slate-800 dark:text-slate-200 dark:text-slate-200">
           <div className="w-8.5 h-8.5 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center border border-purple-500/20 shrink-0">
             <Gift className="w-4.5 h-4.5" />
           </div>
@@ -4035,7 +4045,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   // 10. REWARDS & CASHBACK (RIGHT)
   const renderRewardsCashback = () => {
     return (
-      <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs text-left w-full text-slate-800 dark:text-slate-200 h-full">
+      <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs text-left w-full text-slate-800 dark:text-slate-200 h-full">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex gap-5 flex-wrap items-center">
             {/* Cashback Available */}
@@ -4087,7 +4097,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('orders'); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
         </div>
 
-        <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs space-y-3.5 w-full text-slate-800 dark:text-slate-200">
+        <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs space-y-3.5 w-full text-slate-800 dark:text-slate-200">
           {[
             { name: 'The Rameshwaram Cafe', cat: 'Restaurant', price: 1200, discount: 300, date: '02 May 2024', color: 'bg-rose-500/10 text-rose-500 border border-rose-500/20 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30', icon: Utensils },
             { name: 'Hotel Royal Orchid', cat: 'Hotel Booking', price: 4500, discount: 900, date: '01 May 2024', color: 'bg-amber-500/10 text-amber-500 border border-amber-500/20 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30', icon: BedDouble },
@@ -4149,7 +4159,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-6 text-slate-800 dark:text-slate-200">
         <div className="flex flex-col gap-6 w-full items-stretch">
           {/* Horizontal Filters Bar */}
-          <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3.5">
               <div className="flex items-center gap-1.5 text-slate-850 dark:text-white font-black text-xs mr-1">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
@@ -4442,7 +4452,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {activeTab === 'Jobs' ? (
               appliedJobId ? (
                 /* ================= JOB APPLICATION FORM ================= */
-                <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 shadow-xs max-w-2xl mx-auto space-y-6 relative overflow-hidden text-slate-800 dark:text-slate-200">
+                <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 md:p-8 shadow-xs max-w-2xl mx-auto space-y-6 relative overflow-hidden text-slate-800 dark:text-slate-200">
                   <div className="absolute top-0 right-0 w-48 h-48 bg-brand-gold/5 rounded-full blur-3xl pointer-events-none" />
                   
                   <div className="flex justify-between items-start">
@@ -4544,14 +4554,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               ) : (
                 /* ================= JOBS LISTING BOARD ================= */
                 <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-4 py-3 shadow-xs text-slate-800 dark:text-slate-200">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-4 py-3 shadow-xs text-slate-800 dark:text-slate-200">
                     <h2 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight">
                       Open Positions <span className="text-xs font-medium text-slate-400 dark:text-slate-500">({filteredJobs.length} items found)</span>
                     </h2>
                   </div>
 
                   {filteredJobs.length === 0 ? (
-                    <div className="text-center py-20 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xs text-slate-800 dark:text-slate-300">
+                    <div className="text-center py-20 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xs text-slate-800 dark:text-slate-300">
                       <SlidersHorizontal className="w-10 h-10 text-slate-300 mx-auto mb-4" />
                       <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">No Jobs Match Your Filters</h4>
                       <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">Try resetting your filter parameters or search query.</p>
@@ -4562,7 +4572,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       {filteredJobs.map((job) => (
                         <div 
                           key={job.id} 
-                          className="p-5 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200"
+                          className="p-5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200"
                         >
                           <div className="space-y-3">
                             <div className="flex items-start justify-between gap-2.5 flex-wrap">
@@ -4609,7 +4619,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               /* ================= STANDARD PRODUCTS/SERVICES/ETC GRID ================= */
               <>
                 {filteredProducts.length === 0 ? (
-                  <div className="text-center py-20 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xs text-slate-800 dark:text-slate-350">
+                  <div className="text-center py-20 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xs text-slate-800 dark:text-slate-350">
                     <SlidersHorizontal className="w-10 h-10 text-slate-300 mx-auto mb-4" />
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">No Items Match Your Filters</h4>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">Try resetting your filter parameters or search query.</p>
@@ -4620,7 +4630,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     {filteredProducts.map((product) => {
                       const isFavorited = favorites.includes(product.id);
                       return (
-                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
                           <div className="relative aspect-[1.4/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
                             <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
                             <span className="absolute left-2.5 top-2.5 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
@@ -4996,7 +5006,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return (
       <div className="space-y-8 pb-16 text-slate-800 dark:text-slate-200">
         {/* Breadcrumbs */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
           <div className="flex items-center gap-1.5 flex-wrap">
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span>
@@ -5027,7 +5037,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         </div>
 
         {/* Main Product Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs">
           
           {/* Left Column: Gallery */}
           <div className="lg:col-span-5 flex flex-col justify-between">
@@ -5078,7 +5088,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {/* Heart wishlist button */}
                 <button 
                   onClick={() => toggleFavorite(selectedProduct.id)} 
-                  className="absolute right-4 top-4 w-9.5 h-9.5 rounded-full bg-white/95 dark:bg-[#0a192f] text-slate-455 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200/60 dark:border-slate-800/60 transition-transform hover:scale-105"
+                  className="absolute right-4 top-4 w-9.5 h-9.5 rounded-full bg-white/95 dark:bg-[#0b1329] text-slate-455 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200/60 dark:border-slate-800/60 transition-transform hover:scale-105"
                 >
                   <Heart className={`w-4 h-4 ${favorites.includes(selectedProduct.id) ? 'fill-red-500 text-red-500' : ''}`} />
                 </button>
@@ -5349,7 +5359,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               { name: "TRENDS", disc: "10% OFF", cap: "Up to ₹700", app: "On Fashion", logoCol: "text-slate-800 dark:text-slate-200 font-extrabold tracking-widest", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
               { name: "netmeds", disc: "15% OFF", cap: "Up to ₹300", app: "On Medicines", logoCol: "text-[#00A4A6] font-black", logoBg: "bg-cyan-50/20", border: "border-cyan-100 dark:border-cyan-950/20" }
             ].map((p, idx) => (
-              <div key={idx} className={`bg-white dark:bg-[#0a192f] border ${p.border} rounded-2xl p-4 text-center flex flex-col justify-between transition-all hover:-translate-y-0.5 shadow-2xs`}>
+              <div key={idx} className={`bg-white dark:bg-[#0b1329] border ${p.border} rounded-2xl p-4 text-center flex flex-col justify-between transition-all hover:-translate-y-0.5 shadow-2xs`}>
                 <div className={`h-8 flex items-center justify-center rounded-lg ${p.logoBg} mb-3.5 font-black text-xs px-2`}>
                   {idx === 2 ? (
                     <span className={p.logoCol}>
@@ -5410,7 +5420,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         </div>
 
         {/* Rewards summary widget */}
-        <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs flex flex-col lg:flex-row justify-between items-center gap-6">
+        <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs flex flex-col lg:flex-row justify-between items-center gap-6">
           <div className="flex-1 space-y-4 text-left w-full">
             <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight">Connect Rewards</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
@@ -5449,7 +5459,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         {/* Why Buy from Connect Grid */}
         <div className="space-y-4">
           <h3 className="text-sm font-black text-slate-855 dark:text-white tracking-tight uppercase text-left">Why Buy From Connect App?</h3>
-          <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-5 shadow-3xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-5 shadow-3xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {[
               { title: "100% Original", detail: "Genuine Products direct from certified brands", icon: ShieldCheck, color: "text-emerald-500" },
               { title: "Secure Payment", detail: "100% Safe, encrypted gateway transaction", icon: "Lock", color: "text-blue-500" },
@@ -5488,14 +5498,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     onClick={() => {
                       setSelectedProduct(prod);
                     }} 
-                    className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-3xs hover:shadow-md transition-all duration-300 flex flex-col justify-between cursor-pointer hover:-translate-y-0.5"
+                    className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-3xs hover:shadow-md transition-all duration-300 flex flex-col justify-between cursor-pointer hover:-translate-y-0.5"
                   >
                     <div className="relative aspect-[0.95/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center border-b border-slate-100 dark:border-slate-800/60 select-none">
                       <img src={prod.image} alt={prod.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
                       {prod.tag && <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[7px] font-black px-2 py-0.5 rounded uppercase">{prod.tag}</span>}
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleFavorite(prod.id); }} 
-                        className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 dark:bg-[#0a192f] text-slate-450 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60"
+                        className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 dark:bg-[#0b1329] text-slate-450 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60"
                       >
                         <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                       </button>
@@ -5553,7 +5563,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const isMarketplaceView = activeTab !== 'Home' || searchQuery !== '';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans antialiased flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-800 dark:text-slate-200 font-sans antialiased flex flex-col transition-colors duration-300">
       {/* -------------------- NOTIFICATION TOAST -------------------- */}
       {notification && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-55 bg-[#0b1e36] text-white border border-white/10 px-5 py-3 rounded-full text-xs font-black shadow-2xl flex items-center gap-2.5 animate-bounce">
@@ -5621,7 +5631,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         />
 
         <div 
-          className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0a192f] border-l border-slate-200 dark:border-slate-800/60 shadow-2xl p-6 md:p-8 flex flex-col justify-between transition-transform duration-500 ease-out z-10 text-slate-800 dark:text-slate-200`}
+          className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0b1329] border-l border-slate-200 dark:border-slate-800/60 shadow-2xl p-6 md:p-8 flex flex-col justify-between transition-transform duration-500 ease-out z-10 text-slate-800 dark:text-slate-200`}
         >
           <div className="flex justify-between items-center border-b border-slate-200 pb-4">
             <div className="flex items-center gap-2">
@@ -5727,7 +5737,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         />
 
         <div 
-          className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0a192f] border-l border-slate-200 dark:border-slate-800/60 shadow-2xl p-6 md:p-8 flex flex-col justify-between transition-transform duration-500 ease-out z-10 text-slate-800 dark:text-slate-200`}
+          className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0b1329] border-l border-slate-200 dark:border-slate-800/60 shadow-2xl p-6 md:p-8 flex flex-col justify-between transition-transform duration-500 ease-out z-10 text-slate-800 dark:text-slate-200`}
         >
           <div className="flex justify-between items-center border-b border-slate-200 pb-4">
             <div className="flex items-center gap-2">
@@ -5811,7 +5821,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
       {/* -------------------- 7. PROFILE DETAILS MODAL POP-UP -------------------- */}
       {isProfileModalOpen && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-[#0a192f] w-screen h-screen flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-800 dark:text-slate-200">
+        <div className="fixed inset-0 z-50 bg-white dark:bg-[#0b1329] w-screen h-screen flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-800 dark:text-slate-200">
             {/* Modal Left Navigation Sidebar */}
             <div className="w-full md:w-64 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/60 p-5 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
               <div className="space-y-6 text-left">
@@ -5868,7 +5878,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </div>
 
             {/* Modal Right Content Panel */}
-            <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-white dark:bg-[#0a192f] text-slate-800 dark:text-slate-200">
+            <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-white dark:bg-[#0b1329] text-slate-800 dark:text-slate-200">
               <button 
                 onClick={() => setIsProfileModalOpen(false)}
                 className="absolute right-5 top-5 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
@@ -6306,7 +6316,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800">
           <div onClick={() => setShowBenefitsModal(false)} className="absolute inset-0" />
           
-          <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl w-full max-w-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh] z-10 text-slate-800 dark:text-slate-200">
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl w-full max-w-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh] z-10 text-slate-800 dark:text-slate-200">
             {/* Header */}
             <div className="p-6 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20">
               <div className="flex items-center gap-2.5 text-left">
@@ -6435,7 +6445,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800">
           <div onClick={() => setShowUpgradeModal(false)} className="absolute inset-0" />
           
-          <div className="bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-3xl w-full max-w-4xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10 text-slate-800 dark:text-slate-200">
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl w-full max-w-4xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10 text-slate-800 dark:text-slate-200">
             {/* Header */}
             <div className="p-6 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20">
               <div className="flex items-center gap-2.5 text-left">
