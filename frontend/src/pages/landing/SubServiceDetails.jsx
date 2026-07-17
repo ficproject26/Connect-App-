@@ -144,8 +144,8 @@ export default function SubServiceDetails({ title, onBack }) {
     return () => { active = false; };
   }, [title]);
 
-  const isITServices = title === 'IT Services';
-  const isHospitals = title === 'Hospitals' || title === 'Healthcare';
+  const isITServices = (title || '') === 'IT Services';
+  const isHospitals = (title || '') === 'Hospitals' || (title || '') === 'Healthcare';
 
   // Group vendor products belonging to category 'Hospitals' by vendorName
   const getDynamicHospitals = () => {
@@ -175,7 +175,7 @@ export default function SubServiceDetails({ title, onBack }) {
       }
 
       let deptName = 'General Medicine';
-      const lowerName = p.name.toLowerCase();
+      const lowerName = (p.name || '').toLowerCase();
       if (lowerName.includes('cardiologist') || lowerName.includes('cardio')) {
         deptName = 'Cardiology';
       } else if (lowerName.includes('pediatrician') || lowerName.includes('pediat')) {
@@ -209,7 +209,7 @@ export default function SubServiceDetails({ title, onBack }) {
 
     const dynamicList = [...hospitalsData];
     Object.values(groupedHospitals).forEach(h => {
-      if (!dynamicList.some(item => item.name.toLowerCase() === h.name.toLowerCase())) {
+      if (!dynamicList.some(item => (item.name || '').toLowerCase() === (h.name || '').toLowerCase())) {
         dynamicList.push(h);
       }
     });
@@ -221,8 +221,8 @@ export default function SubServiceDetails({ title, onBack }) {
 
   // Filter vendor products belonging to this sub-category/type
   const matchedVendorProducts = vendorProducts.filter(p => 
-    (p.category || '').toLowerCase() === title.toLowerCase() ||
-    (p.subNavbarCategory || '').toLowerCase() === title.toLowerCase()
+    (p.category || '').toLowerCase() === (title || '').toLowerCase() ||
+    (p.subNavbarCategory || '').toLowerCase() === (title || '').toLowerCase()
   );
 
   const availableDoctors = selectedHospital
@@ -270,20 +270,20 @@ export default function SubServiceDetails({ title, onBack }) {
 
   // Hospital filter logic
   const filteredHospitals = dynamicHospitals.filter(hosp => {
-    const matchesSearch = hosp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          hosp.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          hosp.specialities.some(spec => spec.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = (hosp.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (hosp.address || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (hosp.specialities || []).some(spec => (spec || '').toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesSpecialty = selectedSpecialty === 'All Specialties' ||
-                            hosp.specialities.includes(selectedSpecialty);
+                            (hosp.specialities || []).includes(selectedSpecialty);
     
     return matchesSearch && matchesSpecialty;
   });
 
   const handleOpenBooking = (hospital) => {
     setSelectedHospital(hospital);
-    setBookingDepartment(hospital.specialities[0] || 'General Medicine');
-    const firstDoc = hospital.doctors.find(doc => doc.dept === (hospital.specialities[0] || 'General Medicine'));
+    setBookingDepartment((hospital.specialities && hospital.specialities[0]) || 'General Medicine');
+    const firstDoc = hospital.doctors.find(doc => doc.dept === ((hospital.specialities && hospital.specialities[0]) || 'General Medicine'));
     setBookingDoctor(firstDoc ? firstDoc.name : '');
     setBookingDate('');
     setBookingTime('Morning (09:00 AM - 12:00 PM)');
@@ -451,7 +451,7 @@ export default function SubServiceDetails({ title, onBack }) {
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           </button>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-sans leading-none">
-            {isHospitals ? 'Elite Hospital Network' : title}
+            {isHospitals ? 'Elite Hospital Network' : (title || 'Services')}
           </h1>
         </div>
 
@@ -694,7 +694,7 @@ export default function SubServiceDetails({ title, onBack }) {
               </h3>
               
               <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base leading-relaxed mb-8">
-                Our audit team is currently verifying the credentials and operational standards of elite partners in the <strong>{title}</strong> sector. Vetted listings and custom integration features will be active here shortly.
+                Our audit team is currently verifying the credentials and operational standards of elite partners in the <strong>{title || 'Selected'}</strong> sector. Vetted listings and custom integration features will be active here shortly.
               </p>
 
               {/* Quick list of trust factors */}
