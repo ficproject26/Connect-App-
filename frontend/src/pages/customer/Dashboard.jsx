@@ -2980,7 +2980,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         {/* Right Side Graphics: Slider Carousel (Large size!) */}
         <div className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] h-[340px] shrink-0 mt-6 md:mt-0 select-none">
           {/* Card Frame Wrapper (larger max-width!) */}
-          <div className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] shadow-lg rounded-2xl bg-transparent">
+          <div className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] shadow-lg rounded-2xl overflow-hidden bg-transparent">
             
             {/* Slide 0: Domino's Pizza Offer */}
             {activeHeroSlide === 0 && (
@@ -3051,11 +3051,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
 
                 {/* Right Side pizza picture */}
-                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
                   <img 
                     src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" 
                     alt="Pizza Special Offer" 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover rounded-r-2xl" 
                   />
                   {/* Left edge shadow blending overlay */}
                   <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0e0e0e] to-transparent z-10" />
@@ -3117,11 +3117,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
                   <img 
                     src={hotelActual} 
                     alt="Radisson Suite Stay" 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover rounded-r-2xl" 
                   />
                   <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#07111e] to-transparent z-10" />
                 </div>
@@ -3175,11 +3175,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
                   <img 
                     src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80" 
                     alt="Flight Travel Offer" 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover rounded-r-2xl" 
                   />
                   <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#160608] to-transparent z-10" />
                 </div>
@@ -3238,11 +3238,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden flex items-center justify-center shrink-0 bg-slate-900">
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-900">
                   <img 
                     src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80" 
                     alt="Home Services Special" 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover rounded-r-2xl" 
                   />
                   <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0e0717] to-transparent z-10" />
                 </div>
