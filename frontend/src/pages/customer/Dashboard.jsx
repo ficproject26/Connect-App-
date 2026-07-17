@@ -330,6 +330,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   useEffect(() => {
     setSelectedProduct(null);
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
+    }
   }, [activeTab, selectedSubNavbarCategory]);
 
   const [activeProductImage, setActiveProductImage] = useState(null);
