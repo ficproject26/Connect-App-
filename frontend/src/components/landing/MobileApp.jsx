@@ -79,7 +79,7 @@ export default function MobileApp() {
         <div className="lg:col-span-6 flex items-center justify-center relative z-10 py-10 lg:py-0">
           
           {/* Mockup Frame Container (matches the rounded dark blue card in the images) */}
-          <div className="bg-[#050b18] border-[12px] border-[#0e1726] rounded-[56px] p-8 sm:p-12 md:p-16 flex items-center justify-center shadow-2xl relative overflow-hidden max-w-sm sm:max-w-md w-full mx-auto group">
+          <div className="bg-[#050b18] border-[12px] border-[#0e1726] rounded-[56px] p-4 sm:p-8 md:p-12 flex items-center justify-center shadow-2xl relative overflow-hidden max-w-sm sm:max-w-md w-full mx-auto group">
             
             {/* Ambient Gold Glowing Circles Behind the Phone */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] bg-brand-gold/10 rounded-full blur-[70px] opacity-80 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
@@ -102,7 +102,7 @@ export default function MobileApp() {
               
               {/* Phone Frame (3D Tilted and Rotated isometric design) */}
               <div 
-                className="relative w-[260px] h-[520px] rounded-[48px] bg-[#0b0f19] border-[8px] border-[#1e293b] overflow-hidden flex flex-col justify-between p-3.5 phone-mockup-3d cursor-pointer"
+                className="relative w-[260px] h-[520px] rounded-[48px] bg-[#0b0f19] border-[8px] border-[#1e293b] overflow-hidden flex flex-col justify-between p-3.5 phone-mockup-3d cursor-pointer origin-center scale-[0.72] xs:scale-[0.8] sm:scale-[0.9] lg:scale-100"
               >
                 {/* Dynamic Island / Notch */}
                 <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-full z-30 flex items-center justify-end pr-4">
