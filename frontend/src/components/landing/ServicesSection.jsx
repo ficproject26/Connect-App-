@@ -65,7 +65,7 @@ export default function ServicesSection({ onCategoryClick }) {
         </div>
 
         {/* Services Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto items-start">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 md:gap-8 max-w-7xl mx-auto items-start">
           {servicesList.map((service) => {
             const Icon = service.icon;
             return (
@@ -76,45 +76,45 @@ export default function ServicesSection({ onCategoryClick }) {
                     onCategoryClick(service.title, true);
                   }
                 }}
-                className={`group relative bg-gradient-to-br ${service.cardStyle} p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-350 hover:translate-y-[-4px] cursor-pointer flex flex-col justify-between`}
+                className={`group relative bg-gradient-to-br ${service.cardStyle} p-3.5 sm:p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-350 hover:translate-y-[-4px] cursor-pointer flex flex-col justify-between`}
               >
                 {/* Theme border highlight on card hover */}
                 <div className={`absolute inset-0 rounded-2xl border border-transparent ${service.hoverHighlight} transition-all duration-300 pointer-events-none`} />
 
                 <div>
                   {/* Icon */}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${service.iconBg} mb-5 transition-transform duration-300 group-hover:scale-110`}>
-                    <Icon className="w-5.5 h-5.5" />
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center ${service.iconBg} mb-3.5 sm:mb-5 transition-transform duration-300 group-hover:scale-110`}>
+                    <Icon className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight group-hover:text-brand-gold-dark dark:group-hover:text-brand-gold transition-colors">
+                  <h3 className="text-sm sm:text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight group-hover:text-brand-gold-dark dark:group-hover:text-brand-gold transition-colors">
                     {service.title}
                   </h3>
-                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  <p className="text-[10.5px] sm:text-xs text-slate-400 mt-1.5 sm:mt-2 leading-relaxed">
                     {service.desc}
                   </p>
                 </div>
 
                 {/* Collapsible details visible on hover */}
-                <div className="max-h-0 opacity-0 overflow-hidden transition-all duration-500 ease-in-out group-hover:max-h-[300px] group-hover:opacity-100">
+                <div className="max-h-[300px] opacity-100 overflow-hidden transition-all duration-500 ease-in-out md:max-h-0 md:opacity-0 md:group-hover:max-h-[300px] md:group-hover:opacity-100">
                   {/* Divider */}
-                  <div className="w-full h-[1px] bg-slate-100 dark:bg-slate-800/60 my-4" />
+                  <div className="w-full h-[1px] bg-slate-100 dark:bg-slate-800/60 my-2.5 sm:my-4" />
 
                   {/* Bullet points */}
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-1.5 sm:space-y-2.5">
                     {service.items.map((item, idx) => (
-                      <li key={idx} className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-brand-gold group-hover:bg-slate-900 dark:group-hover:bg-slate-200 transition-colors shrink-0" />
+                      <li key={idx} className="flex items-center space-x-2 text-[10.5px] sm:text-xs text-slate-500 dark:text-slate-400">
+                        <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-brand-gold group-hover:bg-slate-900 dark:group-hover:bg-slate-200 transition-colors shrink-0" />
                         <span className="truncate">{item}</span>
                       </li>
                     ))}
                   </ul>
 
                   {/* Explore button */}
-                  <div className="flex items-center text-xs font-bold text-brand-gold group-hover:text-slate-950 dark:group-hover:text-white mt-6 transition-colors self-start uppercase tracking-widest space-x-1.5">
+                  <div className="flex items-center text-[10px] sm:text-xs font-bold text-brand-gold group-hover:text-slate-950 dark:group-hover:text-white mt-4 sm:mt-6 transition-colors self-start uppercase tracking-widest space-x-1.5">
                     <span>Explore Details</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform group-hover:translate-x-1" />
                   </div>
                 </div>
               </div>
