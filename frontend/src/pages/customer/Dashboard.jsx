@@ -4781,6 +4781,141 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       selectedProduct.image
     ];
 
+    // Helper to get stats badges dynamically
+    const getStatsBadges = (product) => {
+      const subCat = product.subNavbarCategory;
+      const cat = product.category;
+      
+      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital') {
+        return [
+          { value: "12+", label: "Years Exp.", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>, color: "text-blue-500" },
+          { value: "2500+", label: "Patients", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, color: "text-indigo-500" },
+          { value: "98%", label: "Positive Rate", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>, color: "text-emerald-500" },
+          { value: String(product.rating || '4.5'), label: "Rating", isStar: true, color: "text-amber-500" }
+        ];
+      } else if (subCat === 'Stay' || subCat === 'Travel') {
+        return [
+          { value: "Elite", label: "Tier Verified", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>, color: "text-blue-500" },
+          { value: "5K+", label: "Bookings", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, color: "text-indigo-500" },
+          { value: "Free", label: "Cancellation", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, color: "text-emerald-500" },
+          { value: String(product.rating || '4.5'), label: "Rating", isStar: true, color: "text-amber-500" }
+        ];
+      } else if (subCat === 'Jobs') {
+        return [
+          { value: "Verified", label: "Employer", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, color: "text-blue-500" },
+          { value: "Immediate", label: "Joiners Only", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, color: "text-indigo-500" },
+          { value: "10+", label: "Openings", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, color: "text-emerald-500" },
+          { value: "Full-Time", label: "Job Type", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, color: "text-amber-500" }
+        ];
+      } else {
+        // Products / Daily Needs / Food
+        const isFoodOrNeeds = subCat === 'Daily Needs' || subCat === 'Food';
+        return [
+          { value: "100%", label: "Genuine", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>, color: "text-blue-500" },
+          { value: "Brand", label: "Certified", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, color: "text-indigo-500" },
+          { value: isFoodOrNeeds ? "Same Day" : "2-3 Days", label: "Delivery", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>, color: "text-emerald-500" },
+          { value: String(product.rating || '4.5'), label: "Rating", isStar: true, color: "text-amber-500" }
+        ];
+      }
+    };
+
+    // Helper to get key details dynamically
+    const getKeyDetails = (product) => {
+      const subCat = product.subNavbarCategory;
+      const cat = product.category;
+      
+      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital') {
+        return [
+          { title: "Video Consultation", val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: "In-clinic Visit", val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: "Response Time", val: "30 mins", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: "Languages", val: "English, Hindi", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c-.313 1.565-.953 3.051-1.894 4.387" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+        ];
+      } else if (subCat === 'Stay') {
+        return [
+          { title: "Wi-Fi Access", val: "High Speed", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: "Free Breakfast", val: "Included", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: "Check-in Time", val: "12:00 PM", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: "Room Service", val: "24/7 Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+        ];
+      } else if (subCat === 'Travel') {
+        return [
+          { title: "Luggage Limit", val: "15kg Included", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: "Meal Options", val: "Veg & Non-Veg", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: "Departure", val: "Guaranteed On-time", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: "Support", val: "24/7 Helpline", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+        ];
+      } else if (subCat === 'Jobs') {
+        return [
+          { title: "Work Model", val: "In-office / Remote", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: "Experience Req.", val: "1-3 Years", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: "Min. Qualification", val: "Graduate / Equivalent", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: "Job Location", val: "Bengaluru, IN", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+        ];
+      } else {
+        // Products / Daily Needs / Food
+        return [
+          { title: "Brand Warranty", val: "1 Year Covered", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: "Return Policy", val: "7 Days Replacement", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: "Delivery Speed", val: "Express Shipping", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: "Package Security", val: "Secure Transit", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+        ];
+      }
+    };
+
+    // Helper to get partner badge text dynamically
+    const getPartnerBadgeText = (product) => {
+      const subCat = product.subNavbarCategory;
+      if (subCat === 'Services' || product.category === 'Hospitals') return 'VERIFIED PARTNER';
+      if (subCat === 'Stay' || subCat === 'Travel') return 'VERIFIED HOST';
+      if (subCat === 'Jobs') return 'VERIFIED EMPLOYER';
+      return 'VERIFIED SELLER';
+    };
+
+    // Helper to get action buttons dynamically
+    const getActionButtons = (product) => {
+      const subCat = product.subNavbarCategory;
+      const cat = product.category;
+      
+      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital') {
+        return {
+          chatText: "Chat with Doctor",
+          actionText: "ADD TO CART",
+          bookingText: "BOOK APPOINTMENT",
+          showBooking: true
+        };
+      } else if (subCat === 'Stay') {
+        return {
+          chatText: "Chat with Host",
+          actionText: "ADD TO CART",
+          bookingText: "BOOK STAY",
+          showBooking: true
+        };
+      } else if (subCat === 'Travel') {
+        return {
+          chatText: "Chat with Agent",
+          actionText: "ADD TO CART",
+          bookingText: "BOOK TICKET",
+          showBooking: true
+        };
+      } else if (subCat === 'Jobs') {
+        return {
+          chatText: "Chat with HR",
+          actionText: "APPLY NOW",
+          bookingText: "",
+          showBooking: false
+        };
+      } else {
+        // Products / Daily Needs / Food
+        return {
+          chatText: "Chat with Seller",
+          actionText: "ADD TO CART",
+          bookingText: "ORDER NOW",
+          showBooking: true
+        };
+      }
+    };
+
     // Dynamic highlights based on category
     const getProductHighlights = (product) => {
       if (product.description) {
@@ -4964,29 +5099,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             {/* Stats Row underneath */}
             <div className="grid grid-cols-4 gap-2.5 mt-6 pt-5 border-t border-slate-100 dark:border-slate-850">
-              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
-                <svg className="w-4.5 h-4.5 text-blue-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">12+</span>
-                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Years Exp.</span>
-              </div>
-
-              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
-                <svg className="w-4.5 h-4.5 text-indigo-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">2500+</span>
-                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Patients</span>
-              </div>
-
-              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
-                <svg className="w-4.5 h-4.5 text-emerald-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
-                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">98%</span>
-                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Positive Rate</span>
-              </div>
-
-              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
-                <Star className="w-4.5 h-4.5 text-amber-500 fill-amber-500 mb-1" />
-                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">{selectedProduct.rating || '4.5'}</span>
-                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Rating</span>
-              </div>
+              {getStatsBadges(selectedProduct).map((badge, idx) => {
+                const Icon = badge.icon;
+                return (
+                  <div key={idx} className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
+                    {badge.isStar ? (
+                      <Star className="w-4.5 h-4.5 text-amber-500 fill-amber-500 mb-1" />
+                    ) : (
+                      Icon("w-4.5 h-4.5 mb-1 " + badge.color)
+                    )}
+                    <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">{badge.value}</span>
+                    <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">{badge.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -4996,7 +5122,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="flex items-center mb-3">
                 <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
                   <CheckCircle2 className="w-3 h-3 text-blue-650 dark:text-blue-450" />
-                  VERIFIED PARTNER
+                  {getPartnerBadgeText(selectedProduct)}
                 </span>
               </div>
               
@@ -5075,7 +5201,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <span className="text-[12px] font-black uppercase tracking-wider leading-none">
-                    {selectedProduct.subNavbarCategory === 'Services' ? 'About Doctor' : 'About Product'}
+                    {selectedProduct.subNavbarCategory === 'Services' ? 'About Doctor' : 
+                     selectedProduct.subNavbarCategory === 'Stay' ? 'About Stay' :
+                     selectedProduct.subNavbarCategory === 'Travel' ? 'About Travel' :
+                     selectedProduct.subNavbarCategory === 'Jobs' ? 'About Job' : 'About Product'}
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-355 leading-relaxed font-medium">
@@ -5085,45 +5214,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
               {/* Key Details Row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 w-full">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/35 flex items-center justify-center shrink-0">
-                    <svg className="w-4.5 h-4.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                  </div>
-                  <div className="text-left">
-                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold block leading-none">Video Consultation</span>
-                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">Available</span>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
-                  <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/35 flex items-center justify-center shrink-0">
-                    <svg className="w-4.5 h-4.5 text-indigo-505" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                  </div>
-                  <div className="text-left">
-                    <span className="text-[9px] text-slate-455 dark:text-slate-500 font-bold block leading-none">In-clinic Visit</span>
-                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">Available</span>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
-                  <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/35 flex items-center justify-center shrink-0">
-                    <Clock className="w-4.5 h-4.5 text-emerald-505" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-[9px] text-slate-455 dark:text-slate-505 font-bold block leading-none">Response Time</span>
-                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">30 mins</span>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
-                  <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-950/35 flex items-center justify-center shrink-0">
-                    <svg className="w-4.5 h-4.5 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c-.313 1.565-.953 3.051-1.894 4.387" /></svg>
-                  </div>
-                  <div className="text-left">
-                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold block leading-none">Languages</span>
-                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">English, Hindi</span>
-                  </div>
-                </div>
+                {getKeyDetails(selectedProduct).map((detail, idx) => {
+                  const Icon = detail.icon;
+                  return (
+                    <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${detail.bg}`}>
+                        {Icon("w-4.5 h-4.5 " + detail.color)}
+                      </div>
+                      <div className="text-left">
+                        <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold block leading-none">{detail.title}</span>
+                        <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">{detail.val}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Highlights Section */}
@@ -5149,35 +5253,53 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               {/* Action Buttons Row */}
               <div className="flex items-center gap-4 pt-2 w-full">
                 <button
-                  onClick={() => triggerNotification("Initiating chat session with provider...")}
+                  onClick={() => triggerNotification("Initiating chat session...")}
                   className="px-5 py-3.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent h-12"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                  <span>Chat with Doctor</span>
+                  <span>{getActionButtons(selectedProduct).chatText}</span>
                 </button>
-                <button
-                  onClick={() => {
-                    addToCart(selectedProduct);
-                    triggerNotification(`${selectedProduct.name} added to cart!`);
-                  }}
-                  className="flex-1 py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-12"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>ADD TO CART</span>
-                </button>
-                <button
-                  onClick={() => {
-                    if (!cart.find(item => item.id === selectedProduct.id)) {
-                      setCart(prev => [...prev, selectedProduct]);
-                    }
-                    setIsCartOpen(true);
-                    triggerNotification(`Booking appointment slot...`);
-                  }}
-                  className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-655 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  <span>BOOK APPOINTMENT</span>
-                </button>
+                
+                {getActionButtons(selectedProduct).showBooking ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        addToCart(selectedProduct);
+                        triggerNotification(`${selectedProduct.name} added to cart!`);
+                      }}
+                      className="flex-1 py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-12"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>{getActionButtons(selectedProduct).actionText}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!cart.find(item => item.id === selectedProduct.id)) {
+                          setCart(prev => [...prev, selectedProduct]);
+                        }
+                        setIsCartOpen(true);
+                        triggerNotification(`Proceeding to checkout...`);
+                      }}
+                      className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-655 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
+                    >
+                      {selectedProduct.subNavbarCategory === 'Services' ? (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      ) : (
+                        <Zap className="w-4 h-4 text-white" />
+                      )}
+                      <span>{getActionButtons(selectedProduct).bookingText}</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      triggerNotification(`Applying for ${selectedProduct.name}...`);
+                    }}
+                    className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-655 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
+                  >
+                    <span>{getActionButtons(selectedProduct).actionText}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
