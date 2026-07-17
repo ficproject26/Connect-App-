@@ -2946,60 +2946,60 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         </div>
 
         {/* Right Side Graphics: Slider Carousel (Large size!) */}
-        <div className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[440px] h-[280px] shrink-0 mt-6 md:mt-0 select-none">
+        <div className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] h-[340px] shrink-0 mt-6 md:mt-0 select-none">
           {/* Card Frame Wrapper (larger max-width!) */}
-          <div className="w-full max-w-[380px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] shadow-lg rounded-2xl bg-transparent">
+          <div className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] shadow-lg rounded-2xl bg-transparent">
             
             {/* Slide 0: Domino's Pizza Offer */}
             {activeHeroSlide === 0 && (
               <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
-                <div className="absolute top-2.5 right-2.5 bg-red-655 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
-                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                  <Clock className="w-3 h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
                 {/* Left Side Info content */}
-                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1">
+                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1.5">
                     {/* Logo block */}
                     <div className="flex items-center gap-1.5 font-bold tracking-tight text-white font-sans text-xs">
-                      <div className="flex gap-[1px] rotate-[-20deg] scale-80 origin-center shrink-0">
+                      <div className="flex gap-[1px] rotate-[-20deg] scale-90 origin-center shrink-0">
                         {/* Domino left: red with 2 dots */}
-                        <div className="w-3.5 h-3.5 bg-red-600 rounded-sm relative flex items-center justify-center shadow-xs">
-                          <div className="w-0.75 h-0.75 bg-white rounded-full absolute top-0.75 left-0.75" />
-                          <div className="w-0.75 h-0.75 bg-white rounded-full absolute bottom-0.75 right-0.75" />
+                        <div className="w-4 h-4 bg-red-600 rounded-sm relative flex items-center justify-center shadow-xs">
+                          <div className="w-1 h-1 bg-white rounded-full absolute top-1 left-1" />
+                          <div className="w-1 h-1 bg-white rounded-full absolute bottom-1 right-1" />
                         </div>
                         {/* Domino right: blue with 1 dot */}
-                        <div className="w-3.5 h-3.5 bg-blue-600 rounded-sm relative flex items-center justify-center shadow-xs">
-                          <div className="w-0.75 h-0.75 bg-white rounded-full" />
+                        <div className="w-4 h-4 bg-blue-600 rounded-sm relative flex items-center justify-center shadow-xs">
+                          <div className="w-1 h-1 bg-white rounded-full" />
                         </div>
                       </div>
-                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Domino's</span>
+                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Domino's</span>
                     </div>
 
                     {/* Gold Tag */}
-                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
                       ★ Exclusive Offer
                     </div>
 
                     {/* Headline info */}
-                    <div className="pt-1.5 leading-tight">
-                      <h3 className="text-sm font-black text-white leading-none">
+                    <div className="pt-2 leading-tight">
+                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Flat <span className="text-[#FFC107]">50% OFF</span>
                       </h3>
-                      <p className="text-[10px] font-bold text-slate-355 mt-1">On all Pizza Orders</p>
+                      <p className="text-xs font-bold text-slate-355 mt-1.5">On all Pizza Orders</p>
                     </div>
                   </div>
 
                   {/* Delivery indicators */}
-                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Truck className="w-3 h-3 text-[#FFC107] shrink-0" />
+                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>Free Delivery</span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <ShoppingBag className="w-3 h-3 text-[#FFC107] shrink-0" />
+                    <div className="flex items-center gap-2 mt-1">
+                      <ShoppingBag className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>No Minimum Order</span>
                     </div>
                   </div>
@@ -3011,10 +3011,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       setSelectedSubNavbarCategory('Food');
                       triggerNotification("Welcome to Domino's! Explore our pizza catalog.");
                     }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
                   >
                     <span>Order Now</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -3035,39 +3035,39 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {activeHeroSlide === 1 && (
               <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
-                <div className="absolute top-2.5 right-2.5 bg-red-655 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
-                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                  <Clock className="w-3 h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
-                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1">
+                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1.5">
                     {/* Logo block */}
-                    <div className="flex items-center gap-1 font-bold text-white text-xs">
-                      <BedDouble className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Radisson Blu</span>
+                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                      <BedDouble className="w-4.5 h-4.5 text-[#FFC107] shrink-0" />
+                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Radisson Blu</span>
                     </div>
 
-                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
                       ★ Member Privilege
                     </div>
 
-                    <div className="pt-1.5 leading-tight">
-                      <h3 className="text-sm font-black text-white leading-none">
+                    <div className="pt-2 leading-tight">
+                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Extra <span className="text-[#FFC107]">30% OFF</span>
                       </h3>
-                      <p className="text-[10px] font-bold text-slate-350 mt-1">On Luxury Suites & Stays</p>
+                      <p className="text-xs font-bold text-slate-350 mt-1.5">On Luxury Suites & Stays</p>
                     </div>
                   </div>
 
                   {/* Indicators */}
-                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>Free Welcome Drinks</span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                    <div className="flex items-center gap-2 mt-1">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>Complimentary Breakfast</span>
                     </div>
                   </div>
@@ -3078,10 +3078,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       setSelectedSubNavbarCategory('Stay');
                       triggerNotification("Explore partner hotels and luxury stays.");
                     }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
                   >
                     <span>Book Now</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -3099,32 +3099,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 2: Air India Travels */}
             {activeHeroSlide === 2 && (
               <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1 font-bold text-white text-xs">
-                      <Plane className="w-3.5 h-3.5 text-[#FFC107] shrink-0 animate-pulse" />
-                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Air India</span>
+                {/* Left Side Info content */}
+                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                      <Plane className="w-4.5 h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
+                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Air India</span>
                     </div>
 
-                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
                       ★ Flight Special
                     </div>
 
-                    <div className="pt-1.5 leading-tight">
-                      <h3 className="text-sm font-black text-white leading-none">
+                    <div className="pt-2 leading-tight">
+                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Save <span className="text-[#FFC107]">₹2,000</span>
                       </h3>
-                      <p className="text-[10px] font-bold text-slate-350 mt-1">On International Bookings</p>
+                      <p className="text-xs font-bold text-slate-350 mt-1.5">On International Bookings</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>Extra Baggage Allowance</span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                    <div className="flex items-center gap-2 mt-1">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>Free Preferred Seat Select</span>
                     </div>
                   </div>
@@ -3135,10 +3136,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       setSelectedSubNavbarCategory('Travel');
                       triggerNotification("Search and book flights at member rates.");
                     }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
                   >
                     <span>Claim Now</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -3157,37 +3158,37 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {activeHeroSlide === 3 && (
               <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
-                <div className="absolute top-2.5 right-2.5 bg-red-655 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
-                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                  <Clock className="w-3 h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
-                <div className="w-[58%] p-3.5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1 font-bold text-white text-xs">
-                      <Settings className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="font-extrabold text-[12px] tracking-wide text-white uppercase font-sans">Urban Connect</span>
+                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                      <Settings className="w-4.5 h-4.5 text-[#FFC107] shrink-0" />
+                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Urban Connect</span>
                     </div>
 
-                    <div className="inline-block text-[8px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md mt-1.5">
+                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
                       ★ Partner Deal
                     </div>
 
-                    <div className="pt-1.5 leading-tight">
-                      <h3 className="text-sm font-black text-white leading-none">
+                    <div className="pt-2 leading-tight">
+                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Flat <span className="text-[#FFC107]">25% OFF</span>
                       </h3>
-                      <p className="text-[10px] font-bold text-slate-350 mt-1">On all Home Services</p>
+                      <p className="text-xs font-bold text-slate-350 mt-1.5">On all Home Services</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-1 text-[8px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>Verified Industry Experts</span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Check className="w-3 h-3 text-[#FFC107] shrink-0" />
+                    <div className="flex items-center gap-2 mt-1">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
                       <span>100% Insured Deliveries</span>
                     </div>
                   </div>
@@ -3198,10 +3199,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       setSelectedSubNavbarCategory('Services');
                       triggerNotification("Book cleaning, salon, plumbing services.");
                     }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[8px] tracking-wider px-3.5 py-1.5 rounded-full transition-all border-none mt-1 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
                   >
                     <span>Book Now</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
