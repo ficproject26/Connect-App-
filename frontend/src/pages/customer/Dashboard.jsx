@@ -1983,8 +1983,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     'Food',
     'Stay',
     'Travel',
-    'Jobs',
-    'Membership'
+    'Jobs'
   ];
 
   // Filters logic
@@ -2206,9 +2205,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         >
           <div className="relative">
             <ShoppingCart className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-              {cart.length || 2}
-            </span>
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
+                {cart.length}
+              </span>
+            )}
           </div>
           {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Cart</span>}
         </button>
@@ -2222,9 +2223,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           >
             <div className="relative">
               <Bell className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-                {unreadCount || 3}
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
             </div>
             {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Notifications</span>}
           </button>
@@ -2328,12 +2331,40 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <button 
                     onClick={() => {
                       if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition((pos) => {
-                          const detected = { city: 'Bangalore', state: 'Karnataka', area: 'HSR Layout' };
-                          setSelectedLocation(detected);
-                          setIsLocationDropdownOpen(false);
-                          triggerNotification("Located: Bangalore, India");
-                        });
+                        triggerNotification("Fetching your location...");
+                        navigator.geolocation.getCurrentPosition(
+                          async (pos) => {
+                            const { latitude, longitude } = pos.coords;
+                            try {
+                              const response = await fetch(
+                                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+                                { headers: { 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'ConnectAppGeolocation/1.0' } }
+                              );
+                              const data = await response.json();
+                              if (data && data.address) {
+                                const addr = data.address;
+                                const city = addr.city || addr.town || addr.city_district || addr.county || 'Unknown';
+                                const state = addr.state || 'India';
+                                const area = addr.suburb || addr.neighbourhood || addr.village || 'City Center';
+                                setSelectedLocation({ city, state, area });
+                                setIsLocationDropdownOpen(false);
+                                triggerNotification(`Located: ${city}, ${state}`);
+                              } else {
+                                triggerNotification("Could not resolve location.");
+                              }
+                            } catch (err) {
+                              console.error('Geocoding error:', err);
+                              triggerNotification("Failed to fetch location details.");
+                            }
+                          },
+                          (err) => {
+                            console.error('Geolocation error:', err);
+                            triggerNotification("Location access denied or timed out.");
+                          },
+                          { enableHighAccuracy: true, timeout: 10000 }
+                        );
+                      } else {
+                        triggerNotification("Geolocation is not supported by your browser.");
                       }
                     }}
                     className="mt-3 w-full flex items-center gap-2 py-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-100/50 transition-colors cursor-pointer px-3"
@@ -2837,6 +2868,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   setActiveTab(cat);
                   setSelectedSubNavbarCategory(cat);
                   setSelectedCategories([]);
+                  setSearchQuery('');
                   setHoveredLink(null);
                 }}
                 className={`relative group text-xs font-bold uppercase tracking-wider px-2 py-3 transition-all shrink-0 cursor-pointer flex items-center gap-2 border-b-2 ${
@@ -3350,7 +3382,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div className="flex justify-between items-baseline">
           <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Exclusive Offers for You</h3>
           <button 
-            onClick={() => triggerNotification("Opening offers directory...")} 
+            onClick={() => {
+              setSelectedProduct(null);
+              setActiveTab('Offers');
+              setSelectedSubNavbarCategory('Offers');
+              setSelectedCategories([]);
+              setHoveredLink(null);
+            }} 
             className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
           >
             View All Offers &gt;
@@ -3466,7 +3504,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div className="flex justify-between items-baseline">
           <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Recommended for You</h3>
           <button 
-            onClick={() => triggerNotification("Opening search directory...")} 
+            onClick={() => {
+              setSelectedProduct(null);
+              setActiveTab('Products');
+              setSelectedSubNavbarCategory('Products');
+              setSelectedCategories([]);
+              setHoveredLink(null);
+            }} 
             className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
           >
             View All &gt;
@@ -3480,21 +3524,31 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div 
                 key={item.id} 
                 onClick={() => {
-                  const p = products.find(prod => prod.name === item.name) || {
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    originalPrice: item.originalPrice,
-                    image: item.image,
-                    rating: item.rating,
-                    tag: item.tag,
-                    category: item.category,
-                    discount: item.discount,
-                    reviews: 148,
-                    subNavbarCategory: item.tag
-                  };
-                  setSelectedProduct(p);
-                  triggerNotification(`Loading details for ${item.name}...`);
+                  const navigableTabs = ['Services', 'Food', 'Stay', 'Travel', 'Jobs'];
+                  if (navigableTabs.includes(item.tag)) {
+                    setSelectedProduct(null);
+                    setActiveTab(item.tag);
+                    setSelectedSubNavbarCategory(item.tag);
+                    setSelectedCategories([]);
+                    setSearchQuery('');
+                    triggerNotification(`Switching to ${item.tag}...`);
+                  } else {
+                    const p = products.find(prod => prod.name === item.name) || {
+                      id: item.id,
+                      name: item.name,
+                      price: item.price,
+                      originalPrice: item.originalPrice,
+                      image: item.image,
+                      rating: item.rating,
+                      tag: item.tag,
+                      category: item.category,
+                      discount: item.discount,
+                      reviews: 148,
+                      subNavbarCategory: item.tag
+                    };
+                    setSelectedProduct(p);
+                    triggerNotification(`Loading details for ${item.name}...`);
+                  }
                 }}
                 className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
               >
@@ -4344,8 +4398,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 className="bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500 text-slate-750 cursor-pointer font-extrabold"
               >
                 <option value="default">Relevance / Popularity</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
+                <option value="price-asc">{activeTab === 'Jobs' ? 'Salary: Low to High' : 'Price: Low to High'}</option>
+                <option value="price-desc">{activeTab === 'Jobs' ? 'Salary: High to Low' : 'Price: High to Low'}</option>
                 <option value="rating-desc">Top Rated</option>
               </select>
             </div>
@@ -4537,19 +4591,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0a192f] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
                           <div className="relative aspect-[4/3] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
                             <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
-                            <span className="absolute left-1.5 top-1.5 bg-slate-900/80 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase">{product.tag}</span>
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1.5 top-1.5 w-6 h-6 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
-                              <Heart className={`w-3 h-3 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                            <span className="absolute left-1.5 top-1.5 bg-slate-900/80 text-white text-[9px] font-black px-2.5 py-1 rounded uppercase">{product.tag}</span>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-1.5 top-1.5 w-8 h-8 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
+                              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                             </button>
                           </div>
                           
                           <div className="p-3.5 flex-grow flex flex-col justify-between text-left">
                             <div>
-                              <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
+                              <h4 className="text-[13px] md:text-[14px] font-black text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                               <div className="flex items-baseline gap-1 mt-1.5">
-                                <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
-                                <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
-                                <span className="text-[9.5px] text-[#f43397] font-bold">{product.discount}</span>
+                                <span className="text-[14px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
+                                <span className="text-[11.5px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                                <span className="text-[10.5px] text-[#f43397] font-bold">{product.discount}</span>
                               </div>
                             </div>
                             <div className="border-t border-slate-100 dark:border-slate-800/60 mt-3 pt-2.5 flex items-center justify-between gap-1 w-full">
@@ -4582,7 +4636,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   }} 
                                   className="inline-flex items-center bg-[#10b981] hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
                                 >
-                                  <span>Order Now</span>
+                                  <span>{['Services', 'Stay', 'Travel'].includes(activeTab) ? 'Book Now' : 'Order Now'}</span>
                                 </button>
                               </div>
                             </div>
