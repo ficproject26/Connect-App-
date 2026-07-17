@@ -4943,7 +4943,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {/* Heart wishlist button */}
                 <button 
                   onClick={() => toggleFavorite(selectedProduct.id)} 
-                  className="absolute right-4 top-4 w-9.5 h-9.5 rounded-full bg-white/95 dark:bg-[#0a192f] text-slate-450 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200/60 dark:border-slate-800/60 transition-transform hover:scale-105"
+                  className="absolute right-4 top-4 w-9.5 h-9.5 rounded-full bg-white/95 dark:bg-[#0a192f] text-slate-455 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200/60 dark:border-slate-800/60 transition-transform hover:scale-105"
                 >
                   <Heart className={`w-4 h-4 ${favorites.includes(selectedProduct.id) ? 'fill-red-500 text-red-500' : ''}`} />
                 </button>
@@ -4953,43 +4953,102 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Media helpers underneath */}
             <div className="flex justify-center gap-4 mt-6">
               <button onClick={() => setIs360ModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
-                <svg className="w-4 h-4 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>
+                <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>
                 <span>View in 360°</span>
               </button>
               <button onClick={() => setIsArModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
-                <svg className="w-4 h-4 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 <span>AR View</span>
               </button>
+            </div>
+
+            {/* Stats Row underneath */}
+            <div className="grid grid-cols-4 gap-2.5 mt-6 pt-5 border-t border-slate-100 dark:border-slate-850">
+              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
+                <svg className="w-4.5 h-4.5 text-blue-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">12+</span>
+                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Years Exp.</span>
+              </div>
+
+              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
+                <svg className="w-4.5 h-4.5 text-indigo-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">2500+</span>
+                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Patients</span>
+              </div>
+
+              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
+                <svg className="w-4.5 h-4.5 text-emerald-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">98%</span>
+                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Positive Rate</span>
+              </div>
+
+              <div className="bg-slate-50/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-2.5 text-center flex flex-col items-center justify-center shadow-3xs">
+                <Star className="w-4.5 h-4.5 text-amber-500 fill-amber-500 mb-1" />
+                <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">{selectedProduct.rating || '4.5'}</span>
+                <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">Rating</span>
+              </div>
             </div>
           </div>
 
           {/* Right Column: Specifications, Price Card & Actions */}
           <div className="lg:col-span-7 flex flex-col justify-between text-left">
             <div>
-              <span className="inline-block bg-[#0b1e36] dark:bg-amber-400/10 text-white dark:text-amber-400 text-[8px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider mb-3">
-                {selectedProduct.tag || 'BEST SELLER'}
-              </span>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight mb-2">
-                {selectedProduct.name}
-              </h1>
+              <div className="flex items-center mb-3">
+                <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
+                  <CheckCircle2 className="w-3 h-3 text-blue-650 dark:text-blue-450" />
+                  VERIFIED PARTNER
+                </span>
+              </div>
               
-              {/* Ratings and Verification */}
-              <div className="flex items-center gap-2.5 mb-5 flex-wrap">
-                <div className="flex items-center text-amber-400">
-                  <Star className="w-4.5 h-4.5 fill-amber-400" />
-                  <Star className="w-4.5 h-4.5 fill-amber-400" />
-                  <Star className="w-4.5 h-4.5 fill-amber-400" />
-                  <Star className="w-4.5 h-4.5 fill-amber-400" />
-                  <Star className="w-4.5 h-4.5 fill-amber-405" />
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight mb-2 flex items-center gap-1.5">
+                {selectedProduct.name}
+                <CheckCircle2 className="w-5 h-5 text-blue-500 fill-blue-500 text-white dark:text-blue-500" />
+              </h1>
+
+              <div className="text-left space-y-0.5 mb-3.5">
+                <div className="text-[14px] font-extrabold text-slate-800 dark:text-slate-200">
+                  {selectedProduct.category === 'Smartphones' ? 'Smartphone & Mobiles' : 
+                   selectedProduct.category === 'Hospital' || selectedProduct.category === 'Services' ? 'Cardiologist' :
+                   selectedProduct.category}
                 </div>
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {selectedProduct.rating} ({selectedProduct.reviews || 1420} Reviews)
-                </span>
-                <span className="text-slate-200 dark:text-slate-800">|</span>
-                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-600 dark:text-emerald-455 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  Verified Purchase
-                </span>
+                <div className="text-[11.5px] text-slate-400 dark:text-slate-500 font-semibold">
+                  {selectedProduct.category === 'Smartphones' ? '128GB ROM, 8GB RAM' : 
+                   selectedProduct.category === 'Hospital' || selectedProduct.category === 'Services' ? 'MBBS, MD - Cardiology' :
+                   'Verified Premium Tier'}
+                </div>
+              </div>
+              
+              {/* Ratings and Verification / EMI Box */}
+              <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="flex items-center text-amber-400">
+                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
+                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
+                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
+                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
+                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-extrabold">
+                    {selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)
+                  </span>
+                  <span className="text-slate-205 dark:text-slate-800">|</span>
+                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-600 dark:text-emerald-455 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Verified Purchase
+                  </span>
+                </div>
+
+                {/* EMI trigger info card in top right */}
+                <div className="bg-emerald-50/30 dark:bg-slate-900 border border-emerald-100/40 dark:border-slate-800 rounded-xl px-4 py-2.5 text-left flex items-start gap-3 shadow-2xs max-w-[200px]">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold block uppercase leading-none">EMI starts from</span>
+                    <span className="text-sm font-black text-emerald-650 dark:text-emerald-400 block">₹{Math.round(pGold / 20).toLocaleString()}/month</span>
+                    <button onClick={() => triggerNotification("Opening EMI payment plans options...")} className="text-[9.5px] text-blue-500 hover:underline bg-transparent border-none cursor-pointer p-0 font-bold flex items-center gap-0.5">
+                      <span>View EMI Plans</span>
+                      <span>&gt;</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Clean Price Display */}
@@ -5009,48 +5068,102 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 )}
               </div>
 
-              {/* Product Specifications / Highlights (Swapped from bottom) */}
-              <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 space-y-3.5">
-                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
-                  Product Specifications
-                </h4>
-                <div className="space-y-3 pt-1">
-                  {getProductHighlights(selectedProduct).map((hl, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-350">
-                      <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <svg className="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                      </div>
-                      <span>{hl}</span>
-                    </div>
-                  ))}
+              {/* About Box */}
+              <div className="bg-blue-50/20 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4.5 mb-5 text-left">
+                <div className="flex items-center gap-2 mb-2.5 text-blue-650 dark:text-blue-400">
+                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="text-[12px] font-black uppercase tracking-wider leading-none">
+                    {selectedProduct.subNavbarCategory === 'Services' ? 'About Doctor' : 'About Product'}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-355 leading-relaxed font-medium">
+                  {selectedProduct.description || `Experienced specialist offering comprehensive premium ${selectedProduct.category.toLowerCase()} consultations and personalized diagnostic treatment plans.`}
+                </p>
+              </div>
+
+              {/* Key Details Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 w-full">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
+                  <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/35 flex items-center justify-center shrink-0">
+                    <svg className="w-4.5 h-4.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold block leading-none">Video Consultation</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">Available</span>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
+                  <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/35 flex items-center justify-center shrink-0">
+                    <svg className="w-4.5 h-4.5 text-indigo-505" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[9px] text-slate-455 dark:text-slate-500 font-bold block leading-none">In-clinic Visit</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">Available</span>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/35 flex items-center justify-center shrink-0">
+                    <Clock className="w-4.5 h-4.5 text-emerald-505" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[9px] text-slate-455 dark:text-slate-505 font-bold block leading-none">Response Time</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">30 mins</span>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 flex items-center gap-2.5 shadow-3xs">
+                  <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-950/35 flex items-center justify-center shrink-0">
+                    <svg className="w-4.5 h-4.5 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c-.313 1.565-.953 3.051-1.894 4.387" /></svg>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold block leading-none">Languages</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">English, Hindi</span>
+                  </div>
                 </div>
               </div>
 
-              {/* EMI trigger info */}
-              <div className="text-[10px] font-bold text-slate-455 dark:text-slate-500 text-left flex items-center gap-1.5 pl-1.5 mt-4">
-                <span>EMI starts from ₹{Math.round(pGold / 20).toLocaleString()}/month</span>
-                <span>•</span>
-                <button onClick={() => triggerNotification("Opening EMI payment plans options...")} className="text-blue-500 hover:underline bg-transparent border-none cursor-pointer">View EMI Plans</button>
+              {/* Highlights Section */}
+              <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 mb-6">
+                <h4 className="text-[10.5px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-3.5">
+                  Highlights
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  {getProductHighlights(selectedProduct).map((hl, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-705 dark:text-slate-355">
+                      <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-505" />
+                      </div>
+                      <span className="font-medium text-left">{hl}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Description & Action buttons */}
             <div className="space-y-4 mt-6">
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {getProductDescription(selectedProduct)}
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-4 pt-2">
+              {/* Action Buttons Row */}
+              <div className="flex items-center gap-4 pt-2 w-full">
+                <button
+                  onClick={() => triggerNotification("Initiating chat session with provider...")}
+                  className="px-5 py-3.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent h-12"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                  <span>Chat with Doctor</span>
+                </button>
                 <button
                   onClick={() => {
                     addToCart(selectedProduct);
                     triggerNotification(`${selectedProduct.name} added to cart!`);
                   }}
-                  className="flex-1 py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-sm uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 border border-slate-750/30"
+                  className="flex-1 py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-12"
                 >
-                  <ShoppingCart className="w-4.5 h-4.5" />
-                  <span>Add to Cart</span>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>ADD TO CART</span>
                 </button>
                 <button
                   onClick={() => {
@@ -5058,12 +5171,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       setCart(prev => [...prev, selectedProduct]);
                     }
                     setIsCartOpen(true);
-                    triggerNotification(`Proceeding to checkout...`);
+                    triggerNotification(`Booking appointment slot...`);
                   }}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg hover:shadow-amber-500/25 active:scale-98 border-none"
+                  className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-655 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
                 >
-                  <Zap className="w-4.5 h-4.5" />
-                  <span>Buy Now</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <span>BOOK APPOINTMENT</span>
                 </button>
               </div>
             </div>
