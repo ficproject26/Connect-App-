@@ -150,8 +150,9 @@ export default function HowItWorks() {
     if (!containerRef.current) return;
     const viewportHeight = window.innerHeight;
 
-    // Check coordinates of each badge
-    const activeRefs = window.innerWidth >= 768 ? desktopRefs : mobileRefs;
+    // Check coordinates of each badge based on which layout is visible
+    const isDesktop = desktopRefs.current[0] && desktopRefs.current[0].offsetParent !== null;
+    const activeRefs = isDesktop ? desktopRefs : mobileRefs;
     
     // Compute scroll progress based on the position of the first and last badge relative to the viewport
     const badge1 = activeRefs.current[0];
@@ -226,7 +227,8 @@ export default function HowItWorks() {
   const updateCoords = () => {
     if (!svgRef.current) return;
     const svgRect = svgRef.current.getBoundingClientRect();
-    const activeRefs = window.innerWidth >= 768 ? desktopRefs : mobileRefs;
+    const isDesktop = desktopRefs.current[0] && desktopRefs.current[0].offsetParent !== null;
+    const activeRefs = isDesktop ? desktopRefs : mobileRefs;
     const newCoords = activeRefs.current.map((ref) => {
       if (!ref) return { x: 0, y: 0 };
       const rect = ref.getBoundingClientRect();

@@ -3656,21 +3656,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                   </div>
                   
-                  <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 flex items-center justify-between gap-1 w-full">
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 flex flex-col gap-2 w-full">
+                    <div className="flex items-center gap-1 select-none">
                       <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                         <span>{product.rating}</span>
                         <Star className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
                       </div>
                       <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 w-full">
                       <button 
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           addToCart(product); 
                         }} 
-                        className="inline-flex items-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30 shrink-0"
+                        className="flex-1 inline-flex items-center justify-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
                       >
                         <Plus className="w-3 h-3" />
                         <span>Add</span>
@@ -3683,7 +3683,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           }
                           setIsCartOpen(true);
                         }} 
-                        className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
+                        className="flex-1 inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
                       >
                         <span>Order Now</span>
                       </button>

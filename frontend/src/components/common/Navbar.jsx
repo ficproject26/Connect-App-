@@ -399,7 +399,7 @@ export default function Navbar({
           </button>
 
           {/* CENTER: NAV LINKS (DESKTOP) */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+          <nav className="hidden xl:flex items-center gap-1 xl:gap-2">
             {menuConfig.map((link) => {
               const isOpen = openMenu === link.menuKey && link.menuKey !== null;
               return (
@@ -433,7 +433,7 @@ export default function Navbar({
           </nav>
 
           {/* RIGHT: CONTROLS (DESKTOP) */}
-          <div className="hidden lg:flex items-center gap-4 justify-end">
+          <div className="hidden xl:flex items-center gap-4 justify-end">
             <button
               id="theme-toggle-btn"
               onClick={toggleTheme}
@@ -471,7 +471,7 @@ export default function Navbar({
           </div>
 
           {/* MOBILE CONTROLS */}
-          <div className="flex lg:hidden items-center gap-3">
+          <div className="flex xl:hidden items-center gap-3">
             <button onClick={toggleTheme} className="p-2 text-amber-400 transition-colors cursor-pointer">
               {theme === 'dark' ? <Sun size={15.5} /> : <Moon size={15.5} />}
             </button>
@@ -489,7 +489,7 @@ export default function Navbar({
 
       {/* ── GLASSMORPHIC MEGA DROPDOWN (DESKTOP) ── */}
       <div
-        className="hidden lg:block relative w-full"
+        className="hidden xl:block relative w-full"
         onMouseEnter={cancelLeave}
         onMouseLeave={handleMouseLeave}
       >
@@ -507,7 +507,7 @@ export default function Navbar({
 
       {/* ── MOBILE MENU ── */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden w-full bg-[#0b132b] border-b border-[#1c2541]/40 flex flex-col py-4 px-6 gap-3.5 shadow-xl animate-fade-in">
+        <div className="xl:hidden w-full bg-[#0b132b] border-b border-[#1c2541]/40 flex flex-col py-4 px-6 gap-3.5 shadow-xl animate-fade-in">
           {menuConfig.map((link) => (
             <button
               key={link.label}

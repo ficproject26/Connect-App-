@@ -174,6 +174,7 @@ export default function Pricing({ onSelectTier }) {
 
   useEffect(() => {
     if (!containerRef.current) return;
+    if (window.innerWidth < 768) return; // Skip scroll pinning on mobile devices
 
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
@@ -225,7 +226,7 @@ export default function Pricing({ onSelectTier }) {
     <section 
       ref={containerRef}
       id="pricing" 
-      className="bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300 relative overflow-hidden w-full h-screen flex flex-col justify-center items-center select-none"
+      className="bg-[#f4f7fc] dark:bg-brand-navy transition-colors duration-300 relative w-full min-h-screen md:h-screen py-16 md:py-0 flex flex-col justify-center items-center select-none overflow-y-auto md:overflow-hidden"
     >
       {/* Background radial glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-slate-200/50 dark:bg-slate-900/10 rounded-full blur-[140px] pointer-events-none z-0" />
