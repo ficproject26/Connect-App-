@@ -1859,7 +1859,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <span className="text-xs font-bold text-slate-850 dark:text-white">{addr.name}</span>
                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
                         addr.type === 'Home' 
-                          ? 'bg-blue-500/10 text-blue-650 dark:text-blue-400 border border-blue-500/20' 
+                          ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
                           : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                       }`}>
                         {addr.type}
@@ -3414,7 +3414,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 onClick={() => setActiveHeroSlide(idx)}
                 className={`w-2 h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
                   activeHeroSlide === idx 
-                    ? 'bg-blue-650 dark:bg-blue-500 w-5' 
+                    ? 'bg-blue-600 dark:bg-blue-500 w-5' 
                     : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-650'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
@@ -4848,7 +4848,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                           }
                                           setIsCartOpen(true);
                                         }} 
-                                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-750 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
+                                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
                                       >
                                         <span>Order Now</span>
                                       </button>
@@ -5443,7 +5443,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     onClick={() => setTravelDetailsTab(tab)}
                     className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer bg-transparent border-none shrink-0 ${
                       travelDetailsTab === tab
-                        ? 'border-blue-600 text-blue-605 font-black'
+                        ? 'border-blue-600 text-blue-600 font-black'
                         : 'border-transparent text-slate-450 hover:text-slate-705 dark:hover:text-slate-300'
                     }`}
                   >
@@ -5537,7 +5537,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     setSelectedModalType('AC Sleeper (2+1)');
                     setSelectedTimeOfDayTab('Evening');
                   }}
-                  className="flex-1 md:flex-none px-8 py-3 bg-blue-650 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 border-none h-12 cursor-pointer"
+                  className="flex-1 md:flex-none px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 border-none h-12 cursor-pointer"
                 >
                   Book Ticket
                 </button>
@@ -5924,7 +5924,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div>
               <div className="flex items-center mb-3">
                 <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
-                  <CheckCircle2 className="w-3 h-3 text-blue-650 dark:text-blue-450" />
+                  <CheckCircle2 className="w-3 h-3 text-blue-600 dark:text-blue-450" />
                   {getPartnerBadgeText(selectedProduct)}
                 </span>
               </div>
@@ -5987,7 +5987,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
               {/* About Box */}
               <div className="bg-blue-50/20 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4.5 mb-5 text-left">
-                <div className="flex items-center gap-2 mb-2.5 text-blue-650 dark:text-blue-400">
+                <div className="flex items-center gap-2 mb-2.5 text-blue-600 dark:text-blue-400">
                   <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -7504,7 +7504,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       triggerNotification(`Appointment scheduled for ${selectedModalDate} at ${selectedModalTime}!`);
                       setActiveScheduleModalItem(null);
                     }}
-                    className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1 border-none active:scale-[0.99]"
+                    className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1 border-none active:scale-[0.99]"
                   >
                     <span>Schedule Now</span>
                     <ArrowRight className="w-3.5 h-3.5 text-white" />
@@ -7759,7 +7759,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         setIsCartOpen(true);
                         triggerNotification(`Booking added to Cart!`);
                       }}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none active:scale-[0.99]"
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none active:scale-[0.99]"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       <span>Book Now</span>
