@@ -23,7 +23,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock
+  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock, Trash2
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -1918,6 +1918,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
+  const getCartCheckoutButtonText = () => {
+    if (cart.length === 0) return "Proceed to Place Order";
+    
+    // Check if any item in cart is a job
+    const hasJob = cart.some(item => item.subNavbarCategory === 'Jobs' || item.tag === 'Jobs');
+    if (hasJob) return "Apply Now";
+    
+    // Check if any item is a booking item (Services, Stay, Travel)
+    const hasBooking = cart.some(item => 
+      ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
+      ['Services', 'Stay', 'Travel'].includes(item.tag)
+    );
+    if (hasBooking) return "Book Now";
+    
+    // Default/Products/Food/Daily Needs
+    return "Buy Now";
+  };
+
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
@@ -1926,6 +1944,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       triggerNotification("Insufficient wallet balance!");
       return;
     }
+
+    const hasJob = cart.some(item => item.subNavbarCategory === 'Jobs' || item.tag === 'Jobs');
+    const hasBooking = cart.some(item => 
+      ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
+      ['Services', 'Stay', 'Travel'].includes(item.tag)
+    );
 
     setOrderSuccess(true);
     const productDetails = cart.map(item => `${item.name} (Qty: 1)`).join(', ');
@@ -1972,7 +1996,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setTimeout(() => {
       setOrderSuccess(false);
       setIsCartOpen(false);
-      triggerNotification("Order placed successfully! Thank you for shopping.");
+      if (hasJob) {
+        triggerNotification("Application submitted successfully!");
+      } else if (hasBooking) {
+        triggerNotification("Booking completed successfully!");
+      } else {
+        triggerNotification("Order placed successfully! Thank you for shopping.");
+      }
     }, 3000);
   };
 
@@ -1997,7 +2027,23 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setSelectedJobDepts([]);
     setSelectedJobTypes([]);
     setSelectedJobSalaries([]);
-    triggerNotification("Cleared all filters!");
+  };
+
+  const handleDeleteAll = async () => {
+    if (window.confirm("Are you sure you want to delete all products and services from the database? This action cannot be undone.")) {
+      try {
+        const res = await productService.deleteAllProducts();
+        if (res && res.success) {
+          triggerNotification("All products and services deleted successfully!");
+          setProducts([]);
+        } else {
+          triggerNotification(res?.message || "Failed to delete products");
+        }
+      } catch (err) {
+        console.warn("Delete all error:", err);
+        triggerNotification("Error deleting products");
+      }
+    }
   };
 
   const toggleFilterSection = (section) => {
@@ -4424,6 +4470,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Reset</span>
               </button>
+
+              {/* Delete All button */}
+              <button 
+                onClick={handleDeleteAll} 
+                className="text-xs font-black text-rose-500 hover:text-rose-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete All</span>
+              </button>
             </div>
             
             {/* Right Part: Sorting */}
@@ -5713,7 +5768,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 onClick={handleCheckout}
                 className="w-full py-3 bg-[#0b1e36] hover:bg-[#13325a] text-white font-bold text-xs uppercase tracking-widest rounded shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 animate-pulse"
               >
-                <span>Proceed to Place Order</span>
+                <span>{getCartCheckoutButtonText()}</span>
               </button>
             </div>
           )}
