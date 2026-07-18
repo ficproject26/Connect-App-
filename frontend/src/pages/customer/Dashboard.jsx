@@ -244,6 +244,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [stayCheckOutDate, setStayCheckOutDate] = useState('2025-05-22');
   const [stayRoomsCount, setStayRoomsCount] = useState(1);
   const [stayGuestsCount, setStayGuestsCount] = useState(2);
+  const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
   const [favorites, setFavorites] = useState([]);
   const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
   const [previewMembershipTier, setPreviewMembershipTier] = useState(membershipTier || 'Gold Elite');
@@ -5258,11 +5259,426 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
+  const renderTravelDetailsPage = () => {
+    if (!selectedProduct) return null;
+
+    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0
+      ? selectedProduct.images
+      : [selectedProduct.image];
+
+    const isFavorited = favorites.includes(selectedProduct.id);
+
+    return (
+      <div className="space-y-8 pb-16 text-slate-800 dark:text-slate-200">
+        {/* Breadcrumbs */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
+            <span>&gt;</span>
+            <button onClick={() => { 
+              setSelectedProduct(null); 
+              setActiveTab('Travel'); 
+              setSelectedSubNavbarCategory('Travel'); 
+            }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Travel</button>
+            <span>&gt;</span>
+            <span className="hover:text-amber-505 transition-colors">{selectedProduct.category}</span>
+            <span>&gt;</span>
+            <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => triggerNotification("Travel link copied to clipboard!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span>Share</span>
+            </button>
+            <span className="text-slate-200 dark:text-slate-800">|</span>
+            <button onClick={() => triggerNotification("Added to comparison drawer!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              <span>Compare</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Main Travel Layout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs">
+          
+          {/* Left Column: Gallery & About Operator */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            <div className="flex gap-4">
+              {/* Thumbnails list */}
+              <div className="flex flex-col gap-2.5 shrink-0 select-none">
+                {thumbnails.slice(0, 5).map((thumb, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => { setActiveProductImage(thumb); setActiveThumbnailIndex(idx); }}
+                    className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
+                      activeThumbnailIndex === idx 
+                        ? 'border-amber-400 shadow-md scale-102' 
+                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-350'
+                    }`}
+                  >
+                    <img src={thumb} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+                {thumbnails.length > 5 && (
+                  <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                    <span>+{thumbnails.length - 5}</span>
+                    <span>More</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Main Large Display with Page indicator and nav arrows */}
+              <div className="relative flex-grow aspect-[4/3] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-850 overflow-hidden flex items-center justify-center">
+                <img 
+                  src={activeProductImage || selectedProduct.image} 
+                  alt={selectedProduct.name} 
+                  className="w-full h-full object-cover"
+                />
+
+                {/* Left/Right nav arrows */}
+                <button 
+                  onClick={() => {
+                    const prevIdx = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1;
+                    setActiveProductImage(thumbnails[prevIdx]);
+                    setActiveThumbnailIndex(prevIdx);
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center cursor-pointer border-none"
+                >
+                  <ChevronLeft className="w-4.5 h-4.5" />
+                </button>
+                <button 
+                  onClick={() => {
+                    const nextIdx = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1;
+                    setActiveProductImage(thumbnails[nextIdx]);
+                    setActiveThumbnailIndex(nextIdx);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center cursor-pointer border-none"
+                >
+                  <ChevronRight className="w-4.5 h-4.5" />
+                </button>
+
+                {/* Image counter index */}
+                <span className="absolute bottom-3.5 left-3.5 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full select-none">
+                  {activeThumbnailIndex + 1} / {thumbnails.length}
+                </span>
+                
+                {/* Heart wishlist button */}
+                <button 
+                  onClick={() => toggleFavorite(selectedProduct.id)} 
+                  className="absolute right-4 top-4 w-9.5 h-9.5 rounded-full bg-white/95 dark:bg-[#0b1329] text-slate-455 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200/60 dark:border-slate-800/60 transition-transform hover:scale-105"
+                >
+                  <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* About Operator Details Container */}
+            <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-5 flex flex-col gap-4 text-left">
+              <div className="flex gap-4 items-start">
+                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center shrink-0 shadow-sm border border-white text-white font-black text-sm tracking-wide">
+                  {selectedProduct.name?.substring(0, 3).toUpperCase()}
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">About Operator</span>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white mt-1.5 flex items-center gap-1.5">
+                    {selectedProduct.name}
+                    <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500 text-white dark:text-blue-500" />
+                  </h3>
+                  <span className="text-[11px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5">
+                    Operated by {selectedProduct.name} Tours & Travels Pvt. Ltd.
+                  </span>
+                </div>
+              </div>
+
+              {/* Rating summary */}
+              <div className="grid grid-cols-2 gap-4 border-y border-slate-100 dark:border-slate-850 py-3 mt-1.5">
+                <div className="text-left">
+                  <div className="flex items-center gap-1 text-amber-500 font-black text-sm">
+                    <Star className="w-4 h-4 fill-amber-500 text-amber-505" />
+                    <span>{selectedProduct.rating || 4.5}</span>
+                  </div>
+                  <span className="text-[9.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5">({selectedProduct.reviews || 12520} Ratings)</span>
+                </div>
+                <div className="text-left border-l border-slate-100 dark:border-slate-850 pl-4">
+                  <span className="text-emerald-600 dark:text-emerald-450 font-black text-sm">98%</span>
+                  <span className="text-[9.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5">On-time Performance</span>
+                </div>
+              </div>
+
+              {/* Service Metrics counter row */}
+              <div className="grid grid-cols-3 gap-2 text-center mt-1">
+                <div>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block">25+</span>
+                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 uppercase block mt-0.5 leading-none">Years Service</span>
+                </div>
+                <div className="border-x border-slate-100 dark:border-slate-850">
+                  <span className="text-xs font-black text-slate-800 dark:text-white block">850+</span>
+                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 uppercase block mt-0.5 leading-none">Buses</span>
+                </div>
+                <div>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block">10M+</span>
+                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 uppercase block mt-0.5 leading-none">Happy Customers</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Route Details, Amenities, Seat Grid, and Tabs */}
+          <div className="lg:col-span-7 flex flex-col gap-6 text-left">
+            
+            {/* Operator Header info */}
+            <div>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
+                  VERIFIED OPERATOR
+                </span>
+                <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
+                  Verified
+                </span>
+              </div>
+              
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                {selectedProduct.name}
+              </h2>
+              <p className="text-xs text-slate-450 dark:text-slate-500 font-bold block mt-1.5">
+                {selectedProduct.description || 'AC Sleeper (2+1)'} • ★ {selectedProduct.rating || 4.5} ({selectedProduct.reviews || 12520} Reviews)
+              </p>
+            </div>
+
+            {/* Route Ticket Details Card */}
+            <div className="bg-slate-50/50 dark:bg-slate-900/25 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                
+                {/* Source */}
+                <div className="flex-1 text-center md:text-left w-full">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">From</span>
+                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">Bengaluru</span>
+                  <span className="text-[10px] text-slate-450 dark:text-slate-500 font-medium block mt-0.5">Kempegowda Bus Stand</span>
+                </div>
+
+                {/* Duration & Bus separator graphic */}
+                <div className="flex flex-col items-center justify-center shrink-0 select-none min-w-[120px]">
+                  <span className="text-[10px] font-bold text-slate-450 mb-1 block">8h 30m</span>
+                  <div className="relative w-28 flex items-center justify-center">
+                    <span className="w-full h-0.5 bg-slate-200 dark:bg-slate-800 block" />
+                    <span className="absolute w-2 h-2 rounded-full bg-slate-400 left-0" />
+                    <span className="absolute w-7 h-7 rounded-full bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-3xs z-10">
+                      <Plane className="w-4 h-4 text-slate-450 rotate-90" />
+                    </span>
+                    <span className="absolute w-2 h-2 rounded-full bg-slate-400 right-0" />
+                  </div>
+                </div>
+
+                {/* Destination */}
+                <div className="flex-1 text-center md:text-right w-full">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">To</span>
+                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">Chennai</span>
+                  <span className="text-[10px] text-slate-450 dark:text-slate-500 font-medium block mt-0.5">Koyambedu Bus Stand</span>
+                </div>
+              </div>
+
+              {/* Sub Route Specs */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-850/60 pt-4 mt-1">
+                <div>
+                  <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Departure</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">09:00 PM</span>
+                </div>
+                <div>
+                  <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Arrival</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">05:30 AM</span>
+                </div>
+                <div>
+                  <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Date</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">21 May 2025, Wed</span>
+                </div>
+                <div>
+                  <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Distance</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">350 km</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Amenities Grid */}
+            <div className="bg-slate-50/20 dark:bg-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
+              <h4 className="text-[10.5px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-4 text-left">
+                Amenities
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                {[
+                  { label: 'AC', icon: (cn) => <Wind className={cn} /> },
+                  { label: 'Sleeper Berth', icon: (cn) => <BedDouble className={cn} /> },
+                  { label: 'Blanket', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" /></svg> },
+                  { label: 'Pillow', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2" /></svg> },
+                  { label: 'Charging Point', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
+                  { label: 'Reading Light', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg> },
+                  { label: 'Wi-Fi', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg> },
+                  { label: 'Water Bottle', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1H9L8 4z" /></svg> },
+                  { label: 'CCTV', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> },
+                  { label: 'GPS Tracking', icon: (cn) => <MapPin className={cn} /> },
+                  { label: 'Emergency Exit', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg> },
+                  { label: 'Fire Extinguisher', icon: (cn) => <LifeBuoy className={cn} /> }
+                ].map((am, idx) => (
+                  <div key={idx} className="flex flex-col items-center justify-center p-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl text-center shadow-3xs hover:border-slate-350 transition-colors">
+                    {am.icon("w-4.5 h-4.5 text-slate-655 dark:text-slate-350 mb-1")}
+                    <span className="text-[8.5px] font-black text-slate-700 dark:text-slate-400 leading-tight block mt-1">{am.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Seat Availability Section */}
+            <div className="bg-slate-50/20 dark:bg-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
+              <h4 className="text-[10.5px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-4 text-left">
+                Seat Availability
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Seats Left</span>
+                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">12</span>
+                  <span className="text-[8.5px] text-slate-450 font-bold block mt-1 leading-none">Total Seats: 36</span>
+                </div>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Window Seats</span>
+                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">5</span>
+                  <span className="text-[8.5px] text-emerald-600 font-bold block mt-1 leading-none">Available</span>
+                </div>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Lower Berths</span>
+                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">3</span>
+                  <span className="text-[8.5px] text-emerald-600 font-bold block mt-1 leading-none">Available</span>
+                </div>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Female Seats</span>
+                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">2</span>
+                  <span className="text-[8.5px] text-emerald-650 font-bold block mt-1 leading-none">Available</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabbed Info Panel */}
+            <div className="border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/10 dark:bg-slate-900/5 overflow-hidden">
+              <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-x-auto no-scrollbar">
+                {['Overview', 'Boarding Points', 'Dropping Points', 'Ratings & Reviews', 'Policies'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setTravelDetailsTab(tab)}
+                    className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer bg-transparent border-none shrink-0 ${
+                      travelDetailsTab === tab
+                        ? 'border-blue-600 text-blue-605 font-black'
+                        : 'border-transparent text-slate-450 hover:text-slate-705 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-5 text-left text-xs sm:text-sm leading-relaxed font-medium">
+                {travelDetailsTab === 'Overview' && (
+                  <div className="space-y-4">
+                    <p className="text-slate-605 dark:text-slate-355 font-medium leading-relaxed">
+                      {selectedProduct.name} is one of the most trusted operators in the region. Enjoy a comfortable journey with premium service, clean layouts, and top class amenities.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      {[
+                        'Well maintained vehicles / buses',
+                        'Clean & hygienic environment',
+                        'Experienced & professional staff',
+                        'Safe & reliable travel'
+                      ].map((item, iIdx) => (
+                        <div key={iIdx} className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-350">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-550 fill-emerald-550/10 shrink-0" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {travelDetailsTab === 'Boarding Points' && (
+                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
+                    <div>• Kempegowda Bus Stand (Majestic) - 09:00 PM</div>
+                    <div>• Madiwala (Near police station) - 09:30 PM</div>
+                    <div>• Electronic City (Toll Gate) - 09:50 PM</div>
+                  </div>
+                )}
+                {travelDetailsTab === 'Dropping Points' && (
+                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
+                    <div>• Koyambedu Bus Stand - 05:30 AM</div>
+                    <div>• Poonamallee Bypass - 05:00 AM</div>
+                    <div>• Guindy (Near metro) - 05:45 AM</div>
+                  </div>
+                )}
+                {travelDetailsTab === 'Ratings & Reviews' && (
+                  <div className="space-y-3 text-xs">
+                    <div className="font-black text-slate-850 dark:text-white">Customer Feedback (★ 4.5/5 based on 12,520 reviews)</div>
+                    <div className="border-t border-slate-105 dark:border-slate-850/60 pt-3 mt-2">
+                      <div className="flex justify-between font-extrabold text-[11px]">
+                        <span>Suresh K.</span>
+                        <span className="text-amber-500">★ 5.0</span>
+                      </div>
+                      <p className="text-slate-550 mt-1">Excellent travel experience. On time departure and very comfortable sleeper berth. Clean blankets were provided.</p>
+                    </div>
+                  </div>
+                )}
+                {travelDetailsTab === 'Policies' && (
+                  <div className="space-y-3 text-xs font-semibold text-slate-700 dark:text-slate-355">
+                    <div>• Cancellation Policy: Free cancellation up to 24 hours before departure.</div>
+                    <div>• Baggage Policy: 15kg checked luggage and 5kg hand baggage allowed.</div>
+                    <div>• Child Policy: Children above 3 years require a separate ticket.</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Price and Book Ticket actions panel */}
+            <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 mt-2">
+              <div className="text-left w-full md:w-auto">
+                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Ticket Price</span>
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">₹{(selectedProduct.price || 1200).toLocaleString()}</span>
+                  <span className="text-xs text-slate-400 line-through">₹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
+                </div>
+                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 mt-1 block leading-none">
+                  {selectedProduct.discount || '20% OFF Member Special'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+                <button
+                  onClick={() => triggerNotification("Initiating chat with travel desk agent...")}
+                  className="px-5 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-black uppercase transition-all bg-transparent h-12 cursor-pointer"
+                >
+                  Chat Agent
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveBookNowModalItem(selectedProduct);
+                    setSelectedModalDate('Wednesday, 21 May 2025');
+                    setSelectedModalTime('09:00 PM');
+                    setSelectedModalType('AC Sleeper (2+1)');
+                    setSelectedTimeOfDayTab('Evening');
+                  }}
+                  className="flex-1 md:flex-none px-8 py-3 bg-blue-650 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 border-none h-12 cursor-pointer"
+                >
+                  Book Ticket
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
   const renderProductDetailsPage = () => {
     if (!selectedProduct) return null;
 
     if (selectedProduct.subNavbarCategory === 'Stay' || selectedProduct.tag === 'Stay') {
       return renderStayDetailsPage();
+    }
+    if (selectedProduct.subNavbarCategory === 'Travel' || selectedProduct.tag === 'Travel') {
+      return renderTravelDetailsPage();
     }
 
     // Price tier calculations
