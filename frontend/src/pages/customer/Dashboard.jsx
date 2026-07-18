@@ -683,38 +683,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     if (profileEmail) setApplicantEmail(profileEmail);
   }, [profileName, profileEmail]);
 
-  const staticJobsList = [
-    {
-      id: 'job-1',
-      vendorId: '3w8hhon38mqg7ni0u',
-      title: 'Luxury Travel Concierge',
-      department: 'Operations',
-      location: 'Mumbai, India / Hybrid',
-      salary: '₹12L - ₹18L L.P.A',
-      type: 'Full-time',
-      desc: 'Deliver elite, end-to-end bespoke travel management and high-touch VIP assistance to our premium tier members.'
-    },
-    {
-      id: 'job-2',
-      vendorId: '3w8hhon38mqg7ni0u',
-      title: 'Partner Relations Lead',
-      department: 'Business Development',
-      location: 'Bangalore, India / Remote',
-      salary: '₹15L - ₹22L L.P.A',
-      type: 'Full-time',
-      desc: 'Acquire, negotiate, and curate strategic alliances with five-star hospitality brands, luxury dining partners, and boutique hotels.'
-    },
-    {
-      id: 'job-3',
-      vendorId: '3w8hhon38mqg7ni0u',
-      title: 'Senior Frontend Engineer',
-      department: 'Technology',
-      location: 'Remote (India)',
-      salary: '₹24L - ₹32L L.P.A',
-      type: 'Full-time',
-      desc: 'Build highly performant, animation-rich, visual-first interfaces and client applications using React, TailwindCSS, and canvas APIs.'
-    }
-  ];
+  const staticJobsList = [];
 
   const jobsList = [
     ...staticJobsList,
@@ -3513,6 +3482,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const renderRecommendedForYou = () => {
+    if (products.length === 0) return null;
     const recommendedItems = [
       {
         id: 'rec-1',
