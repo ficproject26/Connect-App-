@@ -23,7 +23,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock, Trash2
+  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock, Trash2, Users, ThumbsUp
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -609,19 +609,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
     const vendorIcon = L.divIcon({
       className: 'vendor-marker',
-      html: `<div class="w-8 h-8 rounded-full bg-violet-600 border-2 border-slate-900 flex items-center justify-center text-white font-bold shadow-lg">🏪</div>`,
+      html: `<div class="w-8 h-8 rounded-full bg-violet-600 border-2 border-slate-900 flex items-center justify-center text-white font-bold shadow-lg">ðŸª</div>`,
       iconSize: [32, 32]
     });
 
     const customerIcon = L.divIcon({
       className: 'customer-marker',
-      html: `<div class="w-8 h-8 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-white font-bold shadow-lg">🏠</div>`,
+      html: `<div class="w-8 h-8 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-white font-bold shadow-lg">ðŸ </div>`,
       iconSize: [32, 32]
     });
 
     const riderIcon = L.divIcon({
       className: 'rider-marker',
-      html: `<div class="w-8 h-8 rounded-full bg-amber-500 border-2 border-slate-900 flex items-center justify-center text-slate-950 font-bold shadow-lg animate-pulse">🚲</div>`,
+      html: `<div class="w-8 h-8 rounded-full bg-amber-500 border-2 border-slate-900 flex items-center justify-center text-slate-950 font-bold shadow-lg animate-pulse">ðŸš²</div>`,
       iconSize: [32, 32]
     });
 
@@ -760,7 +760,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       title: p.name,
       department: p.category || 'General',
       location: p.description?.split('\n')[0] || 'Remote (India)',
-      salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
+      salary: p.price ? `â‚¹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
       type: 'Full-time',
       desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`
     }))
@@ -1080,327 +1080,327 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       items: ['Smartphones', 'Tablets', 'Laptops', 'Desktop Computers', 'Smart Watches', 'Headphones', 'Earbuds', 'Speakers', 'Cameras', 'Printers', 'Computer Accessories']
     },
     'IT & Office': {
-      title: '🖥 IT & Office Equipment',
+      title: 'ðŸ–¥ IT & Office Equipment',
       items: ['Monitors', 'Keyboards', 'Mouse', 'Webcams', 'Routers', 'Networking Devices', 'Storage Devices', 'Office Printers', 'Projectors', 'UPS & Power Backup']
     },
     'Home Appliances': {
-      title: '🏠 Home Appliances',
+      title: 'ðŸ  Home Appliances',
       items: ['Refrigerators', 'Washing Machines', 'Air Conditioners', 'Televisions', 'Microwave Ovens', 'Water Purifiers', 'Vacuum Cleaners', 'Air Coolers', 'Fans', 'Geysers']
     },
     'Furniture': {
-      title: '🛋 Furniture',
+      title: 'ðŸ›‹ Furniture',
       items: ['Sofas', 'Dining Tables', 'Beds', 'Mattresses', 'Wardrobes', 'Office Chairs', 'Office Tables', 'Study Tables', 'TV Units', 'Shoe Racks']
     },
     'Fashion': {
-      title: '👔 Fashion & Lifestyle',
+      title: 'ðŸ‘” Fashion & Lifestyle',
       items: ['Shirts', 'T-Shirts', 'Jeans', 'Watches', 'Accessories', 'Sarees', 'Kurtis', 'Dresses', 'Footwear', 'Handbags', 'Jewelry', 'Kids Clothing', 'School Accessories', 'Toys']
     },
     'Beauty': {
-      title: '💄 Beauty & Personal Care',
+      title: 'ðŸ’„ Beauty & Personal Care',
       items: ['Skincare', 'Haircare', 'Cosmetics', 'Perfumes', 'Grooming Products', 'Wellness Products']
     },
     'Baby Care': {
-      title: '🍼 Baby Products',
+      title: 'ðŸ¼ Baby Products',
       items: ['Baby Food', 'Diapers', 'Baby Clothing', 'Baby Toys', 'Baby Care Products', 'Baby Accessories']
     },
     'Sports & Fitness': {
-      title: '🏋 Sports & Fitness',
+      title: 'ðŸ‹ Sports & Fitness',
       items: ['Gym Equipment', 'Yoga Accessories', 'Sports Wear', 'Sports Equipment', 'Fitness Trackers', 'Cycling Accessories']
     },
     'Books': {
-      title: '📚 Books & Stationery',
+      title: 'ðŸ“š Books & Stationery',
       items: ['Academic Books', 'Story Books', 'Notebooks', 'Office Stationery', 'Art Supplies', 'Educational Materials']
     },
     'Gaming': {
-      title: '🎮 Gaming & Entertainment',
+      title: 'ðŸŽ® Gaming & Entertainment',
       items: ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs']
     },
     'Automobile': {
-      title: '🚗 Automobile Products',
+      title: 'ðŸš— Automobile Products',
       items: ['Car Accessories', 'Bike Accessories', 'Tyres', 'Vehicle Care Products', 'Safety Equipment', 'GPS Devices']
     },
     'Home & Kitchen': {
-      title: '🏡 Home & Kitchen',
+      title: 'ðŸ¡ Home & Kitchen',
       items: ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor', 'Lighting Products']
     },
     'Pet Care': {
-      title: '🐶 Pet Products',
+      title: 'ðŸ¶ Pet Products',
       items: ['Pet Food', 'Pet Toys', 'Pet Accessories', 'Pet Grooming Products', 'Pet Healthcare']
     },
     'Gardening': {
-      title: '🌱 Gardening & Outdoor',
+      title: 'ðŸŒ± Gardening & Outdoor',
       items: ['Plants', 'Gardening Tools', 'Outdoor Furniture', 'Seeds', 'Fertilizers']
     },
     'Healthcare': {
-      title: '🏥 Healthcare Products',
+      title: 'ðŸ¥ Healthcare Products',
       items: ['Medical Equipment', 'Health Monitoring Devices', 'Wellness Products', 'Orthopedic Products', 'Personal Health Devices']
     },
     'Business Products': {
-      title: '🛠 Industrial & Business Products',
+      title: 'ðŸ›  Industrial & Business Products',
       items: ['Safety Equipment', 'Tools & Machinery', 'Office Supplies', 'Packaging Materials', 'Business Equipment']
     }
   };
 
   const dailyNeedsMegaMenuData = {
     'Grocery': {
-      title: '🥬 Grocery & Essentials',
+      title: 'ðŸ¥¬ Grocery & Essentials',
       items: ['Rice', 'Wheat', 'Flour', 'Rava', 'Pulses', 'Dal', 'Sugar', 'Salt', 'Cooking Oil', 'Spices', 'Biscuits', 'Snacks', 'Noodles', 'Breakfast Cereals', 'Ready-to-Eat Foods', 'Dry Fruits']
     },
     'Fruits & Vegetables': {
-      title: '🍎 Fruits & Vegetables',
+      title: 'ðŸŽ Fruits & Vegetables',
       items: ['Fresh Fruits', 'Apple', 'Banana', 'Orange', 'Mango', 'Grapes', 'Pomegranate', 'Fresh Vegetables', 'Onion', 'Tomato', 'Potato', 'Carrot', 'Cabbage', 'Green Vegetables']
     },
     'Dairy': {
-      title: '🥛 Dairy Products',
+      title: 'ðŸ¥› Dairy Products',
       items: ['Milk', 'Curd', 'Butter', 'Ghee', 'Cheese', 'Paneer', 'Yogurt', 'Ice Cream', 'Flavored Milk']
     },
     'Water & Beverages': {
-      title: '💧 Water & Beverages',
+      title: 'ðŸ’§ Water & Beverages',
       items: ['Drinking Water', 'Water Cans', 'Mineral Water', 'RO Water Delivery', 'Beverages', 'Tea', 'Coffee', 'Juices', 'Soft Drinks', 'Energy Drinks', 'Health Drinks']
     },
     'Household Essentials': {
-      title: '🏠 Household Essentials',
+      title: 'ðŸ  Household Essentials',
       items: ['Cleaning Products', 'Floor Cleaner', 'Toilet Cleaner', 'Glass Cleaner', 'Disinfectants', 'Dishwash Liquid', 'Scrub Pads', 'Aluminum Foil', 'Storage Containers', 'Buckets', 'Mops', 'Dustbins', 'Cloth Drying Stands']
     },
     'Personal Care': {
-      title: '🧼 Personal Care',
+      title: 'ðŸ§¼ Personal Care',
       items: ['Soap', 'Body Wash', 'Shampoo', 'Conditioner', 'Face Wash', 'Razor', 'Trimmer', 'Hair Oil', 'Deodorants', 'Perfumes', 'Toothpaste', 'Toothbrush', 'Mouthwash']
     },
     'Baby Care': {
-      title: '👶 Baby Care',
+      title: 'ðŸ‘¶ Baby Care',
       items: ['Baby Diapers', 'Baby Wipes', 'Baby Powder', 'Baby Soap', 'Baby Shampoo', 'Baby Food', 'Feeding Bottles']
     },
     'Pharmacy': {
-      title: '🩺 Pharmacy & Healthcare',
+      title: 'ðŸ©º Pharmacy & Healthcare',
       items: ['Medicines', 'OTC Medicines', 'Pain Relief Products', 'Cold & Cough Remedies', 'Thermometer', 'BP Monitor', 'Glucose Monitor', 'First Aid Kit', 'Sanitizers', 'Face Masks']
     },
     'Pet Care': {
-      title: '🐶 Pet Care',
+      title: 'ðŸ¶ Pet Care',
       items: ['Dog Food', 'Cat Food', 'Pet Shampoo', 'Pet Toys', 'Pet Accessories', 'Pet Medicines']
     },
     'Bakery': {
-      title: '🍞 Bakery & Fresh Foods',
+      title: 'ðŸž Bakery & Fresh Foods',
       items: ['Bread', 'Cakes', 'Buns', 'Cookies', 'Fresh Bakery Items']
     },
     'Organic Products': {
-      title: '🌿 Organic Products',
+      title: 'ðŸŒ¿ Organic Products',
       items: ['Organic Vegetables', 'Organic Fruits', 'Organic Rice', 'Organic Spices', 'Natural Health Products']
     },
     'Utility Products': {
-      title: '🔋 Daily Utility Products',
+      title: 'ðŸ”‹ Daily Utility Products',
       items: ['Batteries', 'Power Banks', 'Chargers', 'LED Bulbs', 'Extension Boards', 'Inverters']
     }
   };
 
   const foodMegaMenuData = {
     'Restaurants': {
-      title: '🍽 Restaurants',
+      title: 'ðŸ½ Restaurants',
       items: ['Fine Dining', 'Family Restaurants', 'Casual Dining', 'Luxury Restaurants', 'Rooftop Restaurants', 'Buffet Restaurants', 'Theme Restaurants']
     },
     'Fast Food': {
-      title: '🍕 Fast Food',
+      title: 'ðŸ• Fast Food',
       items: ['Burgers', 'Pizza', 'Sandwiches', 'French Fries', 'Wraps', 'Hot Dogs', 'Fried Chicken']
     },
     'Cafes': {
-      title: '☕ Cafes & Coffee Shops',
+      title: 'â˜• Cafes & Coffee Shops',
       items: ['Coffee Shops', 'Tea Cafes', 'Dessert Cafes', 'Co-working Cafes', 'Juice Cafes', 'Premium Lounges']
     },
     'South Indian': {
-      title: '🍜 South Indian',
+      title: 'ðŸœ South Indian',
       items: ['Idli', 'Dosa', 'Uttapam', 'Pongal', 'Vada', 'Meals', 'Biryani']
     },
     'North Indian': {
-      title: '🍛 North Indian',
+      title: 'ðŸ› North Indian',
       items: ['Roti', 'Naan', 'Paneer Dishes', 'Dal Varieties', 'Tandoori Items', 'Thali Meals']
     },
     'Biryani': {
-      title: '🍚 Biryani & Rice',
+      title: 'ðŸš Biryani & Rice',
       items: ['Chicken Biryani', 'Mutton Biryani', 'Veg Biryani', 'Dum Biryani', 'Fried Rice', 'Pulav']
     },
     'Healthy Food': {
-      title: '🥗 Healthy Food',
+      title: 'ðŸ¥— Healthy Food',
       items: ['Salads', 'Diet Meals', 'Protein Meals', 'Organic Foods', 'Keto Foods', 'Vegan Foods']
     },
     'Bakery': {
-      title: '🍰 Bakery & Desserts',
+      title: 'ðŸ° Bakery & Desserts',
       items: ['Cakes', 'Pastries', 'Cookies', 'Donuts', 'Brownies', 'Chocolates', 'Ice Cream']
     },
     'Beverages': {
-      title: '🍹 Beverages',
+      title: 'ðŸ¹ Beverages',
       items: ['Tea', 'Coffee', 'Fresh Juice', 'Smoothies', 'Milkshakes', 'Soft Drinks', 'Energy Drinks']
     },
     'International Cuisine': {
-      title: '🌍 International Cuisine',
+      title: 'ðŸŒ International Cuisine',
       items: ['Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'Korean', 'Continental']
     },
     'Non-Veg Specials': {
-      title: '🍗 Non-Veg Specials',
+      title: 'ðŸ— Non-Veg Specials',
       items: ['Chicken', 'Mutton', 'Fish', 'Seafood', 'Grill Items', 'BBQ']
     },
     'Vegetarian Specials': {
-      title: '🥦 Vegetarian Specials',
+      title: 'ðŸ¥¦ Vegetarian Specials',
       items: ['Pure Veg Restaurants', 'Jain Food', 'Organic Food', 'Traditional Meals']
     },
     'Home Food': {
-      title: '🏠 Home Food',
+      title: 'ðŸ  Home Food',
       items: ['Homemade Meals', 'Tiffin Services', 'Daily Lunch Plans', 'Healthy Home Food']
     },
     'Catering': {
-      title: '🎉 Catering Services',
+      title: 'ðŸŽ‰ Catering Services',
       items: ['Wedding Catering', 'Birthday Catering', 'Corporate Catering', 'Event Catering', 'Bulk Orders']
     },
     'Subscription Meals': {
-      title: '🍱 Food Subscription',
+      title: 'ðŸ± Food Subscription',
       items: ['Daily Breakfast', 'Daily Lunch', 'Daily Dinner', 'Monthly Meal Plans', 'Office Meal Plans']
     },
     'Premium Dining': {
-      title: '🏨 Premium Dining',
+      title: 'ðŸ¨ Premium Dining',
       items: ['5-Star Hotels', 'Luxury Dining', 'Chef Specials', 'Exclusive Member Restaurants']
     }
   };
 
   const stayMegaMenuData = {
     'Hotels': {
-      title: '🏨 Hotels',
+      title: 'ðŸ¨ Hotels',
       items: ['Budget Hotels', 'Business Hotels', 'Premium Hotels', 'Luxury Hotels', '5-Star Hotels', 'Airport Hotels', 'Boutique Hotels']
     },
     'Resorts': {
-      title: '🌴 Resorts',
+      title: 'ðŸŒ´ Resorts',
       items: ['Beach Resorts', 'Hill Station Resorts', 'Family Resorts', 'Luxury Resorts', 'Wellness Resorts', 'Eco Resorts', 'Adventure Resorts']
     },
     'Homestays': {
-      title: '🏡 Homestays',
+      title: 'ðŸ¡ Homestays',
       items: ['Family Homestays', 'Village Homestays', 'Luxury Homestays', 'Farm Stays', 'Heritage Homestays']
     },
     'Service Apartments': {
-      title: '🏢 Service Apartments',
+      title: 'ðŸ¢ Service Apartments',
       items: ['Daily Rental', 'Weekly Rental', 'Monthly Rental', 'Corporate Apartments', 'Family Apartments']
     },
     'Vacation Rentals': {
-      title: '🏠 Vacation Rentals',
+      title: 'ðŸ  Vacation Rentals',
       items: ['Villas', 'Holiday Homes', 'Farm Houses', 'Private Houses', 'Weekend Getaways']
     },
     'Student Accommodation': {
-      title: '🏫 Student Accommodation',
+      title: 'ðŸ« Student Accommodation',
       items: ['Boys Hostel', 'Girls Hostel', 'PG Accommodation', 'Student Apartments', 'College Hostels']
     },
     'Corporate Stay': {
-      title: '👨‍💼 Corporate Stay',
+      title: 'ðŸ‘¨â€ðŸ’¼ Corporate Stay',
       items: ['Business Hotels', 'Corporate Guest Houses', 'Executive Suites', 'Long-Term Business Stay']
     },
     'Camping & Adventure': {
-      title: '🏕 Camping & Adventure Stay',
+      title: 'ðŸ• Camping & Adventure Stay',
       items: ['Tent Camping', 'Glamping', 'Forest Stay', 'Mountain Camps', 'Adventure Camps']
     },
     'Heritage Stay': {
-      title: '🏰 Heritage Stay',
+      title: 'ðŸ° Heritage Stay',
       items: ['Palace Hotels', 'Heritage Resorts', 'Traditional Houses', 'Cultural Stays']
     },
     'Couple Stay': {
-      title: '❤️ Couple & Honeymoon Stay',
+      title: 'â¤ï¸ Couple & Honeymoon Stay',
       items: ['Honeymoon Resorts', 'Romantic Hotels', 'Luxury Villas', 'Private Pool Villas']
     },
     'Family Stay': {
-      title: '👨‍👩‍👧‍👦 Family Stay',
+      title: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦ Family Stay',
       items: ['Family Hotels', 'Family Resorts', 'Kid-Friendly Resorts', 'Holiday Packages']
     },
     'Wellness Retreats': {
-      title: '🧘 Wellness & Retreat Stay',
+      title: 'ðŸ§˜ Wellness & Retreat Stay',
       items: ['Yoga Retreats', 'Meditation Centers', 'Ayurveda Resorts', 'Wellness Retreats', 'Spa Resorts']
     },
     'Medical Stay': {
-      title: '🏥 Medical Stay',
+      title: 'ðŸ¥ Medical Stay',
       items: ['Hospital Guest Houses', 'Medical Tourism Stay', 'Patient Accommodation', 'Caregiver Accommodation']
     },
     'Religious Stay': {
-      title: '🕌 Religious & Pilgrimage Stay',
+      title: 'ðŸ•Œ Religious & Pilgrimage Stay',
       items: ['Temple Guest Houses', 'Pilgrimage Hotels', 'Spiritual Retreats', 'Religious Accommodation']
     },
     'Rental Accommodation': {
-      title: '🏢 Rental Accommodation',
+      title: 'ðŸ¢ Rental Accommodation',
       items: ['Flats', 'Apartments', 'Independent Houses', 'Shared Accommodation', 'Rental Villas']
     },
     'International Stay': {
-      title: '🌍 International Stay',
+      title: 'ðŸŒ International Stay',
       items: ['International Hotels', 'Global Resorts', 'Holiday Packages', 'Travel Accommodation']
     }
   };
 
   const travelMegaMenuData = {
     'Flight Booking': {
-      title: '✈ Flight Booking',
+      title: 'âœˆ Flight Booking',
       items: ['Domestic Flights', 'International Flights', 'One-Way Flights', 'Round Trip Flights', 'Multi-City Flights', 'Business Class', 'First Class', 'Charter Flights']
     },
     'Train Booking': {
-      title: '🚆 Train Booking',
+      title: 'ðŸš† Train Booking',
       items: ['Express Trains', 'Superfast Trains', 'Premium Trains', 'Tatkal Booking', 'Tourist Trains', 'Luxury Trains']
     },
     'Bus Booking': {
-      title: '🚌 Bus Booking',
+      title: 'ðŸšŒ Bus Booking',
       items: ['Government Buses', 'Private Buses', 'Sleeper Buses', 'AC Buses', 'Luxury Coaches', 'Volvo Services']
     },
     'Cab Services': {
-      title: '🚖 Cab & Taxi Services',
+      title: 'ðŸš– Cab & Taxi Services',
       items: ['Local Taxi', 'Airport Transfer', 'Outstation Cabs', 'Luxury Cars', 'Chauffeur Services', 'Self-Drive Cars']
     },
     'Car Rental': {
-      title: '🚗 Car Rental',
+      title: 'ðŸš— Car Rental',
       items: ['Self Drive Cars', 'Monthly Rental', 'Luxury Car Rental', 'Corporate Rental', 'Tourist Vehicles']
     },
     'Bike Rental': {
-      title: '🏍 Bike Rental',
+      title: 'ðŸ Bike Rental',
       items: ['Scooters', 'Motorcycles', 'Premium Bikes', 'Adventure Bikes']
     },
     'Tour Packages': {
-      title: '🌍 Tour Packages',
+      title: 'ðŸŒ Tour Packages',
       items: ['Domestic Tours', 'International Tours', 'Weekend Trips', 'Family Packages', 'Group Tours', 'Couple Packages']
     },
     'Honeymoon Packages': {
-      title: '❤️ Honeymoon Packages',
+      title: 'â¤ï¸ Honeymoon Packages',
       items: ['Beach Destinations', 'Hill Stations', 'International Honeymoon', 'Luxury Honeymoon Resorts']
     },
     'Family Travel': {
-      title: '👨‍👩‍👧 Family Travel',
+      title: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§ Family Travel',
       items: ['Family Holiday Packages', 'Theme Parks', 'Resorts', 'Family Adventures']
     },
     'Corporate Travel': {
-      title: '🏢 Corporate Travel',
+      title: 'ðŸ¢ Corporate Travel',
       items: ['Business Flights', 'Hotel Booking', 'Corporate Cab Services', 'Employee Travel Management']
     },
     'Adventure Travel': {
-      title: '🎒 Adventure Travel',
+      title: 'ðŸŽ’ Adventure Travel',
       items: ['Trekking', 'Camping', 'Wildlife Safari', 'Mountain Climbing', 'Water Sports', 'Adventure Tours']
     },
     'Religious Travel': {
-      title: '🕌 Religious & Pilgrimage Travel',
+      title: 'ðŸ•Œ Religious & Pilgrimage Travel',
       items: ['Temple Tours', 'Pilgrimage Packages', 'Spiritual Retreats', 'Holy City Tours']
     },
     'Holiday Packages': {
-      title: '🌴 Holiday Packages',
+      title: 'ðŸŒ´ Holiday Packages',
       items: ['Beach Holidays', 'Hill Station Holidays', 'Island Vacations', 'Cruise Vacations']
     },
     'Cruise Travel': {
-      title: '🚢 Cruise Travel',
+      title: 'ðŸš¢ Cruise Travel',
       items: ['Domestic Cruises', 'International Cruises', 'Luxury Cruises', 'Family Cruises']
     },
     'Visa Services': {
-      title: '🛂 Visa Services',
+      title: 'ðŸ›‚ Visa Services',
       items: ['Tourist Visa', 'Business Visa', 'Student Visa', 'Work Visa', 'Visa Consultation']
     },
     'Passport Services': {
-      title: '🛃 Passport Services',
+      title: 'ðŸ›ƒ Passport Services',
       items: ['New Passport', 'Renewal', 'Tatkal Passport', 'Passport Assistance']
     },
     'International Travel': {
-      title: '🌎 International Travel',
+      title: 'ðŸŒŽ International Travel',
       items: ['International Flights', 'International Hotels', 'Global Packages', 'Travel Assistance']
     },
     'Travel Essentials': {
-      title: '🧳 Travel Essentials',
+      title: 'ðŸ§³ Travel Essentials',
       items: ['Travel Insurance', 'Forex Services', 'SIM Cards', 'Travel Accessories', 'Airport Lounge Access']
     },
     'Emergency Travel': {
-      title: '🚑 Emergency Travel Assistance',
+      title: 'ðŸš‘ Emergency Travel Assistance',
       items: ['Medical Emergency Travel', 'Emergency Ticket Booking', 'Travel Support', 'Insurance Claims']
     }
   };
@@ -1411,59 +1411,59 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       items: ['Hospitals', 'Clinics', 'Diagnostic Centers', 'Pharmacies', 'Dental Care', 'Eye Care', 'Ambulance Services', 'Home Nursing', 'Health Checkups', 'Telemedicine', 'Physiotherapy', 'Medical Equipment']
     },
     'Education': {
-      title: '🎓 Education Services',
+      title: 'ðŸŽ“ Education Services',
       items: ['Schools', 'Colleges', 'Universities', 'Online Courses', 'Training Institutes', 'Skill Development', 'Computer Training', 'AI & IT Training', 'Language Classes', 'Competitive Exam Coaching', 'Certification Programs']
     },
     'Financial': {
-      title: '🏦 Financial Services',
+      title: 'ðŸ¦ Financial Services',
       items: ['Banking Services', 'Personal Loans', 'Home Loans', 'Business Loans', 'Credit Cards', 'Investment Plans', 'Mutual Funds', 'Financial Consulting', 'Tax Planning', 'Retirement Planning']
     },
     'Insurance': {
-      title: '🛡 Insurance Services',
+      title: 'ðŸ›¡ Insurance Services',
       items: ['Health Insurance', 'Life Insurance', 'Vehicle Insurance', 'Travel Insurance', 'Property Insurance', 'Business Insurance', 'Accident Insurance']
     },
     'Home Services': {
-      title: '🏠 Home Services',
+      title: 'ðŸ  Home Services',
       items: ['Electrician', 'Plumber', 'Carpenter', 'Painter', 'Interior Design', 'Home Cleaning', 'Pest Control', 'AC Repair', 'Appliance Repair', 'CCTV Installation', 'Smart Home Solutions']
     },
     'Legal': {
-      title: '⚖ Legal Services',
+      title: 'âš– Legal Services',
       items: ['Legal Consultation', 'Property Registration', 'Agreement Drafting', 'Notary Services', 'Court Assistance', 'Company Registration', 'Trademark Registration', 'Legal Documentation']
     },
     'Digital': {
-      title: '💻 Digital Services',
+      title: 'ðŸ’» Digital Services',
       items: ['Website Development', 'Mobile App Development', 'UI/UX Design', 'Digital Marketing', 'SEO Services', 'Social Media Marketing', 'Graphic Design', 'Video Editing', 'Cloud Solutions', 'Software Development']
     },
     'Business': {
-      title: '🏢 Business Services',
+      title: 'ðŸ¢ Business Services',
       items: ['Company Formation', 'GST Registration', 'Payroll Management', 'HR Solutions', 'Recruitment Services', 'Business Consulting', 'Branding Services', 'Franchise Consulting', 'Startup Advisory']
     },
     'Automobile': {
-      title: '🚗 Automobile Services',
+      title: 'ðŸš— Automobile Services',
       items: ['Car Service', 'Bike Service', 'Car Wash', 'Roadside Assistance', 'Vehicle Inspection', 'Vehicle Insurance', 'Driving School', 'Vehicle Rental']
     },
     'Bill & Recharge': {
-      title: '📱 Bill & Recharge',
+      title: 'ðŸ“± Bill & Recharge',
       items: ['Mobile Recharge', 'DTH Recharge', 'Broadband Services', 'Fiber Internet', 'SIM Activation', 'Business Connectivity', 'Electricity Bill Payment', 'Water Bill Payment', 'Gas Booking', 'Property Tax', 'Internet Bill Payment', 'Government Services']
     },
     'Family': {
-      title: '👨‍👩‍👧 Family Services',
+      title: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§ Family Services',
       items: ['Child Care', 'Day Care', 'Elder Care', 'Home Care', 'Family Counseling', 'Parenting Support']
     },
     'Fitness': {
-      title: '🏋 Fitness & Wellness',
+      title: 'ðŸ‹ Fitness & Wellness',
       items: ['Gym Membership', 'Yoga Classes', 'Personal Training', 'Nutrition Consultation', 'Wellness Centers', 'Spa Services', 'Mental Wellness']
     },
     'Events': {
-      title: '🎉 Event Services',
+      title: 'ðŸŽ‰ Event Services',
       items: ['Wedding Planning', 'Birthday Events', 'Corporate Events', 'Photography', 'Videography', 'Catering Services', 'Decoration Services']
     },
     'Real Estate': {
-      title: '🏡 Real Estate Services',
+      title: 'ðŸ¡ Real Estate Services',
       items: ['Property Buying', 'Property Selling', 'Property Rental', 'Property Management', 'Interior Solutions', 'Home Loans']
     },
     'Security': {
-      title: '🔒 Security Services',
+      title: 'ðŸ”’ Security Services',
       items: ['Security Guards', 'CCTV Monitoring', 'Cyber Security', 'Home Security', 'Office Security']
     }
   };
@@ -1911,7 +1911,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <td className="py-3 px-3 max-w-[150px] truncate font-medium">{ord.product_details}</td>
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</td>
                         <td className="py-3 px-3 font-semibold text-slate-650 dark:text-slate-350">Connect Wallet</td>
-                        <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">₹{ord.amount}</td>
+                        <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">â‚¹{ord.amount}</td>
                         <td className="py-3 px-3 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusColor}`}>
                             {statusLabel}
@@ -2654,7 +2654,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   if (onItemClick) {
                     onItemClick(subCat, e);
                   } else {
-                    // Stay inside the dashboard — switch to the relevant tab and filter
+                    // Stay inside the dashboard â€” switch to the relevant tab and filter
                     const tabForLink = hoveredLink || title;
                     setHoveredLink(null);
                     if (tabForLink === 'Jobs') {
@@ -2686,14 +2686,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const details = {
       'Silver Tier': {
         name: 'Silver Tier',
-        price: '₹4,000/year',
+        price: 'â‚¹4,000/year',
         discount: '10% OFF',
         badgeColor: 'bg-slate-400 text-white',
         benefits: [
           'Flat 10% Off on all Products and Daily Needs',
           'Standard priority order packaging & delivery',
           'Earn 1.2x reward points on all transactions',
-          'Free standard shipping on orders over ₹499'
+          'Free standard shipping on orders over â‚¹499'
         ],
         cardBg: 'bg-gradient-to-tr from-slate-400 via-slate-100 to-slate-500',
         cardText: 'text-slate-900',
@@ -2706,7 +2706,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       },
       'Gold Elite': {
         name: 'Gold Elite',
-        price: '₹8,000/year',
+        price: 'â‚¹8,000/year',
         discount: '20% OFF',
         badgeColor: 'bg-amber-400 text-[#0b1e36]',
         benefits: [
@@ -2727,7 +2727,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       },
       'Diamond Prestige': {
         name: 'Diamond Prestige',
-        price: '₹20,000/year',
+        price: 'â‚¹20,000/year',
         discount: '30% OFF',
         badgeColor: 'bg-cyan-400 text-cyan-950',
         benefits: [
@@ -2749,7 +2749,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       }
     }[previewMembershipTier] || {
       name: 'Gold Elite',
-      price: '₹8,000/year',
+      price: 'â‚¹8,000/year',
       discount: '20% OFF',
       badgeColor: 'bg-amber-400 text-[#0b1e36]',
       benefits: [
@@ -2940,7 +2940,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       This card is non-transferable and remains the property of Connect App. Use is subject to network terms and conditions. If found, please return to any Forge India checkpoint.
                     </p>
                     <div className="flex justify-between items-center border-t border-slate-900/60 pt-2 text-[8px] font-mono text-slate-400">
-                      <span>WALLET COMPATIBLE ✓</span>
+                      <span>WALLET COMPATIBLE âœ“</span>
                       <span className="text-amber-500 font-bold">FORGE INDIA NODE v1.2.6</span>
                     </div>
                   </div>
@@ -3136,7 +3136,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                     {/* Gold Tag */}
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      ★ Exclusive Offer
+                      â˜… Exclusive Offer
                     </div>
 
                     {/* Headline info */}
@@ -3203,7 +3203,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      ★ Member Privilege
+                      â˜… Member Privilege
                     </div>
 
                     <div className="pt-2 leading-tight">
@@ -3261,12 +3261,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      ★ Flight Special
+                      â˜… Flight Special
                     </div>
 
                     <div className="pt-2 leading-tight">
                       <h3 className="text-base sm:text-lg font-black text-white leading-none">
-                        Save <span className="text-[#FFC107]">₹2,000</span>
+                        Save <span className="text-[#FFC107]">â‚¹2,000</span>
                       </h3>
                       <p className="text-xs font-bold text-slate-350 mt-1.5">On International Bookings</p>
                     </div>
@@ -3323,7 +3323,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      ★ Partner Deal
+                      â˜… Partner Deal
                     </div>
 
                     <div className="pt-2 leading-tight">
@@ -3701,7 +3701,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 w-full">
                     <div className="flex flex-col">
                       <span className="text-[13px] font-black text-slate-850 dark:text-white">
-                        ₹{(item.price || 0).toLocaleString()}
+                        â‚¹{(item.price || 0).toLocaleString()}
                         {item.tag === 'Stay' && <span className="text-[9.5px] font-bold text-slate-400">/night</span>}
                         {item.tag === 'Jobs' && <span className="text-[9.5px] font-bold text-slate-400">/month</span>}
                       </span>
@@ -3767,7 +3767,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Top Services</h3>
-          <button onClick={() => triggerNotification("Viewing all services...")} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
+          <button onClick={() => triggerNotification("Viewing all services...")} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
         </div>
 
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
@@ -3805,7 +3805,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-350 uppercase tracking-widest">Trending Products & Services</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All →</button>
+          <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All â†’</button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
@@ -3825,8 +3825,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div>
                     <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                     <div className="flex items-baseline gap-1.5 mt-2">
-                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
-                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
+                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">â‚¹{(product.price || 0).toLocaleString()}</span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">â‚¹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
                       <span className="text-[9.5px] text-emerald-600 font-bold">{product.discount}</span>
                     </div>
                   </div>
@@ -3881,7 +3881,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-200">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Stay Best Offers</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Stay'); setActiveTab('Stay'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
+          <button onClick={() => { setSelectedSubNavbarCategory('Stay'); setActiveTab('Stay'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -3902,7 +3902,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <span>{stay.rating || 4.5}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{(stay.price || 0).toLocaleString()}</span>
+                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">â‚¹{(stay.price || 0).toLocaleString()}</span>
                     <span className="text-[7px] text-slate-450 dark:text-slate-500 font-semibold block">/ Night</span>
                   </div>
                 </div>
@@ -3922,7 +3922,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-805 dark:text-slate-200">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 dark:text-slate-450 uppercase tracking-widest">Popular Restaurants</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Food'); setActiveTab('Food'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
+          <button onClick={() => { setSelectedSubNavbarCategory('Food'); setActiveTab('Food'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -3942,7 +3942,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <span>{rest.rating || 4.5}</span>
                   </div>
-                  <div>₹{(rest.price || 0).toLocaleString()}</div>
+                  <div>â‚¹{(rest.price || 0).toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -3964,11 +3964,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <div className="mt-4">
             <div className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-none">Wallet Balance</div>
-            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">₹{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">â‚¹{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </div>
           <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('wallet'); }} className="text-[9px] font-bold text-blue-600 hover:text-blue-600 dark:text-blue-400 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>Add Money</span>
-            <span>→</span>
+            <span>â†’</span>
           </button>
         </div>
 
@@ -3979,11 +3979,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <div className="mt-4">
             <div className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-none">Total Savings</div>
-            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">₹12,450.00</div>
+            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">â‚¹12,450.00</div>
           </div>
           <button onClick={() => triggerNotification("Savings history loaded")} className="text-[9px] font-bold text-emerald-600 hover:text-emerald-555 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>View Savings</span>
-            <span>→</span>
+            <span>â†’</span>
           </button>
         </div>
 
@@ -3998,7 +3998,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <button onClick={() => triggerNotification("Points store opened")} className="text-[9px] font-bold text-purple-600 hover:text-purple-600 dark:text-purple-400 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>Redeem Now</span>
-            <span>→</span>
+            <span>â†’</span>
           </button>
         </div>
 
@@ -4031,7 +4031,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             className="text-[9px] font-black uppercase text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer border-none bg-transparent p-0"
           >
             <span>Copy Code</span>
-            <span>→</span>
+            <span>â†’</span>
           </button>
         </div>
       </div>
@@ -4106,7 +4106,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div className="space-y-3.5 z-10 max-w-[60%]">
           <div>
             <h4 className="text-[13px] font-black text-[#0b1e36] leading-none">Refer Friends & Earn</h4>
-            <p className="text-[10px] text-slate-500 font-semibold mt-1">Earn ₹250 for each successful referral</p>
+            <p className="text-[10px] text-slate-500 font-semibold mt-1">Earn â‚¹250 for each successful referral</p>
           </div>
           <button onClick={() => triggerNotification("Referral link copied to clipboard!")} className="text-[9px] font-black uppercase tracking-wider bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-[#0b1e36] px-3.5 py-2 rounded shadow transition-colors cursor-pointer">
             Refer Now
@@ -4133,7 +4133,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               </div>
               <div className="text-left leading-none">
                 <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-bold uppercase tracking-wider block">Cashback Available</span>
-                <span className="text-xs font-black text-emerald-650 dark:text-emerald-400 dark:text-emerald-400 block mt-1 font-mono">₹1,250.00</span>
+                <span className="text-xs font-black text-emerald-650 dark:text-emerald-400 dark:text-emerald-400 block mt-1 font-mono">â‚¹1,250.00</span>
               </div>
             </div>
 
@@ -4144,7 +4144,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               </div>
               <div className="text-left leading-none">
                 <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-bold uppercase tracking-wider block">Referral Earnings</span>
-                <span className="text-xs font-black text-slate-800 dark:text-white block mt-1 font-mono">₹500.00</span>
+                <span className="text-xs font-black text-slate-800 dark:text-white block mt-1 font-mono">â‚¹500.00</span>
               </div>
             </div>
 
@@ -4172,7 +4172,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-200">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Recent Transactions</h3>
-          <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('orders'); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
+          <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('orders'); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
         </div>
 
         <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs space-y-3.5 w-full text-slate-800 dark:text-slate-200">
@@ -4191,12 +4191,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
                   <div className="overflow-hidden">
                     <h4 className="text-xs font-extrabold text-slate-800 dark:text-white truncate leading-none">{tx.name}</h4>
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{tx.cat} • {tx.date}</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{tx.cat} â€¢ {tx.date}</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0 font-mono">
-                  <div className="text-xs font-black text-slate-800 dark:text-white">₹{tx.price}</div>
-                  <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">-₹{tx.discount}</div>
+                  <div className="text-xs font-black text-slate-800 dark:text-white">â‚¹{tx.price}</div>
+                  <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">-â‚¹{tx.discount}</div>
                 </div>
               </div>
             );
@@ -4263,10 +4263,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-199">Under ₹199</option>
-                    <option value="199-399">₹199 - ₹399</option>
-                    <option value="399-599">₹399 - ₹599</option>
-                    <option value="above-599">Above ₹599</option>
+                    <option value="under-199">Under â‚¹199</option>
+                    <option value="199-399">â‚¹199 - â‚¹399</option>
+                    <option value="399-599">â‚¹399 - â‚¹599</option>
+                    <option value="above-599">Above â‚¹599</option>
                   </select>
                 </>
               )}
@@ -4310,10 +4310,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-199">Under ₹199</option>
-                    <option value="199-399">₹199 - ₹399</option>
-                    <option value="399-599">₹399 - ₹599</option>
-                    <option value="above-599">Above ₹599</option>
+                    <option value="under-199">Under â‚¹199</option>
+                    <option value="199-399">â‚¹199 - â‚¹399</option>
+                    <option value="399-599">â‚¹399 - â‚¹599</option>
+                    <option value="above-599">Above â‚¹599</option>
                   </select>
                 </>
               )}
@@ -4367,9 +4367,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-100">Under ₹100</option>
-                    <option value="100-200">₹100 - ₹200</option>
-                    <option value="above-200">Above ₹200</option>
+                    <option value="under-100">Under â‚¹100</option>
+                    <option value="100-200">â‚¹100 - â‚¹200</option>
+                    <option value="above-200">Above â‚¹200</option>
                   </select>
                 </>
               )}
@@ -4419,10 +4419,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-1000">Under ₹1,000</option>
-                    <option value="1000-2000">₹1,000 - ₹2,000</option>
-                    <option value="2000-5000">₹2,000 - ₹5,000</option>
-                    <option value="above-5000">Above ₹5,000</option>
+                    <option value="under-1000">Under â‚¹1,000</option>
+                    <option value="1000-2000">â‚¹1,000 - â‚¹2,000</option>
+                    <option value="2000-5000">â‚¹2,000 - â‚¹5,000</option>
+                    <option value="above-5000">Above â‚¹5,000</option>
                   </select>
                 </>
               )}
@@ -4446,9 +4446,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-500">Under ₹500</option>
-                    <option value="500-2000">₹500 - ₹2,000</option>
-                    <option value="above-2000">Above ₹2,000</option>
+                    <option value="under-500">Under â‚¹500</option>
+                    <option value="500-2000">â‚¹500 - â‚¹2,000</option>
+                    <option value="above-2000">Above â‚¹2,000</option>
                   </select>
                 </>
               )}
@@ -4482,9 +4482,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Salaries</option>
-                    <option value="under-15l">Under ₹15L L.P.A</option>
-                    <option value="15l-25l">₹15L - ₹25L L.P.A</option>
-                    <option value="above-25l">Above ₹25L L.P.A</option>
+                    <option value="under-15l">Under â‚¹15L L.P.A</option>
+                    <option value="15l-25l">â‚¹15L - â‚¹25L L.P.A</option>
+                    <option value="above-25l">Above â‚¹25L L.P.A</option>
                   </select>
                 </>
               )}
@@ -4497,9 +4497,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                 >
                   <option value="">All Ratings</option>
-                  <option value="4.0">4.0 ★ & Above</option>
-                  <option value="4.5">4.5 ★ & Above</option>
-                  <option value="4.8">4.8 ★ & Above</option>
+                  <option value="4.0">4.0 â˜… & Above</option>
+                  <option value="4.5">4.5 â˜… & Above</option>
+                  <option value="4.8">4.8 â˜… & Above</option>
                 </select>
               )}
 
@@ -4672,7 +4672,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               </h3>
                               <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-wide">
                                 <span>{job.department}</span>
-                                <span>•</span>
+                                <span>â€¢</span>
                                 <span>{job.location}</span>
                               </div>
                             </div>
@@ -4749,8 +4749,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <div className="mt-3.5 space-y-1">
                                 <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
                                 <div className="flex items-baseline gap-1.5">
-                                  <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
-                                  <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
+                                  <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">â‚¹{(product.price || 0).toLocaleString()}</span>
+                                  <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">â‚¹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
                                   <span className="text-[10px] sm:text-[11px] text-emerald-600 font-extrabold">{product.discount || '20% off'}</span>
                                 </div>
                               </div>
@@ -4857,402 +4857,223 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
+
   // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
   const renderStayDetailsPage = () => {
     if (!selectedProduct) return null;
-
-    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0
-      ? selectedProduct.images
-      : [selectedProduct.image];
-
-    const formatDate = (dateStr) => {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}, ${date.getFullYear()}`;
-    };
-
-    const getNightsCount = () => {
-      const start = new Date(stayCheckInDate);
-      const end = new Date(stayCheckOutDate);
-      if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
-      const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays > 0 ? diffDays : 1;
-    };
-
-    const roomTypes = [
-      {
-        id: 'deluxe',
-        name: 'Deluxe Room',
-        image: selectedProduct.image || '',
-        price: selectedProduct.price || 20000,
-        originalPrice: selectedProduct.originalPrice || Math.round((selectedProduct.price || 20000) * 1.25),
-        discount: selectedProduct.discount || '20% off',
-        amenities: ['Shower', 'King Bed', 'TV', 'Balcony', 'AC', 'Non-smoking'],
-        desc: 'Comfortable spacious room with beautiful city/garden views.'
-      },
-      {
-        id: 'executive',
-        name: 'Executive Room',
-        image: (selectedProduct.images && selectedProduct.images[1]) || selectedProduct.image || '',
-        price: Math.round((selectedProduct.price || 20000) * 1.5),
-        originalPrice: Math.round((selectedProduct.originalPrice || Math.round((selectedProduct.price || 20000) * 1.25)) * 1.5),
-        discount: '25% off',
-        amenities: ['Bathtub', 'Queen Bed', 'Mini Bar', 'Work Desk', 'AC', 'High-speed Wifi'],
-        desc: 'Sophisticated environment tailored for business executives.'
-      },
-      {
-        id: 'suite',
-        name: 'Suite Room',
-        image: (selectedProduct.images && selectedProduct.images[2]) || selectedProduct.image || '',
-        price: Math.round((selectedProduct.price || 20000) * 2.0),
-        originalPrice: Math.round((selectedProduct.originalPrice || Math.round((selectedProduct.price || 20000) * 1.25)) * 2.0),
-        discount: '30% off',
-        amenities: ['Living Room', 'King Bed', 'Jacuzzi', 'Dining Area', 'AC', 'Panoramic View'],
-        desc: 'Ultimate luxury with separate lounge area and premium services.'
-      }
-    ];
-
+    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
     const isFavorited = favorites.includes(selectedProduct.id);
+    const formatDate = (dateStr) => { if (!dateStr) return ''; const d = new Date(dateStr); if (isNaN(d.getTime())) return dateStr; const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${wd[d.getDay()]}, ${d.getDate()} ${mn[d.getMonth()]} ${d.getFullYear()}`; };
+    const getNightsCount = () => { const s = new Date(stayCheckInDate), e = new Date(stayCheckOutDate); if (isNaN(s.getTime()) || isNaN(e.getTime())) return 1; const diff = Math.ceil((e - s) / 86400000); return diff > 0 ? diff : 1; };
+    const nights = getNightsCount();
+    const basePrice = selectedProduct.price || 20000;
+    const roomTypes = [
+      { id:'standard', name:'Standard Room', guests:2, bed:'1 Queen Bed', area:'180 sq.ft', amenities:['Free Wi-Fi','Air Conditioning','TV'], extra:'+2 more', price: basePrice, originalPrice: selectedProduct.originalPrice || Math.round(basePrice*1.25) },
+      { id:'deluxe', name:'Deluxe Room', guests:2, bed:'1 King Bed', area:'250 sq.ft', amenities:['Free Wi-Fi','Air Conditioning','TV'], extra:'+3 more', price: Math.round(basePrice*1.4), originalPrice: Math.round(basePrice*1.75) },
+      { id:'suite', name:'Suite Room', guests:2, bed:'1 King Bed', area:'450 sq.ft', amenities:['Free Wi-Fi','Air Conditioning','TV'], extra:'+5 more', price: Math.round(basePrice*2), originalPrice: Math.round(basePrice*2.5) }
+    ];
+    const selectedRoom = roomTypes[0];
+    const totalPrice = selectedRoom.price * nights;
+    const taxes = Math.round(totalPrice * 0.15);
+    const memberDiscount = Math.round(totalPrice * 0.15);
 
     return (
-      <div className="space-y-8 pb-16 text-slate-800 dark:text-slate-200">
+      <div className="space-y-6 pb-16 text-slate-800 dark:text-slate-200 animate-fade-in">
         {/* Breadcrumbs */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
-            <span>&gt;</span>
-            <button onClick={() => { 
-              setSelectedProduct(null); 
-              setActiveTab('Stay'); 
-              setSelectedSubNavbarCategory('Stay'); 
-            }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Stay</button>
-            <span>&gt;</span>
-            <span className="hover:text-amber-500 transition-colors">{selectedProduct.category}</span>
-            <span>&gt;</span>
-            <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
+            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1"><ChevronLeft className="w-3.5 h-3.5" /> Home</button>
+            <span>&gt;</span><button onClick={() => { setSelectedProduct(null); setActiveTab('Stay'); setSelectedSubNavbarCategory('Stay'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Stays</button>
+            <span>&gt;</span><span>{selectedProduct.category || 'Luxury Hotels'}</span><span>&gt;</span>
+            <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">Hotel {selectedProduct.name}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => triggerNotification("Hotel link copied to clipboard!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              <span>Share</span>
-            </button>
-            <span className="text-slate-200 dark:text-slate-800">|</span>
-            <button onClick={() => triggerNotification("Added to comparison drawer!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-              <span>Compare</span>
-            </button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => triggerNotification("Link copied!")} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
+            <button onClick={() => toggleFavorite(selectedProduct.id)} className="flex items-center gap-1.5 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} /> Save for later</button>
           </div>
         </div>
 
-        {/* Main Hotel Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs">
-          
-          {/* Left Column: Gallery, Brand Details, Facilities */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
-            <div className="flex gap-4">
-              {/* Thumbnails list */}
-              <div className="flex flex-col gap-2.5 shrink-0 select-none">
-                {thumbnails.slice(0, 5).map((thumb, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => { setActiveProductImage(thumb); setActiveThumbnailIndex(idx); }}
-                    className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
-                      activeThumbnailIndex === idx 
-                        ? 'border-amber-400 shadow-md scale-102' 
-                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-350'
-                    }`}
-                  >
-                    <img src={thumb} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-                {thumbnails.length > 5 && (
-                  <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
-                    <span>+{thumbnails.length - 5}</span>
-                    <span>More</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Main Large Display */}
-              <div className="relative flex-grow aspect-[4/3] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-850 overflow-hidden flex items-center justify-center">
-                <img 
-                  src={activeProductImage || selectedProduct.image} 
-                  alt={selectedProduct.name} 
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Heart wishlist button */}
-                <button 
-                  onClick={() => toggleFavorite(selectedProduct.id)} 
-                  className="absolute right-4 top-4 w-9.5 h-9.5 rounded-full bg-white/95 dark:bg-[#0b1329] text-slate-455 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200/60 dark:border-slate-800/60 transition-transform hover:scale-105"
-                >
-                  <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
-                </button>
-              </div>
+        {/* 3-Column Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LEFT: Gallery + About Property */}
+          <div className="lg:col-span-4 flex flex-col gap-5">
+            <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+              <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              <button onClick={() => toggleFavorite(selectedProduct.id)} className="absolute right-3 top-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center shadow-md cursor-pointer border-none"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} /></button>
+              <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
+              <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
+              <button onClick={() => { const n = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1; setActiveProductImage(thumbnails[n]); setActiveThumbnailIndex(n); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronRight className="w-4 h-4 text-slate-700" /></button>
             </div>
-
-            {/* Media Helpers underneath */}
-            <div className="flex justify-center gap-4">
-              <button onClick={() => setIs360ModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
-                <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>
-                <span>View in 360°</span>
-              </button>
-              <button onClick={() => setIsArModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
-                <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                <span>AR View</span>
-              </button>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">{thumbnails.slice(0, 8).map((t, i) => (<button key={i} onClick={() => { setActiveProductImage(t); setActiveThumbnailIndex(i); }} className={`w-14 h-10 rounded-lg border-2 overflow-hidden shrink-0 cursor-pointer ${activeThumbnailIndex === i ? 'border-amber-400 shadow-md' : 'border-slate-200 dark:border-slate-800'}`}><img src={t} alt="" className="w-full h-full object-cover" /></button>))}</div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 text-left">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">About Property</span>
+              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm shrink-0"><Building2 className="w-5 h-5" /></div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">Hotel {selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500" /></h3><span className="text-[11px] text-slate-450 font-bold">{selectedProduct.category || 'Luxury Hotels'}</span></div></div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{selectedProduct.description || 'Experience luxury and comfort like never before. Spacious rooms, excellent amenities and top-notch hospitality await you.'}</p>
+              <div className="grid grid-cols-3 gap-3 pt-2">{[{l:'Elite Property',i:<ShieldCheck className="w-4 h-4"/>},{l:'24/7 Reception',i:<Clock className="w-4 h-4"/>},{l:'Free Wi-Fi',i:<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01"/></svg>},{l:'Restaurant',i:<Utensils className="w-4 h-4"/>},{l:'Swimming Pool',i:<Activity className="w-4 h-4"/>},{l:'Free Parking',i:<MapPin className="w-4 h-4"/>}].map((f, fi) => (<div key={fi} className="flex flex-col items-center text-center gap-1.5 py-2"><span className="text-slate-500 dark:text-slate-400">{f.i}</span><span className="text-[8px] font-bold text-slate-500 uppercase leading-tight">{f.l}</span></div>))}</div>
             </div>
-
-            {/* Hotel Brand Details Container */}
-            <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4.5 flex gap-4 text-left items-start">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
-                <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-[15px] font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                  Hotel {selectedProduct.name}
-                  <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500 text-white dark:text-blue-500" />
-                </h3>
-                <span className="text-xs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block mt-0.5">{selectedProduct.category || 'Luxury Hotels'}</span>
-                <p className="text-xs text-slate-600 dark:text-slate-355 leading-relaxed font-medium mt-2">
-                  {selectedProduct.description || "Experience unmatched comfort and top-tier luxury. Strategically located with curated facilities, premium housekeeping service, and custom room features designed to ensure a perfect stay experience."}
-                </p>
-              </div>
-            </div>
-
-            {/* Facilities Icon Grid */}
-            <div className="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-5 text-left">
-              <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-4">
-                Facilities
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: 'Pool', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>, bg: 'bg-blue-500/10 text-blue-500' },
-                  { label: 'Gym', icon: (cn) => <Activity className={cn} />, bg: 'bg-rose-500/10 text-rose-500' },
-                  { label: 'Free Wifi', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>, bg: 'bg-emerald-500/10 text-emerald-500' },
-                  { label: 'Dining', icon: (cn) => <Utensils className={cn} />, bg: 'bg-amber-500/10 text-amber-500' },
-                  { label: 'Conference', icon: (cn) => <Building2 className={cn} />, bg: 'bg-indigo-500/10 text-indigo-500' },
-                  { label: 'Bar', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707" /></svg>, bg: 'bg-purple-500/10 text-purple-500' },
-                  { label: 'Room Service', icon: (cn) => <Clock className={cn} />, bg: 'bg-teal-500/10 text-teal-505' },
-                  { label: 'AC', icon: (cn) => <Wind className={cn} />, bg: 'bg-sky-500/10 text-sky-500' }
-                ].map((fac, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl shadow-3xs">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${fac.bg}`}>
-                      {fac.icon("w-4 h-4")}
-                    </div>
-                    <span className="text-[10px] font-extrabold text-slate-700 dark:text-slate-355">{fac.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Ratings and Verification */}
-            <div className="flex items-center gap-2.5 flex-wrap px-1">
-              <div className="flex items-center text-amber-400">
-                <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
-                <span className="text-xs font-black text-slate-800 dark:text-slate-200 ml-1">
-                  {selectedProduct.rating || '4.5'}
-                </span>
-                <span className="text-[11.5px] text-slate-455 dark:text-slate-500 font-bold ml-1">
-                  / 5 ({selectedProduct.reviews || 120} Reviews)
-                </span>
-              </div>
-              <span className="text-slate-205 dark:text-slate-800">|</span>
-              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-blue-650 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 px-2.5 py-0.5 rounded-full">
-                Verified Host
-              </span>
-              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-650 dark:text-emerald-455 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">
-                Gym & Services
-              </span>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-6 text-left">
+              <div className="text-center shrink-0"><div className="flex items-center gap-1 text-amber-500 font-black text-lg"><Star className="w-5 h-5 fill-amber-500" /> {selectedProduct.rating || '4.5'}</div><span className="text-[10px] text-slate-400 font-bold">/5</span><span className="text-[9px] text-slate-400 font-bold block">({selectedProduct.reviews || 120} Reviews)</span></div>
+              <div className="border-l border-slate-200 dark:border-slate-800 pl-5 flex items-center gap-2"><span className="text-emerald-500 font-black text-lg">ðŸ‘</span><div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">Guests love</span><span className="text-[10px] text-slate-450 font-bold">cleanliness & service</span></div></div>
             </div>
           </div>
 
-          {/* Right Column: Date Selectors & Select Room Type list */}
-          <div className="lg:col-span-7 flex flex-col gap-6 text-left">
-            {/* Top Protection Banner */}
-            <div className="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/15 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl px-5 py-3 shadow-3xs">
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-extrabold text-xs">
-                <ShieldCheck className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Refund Protected & Best Price Guaranteed</span>
-              </div>
-              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 uppercase tracking-widest">Connect Protected</span>
+          {/* CENTER: Hotel Info + Room Types + Amenities */}
+          <div className="lg:col-span-5 flex flex-col gap-5 text-left">
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2"><span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Property</span><span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 border border-blue-100 dark:border-blue-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider">Best Price Guaranteed</span></div>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white">{selectedProduct.name}</h1>
+              <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Luxury Hotels'}</span>
+              <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Purchase</span></div>
             </div>
-
-            {/* Room ID/Hotel Name */}
-            <div>
-              <span className="text-xs font-bold text-amber-500 uppercase tracking-wider block">Currently Viewing</span>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-                Hotel {selectedProduct.name} - Luxury Stays
-              </h2>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><div className="grid grid-cols-3 gap-3"><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">ðŸ“… Check-in</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span><input type="date" value={stayCheckInDate} onChange={(e) => setStayCheckInDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">ðŸ“… Check-out</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span><input type="date" value={stayCheckOutDate} onChange={(e) => setStayCheckOutDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">ðŸŒ™ Nights</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span></div></div><div className="grid grid-cols-2 gap-3 mt-3"><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">ðŸ›ï¸ Rooms</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayRoomsCount} Room</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayRoomsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayRoomsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">ðŸ‘¤ Guests</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayGuestsCount} Adults</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayGuestsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayGuestsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div></div></div>
+            <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/20 rounded-xl px-4 py-3 flex items-center justify-between"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /><div><span className="text-[11px] font-black text-amber-700 dark:text-amber-400 block">Members get up to 15% OFF</span><span className="text-[9px] text-amber-600/70 font-bold">Join Silver / Gold / Diamond membership to save more.</span></div></div><button onClick={() => triggerNotification("Opening membership plans...")} className="text-[10px] text-blue-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer flex items-center gap-0.5">Explore Memberships <ArrowRight className="w-3 h-3" /></button></div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Select Room Type</h3>
+              {roomTypes.map((room) => (<div key={room.id} className="flex gap-4 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-400 cursor-pointer transition-all"><div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-100"><img src={selectedProduct.image} alt={room.name} className="w-full h-full object-cover" /></div><div className="flex-grow"><div className="flex items-start justify-between"><div><h4 className="text-xs font-black text-slate-850 dark:text-white">{room.name}</h4><div className="flex items-center gap-2 mt-1 text-[9px] text-slate-450 font-bold flex-wrap"><span>ðŸ‘¤ {room.guests} Guests</span><span>ðŸ›ï¸ {room.bed}</span><span>ðŸ“ {room.area}</span></div></div><div className="text-right shrink-0"><span className="text-sm font-black text-slate-900 dark:text-white block">â‚¹{room.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 block">/ night</span></div></div><div className="flex items-center gap-1.5 mt-2 flex-wrap">{room.amenities.map((a, ai) => <span key={ai} className="text-[8px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-1.5 py-0.5 rounded">{a}</span>)}<span className="text-[8px] text-blue-500 font-bold">{room.extra}</span></div></div></div>))}
             </div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3><div className="grid grid-cols-3 sm:grid-cols-5 gap-3">{['Free Wi-Fi','Swimming Pool','Restaurant','Room Service','Parking','Air Conditioning','Gym','Spa','Laundry','Business Center','Power Backup','24/7 Security'].map((a, ai) => (<div key={ai} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 dark:text-slate-400"><CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" /><span>{a}</span></div>))}</div></div>
+          </div>
 
-            {/* Booking config selectors */}
-            <div className="bg-slate-50/30 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
-              <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1.5">
-                Select Dates & Guests
-              </h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Check-in */}
-                <div className="relative cursor-pointer bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-col text-left hover:border-slate-350 transition-colors">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Check-in</span>
-                  <span className="text-[13px] font-black text-slate-800 dark:text-white mt-1 leading-none">{formatDate(stayCheckInDate)}</span>
-                  <input 
-                    type="date" 
-                    value={stayCheckInDate} 
-                    onChange={(e) => setStayCheckInDate(e.target.value)}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
-                  />
-                </div>
-                
-                {/* Check-out */}
-                <div className="relative cursor-pointer bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-col text-left hover:border-slate-350 transition-colors">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Check-out</span>
-                  <span className="text-[13px] font-black text-slate-800 dark:text-white mt-1 leading-none">{formatDate(stayCheckOutDate)}</span>
-                  <input 
-                    type="date" 
-                    value={stayCheckOutDate} 
-                    onChange={(e) => setStayCheckOutDate(e.target.value)}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
-                  />
-                </div>
-
-                {/* Nights count */}
-                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-col text-left justify-center">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Duration</span>
-                  <span className="text-[13px] font-black text-slate-800 dark:text-white mt-1 leading-none">{getNightsCount()} {getNightsCount() === 1 ? 'Night' : 'Nights'}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Rooms counter */}
-                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center">
-                  <div className="text-left">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Rooms</span>
-                    <span className="text-[13px] font-black text-slate-850 dark:text-white block mt-0.5">{stayRoomsCount} {stayRoomsCount === 1 ? 'Room' : 'Rooms'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button 
-                      onClick={() => setStayRoomsCount(prev => Math.max(1, prev - 1))}
-                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
-                    >
-                      -
-                    </button>
-                    <button 
-                      onClick={() => setStayRoomsCount(prev => prev + 1)}
-                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Guests counter */}
-                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center">
-                  <div className="text-left">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Guests</span>
-                    <span className="text-[13px] font-black text-slate-850 dark:text-white block mt-0.5">{stayGuestsCount} {stayGuestsCount === 1 ? 'Guest' : 'Guests'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button 
-                      onClick={() => setStayGuestsCount(prev => Math.max(1, prev - 1))}
-                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
-                    >
-                      -
-                    </button>
-                    <button 
-                      onClick={() => setStayGuestsCount(prev => prev + 1)}
-                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dynamic Discount Notification banner */}
-              <div className="bg-blue-500/5 dark:bg-blue-950/10 border border-blue-500/10 dark:border-blue-900/20 rounded-xl px-4 py-2.5 flex items-center gap-2 text-[11px] text-blue-650 dark:text-blue-400 font-black">
-                <Percent className="w-4 h-4 shrink-0" />
-                <span>Awesome choice! Connect member pricing automatically saves you 10% on room rates.</span>
-              </div>
-            </div>
-
-            {/* SELECT ROOM TYPE List section */}
-            <div className="space-y-4">
-              <h4 className="text-[11.5px] font-black text-slate-850 dark:text-white uppercase tracking-wider leading-none mb-1 text-left">
-                Select Room Type
-              </h4>
-              
-              <div className="space-y-3.5">
-                {roomTypes.map((room) => (
-                  <div 
-                    key={room.id}
-                    className="flex flex-col md:flex-row gap-4 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-3xs"
-                  >
-                    {/* Room Thumbnail */}
-                    <div className="w-full md:w-36 h-24 rounded-xl overflow-hidden shrink-0 border border-slate-200/50 dark:border-slate-800 bg-slate-100">
-                      <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
-                    </div>
-
-                    {/* Room details */}
-                    <div className="flex-grow flex flex-col justify-between text-left">
-                      <div>
-                        <h4 className="text-sm font-black text-slate-850 dark:text-white leading-tight">{room.name}</h4>
-                        <p className="text-[10.5px] text-slate-500 dark:text-slate-450 mt-1 line-clamp-1">{room.desc}</p>
-                        
-                        {/* Amenities checklist chips */}
-                        <div className="flex flex-wrap gap-1.5 mt-2.5">
-                          {room.amenities.map((am, aIdx) => (
-                            <span 
-                              key={aIdx} 
-                              className="text-[9px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-850 border border-slate-200/40 dark:border-slate-750/30 px-2 py-0.5 rounded-md flex items-center gap-0.5 leading-none"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                              {am}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Price and booking action */}
-                    <div className="flex md:flex-col justify-between md:justify-center items-center md:items-end gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-200/60 dark:border-slate-800/80 pt-3 md:pt-0 md:pl-5">
-                      <div className="text-left md:text-right">
-                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Rate per night</span>
-                        <div className="flex items-baseline gap-1 mt-1.5">
-                          <span className="text-[17px] font-black text-slate-850 dark:text-white">₹{room.price.toLocaleString()}</span>
-                          <span className="text-[10px] text-slate-400 line-through">₹{room.originalPrice.toLocaleString()}</span>
-                        </div>
-                        <span className="text-[9.5px] font-bold text-emerald-600 dark:text-emerald-455 mt-0.5 block leading-none">{room.discount}</span>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setActiveBookNowModalItem({
-                            ...selectedProduct,
-                            name: `${selectedProduct.name} - ${room.name}`,
-                            price: room.price
-                          });
-                          setSelectedModalDate(formatDate(stayCheckInDate));
-                          setSelectedModalTime('12:00 PM');
-                          setSelectedModalType(room.name);
-                          setSelectedTimeOfDayTab('Morning');
-                        }}
-                        className="px-5 py-2.5 bg-blue-650 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-3xs cursor-pointer border-none flex items-center justify-center gap-1.5 h-10 select-none"
-                      >
-                        <BedDouble className="w-3.5 h-3.5" />
-                        <span>Book Room</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* RIGHT: Booking Summary */}
+          <div className="lg:col-span-3 flex flex-col gap-5">
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 sticky top-4 text-left">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-850 pb-3">Booking Summary</h3>
+              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Hotel</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-in</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-out</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Nights</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {nights===1?'Night':'Nights'}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Rooms & Guests</span><span className="font-extrabold text-slate-800 dark:text-white">{stayRoomsCount} Room, {stayGuestsCount} Adults</span></div></div>
+              <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">â‚¹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">â‚¹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- â‚¹{memberDiscount.toLocaleString()}</span></div></div>
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><div><span className="text-sm font-black text-slate-900 dark:text-white block">Total Amount</span><span className="text-[9px] text-slate-400 font-bold">Incl. all taxes</span></div><span className="text-xl font-black text-slate-900 dark:text-white">â‚¹{totalPrice.toLocaleString()}</span></div>
+              <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 24 hrs before check-in for full refund.</span></div></div>
+              <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate(formatDate(stayCheckInDate)); setSelectedModalTime('12:00 PM'); setSelectedModalType('Standard Room'); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Continue to Payment <ArrowRight className="w-4 h-4" /></button>
+              <button onClick={() => triggerNotification("Pay at Hotel option selected!")} className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all border border-slate-200 dark:border-slate-800 cursor-pointer">Pay at Hotel</button>
+              <div className="flex items-center gap-2 justify-center pt-1"><span className="text-[9px] text-slate-400 font-bold">We accept</span>{['VISA','MasterCard','RuPay','UPI'].map((p, pi) => <span key={pi} className="text-[8px] font-black text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded">{p}</span>)}</div>
             </div>
           </div>
+        </div>
+
+        {/* Bottom Trust Badges */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
+          {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title:'Safe & Secure Booking',desc:"Your booking is protected by ConnectApp's secure system."},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title:'Best Price Guarantee',desc:"Found a lower price? We'll match it."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title:'24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
+            <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-450 font-bold">{b.desc}</span></div></div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // SERVICE/GYM DETAILS PAGE
+  const renderServiceDetailsPage = () => {
+    if (!selectedProduct) return null;
+    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+    const isFavorited = favorites.includes(selectedProduct.id);
+    const basePrice = selectedProduct.price || 2499;
+    const plans = [
+      { id:'1month', name:'1 Month Plan', price: basePrice, perLabel:'/month', validity:'Valid for 30 Days', originalPrice: null, save: null, best: false },
+      { id:'3month', name:'3 Month Plan', price: Math.round(basePrice * 2.8), perLabel:'/3 months', validity:'Valid for 90 Days', originalPrice: Math.round(basePrice * 3), save: Math.round(basePrice * 0.2), best: false },
+      { id:'12month', name:'12 Month Plan', price: Math.round(basePrice * 8), perLabel:'/year', validity:'Valid for 365 Days', originalPrice: Math.round(basePrice * 12), save: Math.round(basePrice * 4), best: true }
+    ];
+    const timings = [{name:'Morning',time:'5:00 AM - 9:00 AM'},{name:'Afternoon',time:'12:00 PM - 4:00 PM'},{name:'Evening',time:'5:00 PM - 10:00 PM'},{name:'Night',time:'10:00 PM - 12:00 AM'}];
+    const selectedPlan = plans[0];
+    const selectedTiming = timings[0];
+    const gst = Math.round(selectedPlan.price * 0.18);
+    const convFee = 50;
+    const totalAmount = selectedPlan.price + gst + convFee;
+
+    return (
+      <div className="space-y-6 pb-16 text-slate-800 dark:text-slate-200 animate-fade-in">
+        {/* Breadcrumbs */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1"><ChevronLeft className="w-3.5 h-3.5" /> Home</button>
+            <span>&gt;</span><button onClick={() => { setSelectedProduct(null); setActiveTab('Services'); setSelectedSubNavbarCategory('Services'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Services</button>
+            <span>&gt;</span><span>{selectedProduct.category || 'Fitness & Wellness'}</span><span>&gt;</span>
+            <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => triggerNotification("Link copied!")} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
+            <button onClick={() => toggleFavorite(selectedProduct.id)} className="flex items-center gap-1.5 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} /> Save for later</button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LEFT: Gallery + About + Ratings */}
+          <div className="lg:col-span-4 flex flex-col gap-5">
+            <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+              <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              <button onClick={() => toggleFavorite(selectedProduct.id)} className="absolute right-3 top-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center shadow-md cursor-pointer border-none"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} /></button>
+              <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
+              <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
+              <button onClick={() => { const n = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1; setActiveProductImage(thumbnails[n]); setActiveThumbnailIndex(n); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronRight className="w-4 h-4 text-slate-700" /></button>
+            </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">{thumbnails.slice(0, 8).map((t, i) => (<button key={i} onClick={() => { setActiveProductImage(t); setActiveThumbnailIndex(i); }} className={`w-14 h-10 rounded-lg border-2 overflow-hidden shrink-0 cursor-pointer ${activeThumbnailIndex === i ? 'border-amber-400 shadow-md' : 'border-slate-200 dark:border-slate-800'}`}><img src={t} alt="" className="w-full h-full object-cover" /></button>))}</div>
+
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 text-left">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">About {selectedProduct.name}</span>
+              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black text-[9px] shrink-0 uppercase tracking-wider">{(selectedProduct.name || 'GYM').substring(0, 4)}</div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">{selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500" /></h3><span className="text-[11px] text-slate-450 font-bold">{selectedProduct.category || 'Premium Gym & Fitness Center'}</span></div></div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{selectedProduct.description || 'A group workout and fitness center with state-of-the-art equipment, expert trainers and world-class facilities to help you achieve your fitness goals.'}</p>
+              <div className="grid grid-cols-3 gap-3 pt-2">{[{l:'Certified Trainers',i:<UserCheck className="w-4 h-4"/>},{l:'Modern Equipment',i:<Activity className="w-4 h-4"/>},{l:'Hygienic Environment',i:<ShieldCheck className="w-4 h-4"/>},{l:'Personal Training',i:<Briefcase className="w-4 h-4"/>},{l:'Diet & Nutrition',i:<Utensils className="w-4 h-4"/>},{l:'Flexible Hours',i:<Clock className="w-4 h-4"/>}].map((f, fi) => (<div key={fi} className="flex flex-col items-center text-center gap-1.5 py-2"><span className="text-slate-500 dark:text-slate-400">{f.i}</span><span className="text-[8px] font-bold text-slate-500 uppercase leading-tight">{f.l}</span></div>))}</div>
+            </div>
+
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 text-left">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ratings & Reviews</span>
+              <div className="flex items-start gap-5">
+                <div className="text-center shrink-0"><span className="text-2xl font-black text-slate-900 dark:text-white block">{selectedProduct.rating || '4.5'}</span><span className="text-[10px] text-slate-400 font-bold">/5</span><div className="flex text-amber-400 mt-1 justify-center">{[1,2,3,4,5].map(s => <Star key={s} className="w-3 h-3 fill-amber-400" />)}</div><span className="text-[9px] text-slate-400 font-bold block mt-1">({selectedProduct.reviews || '2,450'} Reviews)</span></div>
+                <div className="flex-grow space-y-1">{[{s:5,p:70},{s:4,p:20},{s:3,p:6},{s:2,p:2},{s:1,p:2}].map(r => (<div key={r.s} className="flex items-center gap-2"><span className="text-[9px] font-bold text-slate-500 w-3">{r.s}</span><Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" /><div className="flex-grow h-1.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden"><div className={`h-full rounded-full ${r.s >= 4 ? 'bg-emerald-500' : r.s === 3 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${r.p}%` }}></div></div><span className="text-[8px] font-bold text-slate-400 w-6 text-right">{r.p}%</span></div>))}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">{[{v:'2,450+',l:'Happy Members',i:<Users className="w-4 h-4 text-blue-500"/>},{v:'98%',l:'Satisfaction',i:<ThumbsUp className="w-4 h-4 text-emerald-500"/>},{v:'5+ Years',l:'In Your City',i:<MapPin className="w-4 h-4 text-amber-500"/>}].map((s, si) => (<div key={si} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-center"><span className="text-slate-500 block mb-1.5">{s.i}</span><span className="text-sm font-black text-slate-900 dark:text-white block">{s.v}</span><span className="text-[8px] text-slate-400 font-bold uppercase">{s.l}</span></div>))}</div>
+          </div>
+
+          {/* CENTER: Plans + Timing + Benefits + Facilities + Trainers */}
+          <div className="lg:col-span-5 flex flex-col gap-5 text-left">
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2">
+              <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Partner</span>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">{selectedProduct.name} <CheckCircle2 className="w-5 h-5 text-blue-500 fill-blue-500" /></h1>
+              <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Gym Membership'}</span>
+              <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || '2,450'} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Partner</span></div>
+            </div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Membership Plans</h3>
+              <div className="grid grid-cols-3 gap-3">{plans.map(plan => (<div key={plan.id} className={`relative p-3 rounded-xl border-2 cursor-pointer transition-all ${plan.id === '1month' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'}`}>{plan.best && <span className="absolute -top-2 right-2 bg-amber-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Best Value</span>}<span className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block">{plan.name}</span><span className="text-lg font-black text-slate-900 dark:text-white block mt-1">₹{plan.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 font-bold">{plan.perLabel}</span>{plan.originalPrice && <><br/><span className="text-[9px] text-slate-400 line-through">₹{plan.originalPrice.toLocaleString()}</span> <span className="text-[9px] font-black text-emerald-600">Save ₹{plan.save.toLocaleString()}</span></>}<span className="text-[8px] text-slate-400 font-bold block mt-1.5">{plan.validity}</span></div>))}</div>
+            </div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Select Gym Timing</h3>
+              <div className="grid grid-cols-4 gap-2">{timings.map(t => (<button key={t.name} className={`p-2.5 rounded-xl border-2 text-center cursor-pointer transition-all ${t.name === 'Morning' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'} bg-transparent`}><span className="text-[10px] font-black text-slate-800 dark:text-white block">{t.name}</span><span className="text-[8px] text-slate-400 font-bold">{t.time}</span></button>))}</div>
+            </div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Membership Benefits</h3>
+              <div className="grid grid-cols-2 gap-2">{['Access to all Gym equipment','Body Composition Analysis','Group Classes (HIIT, Yoga, Zumba & more)','Locker & Shower Facility','Personal Training (1 session/month)','Free BuildFIT App Access','Diet & Nutrition Guidance','Exclusive Member Events'].map((b, bi) => (<div key={bi} className="flex items-start gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" /><span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{b}</span></div>))}</div>
+            </div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Facilities</h3>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">{[{l:'Cardio Area',i:<Activity className="w-4 h-4"/>},{l:'Strength Training',i:<Zap className="w-4 h-4"/>},{l:'Group Classes',i:<Users className="w-4 h-4"/>},{l:'CrossFit Zone',i:<Sparkles className="w-4 h-4"/>},{l:'Yoga Studio',i:<Heart className="w-4 h-4"/>},{l:'Steam & Shower',i:<Wind className="w-4 h-4"/>},{l:'Locker Facility',i:<ShieldCheck className="w-4 h-4"/>},{l:'Water Station',i:<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>},{l:'Parking',i:<MapPin className="w-4 h-4"/>},{l:'Wi-Fi Access',i:<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01"/></svg>}].map((f, fi) => (<div key={fi} className="flex flex-col items-center text-center gap-1.5 py-2"><span className="text-slate-500 dark:text-slate-400">{f.i}</span><span className="text-[8px] font-bold text-slate-500 uppercase leading-tight">{f.l}</span></div>))}</div>
+            </div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Trainers</h3>
+              <div className="flex gap-4 overflow-x-auto no-scrollbar">{[{name:'Rohit Sharma',role:'Strength Coach',exp:'5 Years'},{name:'Anjali Mehta',role:'Yoga Instructor',exp:'4 Years'},{name:'Karan Verma',role:'HIIT Coach',exp:'6 Years'},{name:'Pooja Iyer',role:'Nutrition Expert',exp:'5 Years'}].map((t, ti) => (<div key={ti} className="flex flex-col items-center shrink-0"><div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500"><UserCheck className="w-5 h-5" /></div><span className="text-[10px] font-extrabold text-slate-800 dark:text-white mt-1.5 block text-center">{t.name}</span><span className="text-[8px] text-slate-450 font-bold text-center">{t.role}</span><span className="text-[8px] text-slate-400 font-bold">{t.exp} Exp.</span></div>))}</div>
+            </div>
+          </div>
+
+          {/* RIGHT: Booking Summary */}
+          <div className="lg:col-span-3 flex flex-col gap-5">
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 sticky top-4 text-left">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-850 pb-3">Booking Summary</h3>
+              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Service</span><span className="font-extrabold text-slate-800 dark:text-white text-right">Gym Membership</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Gym</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Plan</span><span className="font-extrabold text-slate-800 dark:text-white">{selectedPlan.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Timing</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedTiming.name} ({selectedTiming.time})</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Start Date</span><span className="font-extrabold text-slate-800 dark:text-white">Wed, 21 May 2025</span></div></div>
+              <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Plan Amount</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedPlan.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">GST (18%)</span><span className="font-extrabold text-slate-800 dark:text-white">₹{gst.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Convenience Fee</span><span className="font-extrabold text-slate-800 dark:text-white">₹{convFee}</span></div></div>
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><span className="text-sm font-black text-slate-900 dark:text-white">Total Amount</span><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalAmount.toLocaleString()}</span></div>
+              <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/20 rounded-xl px-3 py-2.5"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /><div><span className="text-[10px] font-black text-amber-700 dark:text-amber-400 block">Members get up to 15% OFF</span><span className="text-[8px] text-amber-600/70 font-bold">Join Silver / Gold / Diamond membership to save more.</span></div></div><button onClick={() => triggerNotification("Opening membership plans...")} className="text-[9px] text-blue-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer mt-1">Explore Memberships →</button></div>
+              <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 2 hrs before start time</span></div></div>
+              <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate('Wednesday, 21 May 2025'); setSelectedModalTime(selectedTiming.time); setSelectedModalType(selectedPlan.name); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Book Membership <ArrowRight className="w-4 h-4" /></button>
+              <button onClick={() => triggerNotification("1 Day Free Trial request submitted!")} className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all border border-slate-200 dark:border-slate-800 cursor-pointer">Book Free Trial</button>
+              <span className="text-[9px] text-slate-400 font-bold text-center block">1 Day Free Trial for New Users</span>
+              <div className="flex items-center justify-center gap-4 pt-1">{[{l:'Secure Payment',i:<ShieldCheck className="w-3 h-3"/>},{l:'Instant Confirmation',i:<CheckCircle2 className="w-3 h-3"/>},{l:'24/7 Support',i:<LifeBuoy className="w-3 h-3"/>}].map((t, ti) => (<div key={ti} className="flex items-center gap-1 text-[8px] font-bold text-slate-400"><span className="text-slate-400">{t.i}</span>{t.l}</div>))}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Trust Badges */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
+          {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title:'Trusted & Verified Professionals',desc:'All service providers are verified and trusted.'},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title:'Safe & Secure Payments',desc:"Your payments are 100% safe with ConnectApp."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title:'24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
+            <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-450 font-bold">{b.desc}</span></div></div>
+          ))}
         </div>
       </div>
     );
@@ -5441,7 +5262,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {selectedProduct.name}
               </h2>
               <p className="text-xs text-slate-450 dark:text-slate-500 font-bold block mt-1.5">
-                {selectedProduct.description || 'AC Sleeper (2+1)'} • ★ {selectedProduct.rating || 4.5} ({selectedProduct.reviews || 12520} Reviews)
+                {selectedProduct.description || 'AC Sleeper (2+1)'} â€¢ â˜… {selectedProduct.rating || 4.5} ({selectedProduct.reviews || 12520} Reviews)
               </p>
             </div>
 
@@ -5596,25 +5417,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 )}
                 {travelDetailsTab === 'Boarding Points' && (
                   <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
-                    <div>• Kempegowda Bus Stand (Majestic) - 09:00 PM</div>
-                    <div>• Madiwala (Near police station) - 09:30 PM</div>
-                    <div>• Electronic City (Toll Gate) - 09:50 PM</div>
+                    <div>â€¢ Kempegowda Bus Stand (Majestic) - 09:00 PM</div>
+                    <div>â€¢ Madiwala (Near police station) - 09:30 PM</div>
+                    <div>â€¢ Electronic City (Toll Gate) - 09:50 PM</div>
                   </div>
                 )}
                 {travelDetailsTab === 'Dropping Points' && (
                   <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
-                    <div>• Koyambedu Bus Stand - 05:30 AM</div>
-                    <div>• Poonamallee Bypass - 05:00 AM</div>
-                    <div>• Guindy (Near metro) - 05:45 AM</div>
+                    <div>â€¢ Koyambedu Bus Stand - 05:30 AM</div>
+                    <div>â€¢ Poonamallee Bypass - 05:00 AM</div>
+                    <div>â€¢ Guindy (Near metro) - 05:45 AM</div>
                   </div>
                 )}
                 {travelDetailsTab === 'Ratings & Reviews' && (
                   <div className="space-y-3 text-xs">
-                    <div className="font-black text-slate-850 dark:text-white">Customer Feedback (★ 4.5/5 based on 12,520 reviews)</div>
+                    <div className="font-black text-slate-850 dark:text-white">Customer Feedback (â˜… 4.5/5 based on 12,520 reviews)</div>
                     <div className="border-t border-slate-105 dark:border-slate-850/60 pt-3 mt-2">
                       <div className="flex justify-between font-extrabold text-[11px]">
                         <span>Suresh K.</span>
-                        <span className="text-amber-500">★ 5.0</span>
+                        <span className="text-amber-500">â˜… 5.0</span>
                       </div>
                       <p className="text-slate-550 mt-1">Excellent travel experience. On time departure and very comfortable sleeper berth. Clean blankets were provided.</p>
                     </div>
@@ -5622,9 +5443,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 )}
                 {travelDetailsTab === 'Policies' && (
                   <div className="space-y-3 text-xs font-semibold text-slate-700 dark:text-slate-355">
-                    <div>• Cancellation Policy: Free cancellation up to 24 hours before departure.</div>
-                    <div>• Baggage Policy: 15kg checked luggage and 5kg hand baggage allowed.</div>
-                    <div>• Child Policy: Children above 3 years require a separate ticket.</div>
+                    <div>â€¢ Cancellation Policy: Free cancellation up to 24 hours before departure.</div>
+                    <div>â€¢ Baggage Policy: 15kg checked luggage and 5kg hand baggage allowed.</div>
+                    <div>â€¢ Child Policy: Children above 3 years require a separate ticket.</div>
                   </div>
                 )}
               </div>
@@ -5635,8 +5456,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="text-left w-full md:w-auto">
                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Ticket Price</span>
                 <div className="flex items-baseline gap-2 mt-1.5">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white">₹{(selectedProduct.price || 1200).toLocaleString()}</span>
-                  <span className="text-xs text-slate-400 line-through">₹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">â‚¹{(selectedProduct.price || 1200).toLocaleString()}</span>
+                  <span className="text-xs text-slate-400 line-through">â‚¹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
                 </div>
                 <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 mt-1 block leading-none">
                   {selectedProduct.discount || '20% OFF Member Special'}
@@ -5679,6 +5500,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
     if (selectedProduct.subNavbarCategory === 'Travel' || selectedProduct.tag === 'Travel') {
       return renderTravelDetailsPage();
+    }
+    if (
+      selectedProduct.category === 'Gym Membership' ||
+      selectedProduct.category === 'Gyms' ||
+      selectedProduct.category === 'Gym' ||
+      selectedProduct.tag === 'Gym' ||
+      (selectedProduct.name && selectedProduct.name.toLowerCase().includes('gym')) ||
+      (selectedProduct.name && selectedProduct.name.toLowerCase().includes('cult fitness'))
+    ) {
+      return renderServiceDetailsPage();
     }
 
     // Price tier calculations
@@ -6003,7 +5834,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="flex justify-center gap-4 mt-6">
               <button onClick={() => setIs360ModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
                 <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>
-                <span>View in 360°</span>
+                <span>View in 360Â°</span>
               </button>
               <button onClick={() => setIsArModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
                 <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
@@ -6082,7 +5913,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <div className="bg-emerald-50/30 dark:bg-slate-900 border border-emerald-100/40 dark:border-slate-800 rounded-xl px-4 py-2.5 text-left flex items-start gap-3 shadow-2xs max-w-[200px]">
                   <div className="space-y-0.5">
                     <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold block uppercase leading-none">EMI starts from</span>
-                    <span className="text-sm font-black text-emerald-650 dark:text-emerald-400 block">₹{Math.round(pGold / 20).toLocaleString()}/month</span>
+                    <span className="text-sm font-black text-emerald-650 dark:text-emerald-400 block">â‚¹{Math.round(pGold / 20).toLocaleString()}/month</span>
                     <button onClick={() => triggerNotification("Opening EMI payment plans options...")} className="text-[9.5px] text-blue-500 hover:underline bg-transparent border-none cursor-pointer p-0 font-bold flex items-center gap-0.5">
                       <span>View EMI Plans</span>
                       <span>&gt;</span>
@@ -6094,12 +5925,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               {/* Clean Price Display */}
               <div className="flex items-baseline gap-3 mb-5 mt-1">
                 <span className="text-2xl font-black text-slate-900 dark:text-white">
-                  ₹{pGold.toLocaleString()}
+                  â‚¹{pGold.toLocaleString()}
                 </span>
                 {pRegular > pGold && (
                   <>
                     <span className="text-xs text-slate-400 line-through">
-                      ₹{pRegular.toLocaleString()}
+                      â‚¹{pRegular.toLocaleString()}
                     </span>
                     <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-sm">
                       {selectedProduct.discount || `${Math.round((1 - pGold/pRegular) * 100)}% off`}
@@ -6236,8 +6067,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             {[
               { title: "500", sub: "Reward Points", detail: "On This Purchase", icon: Award, bg: "bg-amber-50/50 dark:bg-amber-450/5", iconCol: "text-amber-500" },
-              { title: "₹2,000", sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
-              { title: "₹500", sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
+              { title: "â‚¹2,000", sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
+              { title: "â‚¹500", sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
               { title: "1 Year", sub: "Extended Warranty", detail: "By Connect", icon: ShieldCheck, bg: "bg-emerald-50/50 dark:bg-emerald-450/5", iconCol: "text-emerald-500" },
               { title: "Priority", sub: "Customer Support", detail: "24/7 VIP Support", icon: LifeBuoy, bg: "bg-cyan-50/50 dark:bg-cyan-450/5", iconCol: "text-cyan-500" },
               { title: "Free", sub: "Express Delivery", detail: "2-3 Days Delivery", icon: Truck, bg: "bg-indigo-50/50 dark:bg-indigo-450/5", iconCol: "text-indigo-500" },
@@ -6265,12 +6096,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             {[
-              { name: "zomato", disc: "10% OFF", cap: "Up to ₹100", app: "On All Orders", logoCol: "text-[#E23744]", logoBg: "bg-red-50/20", border: "border-red-100 dark:border-red-950/20" },
-              { name: "MARRIOTT BONVOY", disc: "15% OFF", cap: "Up to ₹2,000", app: "On Hotel Bookings", logoCol: "text-slate-800 dark:text-slate-200 font-serif tracking-widest text-[9px] uppercase", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
-              { name: "make my trip", disc: "5% OFF", cap: "Up to ₹1,500", app: "On Flight Bookings", logoCol: "text-[#008ECF] italic font-black", logoBg: "bg-blue-50/20", border: "border-blue-100 dark:border-blue-950/20" },
-              { name: "bb bigbasket", disc: "10% OFF", cap: "Up to ₹500", app: "On Groceries", logoCol: "text-[#84c225] font-black tracking-tighter", logoBg: "bg-green-50/20", border: "border-green-100 dark:border-green-950/20" },
-              { name: "TRENDS", disc: "10% OFF", cap: "Up to ₹700", app: "On Fashion", logoCol: "text-slate-800 dark:text-slate-200 font-extrabold tracking-widest", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
-              { name: "netmeds", disc: "15% OFF", cap: "Up to ₹300", app: "On Medicines", logoCol: "text-[#00A4A6] font-black", logoBg: "bg-cyan-50/20", border: "border-cyan-100 dark:border-cyan-950/20" }
+              { name: "zomato", disc: "10% OFF", cap: "Up to â‚¹100", app: "On All Orders", logoCol: "text-[#E23744]", logoBg: "bg-red-50/20", border: "border-red-100 dark:border-red-950/20" },
+              { name: "MARRIOTT BONVOY", disc: "15% OFF", cap: "Up to â‚¹2,000", app: "On Hotel Bookings", logoCol: "text-slate-800 dark:text-slate-200 font-serif tracking-widest text-[9px] uppercase", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
+              { name: "make my trip", disc: "5% OFF", cap: "Up to â‚¹1,500", app: "On Flight Bookings", logoCol: "text-[#008ECF] italic font-black", logoBg: "bg-blue-50/20", border: "border-blue-100 dark:border-blue-950/20" },
+              { name: "bb bigbasket", disc: "10% OFF", cap: "Up to â‚¹500", app: "On Groceries", logoCol: "text-[#84c225] font-black tracking-tighter", logoBg: "bg-green-50/20", border: "border-green-100 dark:border-green-950/20" },
+              { name: "TRENDS", disc: "10% OFF", cap: "Up to â‚¹700", app: "On Fashion", logoCol: "text-slate-800 dark:text-slate-200 font-extrabold tracking-widest", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
+              { name: "netmeds", disc: "15% OFF", cap: "Up to â‚¹300", app: "On Medicines", logoCol: "text-[#00A4A6] font-black", logoBg: "bg-cyan-50/20", border: "border-cyan-100 dark:border-cyan-950/20" }
             ].map((p, idx) => (
               <div key={idx} className={`bg-white dark:bg-[#0b1329] border ${p.border} rounded-2xl p-4 text-center flex flex-col justify-between transition-all hover:-translate-y-0.5 shadow-2xs`}>
                 <div className={`h-8 flex items-center justify-center rounded-lg ${p.logoBg} mb-3.5 font-black text-xs px-2`}>
@@ -6324,7 +6155,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 leading-normal line-clamp-2">{e.desc}</p>
                   </div>
                   <button className="text-[9px] font-black uppercase text-amber-500 group-hover:text-amber-600 dark:group-hover:text-amber-400 mt-4.5 flex items-center gap-1 transition-colors bg-transparent border-none cursor-pointer">
-                    Explore Offers →
+                    Explore Offers â†’
                   </button>
                 </div>
               );
@@ -6339,9 +6170,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
               {[
                 { label: "Total Reward Points", val: "2,540", icon: Award, color: "text-amber-500" },
-                { label: "Cashback Earned", val: "₹12,450", icon: Wallet, color: "text-emerald-500" },
-                { label: "Referral Earnings", val: "₹1,250", icon: UserCheck, color: "text-blue-500" },
-                { label: "Total Savings Till Now", val: "₹25,600", icon: Gift, color: "text-rose-500" }
+                { label: "Cashback Earned", val: "â‚¹12,450", icon: Wallet, color: "text-emerald-500" },
+                { label: "Referral Earnings", val: "â‚¹1,250", icon: UserCheck, color: "text-blue-500" },
+                { label: "Total Savings Till Now", val: "â‚¹25,600", icon: Gift, color: "text-rose-500" }
               ].map((r, idx) => {
                 const Icon = r.icon;
                 return (
@@ -6427,8 +6258,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div>
                         <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{prod.name}</h4>
                         <div className="flex items-baseline gap-1.5 mt-2">
-                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(prod.price || 0).toLocaleString()}</span>
-                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(prod.originalPrice || prod.price || 0).toLocaleString()}</span>
+                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">â‚¹{(prod.price || 0).toLocaleString()}</span>
+                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">â‚¹{(prod.originalPrice || prod.price || 0).toLocaleString()}</span>
                           <span className="text-[9.5px] text-[#f43397] font-black">{prod.discount}</span>
                         </div>
                       </div>
@@ -6568,7 +6399,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
                 <h4 className="text-lg font-bold text-slate-800">Order Placed Successfully!</h4>
                 <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-                  Your payment has been authorized, and items are now routing to shipping. Flat ₹50 discounts applied!
+                  Your payment has been authorized, and items are now routing to shipping. Flat â‚¹50 discounts applied!
                 </p>
               </div>
             ) : cart.length === 0 ? (
@@ -6588,8 +6419,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div>
                       <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-[#f43397]">₹{(item.price || 0).toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-400 line-through">₹{(item.originalPrice || item.price || 0).toLocaleString()}</span>
+                        <span className="text-xs font-extrabold text-[#f43397]">â‚¹{(item.price || 0).toLocaleString()}</span>
+                        <span className="text-[10px] text-slate-400 line-through">â‚¹{(item.originalPrice || item.price || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -6609,7 +6440,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="space-y-2.5 mb-4 text-xs font-semibold">
                 <div className="flex justify-between text-slate-500">
                   <span>Subtotal:</span>
-                  <span className="font-bold text-slate-800">₹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
+                  <span className="font-bold text-slate-800">â‚¹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Shipping Fee:</span>
@@ -6617,12 +6448,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>1st Order Coupon:</span>
-                  <span className="text-emerald-600 font-bold">-₹50</span>
+                  <span className="text-emerald-600 font-bold">-â‚¹50</span>
                 </div>
                 <div className="border-t border-slate-100 pt-2.5 flex justify-between items-baseline text-slate-800">
                   <span className="text-sm font-bold">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
-                    ₹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0), 0) - 50).toLocaleString()}
+                    â‚¹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0), 0) - 50).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -6683,12 +6514,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div className="text-left">
                       <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
                       <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">₹{(item.price || 0).toLocaleString()}</span>
+                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">â‚¹{(item.price || 0).toLocaleString()}</span>
                         <span className="text-[10px] text-[#f43397] font-semibold">{item.discount}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                        <span>★ {item.rating}</span>
-                        <span>•</span>
+                        <span>â˜… {item.rating}</span>
+                        <span>â€¢</span>
                         <span>{item.delivery}</span>
                       </div>
                     </div>
@@ -6828,7 +6659,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             <h4 className="font-bold">Order #{trackingOrder.order_number}</h4>
                             <p className="text-slate-500 dark:text-slate-400">Address: <strong>{trackingOrder.customer_address}</strong></p>
                             <p className="text-slate-500 dark:text-slate-400">Items: <strong>{trackingOrder.product_details}</strong></p>
-                            <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">₹{trackingOrder.amount}</strong></p>
+                            <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">â‚¹{trackingOrder.amount}</strong></p>
                           </div>
                           
                           <div className="bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1">
@@ -6882,7 +6713,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
                                       : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
                                   }`}>
-                                    {isCompleted ? '✓' : idx + 1}
+                                    {isCompleted ? 'âœ“' : idx + 1}
                                   </div>
                                   <span className={`text-[8px] font-bold uppercase transition-colors duration-350 ${
                                     isActive ? 'text-[#f43397]' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
@@ -6902,7 +6733,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <img src={trackingPartner.photo} className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-800 bg-white" />
                               <div className="text-left">
                                 <h4 className="text-xs font-bold text-slate-850 dark:text-white leading-tight">{trackingPartner.name}</h4>
-                                <span className="text-[10px] text-slate-500 block mt-0.5">{trackingPartner.vehicle_type} • {trackingPartner.vehicle_number}</span>
+                                <span className="text-[10px] text-slate-500 block mt-0.5">{trackingPartner.vehicle_type} â€¢ {trackingPartner.vehicle_number}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -6988,7 +6819,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <div key={ord.id} className="border border-slate-200 dark:border-slate-800/60 rounded-xl p-4 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 text-slate-800 dark:text-white">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 rounded-xl bg-amber-400/15 border border-amber-400/20 flex items-center justify-center text-amber-500 text-xs">
-                                    🛍️
+                                    ðŸ›ï¸
                                   </div>
                                   <div className="text-left">
                                     <h4 className="text-xs font-bold text-slate-800 dark:text-white line-clamp-1">{ord.product_details}</h4>
@@ -6997,14 +6828,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-1.5 shrink-0">
-                                  <span className="text-xs font-extrabold text-slate-850 dark:text-white">₹{ord.amount}</span>
+                                  <span className="text-xs font-extrabold text-slate-850 dark:text-white">â‚¹{ord.amount}</span>
                                   <div className="flex gap-2 items-center">
                                     {!['Delivered', 'Cancelled'].includes(ord.status) && (
                                       <button
                                         onClick={() => setTrackingOrder(ord)}
                                         className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
                                       >
-                                        Track Live 🛰️
+                                        Track Live ðŸ›°ï¸
                                       </button>
                                     )}
                                     {['Delivered'].includes(ord.status) && (
@@ -7014,7 +6845,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                         }}
                                         className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer"
                                       >
-                                        Rate Partner ★
+                                        Rate Partner â˜…
                                       </button>
                                     )}
                                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
@@ -7218,7 +7049,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               </div>
 
               <div className="pt-4 border-t border-slate-100 dark:border-slate-850 text-[10px] text-center text-slate-400 font-semibold leading-none">
-                Connect Wallet Client v1.2.6 • Forge India Secure Node
+                Connect Wallet Client v1.2.6 â€¢ Forge India Secure Node
               </div>
             </div>
         </div>
@@ -7298,7 +7129,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <li>Flat 5% Off on all Products and Daily Needs</li>
                         <li>Standard priority order packaging & delivery</li>
                         <li>Earn 1.2x reward points on all transactions</li>
-                        <li>Free standard shipping on orders over ₹499</li>
+                        <li>Free standard shipping on orders over â‚¹499</li>
                       </ul>
                     </div>
                   </div>
@@ -7391,15 +7222,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       {(() => {
                         const isDoctor = activeScheduleModalItem.name?.startsWith('Dr.') || ['Hospital', 'Clinic', 'Cardiology', 'Pediatrics', 'Dentist', 'Homeopathy'].includes(activeScheduleModalItem.category);
                         if (activeScheduleModalItem.subNavbarCategory === 'Stay') {
-                          return 'Verified Host • 5+ Years Experience';
+                          return 'Verified Host â€¢ 5+ Years Experience';
                         }
                         if (activeScheduleModalItem.subNavbarCategory === 'Travel') {
-                          return 'Luxury Agent • 10+ Years Tours';
+                          return 'Luxury Agent â€¢ 10+ Years Tours';
                         }
                         if (isDoctor) {
-                          return 'MBBS, MD - Specialist • 12+ Years Experience';
+                          return 'MBBS, MD - Specialist â€¢ 12+ Years Experience';
                         }
-                        return 'Verified Partner • Premium Quality Guarantee';
+                        return 'Verified Partner â€¢ Premium Quality Guarantee';
                       })()}
                     </span>
 
@@ -7420,7 +7251,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div className="flex items-center justify-between text-xs font-medium border-t border-slate-50 dark:border-slate-850/30 pt-2.5">
                       <span className="text-slate-405 dark:text-slate-400">{terms.feeLabel}</span>
-                      <span className="text-slate-850 dark:text-white font-extrabold">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
+                      <span className="text-slate-850 dark:text-white font-extrabold">â‚¹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -7616,7 +7447,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <CreditCard className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee</span>
-                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
+                          <span className="font-black text-slate-850 dark:text-white text-sm">â‚¹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -7861,7 +7692,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                       <div className="flex items-center justify-between">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
-                        <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeBookNowModalItem.price || 0).toLocaleString()}</span>
+                        <span className="font-black text-slate-850 dark:text-white text-sm">â‚¹{(activeBookNowModalItem.price || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -7941,7 +7772,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Silver Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹4,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">â‚¹4,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
                       </div>
                       <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                         <li>5% off on products</li>
@@ -7975,7 +7806,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Gold Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹8,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">â‚¹8,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
                       </div>
                       <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                         <li>15% off Stays & 10% off Dining</li>
@@ -8022,7 +7853,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-slate-900 dark:text-white">Diamond Membership</h4>
-                      <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹20,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                      <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">â‚¹20,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
                     </div>
                     <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                       <li>Complimentary global airport VIP lounges</li>
