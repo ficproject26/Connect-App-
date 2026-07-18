@@ -240,6 +240,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [currentYear, setCurrentYear] = useState(2025);
   const [selectedModalDay, setSelectedModalDay] = useState(21);
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const [stayCheckInDate, setStayCheckInDate] = useState('2025-05-21');
+  const [stayCheckOutDate, setStayCheckOutDate] = useState('2025-05-22');
+  const [stayRoomsCount, setStayRoomsCount] = useState(1);
+  const [stayGuestsCount, setStayGuestsCount] = useState(2);
   const [favorites, setFavorites] = useState([]);
   const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
   const [previewMembershipTier, setPreviewMembershipTier] = useState(membershipTier || 'Gold Elite');
@@ -4853,8 +4857,413 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
+  const renderStayDetailsPage = () => {
+    if (!selectedProduct) return null;
+
+    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0
+      ? selectedProduct.images
+      : [selectedProduct.image];
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}, ${date.getFullYear()}`;
+    };
+
+    const getNightsCount = () => {
+      const start = new Date(stayCheckInDate);
+      const end = new Date(stayCheckOutDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
+      const diffTime = end.getTime() - start.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 ? diffDays : 1;
+    };
+
+    const roomTypes = [
+      {
+        id: 'deluxe',
+        name: 'Deluxe Room',
+        image: selectedProduct.image || '',
+        price: selectedProduct.price || 20000,
+        originalPrice: selectedProduct.originalPrice || Math.round((selectedProduct.price || 20000) * 1.25),
+        discount: selectedProduct.discount || '20% off',
+        amenities: ['Shower', 'King Bed', 'TV', 'Balcony', 'AC', 'Non-smoking'],
+        desc: 'Comfortable spacious room with beautiful city/garden views.'
+      },
+      {
+        id: 'executive',
+        name: 'Executive Room',
+        image: (selectedProduct.images && selectedProduct.images[1]) || selectedProduct.image || '',
+        price: Math.round((selectedProduct.price || 20000) * 1.5),
+        originalPrice: Math.round((selectedProduct.originalPrice || Math.round((selectedProduct.price || 20000) * 1.25)) * 1.5),
+        discount: '25% off',
+        amenities: ['Bathtub', 'Queen Bed', 'Mini Bar', 'Work Desk', 'AC', 'High-speed Wifi'],
+        desc: 'Sophisticated environment tailored for business executives.'
+      },
+      {
+        id: 'suite',
+        name: 'Suite Room',
+        image: (selectedProduct.images && selectedProduct.images[2]) || selectedProduct.image || '',
+        price: Math.round((selectedProduct.price || 20000) * 2.0),
+        originalPrice: Math.round((selectedProduct.originalPrice || Math.round((selectedProduct.price || 20000) * 1.25)) * 2.0),
+        discount: '30% off',
+        amenities: ['Living Room', 'King Bed', 'Jacuzzi', 'Dining Area', 'AC', 'Panoramic View'],
+        desc: 'Ultimate luxury with separate lounge area and premium services.'
+      }
+    ];
+
+    const isFavorited = favorites.includes(selectedProduct.id);
+
+    return (
+      <div className="space-y-8 pb-16 text-slate-800 dark:text-slate-200">
+        {/* Breadcrumbs */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
+            <span>&gt;</span>
+            <button onClick={() => { 
+              setSelectedProduct(null); 
+              setActiveTab('Stay'); 
+              setSelectedSubNavbarCategory('Stay'); 
+            }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Stay</button>
+            <span>&gt;</span>
+            <span className="hover:text-amber-500 transition-colors">{selectedProduct.category}</span>
+            <span>&gt;</span>
+            <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => triggerNotification("Hotel link copied to clipboard!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span>Share</span>
+            </button>
+            <span className="text-slate-200 dark:text-slate-800">|</span>
+            <button onClick={() => triggerNotification("Added to comparison drawer!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              <span>Compare</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Main Hotel Layout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs">
+          
+          {/* Left Column: Gallery, Brand Details, Facilities */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            <div className="flex gap-4">
+              {/* Thumbnails list */}
+              <div className="flex flex-col gap-2.5 shrink-0 select-none">
+                {thumbnails.slice(0, 5).map((thumb, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => { setActiveProductImage(thumb); setActiveThumbnailIndex(idx); }}
+                    className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
+                      activeThumbnailIndex === idx 
+                        ? 'border-amber-400 shadow-md scale-102' 
+                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-350'
+                    }`}
+                  >
+                    <img src={thumb} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+                {thumbnails.length > 5 && (
+                  <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                    <span>+{thumbnails.length - 5}</span>
+                    <span>More</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Main Large Display */}
+              <div className="relative flex-grow aspect-[4/3] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-850 overflow-hidden flex items-center justify-center">
+                <img 
+                  src={activeProductImage || selectedProduct.image} 
+                  alt={selectedProduct.name} 
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Heart wishlist button */}
+                <button 
+                  onClick={() => toggleFavorite(selectedProduct.id)} 
+                  className="absolute right-4 top-4 w-9.5 h-9.5 rounded-full bg-white/95 dark:bg-[#0b1329] text-slate-455 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200/60 dark:border-slate-800/60 transition-transform hover:scale-105"
+                >
+                  <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Media Helpers underneath */}
+            <div className="flex justify-center gap-4">
+              <button onClick={() => setIs360ModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
+                <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>
+                <span>View in 360°</span>
+              </button>
+              <button onClick={() => setIsArModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
+                <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <span>AR View</span>
+              </button>
+            </div>
+
+            {/* Hotel Brand Details Container */}
+            <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4.5 flex gap-4 text-left items-start">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  Hotel {selectedProduct.name}
+                  <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500 text-white dark:text-blue-500" />
+                </h3>
+                <span className="text-xs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block mt-0.5">{selectedProduct.category || 'Luxury Hotels'}</span>
+                <p className="text-xs text-slate-600 dark:text-slate-355 leading-relaxed font-medium mt-2">
+                  {selectedProduct.description || "Experience unmatched comfort and top-tier luxury. Strategically located with curated facilities, premium housekeeping service, and custom room features designed to ensure a perfect stay experience."}
+                </p>
+              </div>
+            </div>
+
+            {/* Facilities Icon Grid */}
+            <div className="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-5 text-left">
+              <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-4">
+                Facilities
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Pool', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>, bg: 'bg-blue-500/10 text-blue-500' },
+                  { label: 'Gym', icon: (cn) => <Activity className={cn} />, bg: 'bg-rose-500/10 text-rose-500' },
+                  { label: 'Free Wifi', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>, bg: 'bg-emerald-500/10 text-emerald-500' },
+                  { label: 'Dining', icon: (cn) => <Utensils className={cn} />, bg: 'bg-amber-500/10 text-amber-500' },
+                  { label: 'Conference', icon: (cn) => <Building2 className={cn} />, bg: 'bg-indigo-500/10 text-indigo-500' },
+                  { label: 'Bar', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707" /></svg>, bg: 'bg-purple-500/10 text-purple-500' },
+                  { label: 'Room Service', icon: (cn) => <Clock className={cn} />, bg: 'bg-teal-500/10 text-teal-505' },
+                  { label: 'AC', icon: (cn) => <Wind className={cn} />, bg: 'bg-sky-500/10 text-sky-500' }
+                ].map((fac, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl shadow-3xs">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${fac.bg}`}>
+                      {fac.icon("w-4 h-4")}
+                    </div>
+                    <span className="text-[10px] font-extrabold text-slate-700 dark:text-slate-355">{fac.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Ratings and Verification */}
+            <div className="flex items-center gap-2.5 flex-wrap px-1">
+              <div className="flex items-center text-amber-400">
+                <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 ml-1">
+                  {selectedProduct.rating || '4.5'}
+                </span>
+                <span className="text-[11.5px] text-slate-455 dark:text-slate-500 font-bold ml-1">
+                  / 5 ({selectedProduct.reviews || 120} Reviews)
+                </span>
+              </div>
+              <span className="text-slate-205 dark:text-slate-800">|</span>
+              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-blue-650 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 px-2.5 py-0.5 rounded-full">
+                Verified Host
+              </span>
+              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-650 dark:text-emerald-455 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">
+                Gym & Services
+              </span>
+            </div>
+          </div>
+
+          {/* Right Column: Date Selectors & Select Room Type list */}
+          <div className="lg:col-span-7 flex flex-col gap-6 text-left">
+            {/* Top Protection Banner */}
+            <div className="flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/15 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl px-5 py-3 shadow-3xs">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-extrabold text-xs">
+                <ShieldCheck className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Refund Protected & Best Price Guaranteed</span>
+              </div>
+              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 uppercase tracking-widest">Connect Protected</span>
+            </div>
+
+            {/* Room ID/Hotel Name */}
+            <div>
+              <span className="text-xs font-bold text-amber-500 uppercase tracking-wider block">Currently Viewing</span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+                Hotel {selectedProduct.name} - Luxury Stays
+              </h2>
+            </div>
+
+            {/* Booking config selectors */}
+            <div className="bg-slate-50/30 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+              <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1.5">
+                Select Dates & Guests
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Check-in */}
+                <div className="relative cursor-pointer bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-col text-left hover:border-slate-350 transition-colors">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Check-in</span>
+                  <span className="text-[13px] font-black text-slate-800 dark:text-white mt-1 leading-none">{formatDate(stayCheckInDate)}</span>
+                  <input 
+                    type="date" 
+                    value={stayCheckInDate} 
+                    onChange={(e) => setStayCheckInDate(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                  />
+                </div>
+                
+                {/* Check-out */}
+                <div className="relative cursor-pointer bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-col text-left hover:border-slate-350 transition-colors">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Check-out</span>
+                  <span className="text-[13px] font-black text-slate-800 dark:text-white mt-1 leading-none">{formatDate(stayCheckOutDate)}</span>
+                  <input 
+                    type="date" 
+                    value={stayCheckOutDate} 
+                    onChange={(e) => setStayCheckOutDate(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                  />
+                </div>
+
+                {/* Nights count */}
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 flex flex-col text-left justify-center">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Duration</span>
+                  <span className="text-[13px] font-black text-slate-800 dark:text-white mt-1 leading-none">{getNightsCount()} {getNightsCount() === 1 ? 'Night' : 'Nights'}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Rooms counter */}
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center">
+                  <div className="text-left">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Rooms</span>
+                    <span className="text-[13px] font-black text-slate-850 dark:text-white block mt-0.5">{stayRoomsCount} {stayRoomsCount === 1 ? 'Room' : 'Rooms'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button 
+                      onClick={() => setStayRoomsCount(prev => Math.max(1, prev - 1))}
+                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
+                    >
+                      -
+                    </button>
+                    <button 
+                      onClick={() => setStayRoomsCount(prev => prev + 1)}
+                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Guests counter */}
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center">
+                  <div className="text-left">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Guests</span>
+                    <span className="text-[13px] font-black text-slate-850 dark:text-white block mt-0.5">{stayGuestsCount} {stayGuestsCount === 1 ? 'Guest' : 'Guests'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button 
+                      onClick={() => setStayGuestsCount(prev => Math.max(1, prev - 1))}
+                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
+                    >
+                      -
+                    </button>
+                    <button 
+                      onClick={() => setStayGuestsCount(prev => prev + 1)}
+                      className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer select-none"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Discount Notification banner */}
+              <div className="bg-blue-500/5 dark:bg-blue-950/10 border border-blue-500/10 dark:border-blue-900/20 rounded-xl px-4 py-2.5 flex items-center gap-2 text-[11px] text-blue-650 dark:text-blue-400 font-black">
+                <Percent className="w-4 h-4 shrink-0" />
+                <span>Awesome choice! Connect member pricing automatically saves you 10% on room rates.</span>
+              </div>
+            </div>
+
+            {/* SELECT ROOM TYPE List section */}
+            <div className="space-y-4">
+              <h4 className="text-[11.5px] font-black text-slate-850 dark:text-white uppercase tracking-wider leading-none mb-1 text-left">
+                Select Room Type
+              </h4>
+              
+              <div className="space-y-3.5">
+                {roomTypes.map((room) => (
+                  <div 
+                    key={room.id}
+                    className="flex flex-col md:flex-row gap-4 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-3xs"
+                  >
+                    {/* Room Thumbnail */}
+                    <div className="w-full md:w-36 h-24 rounded-xl overflow-hidden shrink-0 border border-slate-200/50 dark:border-slate-800 bg-slate-100">
+                      <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+                    </div>
+
+                    {/* Room details */}
+                    <div className="flex-grow flex flex-col justify-between text-left">
+                      <div>
+                        <h4 className="text-sm font-black text-slate-850 dark:text-white leading-tight">{room.name}</h4>
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-450 mt-1 line-clamp-1">{room.desc}</p>
+                        
+                        {/* Amenities checklist chips */}
+                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                          {room.amenities.map((am, aIdx) => (
+                            <span 
+                              key={aIdx} 
+                              className="text-[9px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-850 border border-slate-200/40 dark:border-slate-750/30 px-2 py-0.5 rounded-md flex items-center gap-0.5 leading-none"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              {am}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price and booking action */}
+                    <div className="flex md:flex-col justify-between md:justify-center items-center md:items-end gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-200/60 dark:border-slate-800/80 pt-3 md:pt-0 md:pl-5">
+                      <div className="text-left md:text-right">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Rate per night</span>
+                        <div className="flex items-baseline gap-1 mt-1.5">
+                          <span className="text-[17px] font-black text-slate-850 dark:text-white">₹{room.price.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400 line-through">₹{room.originalPrice.toLocaleString()}</span>
+                        </div>
+                        <span className="text-[9.5px] font-bold text-emerald-600 dark:text-emerald-455 mt-0.5 block leading-none">{room.discount}</span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setActiveBookNowModalItem({
+                            ...selectedProduct,
+                            name: `${selectedProduct.name} - ${room.name}`,
+                            price: room.price
+                          });
+                          setSelectedModalDate(formatDate(stayCheckInDate));
+                          setSelectedModalTime('12:00 PM');
+                          setSelectedModalType(room.name);
+                          setSelectedTimeOfDayTab('Morning');
+                        }}
+                        className="px-5 py-2.5 bg-blue-650 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-3xs cursor-pointer border-none flex items-center justify-center gap-1.5 h-10 select-none"
+                      >
+                        <BedDouble className="w-3.5 h-3.5" />
+                        <span>Book Room</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
   const renderProductDetailsPage = () => {
     if (!selectedProduct) return null;
+
+    if (selectedProduct.subNavbarCategory === 'Stay' || selectedProduct.tag === 'Stay') {
+      return renderStayDetailsPage();
+    }
 
     // Price tier calculations
     const pGold = selectedProduct.price;
