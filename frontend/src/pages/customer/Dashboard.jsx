@@ -117,7 +117,7 @@ const getModalTerms = (item) => {
   
   if (isStay) {
     return {
-      title: "Select Room & Dates",
+      title: 'Select Room & Dates',
       label: "Host",
       category: item.category || "Hotel",
       type1: "Deluxe Suite",
@@ -129,7 +129,7 @@ const getModalTerms = (item) => {
   }
   if (isTravel) {
     return {
-      title: "Select Package & Date",
+      title: 'Select Package & Date',
       label: "Agent",
       category: item.category || "Travel Tour",
       type1: "Private Tour",
@@ -141,7 +141,7 @@ const getModalTerms = (item) => {
   }
   // Default: Services/Hospitals
   return {
-    title: "Schedule Appointment",
+    title: 'Schedule Appointment',
     label: "Doctor",
     category: item.category || "Specialist",
     type1: "Video Consultation",
@@ -1109,327 +1109,327 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       items: ['Smartphones', 'Tablets', 'Laptops', 'Desktop Computers', 'Smart Watches', 'Headphones', 'Earbuds', 'Speakers', 'Cameras', 'Printers', 'Computer Accessories']
     },
     'IT & Office': {
-      title: 'ðŸ–¥ IT & Office Equipment',
+      title: 'IT & Office Equipment',
       items: ['Monitors', 'Keyboards', 'Mouse', 'Webcams', 'Routers', 'Networking Devices', 'Storage Devices', 'Office Printers', 'Projectors', 'UPS & Power Backup']
     },
     'Home Appliances': {
-      title: 'ðŸ  Home Appliances',
+      title: 'Home Appliances',
       items: ['Refrigerators', 'Washing Machines', 'Air Conditioners', 'Televisions', 'Microwave Ovens', 'Water Purifiers', 'Vacuum Cleaners', 'Air Coolers', 'Fans', 'Geysers']
     },
     'Furniture': {
-      title: 'ðŸ›‹ Furniture',
+      title: 'Furniture',
       items: ['Sofas', 'Dining Tables', 'Beds', 'Mattresses', 'Wardrobes', 'Office Chairs', 'Office Tables', 'Study Tables', 'TV Units', 'Shoe Racks']
     },
     'Fashion': {
-      title: 'ðŸ‘” Fashion & Lifestyle',
+      title: 'Fashion & Lifestyle',
       items: ['Shirts', 'T-Shirts', 'Jeans', 'Watches', 'Accessories', 'Sarees', 'Kurtis', 'Dresses', 'Footwear', 'Handbags', 'Jewelry', 'Kids Clothing', 'School Accessories', 'Toys']
     },
     'Beauty': {
-      title: 'ðŸ’„ Beauty & Personal Care',
+      title: 'Beauty & Personal Care',
       items: ['Skincare', 'Haircare', 'Cosmetics', 'Perfumes', 'Grooming Products', 'Wellness Products']
     },
     'Baby Care': {
-      title: 'ðŸ¼ Baby Products',
+      title: 'Baby Products',
       items: ['Baby Food', 'Diapers', 'Baby Clothing', 'Baby Toys', 'Baby Care Products', 'Baby Accessories']
     },
     'Sports & Fitness': {
-      title: 'ðŸ‹ Sports & Fitness',
+      title: 'Sports & Fitness',
       items: ['Gym Equipment', 'Yoga Accessories', 'Sports Wear', 'Sports Equipment', 'Fitness Trackers', 'Cycling Accessories']
     },
     'Books': {
-      title: 'ðŸ“š Books & Stationery',
+      title: 'Books & Stationery',
       items: ['Academic Books', 'Story Books', 'Notebooks', 'Office Stationery', 'Art Supplies', 'Educational Materials']
     },
     'Gaming': {
-      title: 'ðŸŽ® Gaming & Entertainment',
+      title: 'Gaming & Entertainment',
       items: ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs']
     },
     'Automobile': {
-      title: 'ðŸš— Automobile Products',
+      title: 'Automobile Products',
       items: ['Car Accessories', 'Bike Accessories', 'Tyres', 'Vehicle Care Products', 'Safety Equipment', 'GPS Devices']
     },
     'Home & Kitchen': {
-      title: 'ðŸ¡ Home & Kitchen',
+      title: 'Home & Kitchen',
       items: ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor', 'Lighting Products']
     },
     'Pet Care': {
-      title: 'ðŸ¶ Pet Products',
+      title: 'Pet Products',
       items: ['Pet Food', 'Pet Toys', 'Pet Accessories', 'Pet Grooming Products', 'Pet Healthcare']
     },
     'Gardening': {
-      title: 'ðŸŒ± Gardening & Outdoor',
+      title: 'Gardening & Outdoor',
       items: ['Plants', 'Gardening Tools', 'Outdoor Furniture', 'Seeds', 'Fertilizers']
     },
     'Healthcare': {
-      title: 'ðŸ¥ Healthcare Products',
+      title: 'Healthcare Products',
       items: ['Medical Equipment', 'Health Monitoring Devices', 'Wellness Products', 'Orthopedic Products', 'Personal Health Devices']
     },
     'Business Products': {
-      title: 'ðŸ›  Industrial & Business Products',
+      title: 'Industrial & Business Products',
       items: ['Safety Equipment', 'Tools & Machinery', 'Office Supplies', 'Packaging Materials', 'Business Equipment']
     }
   };
 
   const dailyNeedsMegaMenuData = {
     'Grocery': {
-      title: 'ðŸ¥¬ Grocery & Essentials',
+      title: 'Grocery & Essentials',
       items: ['Rice', 'Wheat', 'Flour', 'Rava', 'Pulses', 'Dal', 'Sugar', 'Salt', 'Cooking Oil', 'Spices', 'Biscuits', 'Snacks', 'Noodles', 'Breakfast Cereals', 'Ready-to-Eat Foods', 'Dry Fruits']
     },
     'Fruits & Vegetables': {
-      title: 'ðŸŽ Fruits & Vegetables',
+      title: 'Fruits & Vegetables',
       items: ['Fresh Fruits', 'Apple', 'Banana', 'Orange', 'Mango', 'Grapes', 'Pomegranate', 'Fresh Vegetables', 'Onion', 'Tomato', 'Potato', 'Carrot', 'Cabbage', 'Green Vegetables']
     },
     'Dairy': {
-      title: 'ðŸ¥› Dairy Products',
+      title: 'Dairy Products',
       items: ['Milk', 'Curd', 'Butter', 'Ghee', 'Cheese', 'Paneer', 'Yogurt', 'Ice Cream', 'Flavored Milk']
     },
     'Water & Beverages': {
-      title: 'ðŸ’§ Water & Beverages',
+      title: 'Water & Beverages',
       items: ['Drinking Water', 'Water Cans', 'Mineral Water', 'RO Water Delivery', 'Beverages', 'Tea', 'Coffee', 'Juices', 'Soft Drinks', 'Energy Drinks', 'Health Drinks']
     },
     'Household Essentials': {
-      title: 'ðŸ  Household Essentials',
+      title: 'Household Essentials',
       items: ['Cleaning Products', 'Floor Cleaner', 'Toilet Cleaner', 'Glass Cleaner', 'Disinfectants', 'Dishwash Liquid', 'Scrub Pads', 'Aluminum Foil', 'Storage Containers', 'Buckets', 'Mops', 'Dustbins', 'Cloth Drying Stands']
     },
     'Personal Care': {
-      title: 'ðŸ§¼ Personal Care',
+      title: 'Personal Care',
       items: ['Soap', 'Body Wash', 'Shampoo', 'Conditioner', 'Face Wash', 'Razor', 'Trimmer', 'Hair Oil', 'Deodorants', 'Perfumes', 'Toothpaste', 'Toothbrush', 'Mouthwash']
     },
     'Baby Care': {
-      title: 'ðŸ‘¶ Baby Care',
+      title: 'Baby Care',
       items: ['Baby Diapers', 'Baby Wipes', 'Baby Powder', 'Baby Soap', 'Baby Shampoo', 'Baby Food', 'Feeding Bottles']
     },
     'Pharmacy': {
-      title: 'ðŸ©º Pharmacy & Healthcare',
+      title: 'Pharmacy & Healthcare',
       items: ['Medicines', 'OTC Medicines', 'Pain Relief Products', 'Cold & Cough Remedies', 'Thermometer', 'BP Monitor', 'Glucose Monitor', 'First Aid Kit', 'Sanitizers', 'Face Masks']
     },
     'Pet Care': {
-      title: 'ðŸ¶ Pet Care',
+      title: 'Pet Care',
       items: ['Dog Food', 'Cat Food', 'Pet Shampoo', 'Pet Toys', 'Pet Accessories', 'Pet Medicines']
     },
     'Bakery': {
-      title: 'ðŸž Bakery & Fresh Foods',
+      title: 'Bakery & Fresh Foods',
       items: ['Bread', 'Cakes', 'Buns', 'Cookies', 'Fresh Bakery Items']
     },
     'Organic Products': {
-      title: 'ðŸŒ¿ Organic Products',
+      title: 'Organic Products',
       items: ['Organic Vegetables', 'Organic Fruits', 'Organic Rice', 'Organic Spices', 'Natural Health Products']
     },
     'Utility Products': {
-      title: 'ðŸ”‹ Daily Utility Products',
+      title: 'Daily Utility Products',
       items: ['Batteries', 'Power Banks', 'Chargers', 'LED Bulbs', 'Extension Boards', 'Inverters']
     }
   };
 
   const foodMegaMenuData = {
     'Restaurants': {
-      title: 'ðŸ½ Restaurants',
+      title: 'Restaurants',
       items: ['Fine Dining', 'Family Restaurants', 'Casual Dining', 'Luxury Restaurants', 'Rooftop Restaurants', 'Buffet Restaurants', 'Theme Restaurants']
     },
     'Fast Food': {
-      title: 'ðŸ• Fast Food',
+      title: 'Fast Food',
       items: ['Burgers', 'Pizza', 'Sandwiches', 'French Fries', 'Wraps', 'Hot Dogs', 'Fried Chicken']
     },
     'Cafes': {
-      title: 'â˜• Cafes & Coffee Shops',
+      title: 'Cafes & Coffee Shops',
       items: ['Coffee Shops', 'Tea Cafes', 'Dessert Cafes', 'Co-working Cafes', 'Juice Cafes', 'Premium Lounges']
     },
     'South Indian': {
-      title: 'ðŸœ South Indian',
+      title: 'South Indian',
       items: ['Idli', 'Dosa', 'Uttapam', 'Pongal', 'Vada', 'Meals', 'Biryani']
     },
     'North Indian': {
-      title: 'ðŸ› North Indian',
+      title: 'North Indian',
       items: ['Roti', 'Naan', 'Paneer Dishes', 'Dal Varieties', 'Tandoori Items', 'Thali Meals']
     },
     'Biryani': {
-      title: 'ðŸš Biryani & Rice',
+      title: 'Biryani & Rice',
       items: ['Chicken Biryani', 'Mutton Biryani', 'Veg Biryani', 'Dum Biryani', 'Fried Rice', 'Pulav']
     },
     'Healthy Food': {
-      title: 'ðŸ¥— Healthy Food',
+      title: 'Healthy Food',
       items: ['Salads', 'Diet Meals', 'Protein Meals', 'Organic Foods', 'Keto Foods', 'Vegan Foods']
     },
     'Bakery': {
-      title: 'ðŸ° Bakery & Desserts',
+      title: 'Bakery & Desserts',
       items: ['Cakes', 'Pastries', 'Cookies', 'Donuts', 'Brownies', 'Chocolates', 'Ice Cream']
     },
     'Beverages': {
-      title: 'ðŸ¹ Beverages',
+      title: 'Beverages',
       items: ['Tea', 'Coffee', 'Fresh Juice', 'Smoothies', 'Milkshakes', 'Soft Drinks', 'Energy Drinks']
     },
     'International Cuisine': {
-      title: 'ðŸŒ International Cuisine',
+      title: 'International Cuisine',
       items: ['Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'Korean', 'Continental']
     },
     'Non-Veg Specials': {
-      title: 'ðŸ— Non-Veg Specials',
+      title: 'Non-Veg Specials',
       items: ['Chicken', 'Mutton', 'Fish', 'Seafood', 'Grill Items', 'BBQ']
     },
     'Vegetarian Specials': {
-      title: 'ðŸ¥¦ Vegetarian Specials',
+      title: 'Vegetarian Specials',
       items: ['Pure Veg Restaurants', 'Jain Food', 'Organic Food', 'Traditional Meals']
     },
     'Home Food': {
-      title: 'ðŸ  Home Food',
+      title: 'Home Food',
       items: ['Homemade Meals', 'Tiffin Services', 'Daily Lunch Plans', 'Healthy Home Food']
     },
     'Catering': {
-      title: 'ðŸŽ‰ Catering Services',
+      title: 'Catering Services',
       items: ['Wedding Catering', 'Birthday Catering', 'Corporate Catering', 'Event Catering', 'Bulk Orders']
     },
     'Subscription Meals': {
-      title: 'ðŸ± Food Subscription',
+      title: 'Food Subscription',
       items: ['Daily Breakfast', 'Daily Lunch', 'Daily Dinner', 'Monthly Meal Plans', 'Office Meal Plans']
     },
     'Premium Dining': {
-      title: 'ðŸ¨ Premium Dining',
+      title: 'Premium Dining',
       items: ['5-Star Hotels', 'Luxury Dining', 'Chef Specials', 'Exclusive Member Restaurants']
     }
   };
 
   const stayMegaMenuData = {
     'Hotels': {
-      title: 'ðŸ¨ Hotels',
+      title: 'Hotels',
       items: ['Budget Hotels', 'Business Hotels', 'Premium Hotels', 'Luxury Hotels', '5-Star Hotels', 'Airport Hotels', 'Boutique Hotels']
     },
     'Resorts': {
-      title: 'ðŸŒ´ Resorts',
+      title: 'Resorts',
       items: ['Beach Resorts', 'Hill Station Resorts', 'Family Resorts', 'Luxury Resorts', 'Wellness Resorts', 'Eco Resorts', 'Adventure Resorts']
     },
     'Homestays': {
-      title: 'ðŸ¡ Homestays',
+      title: 'Homestays',
       items: ['Family Homestays', 'Village Homestays', 'Luxury Homestays', 'Farm Stays', 'Heritage Homestays']
     },
     'Service Apartments': {
-      title: 'ðŸ¢ Service Apartments',
+      title: 'Service Apartments',
       items: ['Daily Rental', 'Weekly Rental', 'Monthly Rental', 'Corporate Apartments', 'Family Apartments']
     },
     'Vacation Rentals': {
-      title: 'ðŸ  Vacation Rentals',
+      title: 'Vacation Rentals',
       items: ['Villas', 'Holiday Homes', 'Farm Houses', 'Private Houses', 'Weekend Getaways']
     },
     'Student Accommodation': {
-      title: 'ðŸ« Student Accommodation',
+      title: 'Student Accommodation',
       items: ['Boys Hostel', 'Girls Hostel', 'PG Accommodation', 'Student Apartments', 'College Hostels']
     },
     'Corporate Stay': {
-      title: 'ðŸ‘¨â€ðŸ’¼ Corporate Stay',
+      title: 'Corporate Stay',
       items: ['Business Hotels', 'Corporate Guest Houses', 'Executive Suites', 'Long-Term Business Stay']
     },
     'Camping & Adventure': {
-      title: 'ðŸ• Camping & Adventure Stay',
+      title: 'Camping & Adventure Stay',
       items: ['Tent Camping', 'Glamping', 'Forest Stay', 'Mountain Camps', 'Adventure Camps']
     },
     'Heritage Stay': {
-      title: 'ðŸ° Heritage Stay',
+      title: 'Heritage Stay',
       items: ['Palace Hotels', 'Heritage Resorts', 'Traditional Houses', 'Cultural Stays']
     },
     'Couple Stay': {
-      title: 'â¤ï¸ Couple & Honeymoon Stay',
+      title: 'Couple & Honeymoon Stay',
       items: ['Honeymoon Resorts', 'Romantic Hotels', 'Luxury Villas', 'Private Pool Villas']
     },
     'Family Stay': {
-      title: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦ Family Stay',
+      title: 'Family Stay',
       items: ['Family Hotels', 'Family Resorts', 'Kid-Friendly Resorts', 'Holiday Packages']
     },
     'Wellness Retreats': {
-      title: 'ðŸ§˜ Wellness & Retreat Stay',
+      title: 'Wellness & Retreat Stay',
       items: ['Yoga Retreats', 'Meditation Centers', 'Ayurveda Resorts', 'Wellness Retreats', 'Spa Resorts']
     },
     'Medical Stay': {
-      title: 'ðŸ¥ Medical Stay',
+      title: 'Medical Stay',
       items: ['Hospital Guest Houses', 'Medical Tourism Stay', 'Patient Accommodation', 'Caregiver Accommodation']
     },
     'Religious Stay': {
-      title: 'ðŸ•Œ Religious & Pilgrimage Stay',
+      title: 'Religious & Pilgrimage Stay',
       items: ['Temple Guest Houses', 'Pilgrimage Hotels', 'Spiritual Retreats', 'Religious Accommodation']
     },
     'Rental Accommodation': {
-      title: 'ðŸ¢ Rental Accommodation',
+      title: 'Rental Accommodation',
       items: ['Flats', 'Apartments', 'Independent Houses', 'Shared Accommodation', 'Rental Villas']
     },
     'International Stay': {
-      title: 'ðŸŒ International Stay',
+      title: 'International Stay',
       items: ['International Hotels', 'Global Resorts', 'Holiday Packages', 'Travel Accommodation']
     }
   };
 
   const travelMegaMenuData = {
     'Flight Booking': {
-      title: 'âœˆ Flight Booking',
+      title: 'Flight Booking',
       items: ['Domestic Flights', 'International Flights', 'One-Way Flights', 'Round Trip Flights', 'Multi-City Flights', 'Business Class', 'First Class', 'Charter Flights']
     },
     'Train Booking': {
-      title: 'ðŸš† Train Booking',
+      title: 'Train Booking',
       items: ['Express Trains', 'Superfast Trains', 'Premium Trains', 'Tatkal Booking', 'Tourist Trains', 'Luxury Trains']
     },
     'Bus Booking': {
-      title: 'ðŸšŒ Bus Booking',
+      title: 'Bus Booking',
       items: ['Government Buses', 'Private Buses', 'Sleeper Buses', 'AC Buses', 'Luxury Coaches', 'Volvo Services']
     },
     'Cab Services': {
-      title: 'ðŸš– Cab & Taxi Services',
+      title: 'Cab & Taxi Services',
       items: ['Local Taxi', 'Airport Transfer', 'Outstation Cabs', 'Luxury Cars', 'Chauffeur Services', 'Self-Drive Cars']
     },
     'Car Rental': {
-      title: 'ðŸš— Car Rental',
+      title: 'Car Rental',
       items: ['Self Drive Cars', 'Monthly Rental', 'Luxury Car Rental', 'Corporate Rental', 'Tourist Vehicles']
     },
     'Bike Rental': {
-      title: 'ðŸ Bike Rental',
+      title: 'Bike Rental',
       items: ['Scooters', 'Motorcycles', 'Premium Bikes', 'Adventure Bikes']
     },
     'Tour Packages': {
-      title: 'ðŸŒ Tour Packages',
+      title: 'Tour Packages',
       items: ['Domestic Tours', 'International Tours', 'Weekend Trips', 'Family Packages', 'Group Tours', 'Couple Packages']
     },
     'Honeymoon Packages': {
-      title: 'â¤ï¸ Honeymoon Packages',
+      title: 'Honeymoon Packages',
       items: ['Beach Destinations', 'Hill Stations', 'International Honeymoon', 'Luxury Honeymoon Resorts']
     },
     'Family Travel': {
-      title: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§ Family Travel',
+      title: 'Family Travel',
       items: ['Family Holiday Packages', 'Theme Parks', 'Resorts', 'Family Adventures']
     },
     'Corporate Travel': {
-      title: 'ðŸ¢ Corporate Travel',
+      title: 'Corporate Travel',
       items: ['Business Flights', 'Hotel Booking', 'Corporate Cab Services', 'Employee Travel Management']
     },
     'Adventure Travel': {
-      title: 'ðŸŽ’ Adventure Travel',
+      title: 'Adventure Travel',
       items: ['Trekking', 'Camping', 'Wildlife Safari', 'Mountain Climbing', 'Water Sports', 'Adventure Tours']
     },
     'Religious Travel': {
-      title: 'ðŸ•Œ Religious & Pilgrimage Travel',
+      title: 'Religious & Pilgrimage Travel',
       items: ['Temple Tours', 'Pilgrimage Packages', 'Spiritual Retreats', 'Holy City Tours']
     },
     'Holiday Packages': {
-      title: 'ðŸŒ´ Holiday Packages',
+      title: 'Holiday Packages',
       items: ['Beach Holidays', 'Hill Station Holidays', 'Island Vacations', 'Cruise Vacations']
     },
     'Cruise Travel': {
-      title: 'ðŸš¢ Cruise Travel',
+      title: 'Cruise Travel',
       items: ['Domestic Cruises', 'International Cruises', 'Luxury Cruises', 'Family Cruises']
     },
     'Visa Services': {
-      title: 'ðŸ›‚ Visa Services',
+      title: 'Visa Services',
       items: ['Tourist Visa', 'Business Visa', 'Student Visa', 'Work Visa', 'Visa Consultation']
     },
     'Passport Services': {
-      title: 'ðŸ›ƒ Passport Services',
+      title: 'Passport Services',
       items: ['New Passport', 'Renewal', 'Tatkal Passport', 'Passport Assistance']
     },
     'International Travel': {
-      title: 'ðŸŒŽ International Travel',
+      title: 'International Travel',
       items: ['International Flights', 'International Hotels', 'Global Packages', 'Travel Assistance']
     },
     'Travel Essentials': {
-      title: 'ðŸ§³ Travel Essentials',
+      title: 'Travel Essentials',
       items: ['Travel Insurance', 'Forex Services', 'SIM Cards', 'Travel Accessories', 'Airport Lounge Access']
     },
     'Emergency Travel': {
-      title: 'ðŸš‘ Emergency Travel Assistance',
+      title: 'Emergency Travel Assistance',
       items: ['Medical Emergency Travel', 'Emergency Ticket Booking', 'Travel Support', 'Insurance Claims']
     }
   };
@@ -1440,59 +1440,59 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       items: ['Hospitals', 'Clinics', 'Diagnostic Centers', 'Pharmacies', 'Dental Care', 'Eye Care', 'Ambulance Services', 'Home Nursing', 'Health Checkups', 'Telemedicine', 'Physiotherapy', 'Medical Equipment']
     },
     'Education': {
-      title: 'ðŸŽ“ Education Services',
+      title: 'Education Services',
       items: ['Schools', 'Colleges', 'Universities', 'Online Courses', 'Training Institutes', 'Skill Development', 'Computer Training', 'AI & IT Training', 'Language Classes', 'Competitive Exam Coaching', 'Certification Programs']
     },
     'Financial': {
-      title: 'ðŸ¦ Financial Services',
+      title: 'Financial Services',
       items: ['Banking Services', 'Personal Loans', 'Home Loans', 'Business Loans', 'Credit Cards', 'Investment Plans', 'Mutual Funds', 'Financial Consulting', 'Tax Planning', 'Retirement Planning']
     },
     'Insurance': {
-      title: 'ðŸ›¡ Insurance Services',
+      title: 'Insurance Services',
       items: ['Health Insurance', 'Life Insurance', 'Vehicle Insurance', 'Travel Insurance', 'Property Insurance', 'Business Insurance', 'Accident Insurance']
     },
     'Home Services': {
-      title: 'ðŸ  Home Services',
+      title: 'Home Services',
       items: ['Electrician', 'Plumber', 'Carpenter', 'Painter', 'Interior Design', 'Home Cleaning', 'Pest Control', 'AC Repair', 'Appliance Repair', 'CCTV Installation', 'Smart Home Solutions']
     },
     'Legal': {
-      title: 'âš– Legal Services',
+      title: 'Legal Services',
       items: ['Legal Consultation', 'Property Registration', 'Agreement Drafting', 'Notary Services', 'Court Assistance', 'Company Registration', 'Trademark Registration', 'Legal Documentation']
     },
     'Digital': {
-      title: 'ðŸ’» Digital Services',
+      title: 'Digital Services',
       items: ['Website Development', 'Mobile App Development', 'UI/UX Design', 'Digital Marketing', 'SEO Services', 'Social Media Marketing', 'Graphic Design', 'Video Editing', 'Cloud Solutions', 'Software Development']
     },
     'Business': {
-      title: 'ðŸ¢ Business Services',
+      title: 'Business Services',
       items: ['Company Formation', 'GST Registration', 'Payroll Management', 'HR Solutions', 'Recruitment Services', 'Business Consulting', 'Branding Services', 'Franchise Consulting', 'Startup Advisory']
     },
     'Automobile': {
-      title: 'ðŸš— Automobile Services',
+      title: 'Automobile Services',
       items: ['Car Service', 'Bike Service', 'Car Wash', 'Roadside Assistance', 'Vehicle Inspection', 'Vehicle Insurance', 'Driving School', 'Vehicle Rental']
     },
     'Bill & Recharge': {
-      title: 'ðŸ“± Bill & Recharge',
+      title: 'Bill & Recharge',
       items: ['Mobile Recharge', 'DTH Recharge', 'Broadband Services', 'Fiber Internet', 'SIM Activation', 'Business Connectivity', 'Electricity Bill Payment', 'Water Bill Payment', 'Gas Booking', 'Property Tax', 'Internet Bill Payment', 'Government Services']
     },
     'Family': {
-      title: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§ Family Services',
+      title: 'Family Services',
       items: ['Child Care', 'Day Care', 'Elder Care', 'Home Care', 'Family Counseling', 'Parenting Support']
     },
     'Fitness': {
-      title: 'ðŸ‹ Fitness & Wellness',
+      title: 'Fitness & Wellness',
       items: ['Gym Membership', 'Yoga Classes', 'Personal Training', 'Nutrition Consultation', 'Wellness Centers', 'Spa Services', 'Mental Wellness']
     },
     'Events': {
-      title: 'ðŸŽ‰ Event Services',
+      title: 'Event Services',
       items: ['Wedding Planning', 'Birthday Events', 'Corporate Events', 'Photography', 'Videography', 'Catering Services', 'Decoration Services']
     },
     'Real Estate': {
-      title: 'ðŸ¡ Real Estate Services',
+      title: 'Real Estate Services',
       items: ['Property Buying', 'Property Selling', 'Property Rental', 'Property Management', 'Interior Solutions', 'Home Loans']
     },
     'Security': {
-      title: 'ðŸ”’ Security Services',
+      title: 'Security Services',
       items: ['Security Guards', 'CCTV Monitoring', 'Cyber Security', 'Home Security', 'Office Security']
     }
   };
@@ -2690,7 +2690,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   if (onItemClick) {
                     onItemClick(subCat, e);
                   } else {
-                    // Stay inside the dashboard â€” switch to the relevant tab and filter
+                    // Stay inside the dashboard — switch to the relevant tab and filter
                     const tabForLink = hoveredLink || title;
                     setHoveredLink(null);
                     if (tabForLink === 'Jobs') {
@@ -2976,7 +2976,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       This card is non-transferable and remains the property of Connect App. Use is subject to network terms and conditions. If found, please return to any Forge India checkpoint.
                     </p>
                     <div className="flex justify-between items-center border-t border-slate-900/60 pt-2 text-[8px] font-mono text-slate-400">
-                      <span>WALLET COMPATIBLE âœ“</span>
+                      <span>WALLET COMPATIBLE ✓</span>
                       <span className="text-amber-500 font-bold">FORGE INDIA NODE v1.2.6</span>
                     </div>
                   </div>
@@ -3172,7 +3172,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                     {/* Gold Tag */}
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      â˜… Exclusive Offer
+                      ★ Exclusive Offer
                     </div>
 
                     {/* Headline info */}
@@ -3239,7 +3239,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      â˜… Member Privilege
+                      ★ Member Privilege
                     </div>
 
                     <div className="pt-2 leading-tight">
@@ -3297,7 +3297,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      â˜… Flight Special
+                      ★ Flight Special
                     </div>
 
                     <div className="pt-2 leading-tight">
@@ -3359,7 +3359,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
-                      â˜… Partner Deal
+                      ★ Partner Deal
                     </div>
 
                     <div className="pt-2 leading-tight">
@@ -3803,7 +3803,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Top Services</h3>
-          <button onClick={() => triggerNotification("Viewing all services...")} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
+          <button onClick={() => triggerNotification("Viewing all services...")} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
         </div>
 
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
@@ -3841,7 +3841,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-350 uppercase tracking-widest">Trending Products & Services</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All â†’</button>
+          <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All →</button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
@@ -3917,7 +3917,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-200">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Stay Best Offers</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Stay'); setActiveTab('Stay'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
+          <button onClick={() => { setSelectedSubNavbarCategory('Stay'); setActiveTab('Stay'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -3958,7 +3958,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-805 dark:text-slate-200">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 dark:text-slate-450 uppercase tracking-widest">Popular Restaurants</h3>
-          <button onClick={() => { setSelectedSubNavbarCategory('Food'); setActiveTab('Food'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
+          <button onClick={() => { setSelectedSubNavbarCategory('Food'); setActiveTab('Food'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -4004,7 +4004,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('wallet'); }} className="text-[9px] font-bold text-blue-600 hover:text-blue-600 dark:text-blue-400 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>Add Money</span>
-            <span>â†’</span>
+            <span>→</span>
           </button>
         </div>
 
@@ -4019,7 +4019,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <button onClick={() => triggerNotification("Savings history loaded")} className="text-[9px] font-bold text-emerald-600 hover:text-emerald-555 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>View Savings</span>
-            <span>â†’</span>
+            <span>→</span>
           </button>
         </div>
 
@@ -4034,7 +4034,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <button onClick={() => triggerNotification("Points store opened")} className="text-[9px] font-bold text-purple-600 hover:text-purple-600 dark:text-purple-400 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>Redeem Now</span>
-            <span>â†’</span>
+            <span>→</span>
           </button>
         </div>
 
@@ -4067,7 +4067,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             className="text-[9px] font-black uppercase text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer border-none bg-transparent p-0"
           >
             <span>Copy Code</span>
-            <span>â†’</span>
+            <span>→</span>
           </button>
         </div>
       </div>
@@ -4208,7 +4208,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-200">
         <div className="flex justify-between items-baseline">
           <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Recent Transactions</h3>
-          <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('orders'); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All â†’</button>
+          <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('orders'); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
         </div>
 
         <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs space-y-3.5 w-full text-slate-800 dark:text-slate-200">
@@ -4542,9 +4542,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                 >
                   <option value="">All Ratings</option>
-                  <option value="4.0">4.0 â˜… & Above</option>
-                  <option value="4.5">4.5 â˜… & Above</option>
-                  <option value="4.8">4.8 â˜… & Above</option>
+                  <option value="4.0">4.0 ★ & Above</option>
+                  <option value="4.5">4.5 ★ & Above</option>
+                  <option value="4.8">4.8 ★ & Above</option>
                 </select>
               )}
 
@@ -4983,11 +4983,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Luxury Hotels'}</span>
               <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Purchase</span></div>
             </div>
-            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><div className="grid grid-cols-3 gap-3"><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">ðŸ“… Check-in</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span><input type="date" value={stayCheckInDate} onChange={(e) => setStayCheckInDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">ðŸ“… Check-out</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span><input type="date" value={stayCheckOutDate} onChange={(e) => setStayCheckOutDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">ðŸŒ™ Nights</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span></div></div><div className="grid grid-cols-2 gap-3 mt-3"><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">ðŸ›ï¸ Rooms</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayRoomsCount} Room</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayRoomsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayRoomsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">ðŸ‘¤ Guests</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayGuestsCount} Adults</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayGuestsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayGuestsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div></div></div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><div className="grid grid-cols-3 gap-3"><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-in</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span><input type="date" value={stayCheckInDate} onChange={(e) => setStayCheckInDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-out</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span><input type="date" value={stayCheckOutDate} onChange={(e) => setStayCheckOutDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Nights</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span></div></div><div className="grid grid-cols-2 gap-3 mt-3"><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">ðŸ›ï¸ Rooms</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayRoomsCount} Room</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayRoomsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayRoomsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">Guests</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayGuestsCount} Adults</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayGuestsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayGuestsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div></div></div>
             <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/20 rounded-xl px-4 py-3 flex items-center justify-between"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /><div><span className="text-[11px] font-black text-amber-700 dark:text-amber-400 block">Members get up to 15% OFF</span><span className="text-[9px] text-amber-600/70 font-bold">Join Silver / Gold / Diamond membership to save more.</span></div></div><button onClick={() => triggerNotification("Opening membership plans...")} className="text-[10px] text-blue-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer flex items-center gap-0.5">Explore Memberships <ArrowRight className="w-3 h-3" /></button></div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Select Room Type</h3>
-              {roomTypes.map((room) => (<div key={room.id} className="flex gap-4 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-400 cursor-pointer transition-all"><div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-100"><img src={selectedProduct.image} alt={room.name} className="w-full h-full object-cover" /></div><div className="flex-grow"><div className="flex items-start justify-between"><div><h4 className="text-xs font-black text-slate-850 dark:text-white">{room.name}</h4><div className="flex items-center gap-2 mt-1 text-[9px] text-slate-450 font-bold flex-wrap"><span>ðŸ‘¤ {room.guests} Guests</span><span>ðŸ›ï¸ {room.bed}</span><span>ðŸ“ {room.area}</span></div></div><div className="text-right shrink-0"><span className="text-sm font-black text-slate-900 dark:text-white block">₹{room.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 block">/ night</span></div></div><div className="flex items-center gap-1.5 mt-2 flex-wrap">{room.amenities.map((a, ai) => <span key={ai} className="text-[8px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-1.5 py-0.5 rounded">{a}</span>)}<span className="text-[8px] text-blue-500 font-bold">{room.extra}</span></div></div></div>))}
+              {roomTypes.map((room) => (<div key={room.id} className="flex gap-4 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-400 cursor-pointer transition-all"><div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-100"><img src={selectedProduct.image} alt={room.name} className="w-full h-full object-cover" /></div><div className="flex-grow"><div className="flex items-start justify-between"><div><h4 className="text-xs font-black text-slate-850 dark:text-white">{room.name}</h4><div className="flex items-center gap-2 mt-1 text-[9px] text-slate-450 font-bold flex-wrap"><span>{room.guests} Guests</span><span>ðŸ›ï¸ {room.bed}</span><span>ðŸ“ {room.area}</span></div></div><div className="text-right shrink-0"><span className="text-sm font-black text-slate-900 dark:text-white block">₹{room.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 block">/ night</span></div></div><div className="flex items-center gap-1.5 mt-2 flex-wrap">{room.amenities.map((a, ai) => <span key={ai} className="text-[8px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-1.5 py-0.5 rounded">{a}</span>)}<span className="text-[8px] text-blue-500 font-bold">{room.extra}</span></div></div></div>))}
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3><div className="grid grid-cols-3 sm:grid-cols-5 gap-3">{['Free Wi-Fi','Swimming Pool','Restaurant','Room Service','Parking','Air Conditioning','Gym','Spa','Laundry','Business Center','Power Backup','24/7 Security'].map((a, ai) => (<div key={ai} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 dark:text-slate-400"><CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" /><span>{a}</span></div>))}</div></div>
           </div>
@@ -5009,7 +5009,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         {/* Bottom Trust Badges */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
-          {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title:'Safe & Secure Booking',desc:"Your booking is protected by ConnectApp's secure system."},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title:'Best Price Guarantee',desc:"Found a lower price? We'll match it."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title:'24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
+          {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title: 'Safe & Secure Booking',desc:"Your booking is protected by ConnectApp's secure system."},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title: 'Best Price Guarantee',desc:"Found a lower price? We'll match it."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title: '24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
             <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-450 font-bold">{b.desc}</span></div></div>
           ))}
         </div>
@@ -5129,7 +5129,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
         {/* Bottom Trust Badges */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
-          {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title:'Trusted & Verified Professionals',desc:'All service providers are verified and trusted.'},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title:'Safe & Secure Payments',desc:"Your payments are 100% safe with ConnectApp."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title:'24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
+          {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title: 'Trusted & Verified Professionals',desc:'All service providers are verified and trusted.'},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title: 'Safe & Secure Payments',desc:"Your payments are 100% safe with ConnectApp."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title: '24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
             <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-450 font-bold">{b.desc}</span></div></div>
           ))}
         </div>
@@ -5320,7 +5320,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {selectedProduct.name}
               </h2>
               <p className="text-xs text-slate-450 dark:text-slate-500 font-bold block mt-1.5">
-                {selectedProduct.description || 'AC Sleeper (2+1)'} â€¢ â˜… {selectedProduct.rating || 4.5} ({selectedProduct.reviews || 12520} Reviews)
+                {selectedProduct.description || 'AC Sleeper (2+1)'} â€¢ ★ {selectedProduct.rating || 4.5} ({selectedProduct.reviews || 12520} Reviews)
               </p>
             </div>
 
@@ -5489,11 +5489,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 )}
                 {travelDetailsTab === 'Ratings & Reviews' && (
                   <div className="space-y-3 text-xs">
-                    <div className="font-black text-slate-850 dark:text-white">Customer Feedback (â˜… 4.5/5 based on 12,520 reviews)</div>
+                    <div className="font-black text-slate-850 dark:text-white">Customer Feedback (★ 4.5/5 based on 12,520 reviews)</div>
                     <div className="border-t border-slate-105 dark:border-slate-850/60 pt-3 mt-2">
                       <div className="flex justify-between font-extrabold text-[11px]">
                         <span>Suresh K.</span>
-                        <span className="text-amber-500">â˜… 5.0</span>
+                        <span className="text-amber-500">★ 5.0</span>
                       </div>
                       <p className="text-slate-550 mt-1">Excellent travel experience. On time departure and very comfortable sleeper berth. Clean blankets were provided.</p>
                     </div>
@@ -5627,39 +5627,39 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       
       if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital') {
         return [
-          { title: "Video Consultation", val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
-          { title: "In-clinic Visit", val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
-          { title: "Response Time", val: "30 mins", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: "Languages", val: "English, Hindi", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c-.313 1.565-.953 3.051-1.894 4.387" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          { title: 'Video Consultation', val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: 'In-clinic Visit', val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Response Time', val: "30 mins", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: 'Languages', val: "English, Hindi", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c-.313 1.565-.953 3.051-1.894 4.387" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
       } else if (subCat === 'Stay') {
         return [
-          { title: "Wi-Fi Access", val: "High Speed", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
-          { title: "Free Breakfast", val: "Included", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
-          { title: "Check-in Time", val: "12:00 PM", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: "Room Service", val: "24/7 Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          { title: 'Wi-Fi Access', val: "High Speed", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: 'Free Breakfast', val: "Included", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Check-in Time', val: "12:00 PM", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: 'Room Service', val: "24/7 Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
       } else if (subCat === 'Travel') {
         return [
-          { title: "Luggage Limit", val: "15kg Included", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
-          { title: "Meal Options", val: "Veg & Non-Veg", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
-          { title: "Departure", val: "Guaranteed On-time", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: "Support", val: "24/7 Helpline", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          { title: 'Luggage Limit', val: "15kg Included", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: 'Meal Options', val: "Veg & Non-Veg", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Departure', val: "Guaranteed On-time", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: 'Support', val: "24/7 Helpline", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
       } else if (subCat === 'Jobs') {
         return [
-          { title: "Work Model", val: "In-office / Remote", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
-          { title: "Experience Req.", val: "1-3 Years", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
-          { title: "Min. Qualification", val: "Graduate / Equivalent", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: "Job Location", val: "Bengaluru, IN", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          { title: 'Work Model', val: "In-office / Remote", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: 'Experience Req.', val: "1-3 Years", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Min. Qualification', val: "Graduate / Equivalent", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: 'Job Location', val: "Bengaluru, IN", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
       } else {
         // Products / Daily Needs / Food
         return [
-          { title: "Brand Warranty", val: "1 Year Covered", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
-          { title: "Return Policy", val: "7 Days Replacement", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
-          { title: "Delivery Speed", val: "Express Shipping", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: "Package Security", val: "Secure Transit", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          { title: 'Brand Warranty', val: "1 Year Covered", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+          { title: 'Return Policy', val: "7 Days Replacement", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Delivery Speed', val: "Express Shipping", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: 'Package Security', val: "Secure Transit", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
       }
     };
@@ -6112,12 +6112,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             {[
-              { title: "500", sub: "Reward Points", detail: "On This Purchase", icon: Award, bg: "bg-amber-50/50 dark:bg-amber-450/5", iconCol: "text-amber-500" },
-              { title: "₹2,000", sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
-              { title: "₹500", sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
-              { title: "1 Year", sub: "Extended Warranty", detail: "By Connect", icon: ShieldCheck, bg: "bg-emerald-50/50 dark:bg-emerald-450/5", iconCol: "text-emerald-500" },
-              { title: "Priority", sub: "Customer Support", detail: "24/7 VIP Support", icon: LifeBuoy, bg: "bg-cyan-50/50 dark:bg-cyan-450/5", iconCol: "text-cyan-500" },
-              { title: "Free", sub: "Express Delivery", detail: "2-3 Days Delivery", icon: Truck, bg: "bg-indigo-50/50 dark:bg-indigo-450/5", iconCol: "text-indigo-500" },
+              { title: '500', sub: "Reward Points", detail: "On This Purchase", icon: Award, bg: "bg-amber-50/50 dark:bg-amber-450/5", iconCol: "text-amber-500" },
+              { title: '2,000', sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
+              { title: '500', sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
+              { title: '1 Year', sub: "Extended Warranty", detail: "By Connect", icon: ShieldCheck, bg: "bg-emerald-50/50 dark:bg-emerald-450/5", iconCol: "text-emerald-500" },
+              { title: 'Priority', sub: "Customer Support", detail: "24/7 VIP Support", icon: LifeBuoy, bg: "bg-cyan-50/50 dark:bg-cyan-450/5", iconCol: "text-cyan-500" },
+              { title: 'Free', sub: "Express Delivery", detail: "2-3 Days Delivery", icon: Truck, bg: "bg-indigo-50/50 dark:bg-indigo-450/5", iconCol: "text-indigo-500" },
             ].map((b, idx) => {
               const Icon = b.icon;
               return (
@@ -6201,7 +6201,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 leading-normal line-clamp-2">{e.desc}</p>
                   </div>
                   <button className="text-[9px] font-black uppercase text-amber-500 group-hover:text-amber-600 dark:group-hover:text-amber-400 mt-4.5 flex items-center gap-1 transition-colors bg-transparent border-none cursor-pointer">
-                    Explore Offers â†’
+                    Explore Offers →
                   </button>
                 </div>
               );
@@ -6251,11 +6251,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <h3 className="text-sm font-black text-slate-855 dark:text-white tracking-tight uppercase text-left">Why Buy From Connect App?</h3>
           <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-5 shadow-3xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {[
-              { title: "100% Original", detail: "Genuine Products direct from certified brands", icon: ShieldCheck, color: "text-emerald-500" },
-              { title: "Secure Payment", detail: "100% Safe, encrypted gateway transaction", icon: "Lock", color: "text-blue-500" },
-              { title: "7 Days Return", detail: "Easy, hassle-free reverse pick-up policy", icon: RefreshCw, color: "text-amber-500" },
-              { title: "Best Price", detail: "Guaranteed price match to major retailers", icon: Award, color: "text-rose-500" },
-              { title: "Priority Support", detail: "24/7 dedicated member helpline access", icon: LifeBuoy, color: "text-cyan-500" }
+              { title: '100% Original', detail: "Genuine Products direct from certified brands", icon: ShieldCheck, color: "text-emerald-500" },
+              { title: 'Secure Payment', detail: "100% Safe, encrypted gateway transaction", icon: "Lock", color: "text-blue-500" },
+              { title: '7 Days Return', detail: "Easy, hassle-free reverse pick-up policy", icon: RefreshCw, color: "text-amber-500" },
+              { title: 'Best Price', detail: "Guaranteed price match to major retailers", icon: Award, color: "text-rose-500" },
+              { title: 'Priority Support', detail: "24/7 dedicated member helpline access", icon: LifeBuoy, color: "text-cyan-500" }
             ].map((item, idx) => {
               const Icon = item.icon === "Lock" ? ({ className }) => (
                 <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -6564,7 +6564,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <span className="text-[10px] text-[#f43397] font-semibold">{item.discount}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                        <span>â˜… {item.rating}</span>
+                        <span>★ {item.rating}</span>
                         <span>â€¢</span>
                         <span>{item.delivery}</span>
                       </div>
@@ -6759,7 +6759,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
                                       : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
                                   }`}>
-                                    {isCompleted ? 'âœ“' : idx + 1}
+                                    {isCompleted ? '✓' : idx + 1}
                                   </div>
                                   <span className={`text-[8px] font-bold uppercase transition-colors duration-350 ${
                                     isActive ? 'text-[#f43397]' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
@@ -6891,7 +6891,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                         }}
                                         className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer"
                                       >
-                                        Rate Partner â˜…
+                                        Rate Partner ★
                                       </button>
                                     )}
                                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
