@@ -4170,7 +4170,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Categories</option>
-                    {['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].map(cat => (
+                    {['Products', 'Services'].map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
