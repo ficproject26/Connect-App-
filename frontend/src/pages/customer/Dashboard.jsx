@@ -239,6 +239,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [currentMonthIndex, setCurrentMonthIndex] = useState(4);
   const [currentYear, setCurrentYear] = useState(2025);
   const [selectedModalDay, setSelectedModalDay] = useState(21);
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const [favorites, setFavorites] = useState([]);
   const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
   const [previewMembershipTier, setPreviewMembershipTier] = useState(membershipTier || 'Gold Elite');
@@ -5764,8 +5765,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div>
                       <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-[#f43397]">₹{item.price.toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-400 line-through">₹{item.originalPrice.toLocaleString()}</span>
+                        <span className="text-xs font-extrabold text-[#f43397]">₹{(item.price || 0).toLocaleString()}</span>
+                        <span className="text-[10px] text-slate-400 line-through">₹{(item.originalPrice || item.price || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -5785,7 +5786,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="space-y-2.5 mb-4 text-xs font-semibold">
                 <div className="flex justify-between text-slate-500">
                   <span>Subtotal:</span>
-                  <span className="font-bold text-slate-800">₹{cart.reduce((sum, item) => sum + item.price, 0).toLocaleString()}</span>
+                  <span className="font-bold text-slate-800">₹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Shipping Fee:</span>
@@ -5798,7 +5799,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <div className="border-t border-slate-100 pt-2.5 flex justify-between items-baseline text-slate-800">
                   <span className="text-sm font-bold">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
-                    ₹{Math.max(0, cart.reduce((sum, item) => sum + item.price, 0) - 50).toLocaleString()}
+                    ₹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0), 0) - 50).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -5859,7 +5860,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div className="text-left">
                       <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
                       <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">₹{item.price.toLocaleString()}</span>
+                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">₹{(item.price || 0).toLocaleString()}</span>
                         <span className="text-[10px] text-[#f43397] font-semibold">{item.discount}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500">
