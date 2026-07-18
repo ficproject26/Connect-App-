@@ -3617,10 +3617,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   
                   <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 w-full">
                     <div className="flex flex-col">
-                      <span className="text-xs font-black text-slate-850 dark:text-white">
+                      <span className="text-[13px] font-black text-slate-850 dark:text-white">
                         ₹{item.price.toLocaleString()}
-                        {item.tag === 'Stay' && <span className="text-[8px] font-bold text-slate-400">/night</span>}
-                        {item.tag === 'Jobs' && <span className="text-[8px] font-bold text-slate-400">/month</span>}
+                        {item.tag === 'Stay' && <span className="text-[9.5px] font-bold text-slate-400">/night</span>}
+                        {item.tag === 'Jobs' && <span className="text-[9.5px] font-bold text-slate-400">/month</span>}
                       </span>
                     </div>
                     {item.discount && (
