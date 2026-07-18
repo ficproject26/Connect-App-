@@ -183,6 +183,34 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
               }
             }
+            // Assign foodType (Veg / Non-Veg) for Food items
+            if (p.subNavbarCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani') {
+              const nameLower = (p.name || '').toLowerCase();
+              const descLower = (p.description || '').toLowerCase();
+              const catLower = (p.category || '').toLowerCase();
+              if (
+                nameLower.includes('chicken') || 
+                nameLower.includes('mutton') || 
+                nameLower.includes('egg') || 
+                nameLower.includes('fish') || 
+                nameLower.includes('meat') || 
+                nameLower.includes('non-veg') ||
+                nameLower.includes('non veg') ||
+                catLower.includes('non-veg') ||
+                catLower.includes('non veg') ||
+                descLower.includes('chicken') ||
+                descLower.includes('mutton')
+              ) {
+                updated.foodType = 'Non-Veg';
+              } else {
+                // If it's a biryani but not explicitly veg, let's make it Non-Veg to have variety
+                if (nameLower.includes('biryani') && !nameLower.includes('veg')) {
+                  updated.foodType = 'Non-Veg';
+                } else {
+                  updated.foodType = 'Veg';
+                }
+              }
+            }
             return updated;
           });
           setProducts(patched);
@@ -268,6 +296,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [selectedLocTypes, setSelectedLocTypes] = useState([]);
   const [selectedCuisines, setSelectedCuisines] = useState([]);
   const [selectedDistances, setSelectedDistances] = useState([]);
+  const [selectedFoodType, setSelectedFoodType] = useState('All');
   const [selectedAccomTypes, setSelectedAccomTypes] = useState([]);
   const [selectedTravelTypes, setSelectedTravelTypes] = useState([]);
   const [selectedDailyNeedsTypes, setSelectedDailyNeedsTypes] = useState([]);
@@ -760,7 +789,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       title: p.name,
       department: p.category || 'General',
       location: p.description?.split('\n')[0] || 'Remote (India)',
-      salary: p.price ? `â‚¹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
+      salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
       type: 'Full-time',
       desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`
     }))
@@ -1911,7 +1940,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <td className="py-3 px-3 max-w-[150px] truncate font-medium">{ord.product_details}</td>
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</td>
                         <td className="py-3 px-3 font-semibold text-slate-650 dark:text-slate-350">Connect Wallet</td>
-                        <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">â‚¹{ord.amount}</td>
+                        <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">₹{ord.amount}</td>
                         <td className="py-3 px-3 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusColor}`}>
                             {statusLabel}
@@ -2051,8 +2080,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setSelectedPrices([]);
     setSelectedRating(null);
     setSearchQuery('');
-    setSelectedSubNavbarCategory('All');
-    setActiveTab('Home');
+    setSelectedFoodType('All');
+    // Preserve current tab and current subNavbarCategory context
+    if (activeTab === 'Home') {
+      setSelectedSubNavbarCategory('All');
+      setActiveTab('Home');
+    }
     setSelectedServiceTypes([]);
     setSelectedLocTypes([]);
     setSelectedCuisines([]);
@@ -2160,7 +2193,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesLocation && matchesCuisine && matchesDistance && matchesRatingFilter;
+      const matchesFoodType = selectedFoodType === 'All' ||
+        product.foodType === selectedFoodType;
+
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesCuisine && matchesDistance && matchesRatingFilter && matchesFoodType;
     }
 
     // Stay Filter Checks
@@ -2686,14 +2722,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const details = {
       'Silver Tier': {
         name: 'Silver Tier',
-        price: 'â‚¹4,000/year',
+        price: '₹4,000/year',
         discount: '10% OFF',
         badgeColor: 'bg-slate-400 text-white',
         benefits: [
           'Flat 10% Off on all Products and Daily Needs',
           'Standard priority order packaging & delivery',
           'Earn 1.2x reward points on all transactions',
-          'Free standard shipping on orders over â‚¹499'
+          'Free standard shipping on orders over ₹499'
         ],
         cardBg: 'bg-gradient-to-tr from-slate-400 via-slate-100 to-slate-500',
         cardText: 'text-slate-900',
@@ -2706,7 +2742,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       },
       'Gold Elite': {
         name: 'Gold Elite',
-        price: 'â‚¹8,000/year',
+        price: '₹8,000/year',
         discount: '20% OFF',
         badgeColor: 'bg-amber-400 text-[#0b1e36]',
         benefits: [
@@ -2727,7 +2763,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       },
       'Diamond Prestige': {
         name: 'Diamond Prestige',
-        price: 'â‚¹20,000/year',
+        price: '₹20,000/year',
         discount: '30% OFF',
         badgeColor: 'bg-cyan-400 text-cyan-950',
         benefits: [
@@ -2749,7 +2785,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       }
     }[previewMembershipTier] || {
       name: 'Gold Elite',
-      price: 'â‚¹8,000/year',
+      price: '₹8,000/year',
       discount: '20% OFF',
       badgeColor: 'bg-amber-400 text-[#0b1e36]',
       benefits: [
@@ -3266,7 +3302,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                     <div className="pt-2 leading-tight">
                       <h3 className="text-base sm:text-lg font-black text-white leading-none">
-                        Save <span className="text-[#FFC107]">â‚¹2,000</span>
+                        Save <span className="text-[#FFC107]">₹2,000</span>
                       </h3>
                       <p className="text-xs font-bold text-slate-350 mt-1.5">On International Bookings</p>
                     </div>
@@ -3701,7 +3737,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 w-full">
                     <div className="flex flex-col">
                       <span className="text-[13px] font-black text-slate-850 dark:text-white">
-                        â‚¹{(item.price || 0).toLocaleString()}
+                        ₹{(item.price || 0).toLocaleString()}
                         {item.tag === 'Stay' && <span className="text-[9.5px] font-bold text-slate-400">/night</span>}
                         {item.tag === 'Jobs' && <span className="text-[9.5px] font-bold text-slate-400">/month</span>}
                       </span>
@@ -3825,8 +3861,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div>
                     <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                     <div className="flex items-baseline gap-1.5 mt-2">
-                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">â‚¹{(product.price || 0).toLocaleString()}</span>
-                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">â‚¹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
+                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
                       <span className="text-[9.5px] text-emerald-600 font-bold">{product.discount}</span>
                     </div>
                   </div>
@@ -3902,7 +3938,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <span>{stay.rating || 4.5}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">â‚¹{(stay.price || 0).toLocaleString()}</span>
+                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{(stay.price || 0).toLocaleString()}</span>
                     <span className="text-[7px] text-slate-450 dark:text-slate-500 font-semibold block">/ Night</span>
                   </div>
                 </div>
@@ -3942,7 +3978,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <span>{rest.rating || 4.5}</span>
                   </div>
-                  <div>â‚¹{(rest.price || 0).toLocaleString()}</div>
+                  <div>₹{(rest.price || 0).toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -3964,7 +4000,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <div className="mt-4">
             <div className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-none">Wallet Balance</div>
-            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">â‚¹{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">₹{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </div>
           <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('wallet'); }} className="text-[9px] font-bold text-blue-600 hover:text-blue-600 dark:text-blue-400 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>Add Money</span>
@@ -3979,7 +4015,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <div className="mt-4">
             <div className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-none">Total Savings</div>
-            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">â‚¹12,450.00</div>
+            <div className="text-base font-black text-slate-800 dark:text-white mt-1.5 leading-none font-mono">₹12,450.00</div>
           </div>
           <button onClick={() => triggerNotification("Savings history loaded")} className="text-[9px] font-bold text-emerald-600 hover:text-emerald-555 hover:underline mt-2 flex items-center gap-1 self-start cursor-pointer">
             <span>View Savings</span>
@@ -4106,7 +4142,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div className="space-y-3.5 z-10 max-w-[60%]">
           <div>
             <h4 className="text-[13px] font-black text-[#0b1e36] leading-none">Refer Friends & Earn</h4>
-            <p className="text-[10px] text-slate-500 font-semibold mt-1">Earn â‚¹250 for each successful referral</p>
+            <p className="text-[10px] text-slate-500 font-semibold mt-1">Earn ₹250 for each successful referral</p>
           </div>
           <button onClick={() => triggerNotification("Referral link copied to clipboard!")} className="text-[9px] font-black uppercase tracking-wider bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-[#0b1e36] px-3.5 py-2 rounded shadow transition-colors cursor-pointer">
             Refer Now
@@ -4133,7 +4169,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               </div>
               <div className="text-left leading-none">
                 <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-bold uppercase tracking-wider block">Cashback Available</span>
-                <span className="text-xs font-black text-emerald-650 dark:text-emerald-400 dark:text-emerald-400 block mt-1 font-mono">â‚¹1,250.00</span>
+                <span className="text-xs font-black text-emerald-650 dark:text-emerald-400 dark:text-emerald-400 block mt-1 font-mono">₹1,250.00</span>
               </div>
             </div>
 
@@ -4144,7 +4180,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               </div>
               <div className="text-left leading-none">
                 <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-bold uppercase tracking-wider block">Referral Earnings</span>
-                <span className="text-xs font-black text-slate-800 dark:text-white block mt-1 font-mono">â‚¹500.00</span>
+                <span className="text-xs font-black text-slate-800 dark:text-white block mt-1 font-mono">₹500.00</span>
               </div>
             </div>
 
@@ -4195,8 +4231,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
                 </div>
                 <div className="text-right shrink-0 font-mono">
-                  <div className="text-xs font-black text-slate-800 dark:text-white">â‚¹{tx.price}</div>
-                  <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">-â‚¹{tx.discount}</div>
+                  <div className="text-xs font-black text-slate-800 dark:text-white">₹{tx.price}</div>
+                  <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">-₹{tx.discount}</div>
                 </div>
               </div>
             );
@@ -4263,10 +4299,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-199">Under â‚¹199</option>
-                    <option value="199-399">â‚¹199 - â‚¹399</option>
-                    <option value="399-599">â‚¹399 - â‚¹599</option>
-                    <option value="above-599">Above â‚¹599</option>
+                    <option value="under-199">Under ₹199</option>
+                    <option value="199-399">₹199 - ₹399</option>
+                    <option value="399-599">₹399 - ₹599</option>
+                    <option value="above-599">Above ₹599</option>
                   </select>
                 </>
               )}
@@ -4310,10 +4346,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-199">Under â‚¹199</option>
-                    <option value="199-399">â‚¹199 - â‚¹399</option>
-                    <option value="399-599">â‚¹399 - â‚¹599</option>
-                    <option value="above-599">Above â‚¹599</option>
+                    <option value="under-199">Under ₹199</option>
+                    <option value="199-399">₹199 - ₹399</option>
+                    <option value="399-599">₹399 - ₹599</option>
+                    <option value="above-599">Above ₹599</option>
                   </select>
                 </>
               )}
@@ -4367,9 +4403,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-100">Under â‚¹100</option>
-                    <option value="100-200">â‚¹100 - â‚¹200</option>
-                    <option value="above-200">Above â‚¹200</option>
+                    <option value="under-100">Under ₹100</option>
+                    <option value="100-200">₹100 - ₹200</option>
+                    <option value="above-200">Above ₹200</option>
                   </select>
                 </>
               )}
@@ -4397,6 +4433,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <option value="2km-5km">2 km - 5 km</option>
                     <option value="above-5km">Above 5 km</option>
                   </select>
+                  <select
+                    value={selectedFoodType}
+                    onChange={(e) => setSelectedFoodType(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="All">All Food Types</option>
+                    <option value="Veg">Veg Only</option>
+                    <option value="Non-Veg">Non-Veg Only</option>
+                  </select>
                 </>
               )}
 
@@ -4419,10 +4464,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-1000">Under â‚¹1,000</option>
-                    <option value="1000-2000">â‚¹1,000 - â‚¹2,000</option>
-                    <option value="2000-5000">â‚¹2,000 - â‚¹5,000</option>
-                    <option value="above-5000">Above â‚¹5,000</option>
+                    <option value="under-1000">Under ₹1,000</option>
+                    <option value="1000-2000">₹1,000 - ₹2,000</option>
+                    <option value="2000-5000">₹2,000 - ₹5,000</option>
+                    <option value="above-5000">Above ₹5,000</option>
                   </select>
                 </>
               )}
@@ -4446,9 +4491,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Prices</option>
-                    <option value="under-500">Under â‚¹500</option>
-                    <option value="500-2000">â‚¹500 - â‚¹2,000</option>
-                    <option value="above-2000">Above â‚¹2,000</option>
+                    <option value="under-500">Under ₹500</option>
+                    <option value="500-2000">₹500 - ₹2,000</option>
+                    <option value="above-2000">Above ₹2,000</option>
                   </select>
                 </>
               )}
@@ -4482,9 +4527,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Salaries</option>
-                    <option value="under-15l">Under â‚¹15L L.P.A</option>
-                    <option value="15l-25l">â‚¹15L - â‚¹25L L.P.A</option>
-                    <option value="above-25l">Above â‚¹25L L.P.A</option>
+                    <option value="under-15l">Under ₹15L L.P.A</option>
+                    <option value="15l-25l">₹15L - ₹25L L.P.A</option>
+                    <option value="above-25l">Above ₹25L L.P.A</option>
                   </select>
                 </>
               )}
@@ -4715,7 +4760,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
                           <div className="relative aspect-[1.4/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
                             <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
-                            <span className="absolute left-2.5 top-2.5 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                            {product.subNavbarCategory === 'Food' && (
+                              <div className="absolute top-0 left-0 z-10 w-16 h-16 overflow-hidden pointer-events-none">
+                                <div className={`absolute top-3 -left-6.5 w-20 py-0.5 text-[7px] font-black text-center uppercase tracking-widest rotate-[-45deg] text-white shadow-xs ${
+                                  product.foodType === 'Non-Veg'
+                                    ? 'bg-rose-600 border border-rose-700'
+                                    : 'bg-emerald-600 border border-emerald-700'
+                                }`}>
+                                  {product.foodType}
+                                </div>
+                              </div>
+                            )}
+                            <span className={`absolute left-2.5 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm transition-all ${
+                              product.subNavbarCategory === 'Food' ? 'top-8.5' : 'top-2.5'
+                            }`}>
                               {product.tag}
                             </span>
                             <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white text-slate-400 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-100 transition-transform hover:scale-105">
@@ -4749,8 +4807,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <div className="mt-3.5 space-y-1">
                                 <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
                                 <div className="flex items-baseline gap-1.5">
-                                  <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">â‚¹{(product.price || 0).toLocaleString()}</span>
-                                  <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">â‚¹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
+                                  <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
+                                  <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
                                   <span className="text-[10px] sm:text-[11px] text-emerald-600 font-extrabold">{product.discount || '20% off'}</span>
                                 </div>
                               </div>
@@ -4929,7 +4987,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/20 rounded-xl px-4 py-3 flex items-center justify-between"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /><div><span className="text-[11px] font-black text-amber-700 dark:text-amber-400 block">Members get up to 15% OFF</span><span className="text-[9px] text-amber-600/70 font-bold">Join Silver / Gold / Diamond membership to save more.</span></div></div><button onClick={() => triggerNotification("Opening membership plans...")} className="text-[10px] text-blue-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer flex items-center gap-0.5">Explore Memberships <ArrowRight className="w-3 h-3" /></button></div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Select Room Type</h3>
-              {roomTypes.map((room) => (<div key={room.id} className="flex gap-4 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-400 cursor-pointer transition-all"><div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-100"><img src={selectedProduct.image} alt={room.name} className="w-full h-full object-cover" /></div><div className="flex-grow"><div className="flex items-start justify-between"><div><h4 className="text-xs font-black text-slate-850 dark:text-white">{room.name}</h4><div className="flex items-center gap-2 mt-1 text-[9px] text-slate-450 font-bold flex-wrap"><span>ðŸ‘¤ {room.guests} Guests</span><span>ðŸ›ï¸ {room.bed}</span><span>ðŸ“ {room.area}</span></div></div><div className="text-right shrink-0"><span className="text-sm font-black text-slate-900 dark:text-white block">â‚¹{room.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 block">/ night</span></div></div><div className="flex items-center gap-1.5 mt-2 flex-wrap">{room.amenities.map((a, ai) => <span key={ai} className="text-[8px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-1.5 py-0.5 rounded">{a}</span>)}<span className="text-[8px] text-blue-500 font-bold">{room.extra}</span></div></div></div>))}
+              {roomTypes.map((room) => (<div key={room.id} className="flex gap-4 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-400 cursor-pointer transition-all"><div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-100"><img src={selectedProduct.image} alt={room.name} className="w-full h-full object-cover" /></div><div className="flex-grow"><div className="flex items-start justify-between"><div><h4 className="text-xs font-black text-slate-850 dark:text-white">{room.name}</h4><div className="flex items-center gap-2 mt-1 text-[9px] text-slate-450 font-bold flex-wrap"><span>ðŸ‘¤ {room.guests} Guests</span><span>ðŸ›ï¸ {room.bed}</span><span>ðŸ“ {room.area}</span></div></div><div className="text-right shrink-0"><span className="text-sm font-black text-slate-900 dark:text-white block">₹{room.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 block">/ night</span></div></div><div className="flex items-center gap-1.5 mt-2 flex-wrap">{room.amenities.map((a, ai) => <span key={ai} className="text-[8px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-1.5 py-0.5 rounded">{a}</span>)}<span className="text-[8px] text-blue-500 font-bold">{room.extra}</span></div></div></div>))}
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3><div className="grid grid-cols-3 sm:grid-cols-5 gap-3">{['Free Wi-Fi','Swimming Pool','Restaurant','Room Service','Parking','Air Conditioning','Gym','Spa','Laundry','Business Center','Power Backup','24/7 Security'].map((a, ai) => (<div key={ai} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 dark:text-slate-400"><CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" /><span>{a}</span></div>))}</div></div>
           </div>
@@ -4939,8 +4997,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 sticky top-4 text-left">
               <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-850 pb-3">Booking Summary</h3>
               <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Hotel</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-in</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-out</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Nights</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {nights===1?'Night':'Nights'}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Rooms & Guests</span><span className="font-extrabold text-slate-800 dark:text-white">{stayRoomsCount} Room, {stayGuestsCount} Adults</span></div></div>
-              <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">â‚¹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">â‚¹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- â‚¹{memberDiscount.toLocaleString()}</span></div></div>
-              <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><div><span className="text-sm font-black text-slate-900 dark:text-white block">Total Amount</span><span className="text-[9px] text-slate-400 font-bold">Incl. all taxes</span></div><span className="text-xl font-black text-slate-900 dark:text-white">â‚¹{totalPrice.toLocaleString()}</span></div>
+              <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">₹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- ₹{memberDiscount.toLocaleString()}</span></div></div>
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><div><span className="text-sm font-black text-slate-900 dark:text-white block">Total Amount</span><span className="text-[9px] text-slate-400 font-bold">Incl. all taxes</span></div><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalPrice.toLocaleString()}</span></div>
               <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 24 hrs before check-in for full refund.</span></div></div>
               <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate(formatDate(stayCheckInDate)); setSelectedModalTime('12:00 PM'); setSelectedModalType('Standard Room'); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Continue to Payment <ArrowRight className="w-4 h-4" /></button>
               <button onClick={() => triggerNotification("Pay at Hotel option selected!")} className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all border border-slate-200 dark:border-slate-800 cursor-pointer">Pay at Hotel</button>
@@ -5456,8 +5514,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="text-left w-full md:w-auto">
                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Ticket Price</span>
                 <div className="flex items-baseline gap-2 mt-1.5">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white">â‚¹{(selectedProduct.price || 1200).toLocaleString()}</span>
-                  <span className="text-xs text-slate-400 line-through">â‚¹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">₹{(selectedProduct.price || 1200).toLocaleString()}</span>
+                  <span className="text-xs text-slate-400 line-through">₹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
                 </div>
                 <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 mt-1 block leading-none">
                   {selectedProduct.discount || '20% OFF Member Special'}
@@ -5889,7 +5947,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
               </div>
               
-              {/* Ratings and Verification / EMI Box */}
+              {/* Ratings and Verification Block */}
               <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <div className="flex items-center text-amber-400">
@@ -5908,29 +5966,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     Verified Purchase
                   </span>
                 </div>
-
-                {/* EMI trigger info card in top right */}
-                <div className="bg-emerald-50/30 dark:bg-slate-900 border border-emerald-100/40 dark:border-slate-800 rounded-xl px-4 py-2.5 text-left flex items-start gap-3 shadow-2xs max-w-[200px]">
-                  <div className="space-y-0.5">
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold block uppercase leading-none">EMI starts from</span>
-                    <span className="text-sm font-black text-emerald-650 dark:text-emerald-400 block">â‚¹{Math.round(pGold / 20).toLocaleString()}/month</span>
-                    <button onClick={() => triggerNotification("Opening EMI payment plans options...")} className="text-[9.5px] text-blue-500 hover:underline bg-transparent border-none cursor-pointer p-0 font-bold flex items-center gap-0.5">
-                      <span>View EMI Plans</span>
-                      <span>&gt;</span>
-                    </button>
-                  </div>
-                </div>
               </div>
 
               {/* Clean Price Display */}
               <div className="flex items-baseline gap-3 mb-5 mt-1">
                 <span className="text-2xl font-black text-slate-900 dark:text-white">
-                  â‚¹{pGold.toLocaleString()}
+                  ₹{pGold.toLocaleString()}
                 </span>
                 {pRegular > pGold && (
                   <>
                     <span className="text-xs text-slate-400 line-through">
-                      â‚¹{pRegular.toLocaleString()}
+                      ₹{pRegular.toLocaleString()}
                     </span>
                     <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-sm">
                       {selectedProduct.discount || `${Math.round((1 - pGold/pRegular) * 100)}% off`}
@@ -6067,8 +6113,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             {[
               { title: "500", sub: "Reward Points", detail: "On This Purchase", icon: Award, bg: "bg-amber-50/50 dark:bg-amber-450/5", iconCol: "text-amber-500" },
-              { title: "â‚¹2,000", sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
-              { title: "â‚¹500", sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
+              { title: "₹2,000", sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
+              { title: "₹500", sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
               { title: "1 Year", sub: "Extended Warranty", detail: "By Connect", icon: ShieldCheck, bg: "bg-emerald-50/50 dark:bg-emerald-450/5", iconCol: "text-emerald-500" },
               { title: "Priority", sub: "Customer Support", detail: "24/7 VIP Support", icon: LifeBuoy, bg: "bg-cyan-50/50 dark:bg-cyan-450/5", iconCol: "text-cyan-500" },
               { title: "Free", sub: "Express Delivery", detail: "2-3 Days Delivery", icon: Truck, bg: "bg-indigo-50/50 dark:bg-indigo-450/5", iconCol: "text-indigo-500" },
@@ -6096,12 +6142,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             {[
-              { name: "zomato", disc: "10% OFF", cap: "Up to â‚¹100", app: "On All Orders", logoCol: "text-[#E23744]", logoBg: "bg-red-50/20", border: "border-red-100 dark:border-red-950/20" },
-              { name: "MARRIOTT BONVOY", disc: "15% OFF", cap: "Up to â‚¹2,000", app: "On Hotel Bookings", logoCol: "text-slate-800 dark:text-slate-200 font-serif tracking-widest text-[9px] uppercase", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
-              { name: "make my trip", disc: "5% OFF", cap: "Up to â‚¹1,500", app: "On Flight Bookings", logoCol: "text-[#008ECF] italic font-black", logoBg: "bg-blue-50/20", border: "border-blue-100 dark:border-blue-950/20" },
-              { name: "bb bigbasket", disc: "10% OFF", cap: "Up to â‚¹500", app: "On Groceries", logoCol: "text-[#84c225] font-black tracking-tighter", logoBg: "bg-green-50/20", border: "border-green-100 dark:border-green-950/20" },
-              { name: "TRENDS", disc: "10% OFF", cap: "Up to â‚¹700", app: "On Fashion", logoCol: "text-slate-800 dark:text-slate-200 font-extrabold tracking-widest", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
-              { name: "netmeds", disc: "15% OFF", cap: "Up to â‚¹300", app: "On Medicines", logoCol: "text-[#00A4A6] font-black", logoBg: "bg-cyan-50/20", border: "border-cyan-100 dark:border-cyan-950/20" }
+              { name: "zomato", disc: "10% OFF", cap: "Up to ₹100", app: "On All Orders", logoCol: "text-[#E23744]", logoBg: "bg-red-50/20", border: "border-red-100 dark:border-red-950/20" },
+              { name: "MARRIOTT BONVOY", disc: "15% OFF", cap: "Up to ₹2,000", app: "On Hotel Bookings", logoCol: "text-slate-800 dark:text-slate-200 font-serif tracking-widest text-[9px] uppercase", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
+              { name: "make my trip", disc: "5% OFF", cap: "Up to ₹1,500", app: "On Flight Bookings", logoCol: "text-[#008ECF] italic font-black", logoBg: "bg-blue-50/20", border: "border-blue-100 dark:border-blue-950/20" },
+              { name: "bb bigbasket", disc: "10% OFF", cap: "Up to ₹500", app: "On Groceries", logoCol: "text-[#84c225] font-black tracking-tighter", logoBg: "bg-green-50/20", border: "border-green-100 dark:border-green-950/20" },
+              { name: "TRENDS", disc: "10% OFF", cap: "Up to ₹700", app: "On Fashion", logoCol: "text-slate-800 dark:text-slate-200 font-extrabold tracking-widest", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
+              { name: "netmeds", disc: "15% OFF", cap: "Up to ₹300", app: "On Medicines", logoCol: "text-[#00A4A6] font-black", logoBg: "bg-cyan-50/20", border: "border-cyan-100 dark:border-cyan-950/20" }
             ].map((p, idx) => (
               <div key={idx} className={`bg-white dark:bg-[#0b1329] border ${p.border} rounded-2xl p-4 text-center flex flex-col justify-between transition-all hover:-translate-y-0.5 shadow-2xs`}>
                 <div className={`h-8 flex items-center justify-center rounded-lg ${p.logoBg} mb-3.5 font-black text-xs px-2`}>
@@ -6170,9 +6216,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
               {[
                 { label: "Total Reward Points", val: "2,540", icon: Award, color: "text-amber-500" },
-                { label: "Cashback Earned", val: "â‚¹12,450", icon: Wallet, color: "text-emerald-500" },
-                { label: "Referral Earnings", val: "â‚¹1,250", icon: UserCheck, color: "text-blue-500" },
-                { label: "Total Savings Till Now", val: "â‚¹25,600", icon: Gift, color: "text-rose-500" }
+                { label: "Cashback Earned", val: "₹12,450", icon: Wallet, color: "text-emerald-500" },
+                { label: "Referral Earnings", val: "₹1,250", icon: UserCheck, color: "text-blue-500" },
+                { label: "Total Savings Till Now", val: "₹25,600", icon: Gift, color: "text-rose-500" }
               ].map((r, idx) => {
                 const Icon = r.icon;
                 return (
@@ -6258,8 +6304,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div>
                         <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{prod.name}</h4>
                         <div className="flex items-baseline gap-1.5 mt-2">
-                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">â‚¹{(prod.price || 0).toLocaleString()}</span>
-                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">â‚¹{(prod.originalPrice || prod.price || 0).toLocaleString()}</span>
+                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(prod.price || 0).toLocaleString()}</span>
+                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(prod.originalPrice || prod.price || 0).toLocaleString()}</span>
                           <span className="text-[9.5px] text-[#f43397] font-black">{prod.discount}</span>
                         </div>
                       </div>
@@ -6399,7 +6445,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
                 <h4 className="text-lg font-bold text-slate-800">Order Placed Successfully!</h4>
                 <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-                  Your payment has been authorized, and items are now routing to shipping. Flat â‚¹50 discounts applied!
+                  Your payment has been authorized, and items are now routing to shipping. Flat ₹50 discounts applied!
                 </p>
               </div>
             ) : cart.length === 0 ? (
@@ -6419,8 +6465,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div>
                       <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-[#f43397]">â‚¹{(item.price || 0).toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-400 line-through">â‚¹{(item.originalPrice || item.price || 0).toLocaleString()}</span>
+                        <span className="text-xs font-extrabold text-[#f43397]">₹{(item.price || 0).toLocaleString()}</span>
+                        <span className="text-[10px] text-slate-400 line-through">₹{(item.originalPrice || item.price || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -6440,7 +6486,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="space-y-2.5 mb-4 text-xs font-semibold">
                 <div className="flex justify-between text-slate-500">
                   <span>Subtotal:</span>
-                  <span className="font-bold text-slate-800">â‚¹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
+                  <span className="font-bold text-slate-800">₹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Shipping Fee:</span>
@@ -6448,12 +6494,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>1st Order Coupon:</span>
-                  <span className="text-emerald-600 font-bold">-â‚¹50</span>
+                  <span className="text-emerald-600 font-bold">-₹50</span>
                 </div>
                 <div className="border-t border-slate-100 pt-2.5 flex justify-between items-baseline text-slate-800">
                   <span className="text-sm font-bold">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
-                    â‚¹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0), 0) - 50).toLocaleString()}
+                    ₹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0), 0) - 50).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -6514,7 +6560,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div className="text-left">
                       <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
                       <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">â‚¹{(item.price || 0).toLocaleString()}</span>
+                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">₹{(item.price || 0).toLocaleString()}</span>
                         <span className="text-[10px] text-[#f43397] font-semibold">{item.discount}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500">
@@ -6659,7 +6705,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             <h4 className="font-bold">Order #{trackingOrder.order_number}</h4>
                             <p className="text-slate-500 dark:text-slate-400">Address: <strong>{trackingOrder.customer_address}</strong></p>
                             <p className="text-slate-500 dark:text-slate-400">Items: <strong>{trackingOrder.product_details}</strong></p>
-                            <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">â‚¹{trackingOrder.amount}</strong></p>
+                            <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">₹{trackingOrder.amount}</strong></p>
                           </div>
                           
                           <div className="bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1">
@@ -6828,7 +6874,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-1.5 shrink-0">
-                                  <span className="text-xs font-extrabold text-slate-850 dark:text-white">â‚¹{ord.amount}</span>
+                                  <span className="text-xs font-extrabold text-slate-850 dark:text-white">₹{ord.amount}</span>
                                   <div className="flex gap-2 items-center">
                                     {!['Delivered', 'Cancelled'].includes(ord.status) && (
                                       <button
@@ -7129,7 +7175,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <li>Flat 5% Off on all Products and Daily Needs</li>
                         <li>Standard priority order packaging & delivery</li>
                         <li>Earn 1.2x reward points on all transactions</li>
-                        <li>Free standard shipping on orders over â‚¹499</li>
+                        <li>Free standard shipping on orders over ₹499</li>
                       </ul>
                     </div>
                   </div>
@@ -7251,7 +7297,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div className="flex items-center justify-between text-xs font-medium border-t border-slate-50 dark:border-slate-850/30 pt-2.5">
                       <span className="text-slate-405 dark:text-slate-400">{terms.feeLabel}</span>
-                      <span className="text-slate-850 dark:text-white font-extrabold">â‚¹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
+                      <span className="text-slate-850 dark:text-white font-extrabold">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -7447,7 +7493,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <CreditCard className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee</span>
-                          <span className="font-black text-slate-850 dark:text-white text-sm">â‚¹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
+                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -7692,7 +7738,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                       <div className="flex items-center justify-between">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
-                        <span className="font-black text-slate-850 dark:text-white text-sm">â‚¹{(activeBookNowModalItem.price || 0).toLocaleString()}</span>
+                        <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeBookNowModalItem.price || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -7772,7 +7818,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Silver Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">â‚¹4,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹4,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
                       </div>
                       <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                         <li>5% off on products</li>
@@ -7806,7 +7852,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Gold Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">â‚¹8,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹8,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
                       </div>
                       <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                         <li>15% off Stays & 10% off Dining</li>
@@ -7853,7 +7899,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-slate-900 dark:text-white">Diamond Membership</h4>
-                      <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">â‚¹20,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                      <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹20,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
                     </div>
                     <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                       <li>Complimentary global airport VIP lounges</li>
