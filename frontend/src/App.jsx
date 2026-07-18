@@ -12,7 +12,22 @@ import { VendorProvider } from './context/VendorContext';
 import AppRoutes from './routes/AppRoutes';
 
 function AppContent() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    try {
+      return sessionStorage.getItem('connect_has_seen_splash') !== 'true';
+    } catch (e) {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    if (!loading) {
+      try {
+        sessionStorage.setItem('connect_has_seen_splash', 'true');
+      } catch (e) {}
+    }
+  }, [loading]);
+
   const [currentPage, setCurrentPage] = useState(() => {
     try {
       const user = localStorage.getItem('connect_current_user');

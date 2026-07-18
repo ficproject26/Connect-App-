@@ -236,6 +236,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [selectedModalTime, setSelectedModalTime] = useState('11:00 AM');
   const [selectedModalType, setSelectedModalType] = useState('Video Consultation');
   const [selectedTimeOfDayTab, setSelectedTimeOfDayTab] = useState('Morning');
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(4);
+  const [currentYear, setCurrentYear] = useState(2025);
+  const [selectedModalDay, setSelectedModalDay] = useState(21);
   const [favorites, setFavorites] = useState([]);
   const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
   const [previewMembershipTier, setPreviewMembershipTier] = useState(membershipTier || 'Gold Elite');
@@ -4740,8 +4743,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <div className="mt-3.5 space-y-1">
                                 <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
                                 <div className="flex items-baseline gap-1.5">
-                                  <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">₹{product.price.toLocaleString()}</span>
-                                  <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                                  <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
+                                  <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
                                   <span className="text-[10px] sm:text-[11px] text-emerald-600 font-extrabold">{product.discount || '20% off'}</span>
                                 </div>
                               </div>
@@ -6581,7 +6584,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div className="flex items-center justify-between text-xs font-medium border-t border-slate-50 dark:border-slate-850/30 pt-2.5">
                       <span className="text-slate-405 dark:text-slate-400">{terms.feeLabel}</span>
-                      <span className="text-slate-850 dark:text-white font-extrabold">₹{activeScheduleModalItem.price.toLocaleString()}</span>
+                      <span className="text-slate-850 dark:text-white font-extrabold">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -6777,7 +6780,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <CreditCard className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee</span>
-                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{activeScheduleModalItem.price.toLocaleString()}</span>
+                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -7022,7 +7025,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                       <div className="flex items-center justify-between">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
-                        <span className="font-black text-slate-850 dark:text-white text-sm">₹{activeBookNowModalItem.price.toLocaleString()}</span>
+                        <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeBookNowModalItem.price || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
