@@ -5319,8 +5319,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
                 {selectedProduct.name}
               </h2>
-              <p className="text-xs text-slate-450 dark:text-slate-500 font-bold block mt-1.5">
-                {selectedProduct.description || 'AC Sleeper (2+1)'} â€¢ ★ {selectedProduct.rating || 4.5} ({selectedProduct.reviews || 12520} Reviews)
+              <p className="text-xs text-slate-455 dark:text-slate-500 font-bold block mt-1.5">
+                {selectedProduct.description || 'AC Sleeper (2+1)'} | ★ {selectedProduct.rating || 4.5} ({selectedProduct.reviews || 12520} Reviews)
               </p>
             </div>
 
@@ -5337,13 +5337,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                 {/* Duration & Bus separator graphic */}
                 <div className="flex flex-col items-center justify-center shrink-0 select-none min-w-[120px]">
-                  <span className="text-[10px] font-bold text-slate-450 mb-1 block">8h 30m</span>
+                  <span className="text-[10px] font-bold text-slate-455 mb-1 block">8h 30m</span>
                   <div className="relative w-28 flex items-center justify-center">
                     <span className="w-full h-0.5 bg-slate-200 dark:bg-slate-800 block" />
                     <span className="absolute w-2 h-2 rounded-full bg-slate-400 left-0" />
-                    <span className="absolute w-7 h-7 rounded-full bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-3xs z-10">
-                      <Plane className="w-4 h-4 text-slate-450 rotate-90" />
-                    </span>
                     <span className="absolute w-2 h-2 rounded-full bg-slate-400 right-0" />
                   </div>
                 </div>
