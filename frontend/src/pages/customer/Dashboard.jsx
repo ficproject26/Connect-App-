@@ -4864,13 +4864,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const saveDiamond = pRegular - pDiamond;
 
     // Gallery images
-    const thumbnails = [
-      selectedProduct.image,
-      selectedProduct.image,
-      selectedProduct.image,
-      selectedProduct.image,
-      selectedProduct.image
-    ];
+    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0
+      ? selectedProduct.images
+      : [selectedProduct.image];
 
     // Helper to get stats badges dynamically
     const getStatsBadges = (product) => {
@@ -5125,7 +5121,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="flex gap-4">
               {/* Thumbnails list */}
               <div className="flex flex-col gap-2.5 shrink-0 select-none">
-                {thumbnails.map((thumb, idx) => (
+                {thumbnails.slice(0, 5).map((thumb, idx) => (
                   <button
                     key={idx}
                     onClick={() => { setActiveProductImage(thumb); setActiveThumbnailIndex(idx); }}
@@ -5147,10 +5143,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     />
                   </button>
                 ))}
-                <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
-                  <span>+3</span>
-                  <span>More</span>
-                </div>
+                {thumbnails.length > 5 && (
+                  <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                    <span>+{thumbnails.length - 5}</span>
+                    <span>More</span>
+                  </div>
+                )}
               </div>
 
               {/* Main Large Display */}
