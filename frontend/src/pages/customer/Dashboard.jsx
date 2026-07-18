@@ -100,6 +100,58 @@ const getProductDescription = (product) => {
   return `${name} is a premium offering available exclusively to Connect App members. Enjoy member-only discounts, priority service, and seamless delivery. Add to cart to claim your exclusive member pricing and earn reward points on this purchase.`;
 };
 
+const getModalTerms = (item) => {
+  if (!item) return {
+    title: "",
+    label: "",
+    category: "",
+    type1: "",
+    type2: "",
+    feeLabel: "",
+    durationText: "",
+    summaryLabel: ""
+  };
+  
+  const isStay = item.subNavbarCategory === 'Stay' || item.tag === 'Stay';
+  const isTravel = item.subNavbarCategory === 'Travel' || item.tag === 'Travel';
+  
+  if (isStay) {
+    return {
+      title: "Select Room & Dates",
+      label: "Host",
+      category: item.category || "Hotel",
+      type1: "Deluxe Suite",
+      type2: "Standard Room",
+      feeLabel: "Stay Fee",
+      durationText: "Check-in: 12:00 PM | Checkout: 11:00 AM",
+      summaryLabel: "Hotel Stay"
+    };
+  }
+  if (isTravel) {
+    return {
+      title: "Select Package & Date",
+      label: "Agent",
+      category: item.category || "Travel Tour",
+      type1: "Private Tour",
+      type2: "Group Tour",
+      feeLabel: "Travel Ticket Fee",
+      durationText: "Departure details sent after booking approval",
+      summaryLabel: "Travel Ticket"
+    };
+  }
+  // Default: Services/Hospitals
+  return {
+    title: "Schedule Appointment",
+    label: "Doctor",
+    category: item.category || "Specialist",
+    type1: "Video Consultation",
+    type2: "In-clinic Visit",
+    feeLabel: "Consultation Fee",
+    durationText: "Consultation duration: 30 mins | Please arrive 10 mins early",
+    summaryLabel: "Doctor"
+  };
+};
+
 export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
   const [theme, setTheme] = useState(
@@ -178,6 +230,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
   const [selectedSubNavbarCategory, setSelectedSubNavbarCategory] = useState('All');
   const [sortBy, setSortBy] = useState('default');
+  const [activeScheduleModalItem, setActiveScheduleModalItem] = useState(null);
+  const [activeBookNowModalItem, setActiveBookNowModalItem] = useState(null);
+  const [selectedModalDate, setSelectedModalDate] = useState('Wed, 21 May 2025');
+  const [selectedModalTime, setSelectedModalTime] = useState('11:00 AM');
+  const [selectedModalType, setSelectedModalType] = useState('Video Consultation');
+  const [selectedTimeOfDayTab, setSelectedTimeOfDayTab] = useState('Morning');
   const [favorites, setFavorites] = useState([]);
   const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
   const [previewMembershipTier, setPreviewMembershipTier] = useState(membershipTier || 'Gold Elite');
@@ -4740,7 +4798,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          triggerNotification(`Opening schedule planner for ${product.name}...`);
+                                          setActiveScheduleModalItem(product);
+                                          setSelectedModalDate('Wed, 21 May 2025');
+                                          setSelectedModalTime('11:00 AM');
+                                          setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
                                         }} 
                                         className="flex-1 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 border border-amber-500/30 leading-none h-9"
                                       >
@@ -4750,10 +4811,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          if (!cart.find(item => item.id === product.id)) {
-                                            addToCart(product);
-                                          }
-                                          setIsCartOpen(true);
+                                          setActiveBookNowModalItem(product);
+                                          setSelectedModalDate('Wednesday, 21 May 2025');
+                                          setSelectedModalTime('11:00 AM');
+                                          setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                                          setSelectedTimeOfDayTab('Morning');
                                         }} 
                                         className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
                                       >
@@ -5304,11 +5366,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </button>
                     <button
                       onClick={() => {
-                        if (!cart.find(item => item.id === selectedProduct.id)) {
-                          setCart(prev => [...prev, selectedProduct]);
+                        const isBooking = ['Services', 'Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Services', 'Stay', 'Travel'].includes(selectedProduct.tag);
+                        if (isBooking) {
+                          setActiveBookNowModalItem(selectedProduct);
+                          setSelectedModalDate('Wednesday, 21 May 2025');
+                          setSelectedModalTime('11:00 AM');
+                          setSelectedModalType(selectedProduct.subNavbarCategory === 'Stay' ? 'Standard Room' : (selectedProduct.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                          setSelectedTimeOfDayTab('Morning');
+                        } else {
+                          if (!cart.find(item => item.id === selectedProduct.id)) {
+                            setCart(prev => [...prev, selectedProduct]);
+                          }
+                          setIsCartOpen(true);
+                          triggerNotification(`Proceeding to checkout...`);
                         }
-                        setIsCartOpen(true);
-                        triggerNotification(`Proceeding to checkout...`);
                       }}
                       className="flex-1 py-3.5 bg-orange-500 hover:bg-orange-655 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
                     >
@@ -6459,6 +6530,483 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
         </div>
       )}
+
+      {/* ==================== 1. SCHEDULE MODAL (Screenshot 1 style) ==================== */}
+      {activeScheduleModalItem && (() => {
+        const terms = getModalTerms(activeScheduleModalItem);
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
+            <div onClick={() => setActiveScheduleModalItem(null)} className="absolute inset-0" />
+            
+            <div className="relative bg-slate-50 dark:bg-[#030712] w-full max-w-6xl rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 flex flex-col gap-6 z-10 border border-slate-200 dark:border-slate-800/80 max-h-[90vh] overflow-y-auto">
+              {/* Close Button */}
+              <button 
+                onClick={() => setActiveScheduleModalItem(null)}
+                className="absolute right-6 top-6 w-8 h-8 rounded-full bg-white dark:bg-[#0b1329] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 dark:border-slate-800 transition-colors border-none"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Column 1: Profile Info */}
+                <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col items-center text-center justify-between">
+                  <div className="w-full flex flex-col items-center">
+                    <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-amber-400 p-0.5 mt-2 shadow-xs">
+                      <img src={activeScheduleModalItem.image} alt={activeScheduleModalItem.name} className="w-full h-full object-cover rounded-full" />
+                      <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
+                    </div>
+                    
+                    <span className="mt-3 text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-450 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-0.5 rounded-full">Available</span>
+                    
+                    <h3 className="text-base font-black text-slate-850 dark:text-white mt-3 flex items-center gap-1 justify-center w-full">
+                      <span className="truncate max-w-[80%]">{activeScheduleModalItem.name}</span>
+                      <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500 shrink-0" />
+                    </h3>
+                    
+                    <span className="text-xs font-bold text-slate-450 dark:text-slate-400 mt-1 block">{terms.category}</span>
+                    
+                    <span className="text-[10px] text-slate-500 dark:text-slate-405 mt-2.5 leading-relaxed">
+                      {activeScheduleModalItem.subNavbarCategory === 'Stay' ? 'Verified Host • 5+ Years Experience' : (activeScheduleModalItem.subNavbarCategory === 'Travel' ? 'Luxury Agent • 10+ Years Tours' : 'MBBS, MD - Specialist • 12+ Years Experience')}
+                    </span>
+
+                    <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-full px-2.5 py-0.5 mt-3 select-none">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
+                      <span className="text-[11px] font-black text-slate-750 dark:text-amber-450">{activeScheduleModalItem.rating || 4.5} <span className="font-bold text-slate-450 dark:text-slate-500">({activeScheduleModalItem.reviews || 120} Reviews)</span></span>
+                    </div>
+                  </div>
+
+                  <div className="w-full mt-6 space-y-2 border-t border-slate-100 dark:border-slate-850/40 pt-4 text-left">
+                    <div className="flex items-center justify-between text-xs font-medium">
+                      <span className="text-slate-405 dark:text-slate-400">{terms.type2}</span>
+                      <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-medium">
+                      <span className="text-slate-405 dark:text-slate-400">{terms.type1}</span>
+                      <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-medium border-t border-slate-50 dark:border-slate-850/30 pt-2.5">
+                      <span className="text-slate-405 dark:text-slate-400">{terms.feeLabel}</span>
+                      <span className="text-slate-850 dark:text-white font-extrabold">₹{activeScheduleModalItem.price.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2: Select Date Calendar */}
+                <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider mb-4 text-left">Select Date</h3>
+                    
+                    {/* Calendar Navigation */}
+                    <div className="flex items-center justify-between px-1 mb-4 select-none">
+                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                        <ChevronLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
+                      </button>
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">May 2025</span>
+                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                        <ChevronRight className="w-4 h-4 text-slate-650 dark:text-slate-355" />
+                      </button>
+                    </div>
+
+                    {/* Calendar Days Grid */}
+                    <div className="grid grid-cols-7 gap-y-2 text-center select-none">
+                      {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
+                        <span key={d} className="text-[9px] font-black text-slate-400 tracking-wider mb-1">{d}</span>
+                      ))}
+                      
+                      {/* Blank days for May 2025 padding (starts on Thursday) */}
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <span key={`blank-${i}`} className="text-xs text-transparent py-1.5">27</span>
+                      ))}
+
+                      {/* Days from 1 to 31 */}
+                      {Array.from({ length: 31 }).map((_, i) => {
+                        const day = i + 1;
+                        const isSelected = day === 21;
+                        return (
+                          <button
+                            key={`day-${day}`}
+                            onClick={() => setSelectedModalDate(`Wed, ${day} May 2025`)}
+                            className={`text-xs font-extrabold py-1.5 rounded-full transition-all cursor-pointer flex items-center justify-center ${
+                              isSelected 
+                                ? 'bg-blue-600 text-white font-black scale-110 shadow-sm' 
+                                : 'text-slate-750 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 mt-6 border-t border-slate-50 dark:border-slate-850/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Available</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-350 dark:bg-slate-700" /> Not Available</span>
+                  </div>
+                </div>
+
+                {/* Column 3: Select Time Grid */}
+                <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider mb-4 text-left">Select Time</h3>
+                    
+                    {/* Toggle Button Types */}
+                    <div className="grid grid-cols-2 gap-2 mb-5">
+                      <button 
+                        onClick={() => setSelectedModalType(terms.type2)}
+                        className={`py-2 px-1 text-[10px] font-black uppercase rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                          selectedModalType === terms.type2
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-black' 
+                            : 'bg-transparent text-slate-650 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <Home className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{terms.type2}</span>
+                      </button>
+                      <button 
+                        onClick={() => setSelectedModalType(terms.type1)}
+                        className={`py-2 px-1 text-[10px] font-black uppercase rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                          selectedModalType === terms.type1
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-black' 
+                            : 'bg-transparent text-slate-650 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <span className="truncate">{terms.type1}</span>
+                      </button>
+                    </div>
+
+                    {/* Grid of times */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        '09:00 AM', '09:30 AM', '10:00 AM',
+                        '10:30 AM', '11:00 AM', '11:30 AM',
+                        '12:00 PM', '04:00 PM', '04:30 PM',
+                        '05:00 PM', '05:30 PM', '06:00 PM'
+                      ].map(t => {
+                        const isSelected = selectedModalTime === t;
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => setSelectedModalTime(t)}
+                            className={`py-2 text-[10px] font-bold rounded-lg border transition-all cursor-pointer text-center ${
+                              isSelected
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-black'
+                                : 'bg-transparent text-slate-705 dark:text-slate-300 border-slate-150 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Duration Text */}
+                  <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3 text-[10px] text-blue-700 dark:text-blue-400 mt-6 leading-relaxed text-left">
+                    <Clock className="w-4.5 h-4.5 text-blue-500 shrink-0" />
+                    <span>{terms.durationText}</span>
+                  </div>
+                </div>
+
+                {/* Column 4: Appointment Summary */}
+                <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div className="space-y-5">
+                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Appointment Summary</h3>
+                    
+                    <div className="space-y-3.5 text-xs text-left">
+                      <div className="flex items-start gap-3">
+                        <User className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{terms.label}</span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200">{activeScheduleModalItem.name}</span>
+                          <span className="text-[10px] text-slate-450 dark:text-slate-550 block mt-0.5 leading-none">{terms.category}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                        <svg className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Date</span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalDate}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                        <Clock className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Time</span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalTime}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                        <svg className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Type</span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalType}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                        <CreditCard className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee</span>
+                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{activeScheduleModalItem.price.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      triggerNotification(`Appointment scheduled for ${selectedModalDate} at ${selectedModalTime}!`);
+                      setActiveScheduleModalItem(null);
+                    }}
+                    className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1 border-none active:scale-[0.99]"
+                  >
+                    <span>Schedule Now</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Secure Footer Banner */}
+              <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/50 dark:border-slate-850/40 pt-4 mt-2 text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-widest select-none">
+                <ShieldCheck className="w-4.5 h-4.5 text-blue-500" />
+                <span>Your appointment is safe and secure with Connect App</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ==================== 2. BOOK NOW MODAL (Screenshot 2 style) ==================== */}
+      {activeBookNowModalItem && (() => {
+        const terms = getModalTerms(activeBookNowModalItem);
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
+            <div onClick={() => setActiveBookNowModalItem(null)} className="absolute inset-0" />
+            
+            <div className="relative bg-slate-50 dark:bg-[#030712] w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 flex flex-col gap-6 z-10 border border-slate-200 dark:border-slate-800/80 max-h-[90vh] overflow-y-auto">
+              {/* Close Button */}
+              <button 
+                onClick={() => setActiveBookNowModalItem(null)}
+                className="absolute right-6 top-6 w-8 h-8 rounded-full bg-white dark:bg-[#0b1329] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 dark:border-slate-800 transition-colors border-none"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Modal Title */}
+              <div className="text-left select-none">
+                <h2 className="text-lg font-black text-slate-850 dark:text-white">Schedule Now</h2>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Column 1: Calendar View */}
+                <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div>
+                    {/* Calendar Navigation */}
+                    <div className="flex items-center justify-between px-1 mb-4 select-none">
+                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                        <ChevronLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
+                      </button>
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">May 2025</span>
+                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                        <ChevronRight className="w-4 h-4 text-slate-650 dark:text-slate-355" />
+                      </button>
+                    </div>
+
+                    {/* Days grid */}
+                    <div className="grid grid-cols-7 gap-y-2 text-center select-none">
+                      {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
+                        <span key={d} className="text-[9px] font-black text-slate-400 tracking-wider mb-1">{d}</span>
+                      ))}
+                      
+                      {/* Blank spaces for May padding */}
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <span key={`blank-${i}`} className="text-xs text-transparent py-1.5">27</span>
+                      ))}
+
+                      {/* May 1-31 days */}
+                      {Array.from({ length: 31 }).map((_, i) => {
+                        const day = i + 1;
+                        const isSelected = day === 21;
+                        return (
+                          <button
+                            key={`day-${day}`}
+                            onClick={() => setSelectedModalDate(`Wednesday, ${day} May 2025`)}
+                            className={`text-xs font-extrabold py-1.5 rounded-full transition-all cursor-pointer flex items-center justify-center relative ${
+                              isSelected 
+                                ? 'bg-blue-600 text-white font-black scale-110 shadow-sm' 
+                                : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <span>{day}</span>
+                            {/* Available/busy dot indicator */}
+                            {!isSelected && (
+                              <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
+                                day % 5 === 0 ? 'bg-orange-400' : (day % 3 === 0 ? 'bg-slate-300' : 'bg-emerald-500')
+                              }`} />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Legends */}
+                  <div className="flex items-center gap-3 mt-6 border-t border-slate-50 dark:border-slate-850/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Available</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400" /> Few Slots</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700" /> Unavailable</span>
+                  </div>
+                </div>
+
+                {/* Column 2: Available Slots Grid */}
+                <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div>
+                    {/* Selected Day / Slots availability pill */}
+                    <div className="flex justify-between items-center mb-4 select-none">
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">{selectedModalDate}</span>
+                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">16 Slots Available</span>
+                    </div>
+
+                    {/* Tabs row */}
+                    <div className="flex border-b border-slate-100 dark:border-slate-800/60 mb-5 text-[11px] font-bold select-none">
+                      {['Morning', 'Afternoon', 'Evening'].map(tab => {
+                        const isSelected = selectedTimeOfDayTab === tab;
+                        return (
+                          <button
+                            key={tab}
+                            onClick={() => setSelectedTimeOfDayTab(tab)}
+                            className={`flex-1 pb-2 border-b-2 transition-all cursor-pointer uppercase tracking-wider text-center ${
+                              isSelected 
+                                ? 'border-blue-600 text-blue-600 font-black' 
+                                : 'border-transparent text-slate-450 dark:text-slate-500 hover:text-slate-650'
+                            }`}
+                          >
+                            {tab}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Time pills */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        '09:00 AM', '09:30 AM', '10:00 AM',
+                        '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM'
+                      ].map(t => {
+                        const isSelected = selectedModalTime === t;
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => setSelectedModalTime(t)}
+                            className={`py-2 px-3 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                              isSelected
+                                ? 'bg-blue-50 dark:bg-blue-950/15 border-blue-600 text-blue-600 ring-1 ring-blue-600/30 font-black'
+                                : 'bg-transparent text-slate-700 dark:text-slate-300 border-slate-150 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <span className="text-xs font-bold">{t}</span>
+                            <span className={`text-[8px] font-extrabold uppercase ${isSelected ? 'text-blue-500 font-black' : 'text-emerald-500'}`}>
+                              {isSelected ? 'Selected' : 'Available'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Morning slots tip */}
+                  <div className="flex items-center gap-2 bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3 text-[10px] text-amber-750 dark:text-amber-400 mt-6 leading-relaxed text-left">
+                    <svg className="w-4.5 h-4.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                    <span>Tip: Morning slots are usually less crowded</span>
+                  </div>
+                </div>
+
+                {/* Column 3: Confirmation Summary */}
+                <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div className="space-y-5">
+                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Your Appointment</h3>
+                    
+                    {/* Mini Profile card */}
+                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#030712] border border-slate-100 dark:border-slate-850/40 rounded-xl p-3 select-none">
+                      <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-slate-200 p-0.5">
+                        <img src={activeBookNowModalItem.image} alt={activeBookNowModalItem.name} className="w-full h-full object-cover rounded-full" />
+                      </div>
+                      <div className="text-left flex-grow">
+                        <h4 className="text-xs font-black text-slate-850 dark:text-white flex items-center gap-0.5 w-full">
+                          <span className="truncate max-w-[80%]">{activeBookNowModalItem.name}</span>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-500 shrink-0" />
+                        </h4>
+                        <span className="text-[9px] text-slate-400 block leading-none mt-1">{terms.category}</span>
+                        <div className="flex items-center gap-0.5 mt-1.5 text-[9px] font-black text-slate-650 dark:text-amber-400">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400 animate-pulse" />
+                          <span>{activeBookNowModalItem.rating || 4.5} <span className="font-bold text-slate-450 dark:text-slate-500">({activeBookNowModalItem.reviews || 120} Reviews)</span></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Summary row matrix */}
+                    <div className="space-y-3.5 text-xs text-left">
+                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> Date</span>
+                        <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalDate}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-455" /> Time</span>
+                        <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalTime}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> Type</span>
+                        <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalType}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
+                        <span className="font-black text-slate-850 dark:text-white text-sm">₹{activeBookNowModalItem.price.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-3">
+                    <button
+                      onClick={() => {
+                        const itemToCart = {
+                          ...activeBookNowModalItem,
+                          bookingDate: selectedModalDate,
+                          bookingTime: selectedModalTime,
+                          bookingType: selectedModalType
+                        };
+                        if (!cart.find(item => item.id === itemToCart.id)) {
+                          addToCart(itemToCart);
+                        }
+                        setActiveBookNowModalItem(null);
+                        setIsCartOpen(true);
+                        triggerNotification(`Booking added to Cart!`);
+                      }}
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-750 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none active:scale-[0.99]"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      <span>Book Now</span>
+                    </button>
+                    
+                    <div className="flex items-center justify-center gap-1 text-[10px] text-slate-455 dark:text-slate-500 font-bold select-none leading-none">
+                      <ShieldCheck className="w-4 h-4 text-blue-500" />
+                      <span>You won't be charged yet</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ==================== MEMBERSHIP UPGRADE MODAL ==================== */}
       {showUpgradeModal && (
