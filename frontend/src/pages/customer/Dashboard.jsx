@@ -5631,7 +5631,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </div>
 
             {/* Price and Book Ticket actions panel */}
-            <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 mt-2">
+            <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-row items-center justify-between gap-4 mt-2">
               <div className="text-left w-full md:w-auto">
                 <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Ticket Price</span>
                 <div className="flex items-baseline gap-2 mt-1.5">
