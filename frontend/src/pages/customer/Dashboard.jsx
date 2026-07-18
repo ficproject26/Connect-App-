@@ -754,7 +754,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       title: p.name,
       department: p.category || 'General',
       location: p.description?.split('\n')[0] || 'Remote (India)',
-      salary: `₹${p.price.toLocaleString()} L.P.A`,
+      salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
       type: 'Full-time',
       desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`
     }))
@@ -3695,7 +3695,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 w-full">
                     <div className="flex flex-col">
                       <span className="text-[13px] font-black text-slate-850 dark:text-white">
-                        ₹{item.price.toLocaleString()}
+                        ₹{(item.price || 0).toLocaleString()}
                         {item.tag === 'Stay' && <span className="text-[9.5px] font-bold text-slate-400">/night</span>}
                         {item.tag === 'Jobs' && <span className="text-[9.5px] font-bold text-slate-400">/month</span>}
                       </span>
@@ -3819,8 +3819,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div>
                     <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                     <div className="flex items-baseline gap-1.5 mt-2">
-                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{product.price.toLocaleString()}</span>
-                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
+                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
                       <span className="text-[9.5px] text-emerald-600 font-bold">{product.discount}</span>
                     </div>
                   </div>
@@ -3896,7 +3896,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <span>{stay.rating || 4.5}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{stay.price.toLocaleString()}</span>
+                    <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{(stay.price || 0).toLocaleString()}</span>
                     <span className="text-[7px] text-slate-450 dark:text-slate-500 font-semibold block">/ Night</span>
                   </div>
                 </div>
@@ -3936,7 +3936,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <span>{rest.rating || 4.5}</span>
                   </div>
-                  <div>₹{rest.price.toLocaleString()}</div>
+                  <div>₹{(rest.price || 0).toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -5603,8 +5603,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div>
                         <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{prod.name}</h4>
                         <div className="flex items-baseline gap-1.5 mt-2">
-                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{prod.price.toLocaleString()}</span>
-                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{prod.originalPrice.toLocaleString()}</span>
+                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(prod.price || 0).toLocaleString()}</span>
+                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(prod.originalPrice || prod.price || 0).toLocaleString()}</span>
                           <span className="text-[9.5px] text-[#f43397] font-black">{prod.discount}</span>
                         </div>
                       </div>
@@ -6563,8 +6563,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     
                     <span className="text-xs font-bold text-slate-450 dark:text-slate-400 mt-1 block">{terms.category}</span>
                     
-                    <span className="text-[10px] text-slate-500 dark:text-slate-405 mt-2.5 leading-relaxed">
-                      {activeScheduleModalItem.subNavbarCategory === 'Stay' ? 'Verified Host • 5+ Years Experience' : (activeScheduleModalItem.subNavbarCategory === 'Travel' ? 'Luxury Agent • 10+ Years Tours' : 'MBBS, MD - Specialist • 12+ Years Experience')}
+                    <span className="text-[10px] text-slate-500 dark:text-slate-405 mt-2.5 leading-relaxed text-center block">
+                      {(() => {
+                        const isDoctor = activeScheduleModalItem.name?.startsWith('Dr.') || ['Hospital', 'Clinic', 'Cardiology', 'Pediatrics', 'Dentist', 'Homeopathy'].includes(activeScheduleModalItem.category);
+                        if (activeScheduleModalItem.subNavbarCategory === 'Stay') {
+                          return 'Verified Host • 5+ Years Experience';
+                        }
+                        if (activeScheduleModalItem.subNavbarCategory === 'Travel') {
+                          return 'Luxury Agent • 10+ Years Tours';
+                        }
+                        if (isDoctor) {
+                          return 'MBBS, MD - Specialist • 12+ Years Experience';
+                        }
+                        return 'Verified Partner • Premium Quality Guarantee';
+                      })()}
                     </span>
 
                     <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-full px-2.5 py-0.5 mt-3 select-none">
