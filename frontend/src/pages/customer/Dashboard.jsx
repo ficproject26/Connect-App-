@@ -4989,7 +4989,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Select Room Type</h3>
               {roomTypes.map((room) => (<div key={room.id} className="flex gap-4 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-400 cursor-pointer transition-all"><div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-100"><img src={selectedProduct.image} alt={room.name} className="w-full h-full object-cover" /></div><div className="flex-grow"><div className="flex items-start justify-between"><div><h4 className="text-xs font-black text-slate-850 dark:text-white">{room.name}</h4><div className="flex items-center gap-2 mt-1 text-[9px] text-slate-450 font-bold flex-wrap"><span>{room.guests} Guests</span><span>{room.bed}</span><span>{room.area}</span></div></div><div className="text-right shrink-0"><span className="text-sm font-black text-slate-900 dark:text-white block">₹{room.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 block">/ night</span></div></div><div className="flex items-center gap-1.5 mt-2 flex-wrap">{room.amenities.map((a, ai) => <span key={ai} className="text-[8px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-1.5 py-0.5 rounded">{a}</span>)}<span className="text-[8px] text-blue-500 font-bold">{room.extra}</span></div></div></div>))}
             </div>
-            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3><div className="grid grid-cols-3 sm:grid-cols-5 gap-3">{['Wi-Fi','Room Service','AC','Gym','Spa','Laundry','24/7 Security','Restaurant','Parking','Power Backup'].map((a, ai) => (<div key={ai} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 dark:text-slate-400"><CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" /><span>{a}</span></div>))}</div></div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                {(selectedProduct.amenities && selectedProduct.amenities.length > 0 
+                  ? selectedProduct.amenities 
+                  : ['Wi-Fi','Room Service','AC','Gym','Spa','Laundry','24/7 Security','Restaurant','Parking','Power Backup']
+                ).map((a, ai) => (
+                  <div key={ai} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 dark:text-slate-400">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                    <span>{a}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* RIGHT: Booking Summary */}
@@ -5380,28 +5393,42 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 Amenities
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {[
-                  { label: 'Wi-Fi', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg> },
-                  { label: 'Sleeper Berth', icon: (cn) => <BedDouble className={cn} /> },
-                  { label: 'Blanket & Pillow', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" /></svg> },
-                  { label: 'Charging Point', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
-                  { label: 'Water Bottle', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1H9L8 4z" /></svg> },
-                  { label: 'CCTV', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> },
-                  { label: 'GPS Tracking', icon: (cn) => <MapPin className={cn} /> },
-                  { label: 'AC', icon: (cn) => <Wind className={cn} /> },
-                  { label: 'Gym', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.065M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
-                  { label: 'Spa', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg> },
-                  { label: 'Laundry', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h18a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
-                  { label: '24/7 Security', icon: (cn) => <ShieldCheck className={cn} /> },
-                  { label: 'Restaurant', icon: (cn) => <Utensils className={cn} /> },
-                  { label: 'Parking', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zm0 0h6m-6 0a6 6 0 016-6H9m6 6a2 2 0 11-4 0 2 2 0 014 0zm0 0V9" /></svg> },
-                  { label: 'Power Backup', icon: (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> }
-                ].map((am, idx) => (
-                  <div key={idx} className="flex flex-col items-center justify-center p-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl text-center shadow-3xs hover:border-slate-350 transition-colors">
-                    {am.icon("w-4.5 h-4.5 text-slate-655 dark:text-slate-350 mb-1")}
-                    <span className="text-[8.5px] font-black text-slate-700 dark:text-slate-400 leading-tight block mt-1">{am.label}</span>
-                  </div>
-                ))}
+                {(() => {
+                  const defaultTravelAmenities = ['Wi-Fi', 'Sleeper Berth', 'Blanket & Pillow', 'Charging Point', 'Water Bottle', 'CCTV', 'GPS Tracking', 'AC', 'Gym', 'Spa', 'Laundry', '24/7 Security', 'Restaurant', 'Parking', 'Power Backup'];
+                  const travelAmenities = selectedProduct.amenities && selectedProduct.amenities.length > 0
+                    ? selectedProduct.amenities
+                    : defaultTravelAmenities;
+
+                  const iconMap = {
+                    'AC': (cn) => <Wind className={cn} />,
+                    'Sleeper Berth': (cn) => <BedDouble className={cn} />,
+                    'Blanket & Pillow': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" /></svg>,
+                    'Charging Point': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+                    'Wi-Fi': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>,
+                    'Water Bottle': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1H9L8 4z" /></svg>,
+                    'CCTV': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
+                    'GPS Tracking': (cn) => <MapPin className={cn} />,
+                    'Gym': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.065M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                    'Spa': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
+                    'Laundry': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h18a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+                    '24/7 Security': (cn) => <ShieldCheck className={cn} />,
+                    'Restaurant': (cn) => <Utensils className={cn} />,
+                    'Parking': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zm0 0h6m-6 0a6 6 0 016-6H9m6 6a2 2 0 11-4 0 2 2 0 014 0zm0 0V9" /></svg>,
+                    'Power Backup': (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  };
+
+                  const defaultIcon = (cn) => <CheckCircle2 className={cn} />;
+
+                  return travelAmenities.map((amenity, idx) => {
+                    const getIcon = iconMap[amenity] || defaultIcon;
+                    return (
+                      <div key={idx} className="flex flex-col items-center justify-center p-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl text-center shadow-3xs hover:border-slate-350 transition-colors">
+                        {getIcon("w-4.5 h-4.5 text-slate-655 dark:text-slate-350 mb-1")}
+                        <span className="text-[8.5px] font-black text-slate-700 dark:text-slate-400 leading-tight block mt-1">{amenity}</span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
             {/* Seat Availability Section */}
