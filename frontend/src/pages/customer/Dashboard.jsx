@@ -2124,7 +2124,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         selectedServiceTypes.includes(product.category);
 
       const matchesLocType = selectedLocTypes.length === 0 ||
-        selectedLocTypes.some(loc => product.locationType?.toLowerCase() === loc.toLowerCase());
+        selectedLocTypes.some(loc => (product.city || product.vendorCity || product.locationType)?.toLowerCase() === loc.toLowerCase());
 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
@@ -4328,9 +4328,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Locations</option>
-                    <option value="Remote">Remote</option>
-                    <option value="Hybrid">Hybrid</option>
-                    <option value="On-site">On-site</option>
+                    {(() => {
+                      const dbCities = products.filter(p => p.subNavbarCategory === 'Services').map(p => p.city || p.vendorCity).filter(Boolean);
+                      const cities = [...new Set([...dbCities, 'Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'])];
+                      return cities.map(city => (
+                        <option key={city} value={city}>{city}</option>
+                      ));
+                    })()}
                   </select>
                 </>
               )}
@@ -6589,45 +6593,74 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
-                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                      <button 
+                        onClick={() => {
+                          if (currentMonthIndex === 0) {
+                            setCurrentMonthIndex(11);
+                            setCurrentYear(prev => prev - 1);
+                          } else {
+                            setCurrentMonthIndex(prev => prev - 1);
+                          }
+                        }}
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      >
                         <ChevronLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
                       </button>
-                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">May 2025</span>
-                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                      <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
+                      <button 
+                        onClick={() => {
+                          if (currentMonthIndex === 11) {
+                            setCurrentMonthIndex(0);
+                            setCurrentYear(prev => prev + 1);
+                          } else {
+                            setCurrentMonthIndex(prev => prev + 1);
+                          }
+                        }}
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      >
                         <ChevronRight className="w-4 h-4 text-slate-650 dark:text-slate-355" />
                       </button>
                     </div>
 
                     {/* Calendar Days Grid */}
-                    <div className="grid grid-cols-7 gap-y-2 text-center select-none">
-                      {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
-                        <span key={d} className="text-[9px] font-black text-slate-400 tracking-wider mb-1">{d}</span>
-                      ))}
-                      
-                      {/* Blank days for May 2025 padding (starts on Thursday) */}
-                      {Array.from({ length: 4 }).map((_, i) => (
-                        <span key={`blank-${i}`} className="text-xs text-transparent py-1.5">27</span>
-                      ))}
+                    {(() => {
+                      const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
+                      const startDayOfWeek = new Date(currentYear, currentMonthIndex, 1).getDay();
+                      return (
+                        <div className="grid grid-cols-7 gap-y-2 text-center select-none">
+                          {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
+                            <span key={d} className="text-[10px] font-black text-slate-450 tracking-wider mb-1">{d}</span>
+                          ))}
+                          
+                          {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                            <span key={`blank-${i}`} className="text-[13px] text-transparent py-1.5">27</span>
+                          ))}
 
-                      {/* Days from 1 to 31 */}
-                      {Array.from({ length: 31 }).map((_, i) => {
-                        const day = i + 1;
-                        const isSelected = day === 21;
-                        return (
-                          <button
-                            key={`day-${day}`}
-                            onClick={() => setSelectedModalDate(`Wed, ${day} May 2025`)}
-                            className={`text-xs font-extrabold py-1.5 rounded-full transition-all cursor-pointer flex items-center justify-center ${
-                              isSelected 
-                                ? 'bg-blue-600 text-white font-black scale-110 shadow-sm' 
-                                : 'text-slate-750 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
+                          {Array.from({ length: daysInMonth }).map((_, i) => {
+                            const day = i + 1;
+                            const isSelected = day === selectedModalDay;
+                            return (
+                              <button
+                                key={`day-${day}`}
+                                onClick={() => {
+                                  setSelectedModalDay(day);
+                                  const date = new Date(currentYear, currentMonthIndex, day);
+                                  const weekdaysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                  setSelectedModalDate(`${weekdaysShort[date.getDay()]} ${day} ${monthNames[currentMonthIndex]} ${currentYear}`);
+                                }}
+                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center mx-auto ${
+                                  isSelected 
+                                    ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20' 
+                                    : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Legend */}
@@ -6800,51 +6833,80 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div>
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
-                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                      <button 
+                        onClick={() => {
+                          if (currentMonthIndex === 0) {
+                            setCurrentMonthIndex(11);
+                            setCurrentYear(prev => prev - 1);
+                          } else {
+                            setCurrentMonthIndex(prev => prev - 1);
+                          }
+                        }}
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      >
                         <ChevronLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
                       </button>
-                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">May 2025</span>
-                      <button className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                      <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
+                      <button 
+                        onClick={() => {
+                          if (currentMonthIndex === 11) {
+                            setCurrentMonthIndex(0);
+                            setCurrentYear(prev => prev + 1);
+                          } else {
+                            setCurrentMonthIndex(prev => prev + 1);
+                          }
+                        }}
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      >
                         <ChevronRight className="w-4 h-4 text-slate-650 dark:text-slate-355" />
                       </button>
                     </div>
 
                     {/* Days grid */}
-                    <div className="grid grid-cols-7 gap-y-2 text-center select-none">
-                      {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
-                        <span key={d} className="text-[9px] font-black text-slate-400 tracking-wider mb-1">{d}</span>
-                      ))}
-                      
-                      {/* Blank spaces for May padding */}
-                      {Array.from({ length: 4 }).map((_, i) => (
-                        <span key={`blank-${i}`} className="text-xs text-transparent py-1.5">27</span>
-                      ))}
+                    {(() => {
+                      const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
+                      const startDayOfWeek = new Date(currentYear, currentMonthIndex, 1).getDay();
+                      return (
+                        <div className="grid grid-cols-7 gap-y-2 text-center select-none">
+                          {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
+                            <span key={d} className="text-[10px] font-black text-slate-450 tracking-wider mb-1">{d}</span>
+                          ))}
+                          
+                          {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                            <span key={`blank-${i}`} className="text-[13px] text-transparent py-1.5">27</span>
+                          ))}
 
-                      {/* May 1-31 days */}
-                      {Array.from({ length: 31 }).map((_, i) => {
-                        const day = i + 1;
-                        const isSelected = day === 21;
-                        return (
-                          <button
-                            key={`day-${day}`}
-                            onClick={() => setSelectedModalDate(`Wednesday, ${day} May 2025`)}
-                            className={`text-xs font-extrabold py-1.5 rounded-full transition-all cursor-pointer flex items-center justify-center relative ${
-                              isSelected 
-                                ? 'bg-blue-600 text-white font-black scale-110 shadow-sm' 
-                                : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                            }`}
-                          >
-                            <span>{day}</span>
-                            {/* Available/busy dot indicator */}
-                            {!isSelected && (
-                              <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
-                                day % 5 === 0 ? 'bg-orange-400' : (day % 3 === 0 ? 'bg-slate-300' : 'bg-emerald-500')
-                              }`} />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                          {Array.from({ length: daysInMonth }).map((_, i) => {
+                            const day = i + 1;
+                            const isSelected = day === selectedModalDay;
+                            return (
+                              <button
+                                key={`day-${day}`}
+                                onClick={() => {
+                                  setSelectedModalDay(day);
+                                  const date = new Date(currentYear, currentMonthIndex, day);
+                                  const weekdaysLong = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                  setSelectedModalDate(`${weekdaysLong[date.getDay()]}, ${day} ${monthNames[currentMonthIndex]} ${currentYear}`);
+                                }}
+                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center mx-auto relative ${
+                                  isSelected 
+                                    ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20' 
+                                    : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                <span>{day}</span>
+                                {/* Available/busy dot indicator */}
+                                {!isSelected && (
+                                  <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
+                                    day % 5 === 0 ? 'bg-orange-400' : (day % 3 === 0 ? 'bg-slate-300' : 'bg-emerald-500')
+                                  }`} />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Legends */}
