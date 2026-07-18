@@ -4498,15 +4498,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Reset</span>
               </button>
-
-              {/* Delete All button */}
-              <button 
-                onClick={handleDeleteAll} 
-                className="text-xs font-black text-rose-500 hover:text-rose-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete All</span>
-              </button>
             </div>
             
             {/* Right Part: Sorting */}
