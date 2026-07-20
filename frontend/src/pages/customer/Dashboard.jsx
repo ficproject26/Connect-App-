@@ -217,16 +217,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   }, []);
 
   useEffect(() => {
-    if (activeScheduleModalItem || activeBookNowModalItem) {
-      setCheckInTime('12:00 PM');
-      setCheckOutTime('11:00 AM');
-      setAdultCount(1);
-      setChildCount(0);
-      setCustomTimeInput('');
-    }
-  }, [activeScheduleModalItem, activeBookNowModalItem]);
-
-  useEffect(() => {
     const loadVendorProducts = async () => {
       try {
         const res = await productService.getProducts();
@@ -333,6 +323,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [sortBy, setSortBy] = useState('default');
   const [activeScheduleModalItem, setActiveScheduleModalItem] = useState(null);
   const [activeBookNowModalItem, setActiveBookNowModalItem] = useState(null);
+
+  useEffect(() => {
+    if (activeScheduleModalItem || activeBookNowModalItem) {
+      setCheckInTime('12:00 PM');
+      setCheckOutTime('11:00 AM');
+      setAdultCount(1);
+      setChildCount(0);
+      setCustomTimeInput('');
+    }
+  }, [activeScheduleModalItem, activeBookNowModalItem]);
   const formatDateYYYYMMDD = (date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
