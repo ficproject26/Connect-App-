@@ -4953,6 +4953,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     <span>{product.duration}</span>
                                   </div>
                                 )}
+                                {(product.guests || product.maxGuests || product.capacity) && (
+                                  <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-3">
+                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>{product.guests || product.maxGuests || product.capacity} {Number(product.guests || product.maxGuests || product.capacity) === 1 ? 'Person' : 'People'}</span>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Price Section */}
