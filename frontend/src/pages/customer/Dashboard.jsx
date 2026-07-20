@@ -23,7 +23,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock, Trash2, Users, ThumbsUp
+  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock, Trash2, Users, ThumbsUp, Calendar
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -331,6 +331,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       setAdultCount(1);
       setChildCount(0);
       setCustomTimeInput('');
+      setActiveDateTab('checkIn');
     }
   }, [activeScheduleModalItem, activeBookNowModalItem]);
   const formatDateYYYYMMDD = (date) => {
@@ -360,6 +361,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const [stayCheckInDate, setStayCheckInDate] = useState(() => formatDateYYYYMMDD(todayObj));
   const [stayCheckOutDate, setStayCheckOutDate] = useState(() => formatDateYYYYMMDD(tomorrowObj));
+  const [activeDateTab, setActiveDateTab] = useState('checkIn'); // 'checkIn' | 'checkOut'
+
+  const formatDateFromYYYYMMDD = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
   const [stayRoomsCount, setStayRoomsCount] = useState(1);
   const [stayGuestsCount, setStayGuestsCount] = useState(2);
   const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
@@ -7843,8 +7856,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {/* Column 2: Select Date Calendar */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider mb-4 text-left">Select Date</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Select Date</h3>
+                      <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                        {activeDateTab === 'checkIn' ? 'Check-In Selection' : 'Check-Out Selection'}
+                      </span>
+                    </div>
                     
+                    {/* Active Date Selector Tabs */}
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl mb-4 select-none">
+                      <button 
+                        type="button"
+                        onClick={() => setActiveDateTab('checkIn')}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                          activeDateTab === 'checkIn' 
+                            ? 'bg-blue-600 text-white shadow-xs' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                        <span>Check-In</span>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setActiveDateTab('checkOut')}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                          activeDateTab === 'checkOut' 
+                            ? 'bg-emerald-600 text-white shadow-xs' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Check-Out</span>
+                      </button>
+                    </div>
+
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
                       {(() => {
@@ -7909,7 +7955,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                           {Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
-                            const isSelected = day === selectedModalDay;
+                            const dayDateStr = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const isCheckInDay = dayDateStr === stayCheckInDate;
+                            const isCheckOutDay = dayDateStr === stayCheckOutDate;
+                            const isInRange = dayDateStr > stayCheckInDate && dayDateStr < stayCheckOutDate;
                             const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
                             const isBooked = (isStayItem || isTravelItem) && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
                             const isDisableClick = isPast || isBooked;
@@ -7920,22 +7969,50 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 disabled={isDisableClick}
                                 onClick={() => {
                                   setSelectedModalDay(day);
-                                  const date = new Date(currentYear, currentMonthIndex, day);
-                                  const weekdaysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                  setSelectedModalDate(`${weekdaysShort[date.getDay()]} ${day} ${monthNames[currentMonthIndex]} ${currentYear}`);
+                                  const dateObj = new Date(currentYear, currentMonthIndex, day);
+                                  const formattedStr = getFormattedModalDate(dateObj);
+
+                                  if (activeDateTab === 'checkIn') {
+                                    setStayCheckInDate(dayDateStr);
+                                    setSelectedModalDate(formattedStr);
+                                    if (stayCheckOutDate <= dayDateStr) {
+                                      const nextDate = new Date(currentYear, currentMonthIndex, day + 1);
+                                      setStayCheckOutDate(formatDateYYYYMMDD(nextDate));
+                                    }
+                                    setActiveDateTab('checkOut');
+                                  } else {
+                                    if (dayDateStr > stayCheckInDate) {
+                                      setStayCheckOutDate(dayDateStr);
+                                    } else {
+                                      setStayCheckInDate(dayDateStr);
+                                      setSelectedModalDate(formattedStr);
+                                      const nextDate = new Date(currentYear, currentMonthIndex, day + 1);
+                                      setStayCheckOutDate(formatDateYYYYMMDD(nextDate));
+                                    }
+                                  }
                                 }}
-                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all flex items-center justify-center mx-auto relative ${
-                                  isPast
-                                    ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed'
-                                    : isBooked
-                                      ? 'text-red-500 line-through dark:text-red-400 opacity-40 cursor-not-allowed font-medium'
-                                      : isSelected 
-                                        ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
-                                        : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+                                className={`text-[12px] font-extrabold w-8 h-8 transition-all flex flex-col items-center justify-center mx-auto relative ${
+                                  isCheckInDay
+                                    ? 'bg-blue-600 text-white rounded-full font-black scale-110 shadow-md ring-2 ring-blue-500/20 z-10 cursor-pointer'
+                                    : isCheckOutDay
+                                      ? 'bg-emerald-600 text-white rounded-full font-black scale-110 shadow-md ring-2 ring-emerald-500/20 z-10 cursor-pointer'
+                                      : isInRange
+                                        ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-black rounded-lg cursor-pointer'
+                                        : isPast
+                                          ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed rounded-full'
+                                          : isBooked
+                                            ? 'text-red-500 line-through dark:text-red-400 opacity-40 cursor-not-allowed font-medium rounded-full'
+                                            : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full cursor-pointer'
                                 }`}
                               >
                                 <span>{day}</span>
-                                {isBooked && (
+                                {isCheckInDay && (
+                                  <span className="text-[7px] font-black uppercase text-blue-100 leading-none mt-[-2px]">IN</span>
+                                )}
+                                {isCheckOutDay && (
+                                  <span className="text-[7px] font-black uppercase text-emerald-100 leading-none mt-[-2px]">OUT</span>
+                                )}
+                                {isBooked && !isCheckInDay && !isCheckOutDay && (
                                   <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-red-500" />
                                 )}
                               </button>
@@ -7947,18 +8024,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   {/* Legend */}
-                  <div className="flex items-center gap-4 mt-6 border-t border-slate-50 dark:border-slate-855/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Available</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Already Booked</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-350 dark:bg-slate-700" /> Not Available</span>
+                  <div className="flex items-center gap-3 mt-6 border-t border-slate-50 dark:border-slate-855/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Check-In</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600" /> Check-Out</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Booked</span>
                   </div>
                 </div>
 
-                {/* Column 3: Select Time Grid */}
+                {/* Column 3: Check-in & Check-out Details */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-4 select-none flex-wrap gap-2">
-                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Select Time</h3>
+                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Configure Timings & Dates</h3>
                       <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0">
                         <Clock className="w-3.5 h-3.5 animate-pulse" />
                         <span>Live Clock: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
@@ -7966,7 +8043,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     
                     {/* Toggle Button Types */}
-                    <div className="grid grid-cols-2 gap-2 mb-5">
+                    <div className="grid grid-cols-2 gap-2 mb-4">
                       <button 
                         onClick={() => setSelectedModalType(terms.type2)}
                         className={`py-2 px-1 text-[10px] font-black uppercase rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 ${
@@ -7991,84 +8068,108 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </button>
                     </div>
 
-                    {/* Grid of times */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        '09:00 AM', '09:30 AM', '10:00 AM',
-                        '10:30 AM', '11:00 AM', '11:30 AM',
-                        '12:00 PM', '04:00 PM', '04:30 PM',
-                        '05:00 PM', '05:30 PM', '06:00 PM'
-                      ].map(t => {
-                        const isSelected = selectedModalTime === t;
-                        return (
-                          <button
-                            key={t}
-                            onClick={() => setSelectedModalTime(t)}
-                            className={`py-2 text-[10px] font-bold rounded-lg border transition-all cursor-pointer text-center ${
-                              isSelected
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-black'
-                                : 'bg-transparent text-slate-705 dark:text-slate-300 border-slate-150 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}
-                          >
-                            {t}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Manual Custom Time Entry */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
-                      <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-1.5">Or enter custom time manually</span>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text"
-                          placeholder="e.g. 02:30 PM"
-                          value={customTimeInput}
-                          onChange={(e) => setCustomTimeInput(e.target.value)}
-                          className="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
-                        />
-                        <button
-                          onClick={() => {
-                            if (customTimeInput.trim()) {
-                              setSelectedModalTime(customTimeInput.trim());
-                              triggerNotification(`Custom time set to ${customTimeInput.trim()}`);
-                            }
-                          }}
-                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer border-none"
-                        >
-                          Set
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Stay Timings Input Block */}
-                    {isStayItem && (
-                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
-                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-2">Configure Timings</span>
-                        <div className="grid grid-cols-2 gap-2.5">
+                    {/* Separate Check-In and Check-Out Date & Time Inputs */}
+                    <div className="space-y-3.5 mb-4">
+                      {/* Check-In Details Card */}
+                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-xl p-3 text-left">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" /> Check-In Details
+                          </span>
+                          <span className="text-[8.5px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/40 px-2 py-0.5 rounded-full">CHECK-IN</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-in Time</span>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-In Date</label>
+                            <input 
+                              type="date" 
+                              value={stayCheckInDate}
+                              onChange={(e) => {
+                                setStayCheckInDate(e.target.value);
+                                if (stayCheckOutDate <= e.target.value) {
+                                  const d = new Date(e.target.value + 'T00:00:00');
+                                  d.setDate(d.getDate() + 1);
+                                  setStayCheckOutDate(formatDateYYYYMMDD(d));
+                                }
+                              }}
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-In Time</label>
                             <input 
                               type="text" 
                               value={checkInTime}
                               onChange={(e) => setCheckInTime(e.target.value)}
                               placeholder="12:00 PM"
-                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase shrink-0">Presets:</span>
+                          {['10:00 AM', '12:00 PM', '02:00 PM', '04:00 PM'].map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setCheckInTime(t)}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors cursor-pointer ${
+                                checkInTime === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Check-Out Details Card */}
+                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-xl p-3 text-left">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" /> Check-Out Details
+                          </span>
+                          <span className="text-[8.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">CHECK-OUT</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-Out Date</label>
+                            <input 
+                              type="date" 
+                              value={stayCheckOutDate}
+                              min={stayCheckInDate}
+                              onChange={(e) => setStayCheckOutDate(e.target.value)}
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-out Time</span>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-Out Time</label>
                             <input 
                               type="text" 
                               value={checkOutTime}
                               onChange={(e) => setCheckOutTime(e.target.value)}
                               placeholder="11:00 AM"
-                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-755 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                         </div>
+                        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase shrink-0">Presets:</span>
+                          {['10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM'].map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setCheckOutTime(t)}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors cursor-pointer ${
+                                checkOutTime === t ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* Guest/Traveler Counter Block */}
                     {(isStayItem || isTravelItem) && (
@@ -8143,11 +8244,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     )}
                   </div>
 
-                  {/* Duration Text */}
-                  <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3 text-[10px] text-blue-700 dark:text-blue-400 mt-6 leading-relaxed text-left">
-                    <Clock className="w-4.5 h-4.5 text-blue-500 shrink-0" />
-                    <span>{terms.durationText}</span>
-                  </div>
+                  {/* Duration Summary Badge */}
+                  {(() => {
+                    const s = new Date(stayCheckInDate + 'T00:00:00');
+                    const e = new Date(stayCheckOutDate + 'T00:00:00');
+                    const diff = Math.max(1, Math.ceil((e - s) / 86400000));
+                    return (
+                      <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
+                        <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                        <span>Stay Summary: {diff} {diff === 1 ? 'Night' : 'Nights'} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Column 4: Appointment Summary */}
@@ -8166,39 +8274,37 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                        <svg className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <Calendar className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Date</span>
-                          <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalDate}</span>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-In</span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckInDate)}</span>
+                          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{checkInTime}</span>
                         </div>
                       </div>
 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                        <Clock className="w-4 h-4 text-slate-450 shrink-0 mt-0.5 animate-pulse" />
+                        <Calendar className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Time</span>
-                          <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalTime}</span>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-Out</span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckOutDate)}</span>
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{checkOutTime}</span>
                         </div>
                       </div>
 
-                      {isStayItem && (
-                        <>
+                      {(() => {
+                        const s = new Date(stayCheckInDate + 'T00:00:00');
+                        const e = new Date(stayCheckOutDate + 'T00:00:00');
+                        const diff = Math.max(1, Math.ceil((e - s) / 86400000));
+                        return (
                           <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                             <Home className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
                             <div>
-                              <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-in Timing</span>
-                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{checkInTime}</span>
+                              <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Duration</span>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{diff} {diff === 1 ? 'Night' : 'Nights'}</span>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                            <Home className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
-                            <div>
-                              <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-out Timing</span>
-                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{checkOutTime}</span>
-                            </div>
-                          </div>
-                        </>
-                      )}
+                        );
+                      })()}
 
                       {(isStayItem || isTravelItem) && (
                         <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
@@ -8246,7 +8352,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                   <button
                     onClick={() => {
-                      triggerNotification(`Appointment scheduled for ${selectedModalDate} at ${selectedModalTime}!`);
+                      triggerNotification(`Appointment scheduled for Check-in: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime}) to Check-out: ${formatDateFromYYYYMMDD(stayCheckOutDate)} (${checkOutTime})!`);
                       setActiveScheduleModalItem(null);
                     }}
                     className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1 border-none active:scale-[0.99]"
@@ -8285,15 +8391,46 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <X className="w-4 h-4" />
               </button>
 
-              {/* Modal Title */}
-              <div className="text-left select-none">
-                <h2 className="text-lg font-black text-slate-850 dark:text-white">Schedule Now</h2>
-              </div>
-
+              {/* Modal Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Column 1: Calendar View */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Select Date</h3>
+                      <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                        {activeDateTab === 'checkIn' ? 'Check-In Selection' : 'Check-Out Selection'}
+                      </span>
+                    </div>
+
+                    {/* Active Date Selector Tabs */}
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl mb-4 select-none">
+                      <button 
+                        type="button"
+                        onClick={() => setActiveDateTab('checkIn')}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                          activeDateTab === 'checkIn' 
+                            ? 'bg-blue-600 text-white shadow-xs' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                        <span>Check-In</span>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setActiveDateTab('checkOut')}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                          activeDateTab === 'checkOut' 
+                            ? 'bg-emerald-600 text-white shadow-xs' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Check-Out</span>
+                      </button>
+                    </div>
+
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
                       {(() => {
@@ -8358,7 +8495,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                           {Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
-                            const isSelected = day === selectedModalDay;
+                            const dayDateStr = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const isCheckInDay = dayDateStr === stayCheckInDate;
+                            const isCheckOutDay = dayDateStr === stayCheckOutDate;
+                            const isInRange = dayDateStr > stayCheckInDate && dayDateStr < stayCheckOutDate;
                             const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
                             const isBooked = (isStayItem || isTravelItem) && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
                             const isDisableClick = isPast || isBooked;
@@ -8369,29 +8509,51 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 disabled={isDisableClick}
                                 onClick={() => {
                                   setSelectedModalDay(day);
-                                  const date = new Date(currentYear, currentMonthIndex, day);
-                                  const weekdaysLong = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                                  setSelectedModalDate(`${weekdaysLong[date.getDay()]}, ${day} ${monthNames[currentMonthIndex]} ${currentYear}`);
+                                  const dateObj = new Date(currentYear, currentMonthIndex, day);
+                                  const formattedStr = getFormattedModalDate(dateObj);
+
+                                  if (activeDateTab === 'checkIn') {
+                                    setStayCheckInDate(dayDateStr);
+                                    setSelectedModalDate(formattedStr);
+                                    if (stayCheckOutDate <= dayDateStr) {
+                                      const nextDate = new Date(currentYear, currentMonthIndex, day + 1);
+                                      setStayCheckOutDate(formatDateYYYYMMDD(nextDate));
+                                    }
+                                    setActiveDateTab('checkOut');
+                                  } else {
+                                    if (dayDateStr > stayCheckInDate) {
+                                      setStayCheckOutDate(dayDateStr);
+                                    } else {
+                                      setStayCheckInDate(dayDateStr);
+                                      setSelectedModalDate(formattedStr);
+                                      const nextDate = new Date(currentYear, currentMonthIndex, day + 1);
+                                      setStayCheckOutDate(formatDateYYYYMMDD(nextDate));
+                                    }
+                                  }
                                 }}
-                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all flex items-center justify-center mx-auto relative ${
-                                  isPast
-                                    ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed'
-                                    : isBooked
-                                      ? 'text-red-500 line-through dark:text-red-400 opacity-40 cursor-not-allowed font-medium'
-                                      : isSelected 
-                                        ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
-                                        : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+                                className={`text-[12px] font-extrabold w-8 h-8 transition-all flex flex-col items-center justify-center mx-auto relative ${
+                                  isCheckInDay
+                                    ? 'bg-blue-600 text-white rounded-full font-black scale-110 shadow-md ring-2 ring-blue-500/20 z-10 cursor-pointer'
+                                    : isCheckOutDay
+                                      ? 'bg-emerald-600 text-white rounded-full font-black scale-110 shadow-md ring-2 ring-emerald-500/20 z-10 cursor-pointer'
+                                      : isInRange
+                                        ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-black rounded-lg cursor-pointer'
+                                        : isPast
+                                          ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed rounded-full'
+                                          : isBooked
+                                            ? 'text-red-500 line-through dark:text-red-400 opacity-40 cursor-not-allowed font-medium rounded-full'
+                                            : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full cursor-pointer'
                                 }`}
                               >
                                 <span>{day}</span>
-                                {isBooked && (
-                                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-red-500" />
+                                {isCheckInDay && (
+                                  <span className="text-[7px] font-black uppercase text-blue-100 leading-none mt-[-2px]">IN</span>
                                 )}
-                                {/* Available/busy dot indicator */}
-                                {!isBooked && !isSelected && !isPast && (
-                                  <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
-                                    day % 5 === 0 ? 'bg-orange-400' : (day % 3 === 0 ? 'bg-slate-350 dark:bg-slate-700' : 'bg-emerald-500')
-                                  }`} />
+                                {isCheckOutDay && (
+                                  <span className="text-[7px] font-black uppercase text-emerald-100 leading-none mt-[-2px]">OUT</span>
+                                )}
+                                {isBooked && !isCheckInDay && !isCheckOutDay && (
+                                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-red-500" />
                                 )}
                               </button>
                             );
@@ -8403,127 +8565,125 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                   {/* Legends */}
                   <div className="flex items-center gap-3 mt-6 border-t border-slate-50 dark:border-slate-855/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Available</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Already Booked</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> Few Slots</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-350 dark:bg-slate-700" /> Unavailable</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Check-In</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600" /> Check-Out</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Booked</span>
                   </div>
                 </div>
 
-                {/* Column 2: Available Slots Grid */}
+                {/* Column 2: Configure Timings & Dates */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
-                    {/* Selected Day / Slots availability pill */}
                     <div className="flex justify-between items-center mb-4 select-none flex-wrap gap-2">
-                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">{selectedModalDate}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0 animate-pulse">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Live: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                        </span>
-                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">16 Slots Available</span>
-                      </div>
+                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Configure Timings & Dates</h3>
+                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0 animate-pulse">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Live: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                      </span>
                     </div>
 
-                    {/* Tabs row */}
-                    <div className="flex border-b border-slate-100 dark:border-slate-800/60 mb-5 text-[11px] font-bold select-none">
-                      {['Morning', 'Afternoon', 'Evening'].map(tab => {
-                        const isSelected = selectedTimeOfDayTab === tab;
-                        return (
-                          <button
-                            key={tab}
-                            onClick={() => setSelectedTimeOfDayTab(tab)}
-                            className={`flex-1 pb-2 border-b-2 transition-all cursor-pointer uppercase tracking-wider text-center ${
-                              isSelected 
-                                ? 'border-blue-600 text-blue-600 font-black' 
-                                : 'border-transparent text-slate-450 dark:text-slate-500 hover:text-slate-650'
-                            }`}
-                          >
-                            {tab}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Time pills */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        '09:00 AM', '09:30 AM', '10:00 AM',
-                        '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM'
-                      ].map(t => {
-                        const isSelected = selectedModalTime === t;
-                        return (
-                          <button
-                            key={t}
-                            onClick={() => setSelectedModalTime(t)}
-                            className={`py-2 px-3 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                              isSelected
-                                ? 'bg-blue-50 dark:bg-blue-950/15 border-blue-600 text-blue-600 ring-1 ring-blue-600/30 font-black'
-                                : 'bg-transparent text-slate-700 dark:text-slate-300 border-slate-150 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}
-                          >
-                            <span className="text-xs font-bold">{t}</span>
-                            <span className={`text-[8px] font-extrabold uppercase ${isSelected ? 'text-blue-500 font-black' : 'text-emerald-500'}`}>
-                              {isSelected ? 'Selected' : 'Available'}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Manual Custom Time Entry */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
-                      <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-1.5">Or enter custom time manually</span>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text"
-                          placeholder="e.g. 02:30 PM"
-                          value={customTimeInput}
-                          onChange={(e) => setCustomTimeInput(e.target.value)}
-                          className="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
-                        />
-                        <button
-                          onClick={() => {
-                            if (customTimeInput.trim()) {
-                              setSelectedModalTime(customTimeInput.trim());
-                              triggerNotification(`Custom time set to ${customTimeInput.trim()}`);
-                            }
-                          }}
-                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer border-none"
-                        >
-                          Set
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Stay Timings Input Block */}
-                    {isStayItem && (
-                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
-                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-2">Configure Timings</span>
-                        <div className="grid grid-cols-2 gap-2.5">
+                    {/* Separate Check-In and Check-Out Date & Time Inputs */}
+                    <div className="space-y-3.5 mb-4 select-none">
+                      {/* Check-In Details Card */}
+                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-xl p-3 text-left">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" /> Check-In Details
+                          </span>
+                          <span className="text-[8.5px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/40 px-2 py-0.5 rounded-full">CHECK-IN</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-in Time</span>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-In Date</label>
+                            <input 
+                              type="date" 
+                              value={stayCheckInDate}
+                              onChange={(e) => {
+                                setStayCheckInDate(e.target.value);
+                                if (stayCheckOutDate <= e.target.value) {
+                                  const d = new Date(e.target.value + 'T00:00:00');
+                                  d.setDate(d.getDate() + 1);
+                                  setStayCheckOutDate(formatDateYYYYMMDD(d));
+                                }
+                              }}
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-In Time</label>
                             <input 
                               type="text" 
                               value={checkInTime}
                               onChange={(e) => setCheckInTime(e.target.value)}
                               placeholder="12:00 PM"
-                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200/60 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase shrink-0">Presets:</span>
+                          {['10:00 AM', '12:00 PM', '02:00 PM', '04:00 PM'].map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setCheckInTime(t)}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors cursor-pointer ${
+                                checkInTime === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Check-Out Details Card */}
+                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-xl p-3 text-left">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" /> Check-Out Details
+                          </span>
+                          <span className="text-[8.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">CHECK-OUT</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-Out Date</label>
+                            <input 
+                              type="date" 
+                              value={stayCheckOutDate}
+                              min={stayCheckInDate}
+                              onChange={(e) => setStayCheckOutDate(e.target.value)}
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-out Time</span>
+                            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase block mb-1">Check-Out Time</label>
                             <input 
                               type="text" 
                               value={checkOutTime}
                               onChange={(e) => setCheckOutTime(e.target.value)}
                               placeholder="11:00 AM"
-                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200/60 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-755 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
                         </div>
+                        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase shrink-0">Presets:</span>
+                          {['10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM'].map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setCheckOutTime(t)}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors cursor-pointer ${
+                                checkOutTime === t ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* Guest/Traveler Counter Block */}
                     {(isStayItem || isTravelItem) && (
@@ -8598,11 +8758,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     )}
                   </div>
 
-                  {/* Morning slots tip */}
-                  <div className="flex items-center gap-2 bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-3 text-[10px] text-amber-750 dark:text-amber-400 mt-6 leading-relaxed text-left">
-                    <svg className="w-4.5 h-4.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                    <span>Tip: Morning slots are usually less crowded</span>
-                  </div>
+                  {/* Stay Summary Badge */}
+                  {(() => {
+                    const s = new Date(stayCheckInDate + 'T00:00:00');
+                    const e = new Date(stayCheckOutDate + 'T00:00:00');
+                    const diff = Math.max(1, Math.ceil((e - s) / 86400000));
+                    return (
+                      <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
+                        <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                        <span>Stay Summary: {diff} {diff === 1 ? 'Night' : 'Nights'} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Column 3: Confirmation Summary */}
@@ -8631,27 +8798,32 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     {/* Summary row matrix */}
                     <div className="space-y-3.5 text-xs text-left">
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> Date</span>
-                        <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalDate}</span>
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> Check-In</span>
+                        <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
+                          {formatDateFromYYYYMMDD(stayCheckInDate)}
+                          <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-bold">{checkInTime}</span>
+                        </span>
                       </div>
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-455" /> Time</span>
-                        <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalTime}</span>
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> Check-Out</span>
+                        <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
+                          {formatDateFromYYYYMMDD(stayCheckOutDate)}
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">{checkOutTime}</span>
+                        </span>
                       </div>
 
-                      {isStayItem && (
-                        <>
+                      {(() => {
+                        const s = new Date(stayCheckInDate + 'T00:00:00');
+                        const e = new Date(stayCheckOutDate + 'T00:00:00');
+                        const diff = Math.max(1, Math.ceil((e - s) / 86400000));
+                        return (
                           <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                            <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-450" /> Check-in Timing</span>
-                            <span className="font-extrabold text-slate-850 dark:text-slate-200">{checkInTime}</span>
+                            <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-450" /> Duration</span>
+                            <span className="font-extrabold text-slate-850 dark:text-slate-200">{diff} {diff === 1 ? 'Night' : 'Nights'}</span>
                           </div>
-                          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                            <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-450" /> Check-out Timing</span>
-                            <span className="font-extrabold text-slate-850 dark:text-slate-200">{checkOutTime}</span>
-                          </div>
-                        </>
-                      )}
+                        );
+                      })()}
 
                       {(isStayItem || isTravelItem) && (
                         <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
@@ -8674,7 +8846,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> Type</span>
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Type</span>
                         <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalType}</span>
                       </div>
 
@@ -8690,16 +8862,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       onClick={() => {
                         const itemToCart = {
                           ...activeBookNowModalItem,
-                          bookingDate: selectedModalDate,
-                          bookingTime: selectedModalTime,
-                          bookingType: selectedModalType
+                          bookingDate: formatDateFromYYYYMMDD(stayCheckInDate),
+                          checkInDate: stayCheckInDate,
+                          checkOutDate: stayCheckOutDate,
+                          checkInTime: checkInTime,
+                          checkOutTime: checkOutTime,
+                          bookingTime: `${checkInTime} - ${checkOutTime}`,
+                          bookingType: selectedModalType,
+                          adults: adultCount,
+                          children: childCount
                         };
                         if (!cart.find(item => item.id === itemToCart.id)) {
                           addToCart(itemToCart);
                         }
                         setActiveBookNowModalItem(null);
                         setIsCartOpen(true);
-                        triggerNotification(`Booking added to Cart!`);
+                        triggerNotification(`Booking added to Cart! Check-In: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime}), Check-Out: ${formatDateFromYYYYMMDD(stayCheckOutDate)} (${checkOutTime})`);
                       }}
                       className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none active:scale-[0.99]"
                     >
