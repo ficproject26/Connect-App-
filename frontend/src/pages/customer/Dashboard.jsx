@@ -5221,7 +5221,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Luxury Hotels'}</span>
               <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Purchase</span></div>
             </div>
-            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><div className="grid grid-cols-3 gap-3"><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-in</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span><input type="date" value={stayCheckInDate} onChange={(e) => setStayCheckInDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-out</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span><input type="date" value={stayCheckOutDate} onChange={(e) => setStayCheckOutDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Nights</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span></div></div></div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
+              <div className="grid grid-cols-3 gap-3">
+                <div onClick={() => setActiveBookNowModalItem(selectedProduct)} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-blue-400 transition-colors">
+                  <span className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider block">Check-in</span>
+                  <span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span>
+                </div>
+                <div onClick={() => setActiveBookNowModalItem(selectedProduct)} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-emerald-400 transition-colors">
+                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider block">Check-out</span>
+                  <span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Nights</span>
+                  <span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span>
+                </div>
+              </div>
+            </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
               <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -8137,24 +8152,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
                         <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
                         
-                        <div className="flex gap-4 text-xs font-semibold text-slate-705 dark:text-slate-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
                           {/* Adults Selector */}
-                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
-                            <div>
-                              <span className="block font-black text-xs">Adults</span>
-                              <span className="text-[9px] text-slate-400">Age 12+</span>
+                          <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
+                            <div className="shrink-0">
+                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Adults</span>
+                              <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 12+</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
                               <button 
+                                type="button"
                                 onClick={() => setAdultCount(prev => Math.max(1, prev - 1))}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 -
                               </button>
-                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
+                              <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
                               <button 
+                                type="button"
                                 onClick={() => setAdultCount(prev => prev + 1)}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
                               </button>
@@ -8162,22 +8179,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
 
                           {/* Children Selector */}
-                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
-                            <div>
-                              <span className="block font-black text-xs">Children</span>
-                              <span className="text-[9px] text-slate-405">Age 2-12</span>
+                          <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
+                            <div className="shrink-0">
+                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Children</span>
+                              <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 2-12</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
                               <button 
+                                type="button"
                                 onClick={() => setChildCount(prev => Math.max(0, prev - 1))}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 -
                               </button>
-                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
+                              <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
                               <button 
+                                type="button"
                                 onClick={() => setChildCount(prev => prev + 1)}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
                               </button>
@@ -8562,24 +8581,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
                         <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
                         
-                        <div className="flex gap-4 text-xs font-semibold text-slate-705 dark:text-slate-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
                           {/* Adults Selector */}
-                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
-                            <div>
-                              <span className="block font-black text-xs">Adults</span>
-                              <span className="text-[9px] text-slate-400">Age 12+</span>
+                          <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
+                            <div className="shrink-0">
+                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Adults</span>
+                              <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 12+</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
                               <button 
+                                type="button"
                                 onClick={() => setAdultCount(prev => Math.max(1, prev - 1))}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 -
                               </button>
-                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
+                              <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
                               <button 
+                                type="button"
                                 onClick={() => setAdultCount(prev => prev + 1)}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
                               </button>
@@ -8587,22 +8608,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
 
                           {/* Children Selector */}
-                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
-                            <div>
-                              <span className="block font-black text-xs">Children</span>
-                              <span className="text-[9px] text-slate-405">Age 2-12</span>
+                          <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
+                            <div className="shrink-0">
+                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Children</span>
+                              <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 2-12</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
                               <button 
+                                type="button"
                                 onClick={() => setChildCount(prev => Math.max(0, prev - 1))}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 -
                               </button>
-                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
+                              <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
                               <button 
+                                type="button"
                                 onClick={() => setChildCount(prev => prev + 1)}
-                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                                className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
                               </button>
