@@ -3502,26 +3502,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       { id: 'Food', title: 'Food', count: '2,500+ Options', icon: Utensils, color: 'text-orange-500 bg-orange-50 border-orange-150' },
       { id: 'Stay', title: 'Stay', count: '800+ Hotels', icon: BedDouble, color: 'text-purple-500 bg-purple-50 border-purple-150' },
       { id: 'Travel', title: 'Travel', count: '1,000+ Trips', icon: Plane, color: 'text-sky-500 bg-sky-50 border-sky-150' },
-      { id: 'Jobs', title: 'Jobs', count: '2,000+ Jobs', icon: Briefcase, color: 'text-amber-500 bg-amber-50 border-amber-150' },
-      { id: 'More', title: 'More', count: 'See all', icon: SlidersHorizontal, color: 'text-slate-500 bg-slate-50 border-slate-150' }
+      { id: 'Jobs', title: 'Jobs', count: '2,000+ Jobs', icon: Briefcase, color: 'text-amber-500 bg-amber-50 border-amber-150' }
     ];
 
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
           <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Top Categories</h3>
-          <button 
-            onClick={() => {
-              setActiveTab('Services');
-              setSelectedSubNavbarCategory('Services');
-            }} 
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
-          >
-            View All &gt;
-          </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
@@ -4396,16 +4386,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <option value="">All Brands</option>
                     {[...new Set(products.filter(p => p.subNavbarCategory === 'Products').map(p => p.vendorName).filter(Boolean))].map(brand => (
                       <option key={brand} value={brand}>{brand}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedColors[0] || ""}
-                    onChange={(e) => setSelectedColors(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                  >
-                    <option value="">All Colors</option>
-                    {['Black', 'White', 'Blue', 'Green', 'Pink', 'Gold', 'Red'].map(col => (
-                      <option key={col} value={col}>{col}</option>
                     ))}
                   </select>
                   <select
