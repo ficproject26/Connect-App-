@@ -2766,7 +2766,30 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     } else {
                       setActiveTab(tabForLink);
                       setSelectedSubNavbarCategory(tabForLink);
-                      setSelectedCategories([subCat]);
+                      
+                      // Reset other filter arrays
+                      setSelectedCategories([]);
+                      setSelectedServiceTypes([]);
+                      setSelectedCuisines([]);
+                      setSelectedAccomTypes([]);
+                      setSelectedTravelTypes([]);
+                      setSelectedDailyNeedsTypes([]);
+
+                      // Set tab-specific subcategory filter array
+                      if (tabForLink === 'Services') {
+                        setSelectedServiceTypes([subCat]);
+                      } else if (tabForLink === 'Food') {
+                        setSelectedCuisines([subCat]);
+                      } else if (tabForLink === 'Stay') {
+                        setSelectedAccomTypes([subCat]);
+                      } else if (tabForLink === 'Travel') {
+                        setSelectedTravelTypes([subCat]);
+                      } else if (tabForLink === 'Daily Needs') {
+                        setSelectedDailyNeedsTypes([subCat]);
+                      } else {
+                        // Products / defaults
+                        setSelectedCategories([subCat]);
+                      }
                     }
                   }
                 }}
