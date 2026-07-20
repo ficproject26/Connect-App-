@@ -162,6 +162,19 @@ const isPreviousDate = (year, month, day) => {
   return date.getTime() < today.getTime();
 };
 
+const isDateAlreadyBooked = (year, month, day) => {
+  // Lock July 22nd and July 27th, 2026
+  if (year === 2026 && month === 6 && (day === 22 || day === 27)) {
+    return true;
+  }
+  // Also block 22nd and 27th of the current calendar month for easier demonstration
+  const today = new Date();
+  if (year === today.getFullYear() && month === today.getMonth() && (day === 22 || day === 27)) {
+    return true;
+  }
+  return false;
+};
+
 export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
   const [theme, setTheme] = useState(
@@ -178,6 +191,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [toLocation, setToLocation] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [customTimeInput, setCustomTimeInput] = useState('');
+  const [checkInTime, setCheckInTime] = useState('12:00 PM');
+  const [checkOutTime, setCheckOutTime] = useState('11:00 AM');
+  const [adultCount, setAdultCount] = useState(1);
+  const [childCount, setChildCount] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -185,6 +202,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (activeScheduleModalItem || activeBookNowModalItem) {
+      setCheckInTime('12:00 PM');
+      setCheckOutTime('11:00 AM');
+      setAdultCount(1);
+      setChildCount(0);
+      setCustomTimeInput('');
+    }
+  }, [activeScheduleModalItem, activeBookNowModalItem]);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
@@ -7719,6 +7746,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       {/* ==================== 1. SCHEDULE MODAL (Screenshot 1 style) ==================== */}
       {activeScheduleModalItem && (() => {
         const terms = getModalTerms(activeScheduleModalItem);
+        const isStayItem = terms.summaryLabel === 'Hotel Stay';
+        const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveScheduleModalItem(null)} className="absolute inset-0" />
@@ -7753,10 +7782,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <span className="text-[10px] text-slate-500 dark:text-slate-405 mt-2.5 leading-relaxed text-center block">
                       {(() => {
                         const isDoctor = activeScheduleModalItem.name?.startsWith('Dr.') || ['Hospital', 'Clinic', 'Cardiology', 'Pediatrics', 'Dentist', 'Homeopathy'].includes(activeScheduleModalItem.category);
-                        if (activeScheduleModalItem.subNavbarCategory === 'Stay') {
+                        if (isStayItem) {
                           return 'Verified Host • 5+ Years Experience';
                         }
-                        if (activeScheduleModalItem.subNavbarCategory === 'Travel') {
+                        if (isTravelItem) {
                           return 'Luxury Agent • 10+ Years Tours';
                         }
                         if (isDoctor) {
@@ -7859,7 +7888,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
                             const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
-                            const isBooked = (activeScheduleModalItem.subNavbarCategory === 'Stay' || activeScheduleModalItem.subNavbarCategory === 'Travel') && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
+                            const isBooked = (isStayItem || isTravelItem) && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
                             const isDisableClick = isPast || isBooked;
                             
                             return (
@@ -7990,7 +8019,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     {/* Stay Timings Input Block */}
-                    {activeScheduleModalItem.subNavbarCategory === 'Stay' && (
+                    {isStayItem && (
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
                         <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-2">Configure Timings</span>
                         <div className="grid grid-cols-2 gap-2.5">
@@ -8019,7 +8048,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     )}
 
                     {/* Guest/Traveler Counter Block */}
-                    {(activeScheduleModalItem.subNavbarCategory === 'Stay' || activeScheduleModalItem.subNavbarCategory === 'Travel') && (
+                    {(isStayItem || isTravelItem) && (
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
                         <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
                         
@@ -8129,7 +8158,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      {activeScheduleModalItem.subNavbarCategory === 'Stay' && (
+                      {isStayItem && (
                         <>
                           <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                             <Home className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
@@ -8148,7 +8177,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </>
                       )}
 
-                      {(activeScheduleModalItem.subNavbarCategory === 'Stay' || activeScheduleModalItem.subNavbarCategory === 'Travel') && (
+                      {(isStayItem || isTravelItem) && (
                         <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                           <User className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
                           <div>
@@ -8218,6 +8247,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       {/* ==================== 2. BOOK NOW MODAL (Screenshot 2 style) ==================== */}
       {activeBookNowModalItem && (() => {
         const terms = getModalTerms(activeBookNowModalItem);
+        const isStayItem = terms.summaryLabel === 'Hotel Stay';
+        const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveBookNowModalItem(null)} className="absolute inset-0" />
@@ -8306,7 +8337,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
                             const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
-                            const isBooked = (activeBookNowModalItem.subNavbarCategory === 'Stay' || activeBookNowModalItem.subNavbarCategory === 'Travel') && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
+                            const isBooked = (isStayItem || isTravelItem) && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
                             const isDisableClick = isPast || isBooked;
                             
                             return (
@@ -8443,7 +8474,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
 
                     {/* Stay Timings Input Block */}
-                    {activeBookNowModalItem.subNavbarCategory === 'Stay' && (
+                    {isStayItem && (
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
                         <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-2">Configure Timings</span>
                         <div className="grid grid-cols-2 gap-2.5">
@@ -8454,7 +8485,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               value={checkInTime}
                               onChange={(e) => setCheckInTime(e.target.value)}
                               placeholder="12:00 PM"
-                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200/60 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
                             />
                           </div>
                           <div>
@@ -8464,7 +8495,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               value={checkOutTime}
                               onChange={(e) => setCheckOutTime(e.target.value)}
                               placeholder="11:00 AM"
-                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-755 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200/60 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-755 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
                             />
                           </div>
                         </div>
@@ -8472,7 +8503,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     )}
 
                     {/* Guest/Traveler Counter Block */}
-                    {(activeBookNowModalItem.subNavbarCategory === 'Stay' || activeBookNowModalItem.subNavbarCategory === 'Travel') && (
+                    {(isStayItem || isTravelItem) && (
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
                         <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
                         
@@ -8586,7 +8617,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalTime}</span>
                       </div>
 
-                      {activeBookNowModalItem.subNavbarCategory === 'Stay' && (
+                      {isStayItem && (
                         <>
                           <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
                             <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-450" /> Check-in Timing</span>
@@ -8599,7 +8630,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </>
                       )}
 
-                      {(activeBookNowModalItem.subNavbarCategory === 'Stay' || activeBookNowModalItem.subNavbarCategory === 'Travel') && (
+                      {(isStayItem || isTravelItem) && (
                         <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
                           <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><User className="w-4 h-4 text-slate-450" /> Travelers / Guests</span>
                           <span className="font-extrabold text-slate-855 dark:text-slate-200 text-right">
