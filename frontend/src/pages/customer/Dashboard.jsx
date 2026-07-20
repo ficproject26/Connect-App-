@@ -152,19 +152,14 @@ const getModalTerms = (item) => {
   };
 };
 
-const isTodayOrTomorrow = (year, month, day) => {
+const isPreviousDate = (year, month, day) => {
   const date = new Date(year, month, day);
   date.setHours(0, 0, 0, 0);
   
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  
-  const check = date.getTime();
-  return check === today.getTime() || check === tomorrow.getTime();
+  return date.getTime() < today.getTime();
 };
 
 export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
@@ -182,6 +177,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [customTimeInput, setCustomTimeInput] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -5614,7 +5610,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Tabbed Info Panel */}
             <div className="border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/10 dark:bg-slate-900/5 overflow-hidden">
               <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-x-auto no-scrollbar">
-                {['Overview', 'Boarding Points', 'Dropping Points', 'Ratings & Reviews', 'Policies'].map((tab) => (
+                {['Overview', 'Boarding Points', 'Dropping Points', 'Stops', 'Ratings & Reviews', 'Policies'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setTravelDetailsTab(tab)}
@@ -5642,8 +5638,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         'Experienced & professional staff',
                         'Safe & reliable travel'
                       ].map((item, iIdx) => (
-                        <div key={iIdx} className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-350">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-550 fill-emerald-550/10 shrink-0" />
+                        <div key={iIdx} className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-355">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-555 fill-emerald-555/10 shrink-0" />
                           <span>{item}</span>
                         </div>
                       ))}
@@ -5664,15 +5660,56 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <div>• Guindy (Near metro) - 05:45 AM</div>
                   </div>
                 )}
+                {travelDetailsTab === 'Stops' && (
+                  <div className="space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-355 text-left">
+                    <div className="relative pl-6 border-l-2 border-blue-500 dark:border-blue-700 space-y-5">
+                      <div className="relative">
+                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                        <div>
+                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">Bengaluru Majestic (Source)</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Departure at 09:00 PM</div>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-350 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                        <div>
+                          <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Hosur Stop</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival 10:00 PM | 5 mins stop</div>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                        <div>
+                          <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Krishnagiri Toll Plaza</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival 11:15 PM | 10 mins dinner break</div>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                        <div>
+                          <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Vellore Bypass</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival 02:00 AM | 5 mins stop</div>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                        <div>
+                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">{selectedProduct.toCity || 'Chennai'} Koyambedu (Destination)</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival at 05:30 AM</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {travelDetailsTab === 'Ratings & Reviews' && (
                   <div className="space-y-3 text-xs">
                     <div className="font-black text-slate-850 dark:text-white">Customer Feedback (★ 4.5/5 based on 12,520 reviews)</div>
                     <div className="border-t border-slate-105 dark:border-slate-850/60 pt-3 mt-2">
                       <div className="flex justify-between font-extrabold text-[11px]">
-                        <span>Suresh K.</span>
+                        <span className="text-slate-850 dark:text-white">Suresh K.</span>
                         <span className="text-amber-500">★ 5.0</span>
                       </div>
-                      <p className="text-slate-550 mt-1">Excellent travel experience. On time departure and very comfortable sleeper berth. Clean blankets were provided.</p>
+                      <p className="text-slate-600 dark:text-slate-300 mt-1">Excellent travel experience. On time departure and very comfortable sleeper berth. Clean blankets were provided.</p>
                     </div>
                   </div>
                 )}
@@ -6889,7 +6926,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200 shadow-sm">
                   <Check className="w-8 h-8 animate-bounce" />
                 </div>
-                <h4 className="text-lg font-bold text-slate-800">Order Placed Successfully!</h4>
+                <h4 className="text-lg font-bold text-slate-800 dark:text-white">Order Placed Successfully!</h4>
                 <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
                   Your payment has been authorized, and items are now routing to shipping. Flat ₹50 discounts applied!
                 </p>
@@ -6897,7 +6934,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             ) : cart.length === 0 ? (
               <div className="text-center py-16 space-y-3">
                 <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-800">Your Cart is Empty</h4>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-white">Your Cart is Empty</h4>
                 <p className="text-xs text-slate-400 dark:text-slate-500">Add stylish clothing or luxury goods from the marketplace to check out.</p>
               </div>
             ) : (
@@ -6909,7 +6946,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div className="flex items-center gap-3">
                     <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover border border-slate-200 bg-white" />
                     <div>
-                      <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{item.name}</h4>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs font-extrabold text-[#f43397]">₹{(item.price || 0).toLocaleString()}</span>
                         <span className="text-[10px] text-slate-400 line-through">₹{(item.originalPrice || item.price || 0).toLocaleString()}</span>
@@ -7755,19 +7792,50 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
-                      <button 
-                        disabled
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
-                      >
-                        <ChevronLeft className="w-4 h-4 text-slate-400 dark:text-slate-600" />
-                      </button>
-                      <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
-                      <button 
-                        disabled
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
-                      >
-                        <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-600" />
-                      </button>
+                      {(() => {
+                        const todayDate = new Date();
+                        const currentSystemYear = todayDate.getFullYear();
+                        const currentSystemMonth = todayDate.getMonth();
+                        const isLeftArrowDisabled = currentYear < currentSystemYear || 
+                          (currentYear === currentSystemYear && currentMonthIndex <= currentSystemMonth);
+                        
+                        return (
+                          <>
+                            <button 
+                              onClick={() => {
+                                if (currentMonthIndex === 0) {
+                                  setCurrentMonthIndex(11);
+                                  setCurrentYear(prev => prev - 1);
+                                } else {
+                                  setCurrentMonthIndex(prev => prev - 1);
+                                }
+                              }}
+                              disabled={isLeftArrowDisabled}
+                              className={`w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center border-none ${
+                                isLeftArrowDisabled 
+                                  ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-600' 
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200'
+                              }`}
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
+                            <button 
+                              onClick={() => {
+                                if (currentMonthIndex === 11) {
+                                  setCurrentMonthIndex(0);
+                                  setCurrentYear(prev => prev + 1);
+                                } else {
+                                  setCurrentMonthIndex(prev => prev + 1);
+                                }
+                              }}
+                              className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer border-none"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* Calendar Days Grid */}
@@ -7787,23 +7855,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           {Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
-                            const isAllowed = isTodayOrTomorrow(currentYear, currentMonthIndex, day);
-                            if (!isAllowed) {
-                              return <span key={`day-${day}`} className="w-8 h-8" />;
-                            }
+                            const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
+                            
                             return (
                               <button
                                 key={`day-${day}`}
+                                disabled={isPast}
                                 onClick={() => {
                                   setSelectedModalDay(day);
                                   const date = new Date(currentYear, currentMonthIndex, day);
                                   const weekdaysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                                   setSelectedModalDate(`${weekdaysShort[date.getDay()]} ${day} ${monthNames[currentMonthIndex]} ${currentYear}`);
                                 }}
-                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center mx-auto ${
-                                  isSelected 
-                                    ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20' 
-                                    : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all flex items-center justify-center mx-auto ${
+                                  isPast
+                                    ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed'
+                                    : isSelected 
+                                      ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
+                                      : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
                                 }`}
                               >
                                 {day}
@@ -7882,6 +7951,31 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Manual Custom Time Entry */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
+                      <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-1.5">Or enter custom time manually</span>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text"
+                          placeholder="e.g. 02:30 PM"
+                          value={customTimeInput}
+                          onChange={(e) => setCustomTimeInput(e.target.value)}
+                          className="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                        />
+                        <button
+                          onClick={() => {
+                            if (customTimeInput.trim()) {
+                              setSelectedModalTime(customTimeInput.trim());
+                              triggerNotification(`Custom time set to ${customTimeInput.trim()}`);
+                            }
+                          }}
+                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer border-none"
+                        >
+                          Set
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -8002,19 +8096,50 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div>
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
-                      <button 
-                        disabled
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
-                      >
-                        <ChevronLeft className="w-4 h-4 text-slate-400 dark:text-slate-600" />
-                      </button>
-                      <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
-                      <button 
-                        disabled
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
-                      >
-                        <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-600" />
-                      </button>
+                      {(() => {
+                        const todayDate = new Date();
+                        const currentSystemYear = todayDate.getFullYear();
+                        const currentSystemMonth = todayDate.getMonth();
+                        const isLeftArrowDisabled = currentYear < currentSystemYear || 
+                          (currentYear === currentSystemYear && currentMonthIndex <= currentSystemMonth);
+                        
+                        return (
+                          <>
+                            <button 
+                              onClick={() => {
+                                if (currentMonthIndex === 0) {
+                                  setCurrentMonthIndex(11);
+                                  setCurrentYear(prev => prev - 1);
+                                } else {
+                                  setCurrentMonthIndex(prev => prev - 1);
+                                }
+                              }}
+                              disabled={isLeftArrowDisabled}
+                              className={`w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center border-none ${
+                                isLeftArrowDisabled 
+                                  ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-600' 
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-200'
+                              }`}
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
+                            <button 
+                              onClick={() => {
+                                if (currentMonthIndex === 11) {
+                                  setCurrentMonthIndex(0);
+                                  setCurrentYear(prev => prev + 1);
+                                } else {
+                                  setCurrentMonthIndex(prev => prev + 1);
+                                }
+                              }}
+                              className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer border-none"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* Days grid */}
@@ -8034,28 +8159,29 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           {Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
-                            const isAllowed = isTodayOrTomorrow(currentYear, currentMonthIndex, day);
-                            if (!isAllowed) {
-                              return <span key={`day-${day}`} className="w-8 h-8" />;
-                            }
+                            const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
+                            
                             return (
                               <button
                                 key={`day-${day}`}
+                                disabled={isPast}
                                 onClick={() => {
                                   setSelectedModalDay(day);
                                   const date = new Date(currentYear, currentMonthIndex, day);
                                   const weekdaysLong = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                                   setSelectedModalDate(`${weekdaysLong[date.getDay()]}, ${day} ${monthNames[currentMonthIndex]} ${currentYear}`);
                                 }}
-                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center mx-auto relative ${
-                                  isSelected 
-                                    ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20' 
-                                    : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all flex items-center justify-center mx-auto relative ${
+                                  isPast
+                                    ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed'
+                                    : isSelected 
+                                      ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
+                                      : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
                                 }`}
                               >
                                 <span>{day}</span>
                                 {/* Available/busy dot indicator */}
-                                {!isSelected && (
+                                {!isSelected && !isPast && (
                                   <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
                                     day % 5 === 0 ? 'bg-orange-400' : (day % 3 === 0 ? 'bg-slate-300' : 'bg-emerald-500')
                                   }`} />
@@ -8135,6 +8261,31 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Manual Custom Time Entry */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
+                      <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-1.5">Or enter custom time manually</span>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text"
+                          placeholder="e.g. 02:30 PM"
+                          value={customTimeInput}
+                          onChange={(e) => setCustomTimeInput(e.target.value)}
+                          className="flex-grow bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                        />
+                        <button
+                          onClick={() => {
+                            if (customTimeInput.trim()) {
+                              setSelectedModalTime(customTimeInput.trim());
+                              triggerNotification(`Custom time set to ${customTimeInput.trim()}`);
+                            }
+                          }}
+                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer border-none"
+                        >
+                          Set
+                        </button>
+                      </div>
                     </div>
                   </div>
 
