@@ -175,6 +175,19 @@ const isDateAlreadyBooked = (year, month, day) => {
   return false;
 };
 
+const getGuestsCount = (product) => {
+  if (!product) return null;
+  const val = product.guests !== undefined ? product.guests : (product.maxGuests !== undefined ? product.maxGuests : product.capacity);
+  if (val === undefined || val === null) return null;
+  if (typeof val === 'object') {
+    if (Array.isArray(val)) return val.length;
+    if (val.count !== undefined) return val.count;
+    if (val.value !== undefined) return val.value;
+    return null;
+  }
+  return val;
+};
+
 export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
   const [theme, setTheme] = useState(
@@ -4953,12 +4966,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     <span>{product.duration}</span>
                                   </div>
                                 )}
-                                {(product.guests || product.maxGuests || product.capacity) && (
-                                  <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-3">
-                                    <User className="w-3.5 h-3.5 text-slate-400" />
-                                    <span>{product.guests || product.maxGuests || product.capacity} {Number(product.guests || product.maxGuests || product.capacity) === 1 ? 'Person' : 'People'}</span>
-                                  </div>
-                                )}
+                                {(() => {
+                                  const guestsCount = getGuestsCount(product);
+                                  if (!guestsCount) return null;
+                                  return (
+                                    <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-3">
+                                      <User className="w-3.5 h-3.5 text-slate-400" />
+                                      <span>{guestsCount} {Number(guestsCount) === 1 ? 'Person' : 'People'}</span>
+                                    </div>
+                                  );
+                                })()}
                               </div>
 
                               {/* Price Section */}
