@@ -2472,7 +2472,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     filteredProducts.sort((a, b) => b.rating - a.rating);
   }
 
-  const wishlistProducts = products.filter(product => favorites.includes(product.id));
+  const wishlistProducts = (() => {
+    const allItems = [
+      ...(products || []),
+      ...(allServices || []),
+      ...(stayItems || []),
+      ...(travelItems || []),
+      ...(dailyNeedsItems || []),
+      ...(foodItems || []),
+      ...(offers || [])
+    ];
+    const map = new Map();
+    allItems.forEach(item => {
+      if (item && item.id != null && favorites.includes(item.id)) {
+        map.set(item.id, item);
+      }
+    });
+    return Array.from(map.values());
+  })();
 
   // RENDER HELPERS
   const renderHeaderIcons = (isMobile = false) => {
@@ -7143,69 +7160,116 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div 
           className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0b1329] border-l border-slate-200 dark:border-slate-800/60 shadow-2xl p-6 md:p-8 flex flex-col justify-between transition-transform duration-500 ease-out z-10 text-slate-800 dark:text-slate-200`}
         >
-          <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-            <div className="flex items-center gap-2">
-              <Heart className="w-5 h-5 text-[#f43397] fill-[#f43397]" />
-              <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200">My Wishlist</h3>
+          {/* Header */}
+          <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-pink-50 dark:bg-pink-950/40 flex items-center justify-center border border-pink-100 dark:border-pink-900/30">
+                <Heart className="w-4 h-4 text-[#f43397] fill-[#f43397]" />
+              </div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">My Wishlist</h3>
+              {wishlistProducts.length > 0 && (
+                <span className="text-[10px] font-black text-[#f43397] bg-pink-50 dark:bg-pink-950/40 px-2.5 py-0.5 rounded-full border border-pink-200/50 dark:border-pink-900/40">
+                  {wishlistProducts.length} {wishlistProducts.length === 1 ? 'Item' : 'Items'}
+                </span>
+              )}
             </div>
             <button 
               onClick={() => setIsWishlistOpen(false)}
-              className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-all cursor-pointer"
+              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer border-none"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex-grow overflow-y-auto py-5 space-y-4 no-scrollbar">
+          {/* Body List */}
+          <div className="flex-grow overflow-y-auto py-5 space-y-3.5 no-scrollbar">
             {wishlistProducts.length === 0 ? (
-              <div className="text-center py-16 space-y-3">
-                <Heart className="w-12 h-12 text-slate-300 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-800">Your Wishlist is Empty</h4>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Save items you like here to purchase them later.</p>
+              <div className="text-center py-16 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-900/80 flex items-center justify-center mx-auto border border-slate-200/60 dark:border-slate-800">
+                  <Heart className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white">Your Wishlist is Empty</h4>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto mt-1 leading-relaxed">
+                    Save items you like while browsing to easily view and purchase them later.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsWishlistOpen(false)}
+                  className="mt-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none active:scale-95"
+                >
+                  Explore Catalog
+                </button>
               </div>
             ) : (
-              wishlistProducts.map((item) => (
-                <div 
-                  key={item.id}
-                  className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-850 relative animate-fade-in gap-3 text-slate-800 dark:text-slate-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover border border-slate-200 shrink-0 bg-white" />
-                    <div className="text-left">
-                      <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.name}</h4>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">₹{(item.price || 0).toLocaleString()}</span>
-                        <span className="text-[10px] text-[#f43397] font-semibold">{item.discount}</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                        <span>★ {item.rating}</span>
-                        <span>•</span>
-                        <span>{item.delivery}</span>
+              wishlistProducts.map((item) => {
+                const itemImg = item.image || item.img || 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400';
+                const itemPrice = item.price || item.fee || item.originalPrice || 0;
+                const itemCategory = item.category || item.type || 'Product';
+                return (
+                  <div 
+                    key={item.id}
+                    className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-850 relative animate-fade-in gap-3 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-750 transition-all shadow-3xs"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <img 
+                        src={itemImg} 
+                        alt={item.name} 
+                        className="w-14 h-14 rounded-xl object-cover border border-slate-200/60 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900" 
+                      />
+                      <div className="text-left overflow-hidden">
+                        <span className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-full inline-block mb-1">
+                          {itemCategory}
+                        </span>
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[160px] leading-tight">
+                          {item.name}
+                        </h4>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          <span className="text-xs font-black text-slate-900 dark:text-white">₹{itemPrice.toLocaleString()}</span>
+                          {item.discount && (
+                            <span className="text-[9.5px] text-[#f43397] font-black">{item.discount}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 text-[9.5px] font-bold text-slate-400 dark:text-slate-400">
+                          <span className="text-amber-500 font-extrabold flex items-center gap-0.5">★ {item.rating || 4.5}</span>
+                          {item.reviews && <span>({item.reviews})</span>}
+                        </div>
                       </div>
                     </div>
+
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (item.category === 'Luxury Hotels' || item.category === 'Stay' || item.category === 'Travel Ticket') {
+                            setActiveBookNowModalItem(item);
+                            setIsWishlistOpen(false);
+                          } else {
+                            addToCart(item);
+                          }
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-[9.5px] font-black px-2.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer uppercase flex items-center justify-center gap-1 border-none active:scale-95"
+                      >
+                        <ShoppingCart className="w-3 h-3" />
+                        <span>Add</span>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => toggleFavorite(item.id)}
+                        className="text-[9.5px] font-extrabold border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/40 py-1 px-2 rounded-xl cursor-pointer transition-colors text-center bg-white dark:bg-slate-900 active:scale-95"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    <button 
-                      onClick={() => addToCart(item)}
-                      className="bg-[#0b1e36] hover:bg-amber-500 hover:text-[#0b1e36] text-white text-[9px] font-bold px-2 py-1.5 rounded shadow-xs transition-colors cursor-pointer uppercase flex items-center gap-1"
-                    >
-                      <ShoppingCart className="w-3 h-3" />
-                      <span>Add</span>
-                    </button>
-                    <button 
-                      onClick={() => toggleFavorite(item.id)}
-                      className="text-[9px] font-bold border border-slate-200 text-slate-500 hover:text-red-500 hover:border-red-200 py-1 rounded cursor-pointer transition-colors text-center"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
+          {/* Footer Action */}
           {wishlistProducts.length > 0 && (
-            <div className="border-t border-slate-200 pt-6">
+            <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 space-y-2">
               <button 
                 onClick={() => {
                   wishlistProducts.forEach(item => addToCart(item));
@@ -7213,7 +7277,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   setIsCartOpen(true);
                   triggerNotification("Added all wishlist items to cart!");
                 }}
-                className="w-full py-3 bg-[#0b1e36] hover:bg-[#13325a] text-white font-bold text-xs uppercase tracking-widest rounded shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 border-none active:scale-95"
               >
                 <ShoppingCart className="w-4 h-4" />
                 <span>Add All to Cart</span>
