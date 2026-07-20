@@ -152,6 +152,21 @@ const getModalTerms = (item) => {
   };
 };
 
+const isTodayOrTomorrow = (year, month, day) => {
+  const date = new Date(year, month, day);
+  date.setHours(0, 0, 0, 0);
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  
+  const check = date.getTime();
+  return check === today.getTime() || check === tomorrow.getTime();
+};
+
 export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
   const [theme, setTheme] = useState(
@@ -162,6 +177,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [selectedColor, setSelectedColor] = useState('Red');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [selectedBusType, setSelectedBusType] = useState('');
+  const [selectedBusClass, setSelectedBusClass] = useState('');
+  const [fromLocation, setFromLocation] = useState('');
+  const [toLocation, setToLocation] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
@@ -214,6 +241,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 }
               }
             }
+            // Patch Travel (Bus) items with fromCity, toCity, busType, busClass
+            if (p.subNavbarCategory === 'Travel') {
+              updated.fromCity = p.fromCity || 'Bangalore';
+              updated.toCity = p.toCity || 'Chennai';
+              updated.busType = (p.description?.toLowerCase().includes('non-ac') || p.name?.toLowerCase().includes('non-ac')) ? 'Non-AC' : 'AC';
+              updated.busClass = (p.description?.toLowerCase().includes('seater') || p.name?.toLowerCase().includes('seater')) ? 'Seater' : 'Sleeper';
+            }
             return updated;
           });
           setProducts(patched);
@@ -263,16 +297,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [sortBy, setSortBy] = useState('default');
   const [activeScheduleModalItem, setActiveScheduleModalItem] = useState(null);
   const [activeBookNowModalItem, setActiveBookNowModalItem] = useState(null);
-  const [selectedModalDate, setSelectedModalDate] = useState('Wed, 21 May 2025');
+  const formatDateYYYYMMDD = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const getFormattedModalDate = (date) => {
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
+  const todayObj = new Date();
+  const tomorrowObj = new Date();
+  tomorrowObj.setDate(todayObj.getDate() + 1);
+
+  const [selectedModalDate, setSelectedModalDate] = useState(() => getFormattedModalDate(todayObj));
   const [selectedModalTime, setSelectedModalTime] = useState('11:00 AM');
   const [selectedModalType, setSelectedModalType] = useState('Video Consultation');
   const [selectedTimeOfDayTab, setSelectedTimeOfDayTab] = useState('Morning');
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(4);
-  const [currentYear, setCurrentYear] = useState(2025);
-  const [selectedModalDay, setSelectedModalDay] = useState(21);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(todayObj.getMonth());
+  const [currentYear, setCurrentYear] = useState(todayObj.getFullYear());
+  const [selectedModalDay, setSelectedModalDay] = useState(todayObj.getDate());
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const [stayCheckInDate, setStayCheckInDate] = useState('2025-05-21');
-  const [stayCheckOutDate, setStayCheckOutDate] = useState('2025-05-22');
+  const [stayCheckInDate, setStayCheckInDate] = useState(() => formatDateYYYYMMDD(todayObj));
+  const [stayCheckOutDate, setStayCheckOutDate] = useState(() => formatDateYYYYMMDD(tomorrowObj));
   const [stayRoomsCount, setStayRoomsCount] = useState(1);
   const [stayGuestsCount, setStayGuestsCount] = useState(2);
   const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
@@ -2097,6 +2148,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setSelectedDistances([]);
     setSelectedAccomTypes([]);
     setSelectedTravelTypes([]);
+    setSelectedBusType('');
+    setSelectedBusClass('');
+    setFromLocation('');
+    setToLocation('');
     setSelectedDailyNeedsTypes([]);
     setSelectedJobDepts([]);
     setSelectedJobTypes([]);
@@ -2244,7 +2299,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && matchesPrice && matchesRatingFilter;
+      const matchesFrom = !fromLocation || 
+        (product.fromCity && product.fromCity.toLowerCase() === fromLocation.toLowerCase());
+      
+      const matchesTo = !toLocation || 
+        (product.toCity && product.toCity.toLowerCase() === toLocation.toLowerCase());
+      
+      const matchesBusType = !selectedBusType || 
+        (product.busType && product.busType.toLowerCase() === selectedBusType.toLowerCase());
+
+      const matchesBusClass = !selectedBusClass || 
+        (product.busClass && product.busClass.toLowerCase() === selectedBusClass.toLowerCase());
+
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && matchesPrice && matchesRatingFilter && matchesFrom && matchesTo && matchesBusType && matchesBusClass;
     }
 
     // Daily Needs Filter Checks
@@ -4480,12 +4547,66 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               {/* Travel Tab Filters */}
               {activeTab === 'Travel' && (
                 <>
+                  {/* From Location */}
+                  <select
+                    value={fromLocation}
+                    onChange={(e) => setFromLocation(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">From (Select City)</option>
+                    <option value="Bangalore">Bangalore</option>
+                    <option value="Chennai">Chennai</option>
+                    <option value="Mumbai">Mumbai</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Hyderabad">Hyderabad</option>
+                    <option value="Pune">Pune</option>
+                    <option value="Kochi">Kochi</option>
+                  </select>
+
+                  {/* To Location */}
+                  <select
+                    value={toLocation}
+                    onChange={(e) => setToLocation(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">To (Select City)</option>
+                    <option value="Chennai">Chennai</option>
+                    <option value="Bangalore">Bangalore</option>
+                    <option value="Mumbai">Mumbai</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Hyderabad">Hyderabad</option>
+                    <option value="Pune">Pune</option>
+                    <option value="Kochi">Kochi</option>
+                  </select>
+
+                  {/* Bus Type */}
+                  <select
+                    value={selectedBusType}
+                    onChange={(e) => setSelectedBusType(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Bus Types</option>
+                    <option value="AC">AC</option>
+                    <option value="Non-AC">Non-AC</option>
+                  </select>
+
+                  {/* Seating Class */}
+                  <select
+                    value={selectedBusClass}
+                    onChange={(e) => setSelectedBusClass(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">All Seating Classes</option>
+                    <option value="Sleeper">Sleeper</option>
+                    <option value="Seater">Seater</option>
+                  </select>
+
                   <select
                     value={selectedTravelTypes[0] || ""}
                     onChange={(e) => setSelectedTravelTypes(e.target.value ? [e.target.value] : [])}
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
-                    <option value="">All Options</option>
+                    <option value="">All Categories</option>
                     {[...new Set(products.filter(p => p.subNavbarCategory === 'Travel').map(p => p.category).filter(Boolean))].map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
@@ -4988,12 +5109,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Luxury Hotels'}</span>
               <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Purchase</span></div>
             </div>
-            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><div className="grid grid-cols-3 gap-3"><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-in</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span><input type="date" value={stayCheckInDate} onChange={(e) => setStayCheckInDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-out</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span><input type="date" value={stayCheckOutDate} onChange={(e) => setStayCheckOutDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Nights</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span></div></div><div className="grid grid-cols-2 gap-3 mt-3"><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">Rooms</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayRoomsCount} Room</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayRoomsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayRoomsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex justify-between items-center"><div><span className="text-[9px] text-slate-400 font-bold uppercase block">Guests</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-0.5 block">{stayGuestsCount} Adults</span></div><div className="flex items-center gap-1.5"><button onClick={() => setStayGuestsCount(p => Math.max(1, p-1))} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">-</button><button onClick={() => setStayGuestsCount(p => p+1)} className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-600 cursor-pointer text-xs">+</button></div></div></div></div>
-            <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/20 rounded-xl px-4 py-3 flex items-center justify-between"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /><div><span className="text-[11px] font-black text-amber-700 dark:text-amber-400 block">Members get up to 15% OFF</span><span className="text-[9px] text-amber-600/70 font-bold">Join Silver / Gold / Diamond membership to save more.</span></div></div><button onClick={() => triggerNotification("Opening membership plans...")} className="text-[10px] text-blue-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer flex items-center gap-0.5">Explore Memberships <ArrowRight className="w-3 h-3" /></button></div>
-            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Select Room Type</h3>
-              {roomTypes.map((room) => (<div key={room.id} className="flex gap-4 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-400 cursor-pointer transition-all"><div className="w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-100"><img src={selectedProduct.image} alt={room.name} className="w-full h-full object-cover" /></div><div className="flex-grow"><div className="flex items-start justify-between"><div><h4 className="text-xs font-black text-slate-850 dark:text-white">{room.name}</h4><div className="flex items-center gap-2 mt-1 text-[9px] text-slate-450 font-bold flex-wrap"><span>{room.guests} Guests</span><span>{room.bed}</span><span>{room.area}</span></div></div><div className="text-right shrink-0"><span className="text-sm font-black text-slate-900 dark:text-white block">₹{room.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 block">/ night</span></div></div><div className="flex items-center gap-1.5 mt-2 flex-wrap">{room.amenities.map((a, ai) => <span key={ai} className="text-[8px] font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-1.5 py-0.5 rounded">{a}</span>)}<span className="text-[8px] text-blue-500 font-bold">{room.extra}</span></div></div></div>))}
-            </div>
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5"><div className="grid grid-cols-3 gap-3"><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-in</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span><input type="date" value={stayCheckInDate} onChange={(e) => setStayCheckInDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-slate-350 transition-colors"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Check-out</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span><input type="date" value={stayCheckOutDate} onChange={(e) => setStayCheckOutDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /></div><div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3"><span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Nights</span><span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span></div></div></div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
               <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -5014,7 +5130,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div className="lg:col-span-3 flex flex-col gap-5">
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 sticky top-4 text-left">
               <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-850 pb-3">Booking Summary</h3>
-              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Hotel</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-in</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-out</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Nights</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {nights===1?'Night':'Nights'}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Rooms & Guests</span><span className="font-extrabold text-slate-800 dark:text-white">{stayRoomsCount} Room, {stayGuestsCount} Adults</span></div></div>
+              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Hotel</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-in</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-out</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Nights</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {nights===1?'Night':'Nights'}</span></div></div>
               <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">₹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- ₹{memberDiscount.toLocaleString()}</span></div></div>
               <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><div><span className="text-sm font-black text-slate-900 dark:text-white block">Total Amount</span><span className="text-[9px] text-slate-400 font-bold">Incl. all taxes</span></div><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalPrice.toLocaleString()}</span></div>
               <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 24 hrs before check-in for full refund.</span></div></div>
@@ -5349,7 +5465,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {/* Source */}
                 <div className="flex-1 text-center md:text-left w-full">
                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">From</span>
-                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">Bengaluru</span>
+                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">{selectedProduct.fromCity || 'Bangalore'}</span>
                   <span className="text-[10px] text-slate-450 dark:text-slate-500 font-medium block mt-0.5">Kempegowda Bus Stand</span>
                 </div>
 
@@ -5366,7 +5482,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {/* Destination */}
                 <div className="flex-1 text-center md:text-right w-full">
                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">To</span>
-                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">Chennai</span>
+                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">{selectedProduct.toCity || 'Chennai'}</span>
                   <span className="text-[10px] text-slate-450 dark:text-slate-500 font-medium block mt-0.5">Koyambedu Bus Stand</span>
                 </div>
               </div>
@@ -7640,31 +7756,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
                       <button 
-                        onClick={() => {
-                          if (currentMonthIndex === 0) {
-                            setCurrentMonthIndex(11);
-                            setCurrentYear(prev => prev - 1);
-                          } else {
-                            setCurrentMonthIndex(prev => prev - 1);
-                          }
-                        }}
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                        disabled
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
                       >
-                        <ChevronLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
+                        <ChevronLeft className="w-4 h-4 text-slate-400 dark:text-slate-600" />
                       </button>
                       <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
                       <button 
-                        onClick={() => {
-                          if (currentMonthIndex === 11) {
-                            setCurrentMonthIndex(0);
-                            setCurrentYear(prev => prev + 1);
-                          } else {
-                            setCurrentMonthIndex(prev => prev + 1);
-                          }
-                        }}
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                        disabled
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
                       >
-                        <ChevronRight className="w-4 h-4 text-slate-650 dark:text-slate-355" />
+                        <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-600" />
                       </button>
                     </div>
 
@@ -7685,6 +7787,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           {Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
+                            const isAllowed = isTodayOrTomorrow(currentYear, currentMonthIndex, day);
+                            if (!isAllowed) {
+                              return <span key={`day-${day}`} className="w-8 h-8" />;
+                            }
                             return (
                               <button
                                 key={`day-${day}`}
@@ -7719,7 +7825,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {/* Column 3: Select Time Grid */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider mb-4 text-left">Select Time</h3>
+                    <div className="flex justify-between items-center mb-4 select-none flex-wrap gap-2">
+                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Select Time</h3>
+                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0">
+                        <Clock className="w-3.5 h-3.5 animate-pulse" />
+                        <span>Live Clock: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                      </span>
+                    </div>
                     
                     {/* Toggle Button Types */}
                     <div className="grid grid-cols-2 gap-2 mb-5">
@@ -7804,10 +7916,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                        <Clock className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                        <Clock className="w-4 h-4 text-slate-450 shrink-0 mt-0.5 animate-pulse" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Time</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalTime}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                        <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5 animate-pulse" />
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Booking Time (Live)</span>
+                          <span className="font-extrabold text-slate-850 dark:text-white flex items-center gap-1.5">
+                            <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                          </span>
                         </div>
                       </div>
 
@@ -7880,31 +8003,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     {/* Calendar Navigation */}
                     <div className="flex items-center justify-between px-1 mb-4 select-none">
                       <button 
-                        onClick={() => {
-                          if (currentMonthIndex === 0) {
-                            setCurrentMonthIndex(11);
-                            setCurrentYear(prev => prev - 1);
-                          } else {
-                            setCurrentMonthIndex(prev => prev - 1);
-                          }
-                        }}
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                        disabled
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
                       >
-                        <ChevronLeft className="w-4 h-4 text-slate-650 dark:text-slate-350" />
+                        <ChevronLeft className="w-4 h-4 text-slate-400 dark:text-slate-600" />
                       </button>
                       <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider select-none">{monthNames[currentMonthIndex]} {currentYear}</span>
                       <button 
-                        onClick={() => {
-                          if (currentMonthIndex === 11) {
-                            setCurrentMonthIndex(0);
-                            setCurrentYear(prev => prev + 1);
-                          } else {
-                            setCurrentMonthIndex(prev => prev + 1);
-                          }
-                        }}
-                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                        disabled
+                        className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-750 flex items-center justify-center opacity-50 cursor-not-allowed border-none"
                       >
-                        <ChevronRight className="w-4 h-4 text-slate-650 dark:text-slate-355" />
+                        <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-600" />
                       </button>
                     </div>
 
@@ -7925,6 +8034,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           {Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
+                            const isAllowed = isTodayOrTomorrow(currentYear, currentMonthIndex, day);
+                            if (!isAllowed) {
+                              return <span key={`day-${day}`} className="w-8 h-8" />;
+                            }
                             return (
                               <button
                                 key={`day-${day}`}
@@ -7967,9 +8080,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
                     {/* Selected Day / Slots availability pill */}
-                    <div className="flex justify-between items-center mb-4 select-none">
+                    <div className="flex justify-between items-center mb-4 select-none flex-wrap gap-2">
                       <span className="text-xs font-black text-slate-800 dark:text-slate-200">{selectedModalDate}</span>
-                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">16 Slots Available</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0 animate-pulse">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Live: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        </span>
+                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">16 Slots Available</span>
+                      </div>
                     </div>
 
                     {/* Tabs row */}
@@ -8059,6 +8178,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-455" /> Time</span>
                         <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalTime}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-blue-500 animate-pulse" /> Booking Time (Live)</span>
+                        <span className="font-extrabold text-slate-855 dark:text-white flex items-center gap-1.5">
+                          <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                        </span>
                       </div>
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
