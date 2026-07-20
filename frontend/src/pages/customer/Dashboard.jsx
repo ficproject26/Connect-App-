@@ -159,6 +159,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   );
   
   const [products, setProducts] = useState([]);
+  const [selectedColor, setSelectedColor] = useState('Red');
+  const [selectedSize, setSelectedSize] = useState('8');
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
@@ -438,6 +441,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   useEffect(() => {
     setActiveProductImage(null);
     setActiveThumbnailIndex(0);
+    setSelectedColor('Red');
+    setSelectedSize('8');
     if (mainScrollRef.current) {
       mainScrollRef.current.scrollTop = 0;
     }
@@ -5605,6 +5610,59 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
+  const getProductOptions = (product) => {
+    if (!product) return null;
+    const cat = (product.category || '').toLowerCase();
+    const subCat = (product.subNavbarCategory || '').toLowerCase();
+    const name = (product.name || '').toLowerCase();
+
+    const isFootwear = cat.includes('footwear') || cat.includes('shoes') || name.includes('shoes') || name.includes('nike');
+    const isApparel = cat.includes('shirts') || cat.includes('kurtis') || cat.includes('sarees') || cat.includes('apparel') || cat.includes('clothing') || cat.includes('t-shirts') || cat.includes('ethnic');
+    const isElectronics = cat.includes('smartphones') || cat.includes('laptops') || cat.includes('television') || cat.includes('headphones');
+
+    if (isFootwear) {
+      return {
+        type: 'footwear',
+        colors: [
+          { name: 'Red', class: 'bg-red-600 border-red-500' },
+          { name: 'Black', class: 'bg-slate-950 border-slate-900' },
+          { name: 'Blue', class: 'bg-blue-600 border-blue-500' },
+          { name: 'White', class: 'bg-white border-slate-350' }
+        ],
+        sizes: ['6', '7', '8', '9', '10', '11'],
+        sizeLabel: 'Size (UK/India)',
+        showSizeGuide: true
+      };
+    } else if (isApparel) {
+      return {
+        type: 'apparel',
+        colors: [
+          { name: 'Red', class: 'bg-red-500 border-red-400' },
+          { name: 'Blue', class: 'bg-blue-500 border-blue-400' },
+          { name: 'Green', class: 'bg-emerald-500 border-emerald-400' },
+          { name: 'Yellow', class: 'bg-yellow-500 border-yellow-400' },
+          { name: 'Black', class: 'bg-slate-900 border-slate-950' }
+        ],
+        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+        sizeLabel: 'Size',
+        showSizeGuide: true
+      };
+    } else if (isElectronics) {
+      return {
+        type: 'electronics',
+        colors: [
+          { name: 'Space Grey', class: 'bg-slate-650 border-slate-600' },
+          { name: 'Silver', class: 'bg-slate-200 border-slate-300' },
+          { name: 'Midnight', class: 'bg-slate-900 border-slate-950' }
+        ],
+        sizes: cat.includes('laptop') || cat.includes('smartphone') ? ['128GB', '256GB', '512GB'] : ['Standard'],
+        sizeLabel: 'Storage / Capacity',
+        showSizeGuide: false
+      };
+    }
+    return null;
+  };
+
   // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
   const renderProductDetailsPage = () => {
     if (!selectedProduct) return null;
@@ -5845,10 +5903,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       ];
     };
 
-    // Recommended products list: same category or fallback to other smartphones/products
-    const related = products
+    // Recommended products list: same category or fallback to other subNavbarCategory/products
+    let related = products
       .filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.category === 'Smartphones'))
       .slice(0, 5);
+
+    if (related.length === 0) {
+      related = products
+        .filter(p => p.id !== selectedProduct.id && (p.subNavbarCategory === selectedProduct.subNavbarCategory || p.subNavbarCategory === 'Products'))
+        .slice(0, 4);
+    }
+
+    if (related.length === 0) {
+      related = products
+        .filter(p => p.id !== selectedProduct.id)
+        .slice(0, 4);
+    }
 
     return (
       <div className="space-y-8 pb-16 text-slate-800 dark:text-slate-200">
@@ -5957,7 +6027,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </div>
 
             {/* Stats Row underneath */}
-            <div className="grid grid-cols-4 gap-2.5 mt-6 pt-5 border-t border-slate-100 dark:border-slate-850">
+            <div className="grid grid-cols-4 gap-2.5 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
               {getStatsBadges(selectedProduct).map((badge, idx) => {
                 const Icon = badge.icon;
                 return (
@@ -5968,7 +6038,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       Icon("w-4.5 h-4.5 mb-1 " + badge.color)
                     )}
                     <span className="text-[12.5px] font-black text-slate-800 dark:text-white block leading-none">{badge.value}</span>
-                    <span className="text-[8.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5 leading-none">{badge.label}</span>
+                    <span className="text-[8.5px] text-slate-500 dark:text-slate-400 font-bold block mt-0.5 leading-none">{badge.label}</span>
                   </div>
                 );
               })}
@@ -5980,7 +6050,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div>
               <div className="flex items-center mb-3">
                 <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
-                  <CheckCircle2 className="w-3 h-3 text-blue-600 dark:text-blue-450" />
+                  <CheckCircle2 className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   {getPartnerBadgeText(selectedProduct)}
                 </span>
               </div>
@@ -5996,7 +6066,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                    selectedProduct.category === 'Hospital' || selectedProduct.category === 'Services' ? 'Cardiologist' :
                    selectedProduct.category}
                 </div>
-                <div className="text-[11.5px] text-slate-400 dark:text-slate-500 font-semibold">
+                <div className="text-[11.5px] text-slate-500 dark:text-slate-400 font-semibold">
                   {selectedProduct.category === 'Smartphones' ? '128GB ROM, 8GB RAM' : 
                    selectedProduct.category === 'Hospital' || selectedProduct.category === 'Services' ? 'MBBS, MD - Cardiology' :
                    'Verified Premium Tier'}
@@ -6016,8 +6086,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-extrabold">
                     {selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)
                   </span>
-                  <span className="text-slate-205 dark:text-slate-800">|</span>
-                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-600 dark:text-emerald-455 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">
+                  <span className="text-slate-300 dark:text-slate-700">|</span>
+                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Verified Purchase
                   </span>
@@ -6041,6 +6111,80 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 )}
               </div>
 
+              {/* Product Options: Colors & Sizes */}
+              {getProductOptions(selectedProduct) && (() => {
+                const opts = getProductOptions(selectedProduct);
+                return (
+                  <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4.5 mb-5 text-left space-y-4 shadow-3xs">
+                    {/* Color Selector */}
+                    <div>
+                      <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
+                        Select Color: <span className="text-slate-800 dark:text-white font-extrabold">{selectedColor}</span>
+                      </span>
+                      <div className="flex gap-2.5">
+                        {opts.colors.map((c) => (
+                          <button
+                            key={c.name}
+                            onClick={() => setSelectedColor(c.name)}
+                            className={`w-7 h-7 rounded-full border-2 cursor-pointer transition-all hover:scale-105 ${c.class} ${
+                              selectedColor === c.name 
+                                ? 'ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-slate-900 border-transparent shadow-md' 
+                                : 'border-slate-200/50 dark:border-slate-700'
+                            }`}
+                            title={c.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Size Selector & Size Guide */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          {opts.sizeLabel}: <span className="text-slate-800 dark:text-white font-extrabold">{selectedSize}</span>
+                        </span>
+                        {opts.showSizeGuide && (
+                          <button
+                            onClick={() => setIsSizeGuideOpen(true)}
+                            className="text-[9.5px] font-black uppercase text-blue-600 dark:text-blue-400 hover:underline cursor-pointer bg-transparent border-none"
+                          >
+                            Size Guide
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {opts.sizes.map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setSelectedSize(s)}
+                            className={`px-3 py-1.5 rounded-lg border-2 text-[10.5px] font-black uppercase cursor-pointer transition-all hover:border-slate-400 ${
+                              selectedSize === s
+                                ? 'bg-amber-400 border-amber-400 text-slate-950 font-black shadow-xs'
+                                : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Return Policy Quick Info */}
+                    <div className="border-t border-slate-150 dark:border-slate-800/80 pt-3 mt-1 flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal font-medium">
+                      <svg className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" />
+                      </svg>
+                      <div>
+                        <span className="font-extrabold text-slate-800 dark:text-white block text-[11px] leading-tight">Return Policy</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5 leading-normal">
+                          7-Day Hassle-Free Replacement / Refund. Product must be in its original, unworn condition with tags intact.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* About Box */}
               <div className="bg-blue-50/20 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-4.5 mb-5 text-left">
                 <div className="flex items-center gap-2 mb-2.5 text-blue-600 dark:text-blue-400">
@@ -6054,7 +6198,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                      selectedProduct.subNavbarCategory === 'Jobs' ? 'About Job' : 'About Product'}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-355 leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                   {selectedProduct.description || `Experienced specialist offering comprehensive premium ${selectedProduct.category.toLowerCase()} consultations and personalized diagnostic treatment plans.`}
                 </p>
               </div>
@@ -6069,8 +6213,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         {Icon("w-4.5 h-4.5 " + detail.color)}
                       </div>
                       <div className="text-left">
-                        <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold block leading-none">{detail.title}</span>
-                        <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-355 mt-1 block">{detail.val}</span>
+                        <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold block leading-none">{detail.title}</span>
+                        <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 mt-1 block">{detail.val}</span>
                       </div>
                     </div>
                   );
@@ -6079,12 +6223,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
               {/* Highlights Section */}
               <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 mb-6">
-                <h4 className="text-[10.5px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-3.5">
+                <h4 className="text-[10.5px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-3.5">
                   Highlights
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                   {getProductHighlights(selectedProduct).map((hl, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-705 dark:text-slate-355">
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
                       <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-505" />
                       </div>
@@ -6101,7 +6245,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="flex items-center gap-4 pt-2 w-full">
                 <button
                   onClick={() => triggerNotification("Initiating chat session...")}
-                  className="px-5 py-3.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent h-12"
+                  className="px-5 py-3.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent h-12"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                   <span>{getActionButtons(selectedProduct).chatText}</span>
@@ -6368,7 +6512,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="border-t border-slate-100 dark:border-slate-800/60 mt-3 pt-2.5 flex items-center justify-between gap-1 w-full">
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Star className="w-3 h-3 fill-emerald-600 text-emerald-600 animate-pulse" />
-                          <span className="text-[9px] font-bold text-slate-700 dark:text-slate-350">{prod.rating}</span>
+                          <span className="text-[9px] font-bold text-slate-700 dark:text-slate-355">{prod.rating}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <button 
@@ -6401,6 +6545,136 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </div>
           </div>
         )}
+
+        {/* Size Guide Modal */}
+        {isSizeGuideOpen && (() => {
+          const opts = getProductOptions(selectedProduct);
+          const isApparel = opts?.type === 'apparel';
+          
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fade-in text-left">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Size Guide Chart</h3>
+                  <button onClick={() => setIsSizeGuideOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 cursor-pointer">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-semibold leading-normal">
+                  {isApparel 
+                    ? "Measure your chest and waist sizes to find the perfect fit. Standard sizes are listed below."
+                    : "Measure your feet length from heel to toe to find your perfect fit. Standard UK / India conversions are listed below."
+                  }
+                </p>
+
+                {/* Dynamic Table based on product category */}
+                <div className="overflow-hidden border border-slate-150 dark:border-slate-800 rounded-xl">
+                  {isApparel ? (
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 font-black border-b border-slate-150 dark:border-slate-800">
+                          <th className="p-2.5">Size</th>
+                          <th className="p-2.5 font-bold">Chest (inches)</th>
+                          <th className="p-2.5 font-bold">Waist (inches)</th>
+                          <th className="p-2.5 font-bold">Length (cm)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-slate-705 dark:text-slate-300 font-semibold divide-y divide-slate-100 dark:divide-slate-800/50">
+                        <tr>
+                          <td className="p-2.5 font-bold">S</td>
+                          <td className="p-2.5">36 - 38</td>
+                          <td className="p-2.5">30 - 32</td>
+                          <td className="p-2.5">68</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">M</td>
+                          <td className="p-2.5">38 - 40</td>
+                          <td className="p-2.5">32 - 34</td>
+                          <td className="p-2.5">70</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">L</td>
+                          <td className="p-2.5">40 - 42</td>
+                          <td className="p-2.5">34 - 36</td>
+                          <td className="p-2.5">72</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">XL</td>
+                          <td className="p-2.5">42 - 44</td>
+                          <td className="p-2.5">36 - 38</td>
+                          <td className="p-2.5">74</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">XXL</td>
+                          <td className="p-2.5">44 - 46</td>
+                          <td className="p-2.5">38 - 40</td>
+                          <td className="p-2.5">76</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  ) : (
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 font-black border-b border-slate-150 dark:border-slate-800">
+                          <th className="p-2.5 font-bold">UK/India</th>
+                          <th className="p-2.5 font-bold">US Size</th>
+                          <th className="p-2.5 font-bold">EU Size</th>
+                          <th className="p-2.5 font-bold">Foot Length</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-slate-705 dark:text-slate-300 font-semibold divide-y divide-slate-100 dark:divide-slate-800/50">
+                        <tr>
+                          <td className="p-2.5 font-bold">6</td>
+                          <td className="p-2.5">7</td>
+                          <td className="p-2.5">40</td>
+                          <td className="p-2.5">25.0 cm</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">7</td>
+                          <td className="p-2.5">8</td>
+                          <td className="p-2.5">41</td>
+                          <td className="p-2.5">25.4 cm</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">8</td>
+                          <td className="p-2.5">9</td>
+                          <td className="p-2.5">42</td>
+                          <td className="p-2.5">26.3 cm</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">9</td>
+                          <td className="p-2.5">10</td>
+                          <td className="p-2.5">43</td>
+                          <td className="p-2.5">27.2 cm</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">10</td>
+                          <td className="p-2.5">11</td>
+                          <td className="p-2.5">44.5</td>
+                          <td className="p-2.5">28.0 cm</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold">11</td>
+                          <td className="p-2.5">12</td>
+                          <td className="p-2.5">46</td>
+                          <td className="p-2.5">28.9 cm</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                <button 
+                  onClick={() => setIsSizeGuideOpen(false)}
+                  className="mt-5 w-full py-3 bg-[#0b1e36] dark:bg-slate-850 hover:bg-[#13325a] dark:hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow-xs active:scale-98 transition-all"
+                >
+                  Close Chart
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
