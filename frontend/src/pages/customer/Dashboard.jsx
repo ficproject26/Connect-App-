@@ -7859,26 +7859,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
                             const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
+                            const isBooked = (activeScheduleModalItem.subNavbarCategory === 'Stay' || activeScheduleModalItem.subNavbarCategory === 'Travel') && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
+                            const isDisableClick = isPast || isBooked;
                             
                             return (
                               <button
                                 key={`day-${day}`}
-                                disabled={isPast}
+                                disabled={isDisableClick}
                                 onClick={() => {
                                   setSelectedModalDay(day);
                                   const date = new Date(currentYear, currentMonthIndex, day);
                                   const weekdaysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                                   setSelectedModalDate(`${weekdaysShort[date.getDay()]} ${day} ${monthNames[currentMonthIndex]} ${currentYear}`);
                                 }}
-                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all flex items-center justify-center mx-auto ${
+                                className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all flex items-center justify-center mx-auto relative ${
                                   isPast
                                     ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed'
-                                    : isSelected 
-                                      ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
-                                      : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+                                    : isBooked
+                                      ? 'text-red-500 line-through dark:text-red-400 opacity-40 cursor-not-allowed font-medium'
+                                      : isSelected 
+                                        ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
+                                        : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
                                 }`}
                               >
-                                {day}
+                                <span>{day}</span>
+                                {isBooked && (
+                                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-red-500" />
+                                )}
                               </button>
                             );
                           })}
@@ -7888,8 +7895,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   {/* Legend */}
-                  <div className="flex items-center gap-4 mt-6 border-t border-slate-50 dark:border-slate-850/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
+                  <div className="flex items-center gap-4 mt-6 border-t border-slate-50 dark:border-slate-855/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
                     <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Available</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Already Booked</span>
                     <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-350 dark:bg-slate-700" /> Not Available</span>
                   </div>
                 </div>
@@ -7980,6 +7988,107 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </button>
                       </div>
                     </div>
+
+                    {/* Stay Timings Input Block */}
+                    {activeScheduleModalItem.subNavbarCategory === 'Stay' && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
+                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-2">Configure Timings</span>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-in Time</span>
+                            <input 
+                              type="text" 
+                              value={checkInTime}
+                              onChange={(e) => setCheckInTime(e.target.value)}
+                              placeholder="12:00 PM"
+                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-out Time</span>
+                            <input 
+                              type="text" 
+                              value={checkOutTime}
+                              onChange={(e) => setCheckOutTime(e.target.value)}
+                              placeholder="11:00 AM"
+                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-755 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Guest/Traveler Counter Block */}
+                    {(activeScheduleModalItem.subNavbarCategory === 'Stay' || activeScheduleModalItem.subNavbarCategory === 'Travel') && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
+                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
+                        
+                        <div className="flex gap-4 text-xs font-semibold text-slate-705 dark:text-slate-200">
+                          {/* Adults Selector */}
+                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+                            <div>
+                              <span className="block font-black text-xs">Adults</span>
+                              <span className="text-[9px] text-slate-400">Age 12+</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => setAdultCount(prev => Math.max(1, prev - 1))}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                -
+                              </button>
+                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
+                              <button 
+                                onClick={() => setAdultCount(prev => prev + 1)}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Children Selector */}
+                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+                            <div>
+                              <span className="block font-black text-xs">Children</span>
+                              <span className="text-[9px] text-slate-405">Age 2-12</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => setChildCount(prev => Math.max(0, prev - 1))}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                -
+                              </button>
+                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
+                              <button 
+                                onClick={() => setChildCount(prev => prev + 1)}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Add Guest Details Name Inputs */}
+                        {adultCount + childCount > 1 && (
+                          <div className="bg-amber-500/5 dark:bg-amber-400/2 border border-amber-400/20 rounded-xl p-3 space-y-2.5">
+                            <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block">Add Guest Details</span>
+                            {Array.from({ length: adultCount + childCount - 1 }).map((_, idx) => (
+                              <div key={idx} className="flex flex-col gap-1">
+                                <span className="text-[9px] font-extrabold text-slate-450 dark:text-slate-500 uppercase">Guest {idx + 2} Full Name</span>
+                                <input 
+                                  type="text" 
+                                  placeholder={`Guest ${idx + 2} Name`}
+                                  className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Duration Text */}
@@ -8019,6 +8128,40 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalTime}</span>
                         </div>
                       </div>
+
+                      {activeScheduleModalItem.subNavbarCategory === 'Stay' && (
+                        <>
+                          <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                            <Home className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-in Timing</span>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{checkInTime}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                            <Home className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-out Timing</span>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{checkOutTime}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {(activeScheduleModalItem.subNavbarCategory === 'Stay' || activeScheduleModalItem.subNavbarCategory === 'Travel') && (
+                        <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                          <User className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Guests / Travelers</span>
+                            <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                              {adultCount + childCount} {adultCount + childCount === 1 ? 'Person' : 'People'}
+                              <span className="text-[10px] text-slate-450 dark:text-slate-550 block mt-0.5 leading-none">
+                                ({adultCount} Adults, {childCount} Children)
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                         <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5 animate-pulse" />
@@ -8163,11 +8306,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             const day = i + 1;
                             const isSelected = day === selectedModalDay;
                             const isPast = isPreviousDate(currentYear, currentMonthIndex, day);
+                            const isBooked = (activeBookNowModalItem.subNavbarCategory === 'Stay' || activeBookNowModalItem.subNavbarCategory === 'Travel') && isDateAlreadyBooked(currentYear, currentMonthIndex, day);
+                            const isDisableClick = isPast || isBooked;
                             
                             return (
                               <button
                                 key={`day-${day}`}
-                                disabled={isPast}
+                                disabled={isDisableClick}
                                 onClick={() => {
                                   setSelectedModalDay(day);
                                   const date = new Date(currentYear, currentMonthIndex, day);
@@ -8177,16 +8322,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 className={`text-[13px] font-extrabold w-8 h-8 rounded-full transition-all flex items-center justify-center mx-auto relative ${
                                   isPast
                                     ? 'text-slate-300 dark:text-slate-700 opacity-40 cursor-not-allowed'
-                                    : isSelected 
-                                      ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
-                                      : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+                                    : isBooked
+                                      ? 'text-red-500 line-through dark:text-red-400 opacity-40 cursor-not-allowed font-medium'
+                                      : isSelected 
+                                        ? 'bg-blue-600 text-white font-black scale-110 shadow-md ring-2 ring-blue-500/20 cursor-pointer' 
+                                        : 'text-slate-755 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
                                 }`}
                               >
                                 <span>{day}</span>
+                                {isBooked && (
+                                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-red-500" />
+                                )}
                                 {/* Available/busy dot indicator */}
-                                {!isSelected && !isPast && (
+                                {!isBooked && !isSelected && !isPast && (
                                   <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
-                                    day % 5 === 0 ? 'bg-orange-400' : (day % 3 === 0 ? 'bg-slate-300' : 'bg-emerald-500')
+                                    day % 5 === 0 ? 'bg-orange-400' : (day % 3 === 0 ? 'bg-slate-350 dark:bg-slate-700' : 'bg-emerald-500')
                                   }`} />
                                 )}
                               </button>
@@ -8198,10 +8348,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   {/* Legends */}
-                  <div className="flex items-center gap-3 mt-6 border-t border-slate-50 dark:border-slate-850/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Available</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400" /> Few Slots</span>
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700" /> Unavailable</span>
+                  <div className="flex items-center gap-3 mt-6 border-t border-slate-50 dark:border-slate-855/30 pt-4 justify-center text-[10px] font-bold text-slate-450 dark:text-slate-400 select-none">
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Available</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Already Booked</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> Few Slots</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-350 dark:bg-slate-700" /> Unavailable</span>
                   </div>
                 </div>
 
@@ -8290,6 +8441,107 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </button>
                       </div>
                     </div>
+
+                    {/* Stay Timings Input Block */}
+                    {activeBookNowModalItem.subNavbarCategory === 'Stay' && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none">
+                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block mb-2">Configure Timings</span>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-in Time</span>
+                            <input 
+                              type="text" 
+                              value={checkInTime}
+                              onChange={(e) => setCheckInTime(e.target.value)}
+                              placeholder="12:00 PM"
+                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-black text-slate-405 dark:text-slate-500 uppercase block mb-1">Check-out Time</span>
+                            <input 
+                              type="text" 
+                              value={checkOutTime}
+                              onChange={(e) => setCheckOutTime(e.target.value)}
+                              placeholder="11:00 AM"
+                              className="w-full bg-slate-50 dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-755 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Guest/Traveler Counter Block */}
+                    {(activeBookNowModalItem.subNavbarCategory === 'Stay' || activeBookNowModalItem.subNavbarCategory === 'Travel') && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
+                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
+                        
+                        <div className="flex gap-4 text-xs font-semibold text-slate-705 dark:text-slate-200">
+                          {/* Adults Selector */}
+                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+                            <div>
+                              <span className="block font-black text-xs">Adults</span>
+                              <span className="text-[9px] text-slate-400">Age 12+</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => setAdultCount(prev => Math.max(1, prev - 1))}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                -
+                              </button>
+                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
+                              <button 
+                                onClick={() => setAdultCount(prev => prev + 1)}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Children Selector */}
+                          <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+                            <div>
+                              <span className="block font-black text-xs">Children</span>
+                              <span className="text-[9px] text-slate-405">Age 2-12</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => setChildCount(prev => Math.max(0, prev - 1))}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                -
+                              </button>
+                              <span className="font-extrabold text-sm w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
+                              <button 
+                                onClick={() => setChildCount(prev => prev + 1)}
+                                className="w-5.5 h-5.5 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-black bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 cursor-pointer text-xs border-none"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Add Guest Details Name Inputs */}
+                        {adultCount + childCount > 1 && (
+                          <div className="bg-amber-500/5 dark:bg-amber-400/2 border border-amber-400/20 rounded-xl p-3 space-y-2.5">
+                            <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block">Add Guest Details</span>
+                            {Array.from({ length: adultCount + childCount - 1 }).map((_, idx) => (
+                              <div key={idx} className="flex flex-col gap-1">
+                                <span className="text-[9px] font-extrabold text-slate-455 dark:text-slate-500 uppercase">Guest {idx + 2} Full Name</span>
+                                <input 
+                                  type="text" 
+                                  placeholder={`Guest ${idx + 2} Name`}
+                                  className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Morning slots tip */}
@@ -8333,6 +8585,31 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-slate-455" /> Time</span>
                         <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalTime}</span>
                       </div>
+
+                      {activeBookNowModalItem.subNavbarCategory === 'Stay' && (
+                        <>
+                          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                            <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-450" /> Check-in Timing</span>
+                            <span className="font-extrabold text-slate-850 dark:text-slate-200">{checkInTime}</span>
+                          </div>
+                          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                            <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-450" /> Check-out Timing</span>
+                            <span className="font-extrabold text-slate-850 dark:text-slate-200">{checkOutTime}</span>
+                          </div>
+                        </>
+                      )}
+
+                      {(activeBookNowModalItem.subNavbarCategory === 'Stay' || activeBookNowModalItem.subNavbarCategory === 'Travel') && (
+                        <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                          <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><User className="w-4 h-4 text-slate-450" /> Travelers / Guests</span>
+                          <span className="font-extrabold text-slate-855 dark:text-slate-200 text-right">
+                            {adultCount + childCount} {adultCount + childCount === 1 ? 'Person' : 'People'}
+                            <span className="text-[10px] text-slate-450 dark:text-slate-550 block mt-0.5 font-bold leading-none">
+                              ({adultCount} Adults, {childCount} Children)
+                            </span>
+                          </span>
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-blue-500 animate-pulse" /> Booking Time (Live)</span>
