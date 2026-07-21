@@ -95,34 +95,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                 </p>
               </div>
 
-              {/* Role Switcher Pill Bar */}
-              <div className="bg-slate-100/80 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-800 grid grid-cols-2 gap-1 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('customer')}
-                  className={`py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    role === 'customer'
-                      ? 'bg-white dark:bg-slate-800 text-[#5b3af0] dark:text-indigo-400 shadow-sm border border-slate-200/60 dark:border-slate-750'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>User Login</span>
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => setRole('vendor')}
-                  className={`py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    role === 'vendor'
-                      ? 'bg-white dark:bg-slate-800 text-[#5b3af0] dark:text-indigo-400 shadow-sm border border-slate-200/60 dark:border-slate-750'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  <Store className="w-3.5 h-3.5" />
-                  <span>Vendor Login</span>
-                </button>
-              </div>
 
               {/* Main Login Form */}
               <form onSubmit={handleLoginSubmit} className="space-y-3 sm:space-y-3.5">
