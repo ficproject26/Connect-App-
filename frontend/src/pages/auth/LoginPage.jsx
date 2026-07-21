@@ -4,6 +4,7 @@ import {
   User, Store, ShoppingBag, Wrench, ShoppingCart, Briefcase, 
   Plane, Bed, UtensilsCrossed 
 } from 'lucide-react';
+import logoImg from '../../assets/images/forge india logo.jpg';
 
 export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoinNow }) {
   const [email, setEmail] = useState('');
@@ -48,9 +49,11 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
             onClick={onBackToHome}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4f39f6] to-[#7c3aed] flex items-center justify-center text-white font-black text-lg shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-              C
-            </div>
+            <img 
+              src={logoImg} 
+              alt="Connect App Logo" 
+              className="w-10 h-10 object-cover rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md group-hover:scale-105 transition-transform" 
+            />
             <div>
               <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 leading-none">
                 Connect <span className="text-[#5b3af0]">App</span>
@@ -318,9 +321,9 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
             <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/30 animate-spin-slow" />
             <div className="absolute inset-5 rounded-full border border-white/10" />
 
-            {/* Central glowing white logo circle */}
-            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-white text-[#5b3af0] flex items-center justify-center shadow-2xl shadow-purple-950/50 z-20 transform hover:scale-105 transition-transform cursor-pointer">
-              <span className="font-black text-3xl lg:text-4xl leading-none">C</span>
+            {/* Central glowing logo circle */}
+            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-white p-1 flex items-center justify-center shadow-2xl shadow-purple-950/50 z-20 transform hover:scale-105 transition-transform cursor-pointer overflow-hidden border-2 border-white/80">
+              <img src={logoImg} alt="Connect Logo" className="w-full h-full object-cover rounded-full" />
             </div>
 
             {/* Orbit Category Floating Badges (7 Categories) */}

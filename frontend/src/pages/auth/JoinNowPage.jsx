@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { 
   Mail, Lock, Eye, EyeOff, User, Store, Truck, Check, 
   ShieldCheck, Phone, UserPlus, ShoppingBag, UtensilsCrossed, 
-  Bed, Plane, Headphones, Tag, Star 
+  Bed, Plane, Headphones, Tag, Star, CreditCard, FileText 
 } from 'lucide-react';
+import logoImg from '../../assets/images/forge india logo.jpg';
 
 export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToLoginPage }) {
   const [role, setRole] = useState('customer'); // 'customer' | 'vendor' | 'delivery'
@@ -12,6 +13,8 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [panNumber, setPanNumber] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
@@ -46,7 +49,9 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
         onAuthSuccess({
           name: displayName,
           email: email || 'user@connectapp.com',
-          role: role
+          role: role,
+          aadhaar: aadhaarNumber,
+          pan: panNumber
         });
         setSuccess(false);
       }, 800);
@@ -57,7 +62,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
     <div className="w-full h-screen max-h-screen overflow-hidden flex bg-white dark:bg-[#030712] text-slate-900 dark:text-slate-100 font-sans select-none">
       
       {/* ==================== LEFT PANEL: SIGNUP FORM ==================== */}
-      <div className="w-full lg:w-1/2 h-full flex flex-col justify-between p-6 sm:p-8 lg:p-10 bg-white dark:bg-[#030712] overflow-y-auto">
+      <div className="w-full lg:w-1/2 h-full flex flex-col justify-between p-5 sm:p-7 lg:p-9 bg-white dark:bg-[#030712] overflow-y-auto">
         
         {/* Top Header Logo & Login Link */}
         <div className="flex items-center justify-between shrink-0">
@@ -65,9 +70,11 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
             onClick={onBackToHome}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#4f39f6] to-[#7c3aed] flex items-center justify-center text-white font-black text-lg shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-              C
-            </div>
+            <img 
+              src={logoImg} 
+              alt="Connect App Logo" 
+              className="w-10 h-10 object-cover rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md group-hover:scale-105 transition-transform" 
+            />
             <div>
               <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 leading-none">
                 Connect <span className="text-[#5b3af0]">App</span>
@@ -103,17 +110,17 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
           ) : (
             <>
               {/* Title Header */}
-              <div className="mb-4 text-left">
+              <div className="mb-3 text-left">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   Create Your Account
                 </h2>
-                <p className="text-xs font-semibold text-slate-400 mt-1">
+                <p className="text-xs font-semibold text-slate-400 mt-0.5">
                   Sign up to explore all the amazing services we offer.
                 </p>
               </div>
 
               {/* Form Fields */}
-              <form onSubmit={handleSignupSubmit} className="space-y-3">
+              <form onSubmit={handleSignupSubmit} className="space-y-2.5">
                 
                 {/* Row 1: Full Name & Phone Number */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -123,14 +130,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       Full Name
                     </label>
                     <div className="relative">
-                      <User className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Enter your full name"
-                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
                       />
                     </div>
                   </div>
@@ -141,14 +148,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       Phone Number
                     </label>
                     <div className="relative">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="tel"
                         required
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         placeholder="Enter your phone number"
-                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
                       />
                     </div>
                   </div>
@@ -160,14 +167,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
-                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
                     />
                   </div>
                 </div>
@@ -178,14 +185,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     Create Password
                   </label>
                   <div className="relative">
-                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type={showPassword ? "text" : "password"}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Create a strong password"
-                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-10 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
                     />
                     <button
                       type="button"
@@ -198,9 +205,9 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
                   {/* Password Strength Indicator */}
                   {password && (
-                    <div className="mt-1 flex items-center justify-between gap-2 text-[9.5px] font-bold text-slate-400">
+                    <div className="mt-1 flex items-center justify-between gap-2 text-[9px] font-bold text-slate-400">
                       <span>Password strength: <strong className="text-slate-700 dark:text-slate-200">{strength.label}</strong></span>
-                      <div className="flex gap-1 flex-grow max-w-[100px]">
+                      <div className="flex gap-1 flex-grow max-w-[90px]">
                         {[1, 2, 3, 4].map((step) => (
                           <div 
                             key={`strength-${step}`}
@@ -220,14 +227,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-10 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
                     />
                     <button
                       type="button"
@@ -240,8 +247,8 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                 </div>
 
                 {/* Role Selection Cards ("I am a") */}
-                <div className="pt-1 text-left">
-                  <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mb-1.5">
+                <div className="pt-0.5 text-left">
+                  <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
                     I am a
                   </label>
                   
@@ -260,14 +267,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                           <User className="w-3.5 h-3.5" />
                         </div>
                         {role === 'customer' ? (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px]">✓</div>
+                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px] shrink-0">✓</div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700" />
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
                         )}
                       </div>
                       <div>
-                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white">Customer</h4>
-                        <p className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none">Customer</h4>
+                        <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
                           Book & explore
                         </p>
                       </div>
@@ -287,14 +294,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                           <Store className="w-3.5 h-3.5" />
                         </div>
                         {role === 'vendor' ? (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px]">✓</div>
+                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px] shrink-0">✓</div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700" />
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
                         )}
                       </div>
                       <div>
-                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white">Vendor</h4>
-                        <p className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none">Vendor</h4>
+                        <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
                           Sell services
                         </p>
                       </div>
@@ -314,14 +321,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                           <Truck className="w-3.5 h-3.5" />
                         </div>
                         {role === 'delivery' ? (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px]">✓</div>
+                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px] shrink-0">✓</div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700" />
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
                         )}
                       </div>
                       <div>
-                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white">Delivery</h4>
-                        <p className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none truncate">Delivery Partner</h4>
+                        <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
                           Deliver & earn
                         </p>
                       </div>
@@ -329,6 +336,58 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
                   </div>
                 </div>
+
+                {/* Aadhaar Card & PAN Card Details (Required for Vendor / Delivery Partner or Verification) */}
+                {(role === 'vendor' || role === 'delivery') && (
+                  <div className="bg-slate-50/80 dark:bg-slate-900/80 border border-purple-200/80 dark:border-purple-900/40 rounded-2xl p-3 space-y-2 text-left animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-[#5b3af0] dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#5b3af0]" /> Identity Verification Details
+                      </span>
+                      <span className="text-[8.5px] font-bold text-slate-400">Government ID Compliance</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {/* Aadhaar Card Number */}
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                          Aadhaar Card Number *
+                        </label>
+                        <div className="relative">
+                          <CreditCard className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            maxLength={12}
+                            value={aadhaarNumber}
+                            onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, ''))}
+                            placeholder="12-digit Aadhaar number"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* PAN Card Number */}
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                          PAN Card Number *
+                        </label>
+                        <div className="relative">
+                          <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            maxLength={10}
+                            value={panNumber}
+                            onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                            placeholder="10-character PAN (e.g. ABCDE1234F)"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold uppercase text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Terms Agreement Checkbox */}
                 <div className="pt-0.5 text-left">
@@ -352,7 +411,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                 <button
                   type="submit"
                   disabled={isSubmitting || !agreeTerms}
-                  className="w-full py-3 px-6 bg-[#5b3af0] hover:bg-[#4b2ae0] text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 px-6 bg-[#5b3af0] hover:bg-[#4b2ae0] text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -372,7 +431,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
               </form>
 
               {/* Social Signup Divider */}
-              <div className="relative my-3.5 text-center">
+              <div className="relative my-2.5 text-center">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200 dark:border-slate-800" />
                 </div>
@@ -386,37 +445,37 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                 <button
                   type="button"
                   onClick={() => handleSignupSubmit()}
-                  className="py-2 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  className="py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
                     <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.3 7.31 24 12 24z"/>
                     <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.99 0 12s.46 3.84 1.26 5.42l4.02-3.15z"/>
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                   </svg>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Google</span>
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Google</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSignupSubmit()}
-                  className="py-2 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  className="py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                   </svg>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Facebook</span>
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Facebook</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSignupSubmit()}
-                  className="py-2 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  className="py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <svg className="w-4 h-4 shrink-0 fill-slate-900 dark:fill-white" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 shrink-0 fill-slate-900 dark:fill-white" viewBox="0 0 24 24">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.35c.67-.82 1.12-1.96.99-3.1-.97.04-2.14.65-2.84 1.46-.62.72-1.16 1.88-1.01 3 .01 0 .03.01.05.01 1.08 0 2.15-.56 2.81-1.37z"/>
                   </svg>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Apple</span>
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Apple</span>
                 </button>
               </div>
             </>
