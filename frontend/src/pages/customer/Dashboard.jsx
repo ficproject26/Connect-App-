@@ -448,11 +448,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
 
   useEffect(() => {
+    const total = (dbBanners?.length || 0) + 4;
     const timer = setInterval(() => {
-      setActiveHeroSlide((prev) => (prev + 1) % 4);
+      setActiveHeroSlide((prev) => (prev + 1) % total);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [dbBanners]);
 
   // Category-specific Filter States
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([]);
@@ -669,6 +670,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [activeTravelCategory, setActiveTravelCategory] = useState('ALL');
 
   const [dbCategories, setDbCategories] = useState([]);
+  const [dbBanners, setDbBanners] = useState([]);
 
   useEffect(() => {
     const fetchDbCategories = async () => {
@@ -695,7 +697,34 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         }
       }
     };
+
+    const fetchDbBanners = async () => {
+      try {
+        let res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
+        if (!res.ok) {
+          res = await fetch('http://localhost:8001/api/admin/public/banners');
+        }
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setDbBanners(data);
+          }
+        }
+      } catch (err) {
+        try {
+          const res = await fetch('http://localhost:8001/api/admin/public/banners');
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) setDbBanners(data);
+          }
+        } catch (e) {
+          console.warn("Failed to fetch dynamic banners in customer dashboard", err);
+        }
+      }
+    };
+
     fetchDbCategories();
+    fetchDbBanners();
   }, []);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
@@ -3426,7 +3455,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const renderHeroBanner = () => {
-    const totalSlides = 4;
+    const slides = [
+      ...dbBanners.map((banner, index) => ({
+        id: `db-banner-${banner._id || index}`,
+        isDb: true,
+        title: banner.title,
+        imageUrl: banner.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600',
+        redirectLink: banner.redirectLink || '/promotions',
+        targetAudience: banner.targetAudience || 'all',
+        description: 'Special Promotion Offer'
+      })),
+      { id: 'static-0', isDb: false, idx: 0 },
+      { id: 'static-1', isDb: false, idx: 1 },
+      { id: 'static-2', isDb: false, idx: 2 },
+      { id: 'static-3', isDb: false, idx: 3 }
+    ];
+
+    const totalSlides = slides.length;
+    const currentSlideIdx = activeHeroSlide % totalSlides;
+    const activeSlideObj = slides[currentSlideIdx];
 
     const nextSlide = () => {
       setActiveHeroSlide((prev) => (prev + 1) % totalSlides);
@@ -3481,8 +3528,85 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           {/* Card Frame Wrapper (larger max-width!) */}
           <div className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent">
             
+            {/* Dynamic DB Banners */}
+            {activeSlideObj?.isDb && (
+              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
+                {/* Clock indicator in top right */}
+                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                  <Clock className="w-3 h-3 shrink-0" />
+                  <span>Limited Time</span>
+                </div>
+
+                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                      <Sparkles className="w-4.5 h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
+                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Special Promotion</span>
+                    </div>
+
+                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
+                      ★ Connect Deal
+                    </div>
+
+                    <div className="pt-2 leading-tight">
+                      <h3 className="text-base sm:text-lg font-black text-white leading-tight">
+                        {activeSlideObj.title}
+                      </h3>
+                      <p className="text-xs font-bold text-slate-350 mt-1.5">{activeSlideObj.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
+                      <span>Exclusive member privileges</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
+                      <span>Verified products & services</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      const link = (activeSlideObj.redirectLink || '').toLowerCase();
+                      if (link.includes('food')) {
+                        setActiveTab('Food');
+                        setSelectedSubNavbarCategory('Food');
+                      } else if (link.includes('service')) {
+                        setActiveTab('Services');
+                        setSelectedSubNavbarCategory('Services');
+                      } else if (link.includes('stay')) {
+                        setActiveTab('Stay');
+                        setSelectedSubNavbarCategory('Stay');
+                      } else if (link.includes('travel')) {
+                        setActiveTab('Travel');
+                        setSelectedSubNavbarCategory('Travel');
+                      } else if (link.includes('product')) {
+                        setActiveTab('Products');
+                        setSelectedSubNavbarCategory('Products');
+                      }
+                      triggerNotification(`Exploring: ${activeSlideObj.title}`);
+                    }}
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
+                  >
+                    <span>Explore Now</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
+                  <img 
+                    src={activeSlideObj.imageUrl} 
+                    alt={activeSlideObj.title} 
+                    className="w-full h-full object-cover rounded-r-2xl" 
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Slide 0: Domino's Pizza Offer */}
-            {activeHeroSlide === 0 && (
+            {!activeSlideObj?.isDb && activeSlideObj?.idx === 0 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
                 <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
@@ -3561,7 +3685,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             )}
 
             {/* Slide 1: Radisson Blu Hotel Stay */}
-            {activeHeroSlide === 1 && (
+            {!activeSlideObj?.isDb && activeSlideObj?.idx === 1 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
                 <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
@@ -3625,7 +3749,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             )}
 
             {/* Slide 2: Air India Travels */}
-            {activeHeroSlide === 2 && (
+            {!activeSlideObj?.isDb && activeSlideObj?.idx === 2 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Left Side Info content */}
                 <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
@@ -3682,7 +3806,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             )}
 
             {/* Slide 3: Urban Connect Services */}
-            {activeHeroSlide === 3 && (
+            {!activeSlideObj?.isDb && activeSlideObj?.idx === 3 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
                 {/* Clock indicator in top right */}
                 <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
@@ -3752,7 +3876,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 type="button"
                 onClick={() => setActiveHeroSlide(idx)}
                 className={`w-2 h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
-                  activeHeroSlide === idx 
+                  currentSlideIdx === idx 
                     ? 'bg-blue-600 dark:bg-blue-500 w-5' 
                     : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-650'
                 }`}
