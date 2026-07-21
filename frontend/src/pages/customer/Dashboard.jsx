@@ -673,12 +673,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   useEffect(() => {
     const fetchDbCategories = async () => {
       try {
-        const res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
+        let res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
+        if (!res.ok) {
+          res = await fetch('http://localhost:8001/api/admin/categories');
+        }
         if (res.ok) {
-          setDbCategories(await res.json());
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setDbCategories(data);
+          }
         }
       } catch (err) {
-        console.warn("Failed to fetch dynamic categories in customer dashboard", err);
+        try {
+          const res = await fetch('http://localhost:8001/api/admin/categories');
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) setDbCategories(data);
+          }
+        } catch (e) {
+          console.warn("Failed to fetch dynamic categories in customer dashboard", err);
+        }
       }
     };
     fetchDbCategories();
@@ -1713,25 +1727,42 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const mergeDbCategories = (staticData, mainCategoryName) => {
     const merged = JSON.parse(JSON.stringify(staticData));
     const activeDbCats = dbCategories.filter(c => 
+      c &&
       c.isActive !== false && 
       !c.isDeleted && 
       c.description !== 'DELETED_HIERARCHY_MARKER' &&
-      (c.name || '').toLowerCase() === mainCategoryName.toLowerCase()
+      ((c.name || '').toLowerCase() === mainCategoryName.toLowerCase() ||
+       (mainCategoryName.toLowerCase() === 'products' && (!c.name || (c.name || '').toLowerCase() === 'products')))
     );
 
     activeDbCats.forEach(c => {
-      if (!c.subcategory) return;
-      const subName = c.subcategory;
-      if (!merged[subName]) {
-        merged[subName] = {
-          title: subName,
-          items: []
-        };
+      // 1. When record has subcategory field
+      if (c.subcategory) {
+        const subName = c.subcategory;
+        if (!merged[subName]) {
+          merged[subName] = {
+            title: subName,
+            items: []
+          };
+        }
+        if (c.subSubcategory) {
+          const childName = c.subSubcategory;
+          if (!merged[subName].items.includes(childName)) {
+            merged[subName].items.push(childName);
+          }
+        }
       }
-      if (c.subSubcategory) {
-        const childName = c.subSubcategory;
-        if (!merged[subName].items.includes(childName)) {
-          merged[subName].items.push(childName);
+      // 2. When record has name as subcategory and subSubcategory as child
+      else if (c.name && c.name.toLowerCase() !== mainCategoryName.toLowerCase()) {
+        const subName = c.name;
+        if (!merged[subName]) {
+          merged[subName] = {
+            title: subName,
+            items: []
+          };
+        }
+        if (c.subSubcategory && !merged[subName].items.includes(c.subSubcategory)) {
+          merged[subName].items.push(c.subSubcategory);
         }
       }
     });
