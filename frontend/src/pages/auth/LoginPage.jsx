@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Mail, Lock, Eye, EyeOff, LogIn, ShieldCheck, Check, 
   User, Store, Wrench, UtensilsCrossed, Bed, Plane, ShoppingCart, 
-  Briefcase, Tag, LayoutGrid, Headphones, Award 
+  Briefcase, Tag, LayoutGrid, Headphones, Award, ShoppingBag, Globe 
 } from 'lucide-react';
 import logoImg from '../../assets/images/forge india logo.jpg';
 
@@ -207,146 +207,128 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       </div>
 
 
-      {/* ==================== RIGHT PANEL: YELLOW BRANDING & CATEGORIES SIDE ==================== */}
-      <div className="hidden lg:flex w-1/2 h-full bg-gradient-to-b from-[#FFB800] via-[#FFC700] to-[#E5A500] relative overflow-hidden flex-col justify-between text-slate-900 select-none">
+      {/* ==================== RIGHT PANEL: ECOSYSTEM & GRAPHIC SIDE ==================== */}
+      <div className="hidden lg:flex w-1/2 h-full bg-gradient-to-br from-[#3b19b7] via-[#5b3af0] to-[#7c3aed] relative overflow-hidden flex-col justify-between p-8 lg:p-10 xl:p-12 text-white select-none">
         
-        {/* Top Floating White Circle Logo Avatar */}
-        <div className="pt-8 flex flex-col items-center justify-center z-10 shrink-0">
-          <div className="relative flex flex-col items-center">
-            {/* Main white circle avatar containing Logo with yellow ring */}
-            <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full bg-white p-2 flex items-center justify-center shadow-xl shadow-amber-950/20 border-4 border-white transform hover:scale-105 transition-transform cursor-pointer">
-              <img src={logoImg} alt="Forge India Connect Logo" className="w-full h-full object-cover rounded-full" />
-            </div>
-          </div>
+        {/* Background Ambient Glows & Circular Orbits */}
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-400/20 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/40 rounded-full blur-[140px] pointer-events-none" />
+
+        {/* Top Header: Language Selector */}
+        <div className="flex justify-end z-10 shrink-0">
+          <button className="bg-white/15 hover:bg-white/25 border border-white/20 px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer text-white">
+            <Globe className="w-3.5 h-3.5 text-white/90" />
+            <span>English</span>
+            <span className="text-[10px] opacity-70">▼</span>
+          </button>
         </div>
 
-        {/* Center Text & Category Grid Section */}
-        <div className="z-10 flex flex-col items-center text-center px-8 my-auto py-2">
+        {/* Center Graphic Section */}
+        <div className="my-auto z-10 flex flex-col items-center text-center py-2">
           
           {/* Main Title & Tagline */}
-          <div className="max-w-md mx-auto text-center mb-5">
-            <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-              All Services,<br />
-              One Platform,<br />
-              <span className="text-[#003B95]">Infinite Possibilities!</span>
+          <div className="max-w-md mx-auto text-center mb-6">
+            <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black tracking-tight leading-tight">
+              Everything You Need,<br />All in One Place
             </h2>
-            <div className="w-10 h-1 bg-slate-900 rounded-full mx-auto my-2.5" />
-            <p className="text-xs font-semibold text-slate-800 leading-relaxed max-w-sm mx-auto">
-              Connect App brings all services together to make your life easier, faster and smarter.
+            <div className="w-10 h-1 bg-white/40 rounded-full mx-auto my-2.5" />
+            <p className="text-xs font-medium text-white/80 leading-relaxed max-w-sm mx-auto">
+              Connect App brings all services together to make your life easier and better.
             </p>
           </div>
 
-          {/* Service Category Cards (8 Badges: Services, Food, Stay, Travel, Daily Needs, Jobs, Offers, More) */}
-          <div className="w-full max-w-md mx-auto space-y-2.5 my-1">
-            {/* Top Row: 4 Cards */}
-            <div className="grid grid-cols-4 gap-2">
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <Wrench className="w-5 h-5 text-[#003B95]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">Services</span>
-              </div>
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <UtensilsCrossed className="w-5 h-5 text-[#D49900]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">Food</span>
-              </div>
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <Bed className="w-5 h-5 text-[#003B95]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">Stay</span>
-              </div>
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <Plane className="w-5 h-5 text-[#003B95]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">Travel</span>
+          {/* Ecosystem Orbital Diagram */}
+          <div className="relative w-64 h-64 lg:w-72 lg:h-72 flex items-center justify-center my-2">
+            
+            {/* Outer Dotted Orbit Circle */}
+            <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/30 animate-spin-slow" />
+            <div className="absolute inset-5 rounded-full border border-white/10" />
+
+            {/* Central glowing logo circle */}
+            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-white p-1 flex items-center justify-center shadow-2xl shadow-purple-950/50 z-20 transform hover:scale-105 transition-transform cursor-pointer overflow-hidden border-2 border-white/80">
+              <div className="w-16 h-16 rounded-full bg-[#5b3af0]/10 flex items-center justify-center text-[#5b3af0] font-black text-3xl">
+                C
               </div>
             </div>
 
-            {/* Bottom Row: 4 Cards */}
-            <div className="grid grid-cols-4 gap-2">
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <ShoppingCart className="w-5 h-5 text-[#003B95]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">Daily Needs</span>
+            {/* Orbit Category Floating Badges (7 Categories) */}
+            
+            {/* 1. Products (Top) */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#a855f7] text-white flex items-center justify-center shadow-lg shadow-purple-900/40 group-hover:scale-110 transition-transform">
+                <ShoppingBag className="w-4.5 h-4.5 text-white" />
               </div>
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <Briefcase className="w-5 h-5 text-[#003B95]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">Jobs</span>
-              </div>
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <Tag className="w-5 h-5 text-[#003B95]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">Offers</span>
-              </div>
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white hover:scale-105 transition-transform cursor-pointer">
-                <LayoutGrid className="w-5 h-5 text-[#003B95]" />
-                <span className="text-[10px] font-black text-slate-900 mt-1">More</span>
-              </div>
+              <span className="text-[9px] font-extrabold text-white/90">Products</span>
             </div>
+
+            {/* 2. Services (Top Left) */}
+            <div className="absolute top-8 left-2 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-lg shadow-blue-900/40 group-hover:scale-110 transition-transform">
+                <Wrench className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-extrabold text-white/90">Services</span>
+            </div>
+
+            {/* 3. Daily Needs (Bottom Left) */}
+            <div className="absolute bottom-8 left-2 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#22c55e] text-white flex items-center justify-center shadow-lg shadow-emerald-900/40 group-hover:scale-110 transition-transform">
+                <ShoppingCart className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-extrabold text-white/90">Daily Needs</span>
+            </div>
+
+            {/* 4. Jobs (Bottom) */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-3 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#ec4899] text-white flex items-center justify-center shadow-lg shadow-pink-900/40 group-hover:scale-110 transition-transform">
+                <Briefcase className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-extrabold text-white/90">Jobs</span>
+            </div>
+
+            {/* 5. Travel (Bottom Right) */}
+            <div className="absolute bottom-8 right-2 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#0ea5e9] text-white flex items-center justify-center shadow-lg shadow-sky-900/40 group-hover:scale-110 transition-transform">
+                <Plane className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-extrabold text-white/90">Travel</span>
+            </div>
+
+            {/* 6. Stay (Right) */}
+            <div className="absolute top-1/2 right-[-12px] -translate-y-1/2 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#2dd4bf] text-white flex items-center justify-center shadow-lg shadow-teal-900/40 group-hover:scale-110 transition-transform">
+                <Bed className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-extrabold text-white/90">Stay</span>
+            </div>
+
+            {/* 7. Food (Top Right) */}
+            <div className="absolute top-8 right-2 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#f59e0b] text-white flex items-center justify-center shadow-lg shadow-amber-900/40 group-hover:scale-110 transition-transform">
+                <UtensilsCrossed className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-extrabold text-white/90">Food</span>
+            </div>
+
           </div>
-
         </div>
 
-        {/* Smooth Wave Transition & Navy Blue Bottom Section */}
-        <div className="w-full shrink-0 relative mt-auto">
-          
-          {/* Smooth Curved SVG Wave Separator */}
-          <div className="w-full overflow-hidden leading-none z-10 block pointer-events-none">
-            <svg 
-              className="relative block w-full h-8 sm:h-10 text-[#0A1E38]" 
-              viewBox="0 0 1200 120" 
-              preserveAspectRatio="none"
-              fill="currentColor"
-            >
-              <path d="M0,0 C150,90 350,-40 500,50 C650,120 900,10 1200,40 L1200,120 L0,120 Z"></path>
-            </svg>
-          </div>
-
-          {/* Bottom Deep Navy Blue Feature Bar */}
-          <div className="bg-[#0A1E38] text-white p-4 pt-2 border-t border-blue-900/30">
-            <div className="grid grid-cols-4 gap-2 text-center max-w-lg mx-auto">
-              
-              {/* Feature 1 */}
-              <div className="flex flex-col items-center">
-                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <h4 className="text-[10px] font-black text-white">Secure & Safe</h4>
-                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
-                  Top data security.
-                </p>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="flex flex-col items-center">
-                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
-                  <Award className="w-4 h-4" />
-                </div>
-                <h4 className="text-[10px] font-black text-white">Trusted Platform</h4>
-                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
-                  Thousands of users.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="flex flex-col items-center">
-                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
-                  <Headphones className="w-4 h-4" />
-                </div>
-                <h4 className="text-[10px] font-black text-white">24/7 Support</h4>
-                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
-                  Here to help anytime.
-                </p>
-              </div>
-
-              {/* Feature 4 */}
-              <div className="flex flex-col items-center">
-                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
-                  <Tag className="w-4 h-4" />
-                </div>
-                <h4 className="text-[10px] font-black text-white">Best Offers</h4>
-                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
-                  Exclusive discounts.
-                </p>
-              </div>
-
+        {/* Bottom Glassmorphic Security Banner */}
+        <div className="z-10 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-3.5 flex items-center justify-between shadow-2xl max-w-lg mx-auto w-full shrink-0">
+          <div className="flex items-center gap-3 text-left">
+            <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4.5 h-4.5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white">Secure & Trusted Platform</h3>
+              <p className="text-[10px] text-white/80 font-medium leading-tight mt-0.5">
+                Your data is safe with us. We never share your information with anyone.
+              </p>
             </div>
           </div>
-
+          
+          <div className="w-8 h-8 rounded-xl bg-purple-400/30 border border-purple-300/40 flex items-center justify-center shrink-0 ml-2">
+            <Lock className="w-3.5 h-3.5 text-white" />
+          </div>
         </div>
 
       </div>

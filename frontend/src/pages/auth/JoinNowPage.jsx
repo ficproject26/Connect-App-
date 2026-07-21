@@ -34,28 +34,80 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
   const strength = getPasswordStrength(password);
 
-  const handleSignupSubmit = (e) => {
+  // Backend API URL — points to admin ConnectApp backend
+  const getApiBase = () => {
+    if (typeof window === 'undefined') return 'http://localhost:8001/api';
+    const hostname = window.location.hostname;
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' ||
+        hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
+      return `http://${hostname || 'localhost'}:8001/api`;
+    }
+    return 'https://connect-admin-96pc.onrender.com/api';
+  };
+
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleSignupSubmit = async (e) => {
     e?.preventDefault();
     if (!agreeTerms) return;
+    setErrorMsg('');
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    const displayName = fullName || 'Connect Member';
+
+    try {
+      const res = await fetch(`${getApiBase()}/auth/register-customer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: displayName,
+          phone: phoneNumber,
+          email: email || `user_${phoneNumber}@connectapp.com`,
+          password: password,
+          aadhaarNumber: aadhaarNumber,
+          panNumber: panNumber
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setIsSubmitting(false);
+        setErrorMsg(data.msg || 'Registration failed. Please try again.');
+        return;
+      }
+
+      // Registration successful
       setIsSubmitting(false);
       setSuccess(true);
-      
-      const displayName = fullName || 'Connect Member';
 
       setTimeout(() => {
         onAuthSuccess({
           name: displayName,
-          email: email || 'user@connectapp.com',
+          email: email || `user_${phoneNumber}@connectapp.com`,
           role: 'customer',
           aadhaar: aadhaarNumber,
           pan: panNumber
         });
         setSuccess(false);
       }, 800);
-    }, 1000);
+
+    } catch (err) {
+      console.warn('Backend unreachable, proceeding with local signup:', err);
+      // Fallback: proceed locally if backend is down
+      setIsSubmitting(false);
+      setSuccess(true);
+      setTimeout(() => {
+        onAuthSuccess({
+          name: displayName,
+          email: email || `user_${phoneNumber}@connectapp.com`,
+          role: 'customer',
+          aadhaar: aadhaarNumber,
+          pan: panNumber
+        });
+        setSuccess(false);
+      }, 800);
+    }
   };
 
   return (
@@ -307,6 +359,11 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                 </div>
 
                 {/* Create Account Button (Bright Gold/Yellow) */}
+                {errorMsg && (
+                  <div className="w-full bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold px-3 py-2 rounded-xl text-center">
+                    {errorMsg}
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={isSubmitting || !agreeTerms}
