@@ -1071,7 +1071,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             productId: selectedJob?.id,
             name: selectedJob?.title,
             price: 0,
-            quantity: 1
+            quantity: item.quantity || 1
           }],
           candidateEmail: applicantEmail,
           candidateResume: applicantResume,
@@ -2305,16 +2305,36 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const addToCart = (product) => {
-    if (cart.find(item => item.id === product.id)) {
-      triggerNotification("Item is already in your cart!");
-      return;
-    }
-    setCart(prev => [...prev, product]);
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: (item.quantity || 1) + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity: item.quantity || 1 }];
+    });
     triggerNotification(`Added "${product.name}" to cart!`);
   };
 
   const removeFromCart = (id) => {
     setCart(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updateCartQuantity = (id, delta) => {
+    setCart(prev => {
+      return prev
+        .map(item => {
+          if (item.id === id) {
+            const newQty = (item.quantity || 1) + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean);
+    });
   };
 
   const getCartCheckoutButtonText = () => {
@@ -2338,7 +2358,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    const totalAmount = Math.max(0, cart.reduce((sum, item) => sum + item.price, 0) - 50);
+    const totalAmount = Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - 50);
     if (walletBalance < totalAmount) {
       triggerNotification("Insufficient wallet balance!");
       return;
@@ -2351,7 +2371,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
 
     setOrderSuccess(true);
-    const productDetails = cart.map(item => `${item.name} (Qty: 1)`).join(', ');
+    const productDetails = cart.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
     
     // Deduct order amount from wallet
     addTransaction(
@@ -2366,7 +2386,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         productId: item.id,
         name: item.name,
         price: item.price,
-        quantity: 1
+        quantity: item.quantity || 1
       }));
 
       const res = await apiFetch('/orders', {
@@ -7427,24 +7447,53 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               cart.map((item) => (
                 <div 
                   key={item.id}
-                  className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-850 relative animate-fade-in text-slate-800 dark:text-slate-200"
+                  className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 relative animate-fade-in text-slate-800 dark:text-slate-200 gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover border border-slate-200 bg-white" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{item.name}</h4>
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" />
+                    <div className="text-left overflow-hidden">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-[#f43397]">₹{(item.price || 0).toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-400 line-through">₹{(item.originalPrice || item.price || 0).toLocaleString()}</span>
+                        <span className="text-xs font-extrabold text-[#f43397]">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
+                        <span className="text-[10px] text-slate-400 line-through">₹{((item.originalPrice || item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => removeFromCart(item.id)}
-                    className="p-1 hover:text-red-500 text-slate-400 cursor-pointer transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Add / Decrease Item Quantity Buttons */}
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
+                      <button 
+                        type="button"
+                        onClick={() => updateCartQuantity(item.id, -1)}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black text-xs cursor-pointer border-none transition-all"
+                        title="Decrease quantity"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+
+                      <span className="w-5 text-center text-xs font-black text-slate-900 dark:text-white">
+                        {item.quantity || 1}
+                      </span>
+
+                      <button 
+                        type="button"
+                        onClick={() => updateCartQuantity(item.id, 1)}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs cursor-pointer border-none transition-all shadow-3xs"
+                        title="Increase quantity"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <button 
+                      onClick={() => removeFromCart(item.id)}
+                      className="p-1.5 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl text-slate-400 cursor-pointer transition-colors"
+                      title="Remove item"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -7455,7 +7504,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="space-y-2.5 mb-4 text-xs font-semibold">
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Subtotal:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white">₹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">₹{cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Shipping Fee:</span>
@@ -7468,7 +7517,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline">
                   <span className="text-sm font-black text-slate-900 dark:text-white">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
-                    ₹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0), 0) - 50).toLocaleString()}
+                    ₹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - 50).toLocaleString()}
                   </span>
                 </div>
               </div>
