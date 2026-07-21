@@ -2473,15 +2473,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   }
 
   const wishlistProducts = (() => {
-    const allItems = [
-      ...(products || []),
-      ...(allServices || []),
-      ...(stayItems || []),
-      ...(travelItems || []),
-      ...(dailyNeedsItems || []),
-      ...(foodItems || []),
-      ...(offers || [])
-    ];
+    const allItems = Array.isArray(products) ? products : [];
     const map = new Map();
     allItems.forEach(item => {
       if (item && item.id != null && favorites.includes(item.id)) {
