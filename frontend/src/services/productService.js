@@ -31,62 +31,65 @@ const sanitizeProduct = (p) => {
 
 export const productService = {
   getProducts: async () => {
-    try {
-      // 1. Instant Cache Return
-      const cached = sessionStorage.getItem('connect_cached_products');
-      if (cached) {
-        try {
+    // Helper to read cached products from persistent localStorage
+    const getLocalCache = () => {
+      try {
+        const cached = localStorage.getItem('connect_cached_products');
+        if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            // Background non-blocking fetch to keep cache updated
-            fetch(`${getVendorBackendUrl()}/api/public/products`)
-              .then(res => res.ok ? res.json() : null)
-              .then(data => {
-                if (data && Array.isArray(data.products)) {
-                  sessionStorage.setItem('connect_cached_products', JSON.stringify(data.products.map(sanitizeProduct)));
-                }
-              })
-              .catch(() => {});
-            return { success: true, products: parsed };
+            return parsed;
           }
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
+      return null;
+    };
 
-      // 2. Fast Network Fetch with Abort Controller (3s timeout limit)
+    try {
+      // 1. Try Network Fetch with Abort Controller (2s timeout limit)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
 
       const res = await fetch(`${getVendorBackendUrl()}/api/public/products`, { signal: controller.signal });
       clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
-        if (data && Array.isArray(data.products)) {
-          data.products = data.products.map(sanitizeProduct);
+        if (data && Array.isArray(data.products) && data.products.length > 0) {
+          const sanitized = data.products.map(sanitizeProduct);
           try {
-            sessionStorage.setItem('connect_cached_products', JSON.stringify(data.products));
+            localStorage.setItem('connect_cached_products', JSON.stringify(sanitized));
           } catch(e) {}
+          return { success: true, products: sanitized };
         }
-        return data;
       }
-      return { success: false, products: [] };
     } catch (err) {
-      console.warn("Failed to fetch products from vendor backend:", err);
-      return { success: false, products: [] };
+      console.warn("Failed to fetch products from vendor backend (using persistent local cache):", err);
     }
+
+    // 2. Fallback to persistent localStorage cache when network fails (e.g. backend is closed)
+    const localCached = getLocalCache();
+    if (localCached) {
+      return { success: true, products: localCached };
+    }
+
+    return { success: false, products: [] };
   },
+
   deleteAllProducts: async () => {
     try {
       const res = await fetch(`${getVendorBackendUrl()}/api/public/products/delete-all`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        sessionStorage.removeItem('connect_cached_products');
+        localStorage.removeItem('connect_cached_products');
         return await res.json();
       }
+      localStorage.removeItem('connect_cached_products');
       return { success: false, message: 'Failed to delete products' };
     } catch (err) {
       console.warn("Failed to delete products:", err);
+      localStorage.removeItem('connect_cached_products');
       return { success: false, message: 'Server error' };
     }
   }
