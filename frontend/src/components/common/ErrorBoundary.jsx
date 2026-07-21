@@ -22,7 +22,7 @@ export class ErrorBoundary extends React.Component {
       localStorage.removeItem('connect_active_category');
       localStorage.removeItem('connect_active_sub_service');
     } catch (e) {}
-    window.location.reload();
+    window.location.href = window.location.pathname + '?reload=' + Date.now();
   };
 
   render() {
