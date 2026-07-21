@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
+import { getAdminBackendUrl } from '../../services/apiSetup';
 import { productService } from '../../services/productService';
 import { socketService } from '../../services/socketService';
 import useCustomer from '../../hooks/useCustomer';
@@ -650,6 +651,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [activeFoodCategory, setActiveFoodCategory] = useState('ALL');
   const [activeStayCategory, setActiveStayCategory] = useState('ALL');
   const [activeTravelCategory, setActiveTravelCategory] = useState('ALL');
+
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchDbCategories = async () => {
+      try {
+        const res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
+        if (res.ok) {
+          setDbCategories(await res.json());
+        }
+      } catch (err) {
+        console.warn("Failed to fetch dynamic categories in customer dashboard", err);
+      }
+    };
+    fetchDbCategories();
+  }, []);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
@@ -1660,6 +1677,42 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       items: ['Security Guards', 'CCTV Monitoring', 'Cyber Security', 'Home Security', 'Office Security']
     }
   };
+
+  const mergeDbCategories = (staticData, mainCategoryName) => {
+    const merged = JSON.parse(JSON.stringify(staticData));
+    const activeDbCats = dbCategories.filter(c => 
+      c.isActive !== false && 
+      !c.isDeleted && 
+      c.description !== 'DELETED_HIERARCHY_MARKER' &&
+      (c.name || '').toLowerCase() === mainCategoryName.toLowerCase()
+    );
+
+    activeDbCats.forEach(c => {
+      if (!c.subcategory) return;
+      const subName = c.subcategory;
+      if (!merged[subName]) {
+        merged[subName] = {
+          title: subName,
+          items: []
+        };
+      }
+      if (c.subSubcategory) {
+        const childName = c.subSubcategory;
+        if (!merged[subName].items.includes(childName)) {
+          merged[subName].items.push(childName);
+        }
+      }
+    });
+    return merged;
+  };
+
+  const serviceMegaMenu = useMemo(() => mergeDbCategories(serviceMegaMenuData, 'Services'), [dbCategories]);
+  const productMegaMenu = useMemo(() => mergeDbCategories(productMegaMenuData, 'Products'), [dbCategories]);
+  const dailyNeedsMegaMenu = useMemo(() => mergeDbCategories(dailyNeedsMegaMenuData, 'Daily Needs'), [dbCategories]);
+  const foodMegaMenu = useMemo(() => mergeDbCategories(foodMegaMenuData, 'Food'), [dbCategories]);
+  const stayMegaMenu = useMemo(() => mergeDbCategories(stayMegaMenuData, 'Stay'), [dbCategories]);
+  const travelMegaMenu = useMemo(() => mergeDbCategories(travelMegaMenuData, 'Travel'), [dbCategories]);
+  const jobMegaMenu = useMemo(() => mergeDbCategories(jobMegaMenuData, 'Jobs'), [dbCategories]);
 
   // Filters State
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -3274,19 +3327,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             className="absolute top-[calc(100%+2px)] left-6 right-6 bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-md shadow-2xl border border-slate-200/80 dark:border-slate-800/60 rounded-2xl py-8 px-8 z-50 flex transition-all duration-300 ease-out text-slate-800 dark:text-slate-200"
           >
             {hoveredLink === 'Services' ? (
-              renderSidebarMegaMenu(activeServiceCategory, setActiveServiceCategory, serviceMegaMenuData)
+              renderSidebarMegaMenu(activeServiceCategory, setActiveServiceCategory, serviceMegaMenu)
             ) : hoveredLink === 'Products' ? (
-              renderSidebarMegaMenu(activeProductCategory, setActiveProductCategory, productMegaMenuData)
+              renderSidebarMegaMenu(activeProductCategory, setActiveProductCategory, productMegaMenu)
             ) : hoveredLink === 'Daily Needs' ? (
-              renderSidebarMegaMenu(activeDailyNeedsCategory, setActiveDailyNeedsCategory, dailyNeedsMegaMenuData)
+              renderSidebarMegaMenu(activeDailyNeedsCategory, setActiveDailyNeedsCategory, dailyNeedsMegaMenu)
             ) : hoveredLink === 'Food' ? (
-              renderSidebarMegaMenu(activeFoodCategory, setActiveFoodCategory, foodMegaMenuData)
+              renderSidebarMegaMenu(activeFoodCategory, setActiveFoodCategory, foodMegaMenu)
             ) : hoveredLink === 'Stay' ? (
-              renderSidebarMegaMenu(activeStayCategory, setActiveStayCategory, stayMegaMenuData)
+              renderSidebarMegaMenu(activeStayCategory, setActiveStayCategory, stayMegaMenu)
             ) : hoveredLink === 'Travel' ? (
-              renderSidebarMegaMenu(activeTravelCategory, setActiveTravelCategory, travelMegaMenuData)
+              renderSidebarMegaMenu(activeTravelCategory, setActiveTravelCategory, travelMegaMenu)
             ) : hoveredLink === 'Jobs' ? (
-              renderSidebarMegaMenu(activeJobCategory, setActiveJobCategory, jobMegaMenuData, (subCat) => {
+              renderSidebarMegaMenu(activeJobCategory, setActiveJobCategory, jobMegaMenu, (subCat) => {
                 setActiveTab('Jobs');
                 setSelectedSubNavbarCategory('Jobs');
                 setSelectedCategories([]);

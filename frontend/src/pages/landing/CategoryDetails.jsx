@@ -26,6 +26,8 @@ import saree2 from '../../assets/images/saree_2.png';
 import saree3 from '../../assets/images/saree_3.png';
 import saree4 from '../../assets/images/saree_4.png';
 
+import { getAdminBackendUrl } from '../../services/apiSetup';
+
 export default function CategoryDetails({ category, onBack, onSubCategoryClick }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -35,7 +37,7 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
   useEffect(() => {
     const fetchDbCategories = async () => {
       try {
-        const res = await fetch('http://localhost:5001/api/admin/categories');
+        const res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
         if (res.ok) {
           setDbCategories(await res.json());
         }
