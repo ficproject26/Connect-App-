@@ -1030,7 +1030,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             quantity: 1
           }],
           candidateEmail: applicantEmail,
-          candidateResume: applicantResume
+          candidateResume: applicantResume,
+          type: 'Job'
         })
       });
 
@@ -2294,7 +2295,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           customer_longitude: 77.6289,
           product_details: productDetails,
           amount: totalAmount,
-          items: itemsList
+          items: itemsList,
+          type: hasJob ? 'Job' : (hasBooking ? 'Booking' : 'Order')
         })
       });
 
