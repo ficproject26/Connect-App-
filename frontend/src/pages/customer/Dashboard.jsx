@@ -2314,7 +2314,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             : item
         );
       }
-      return [...prev, { ...product, quantity: item.quantity || 1 }];
+      return [...prev, { ...product, quantity: product.quantity || 1 }];
     });
     triggerNotification(`Added "${product.name}" to cart!`);
   };
