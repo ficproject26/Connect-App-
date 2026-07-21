@@ -1047,7 +1047,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       location: p.description?.split('\n')[0] || 'Remote (India)',
       salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
       type: 'Full-time',
-      desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`
+      desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`,
+      price: p.price
     }))
   ];
 
@@ -1809,21 +1810,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const getCategoriesForTab = (tabName) => {
     const prodCats = products
-      .filter(p => p.subNavbarCategory === tabName || tabName === 'Products')
+      .filter(p => p.subNavbarCategory === tabName)
       .map(p => p.category)
       .filter(Boolean);
 
     const dbCats = [];
     dbCategories.forEach(c => {
       if (!c || c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') return;
-      const mainMatch = (c.name || '').toLowerCase() === tabName.toLowerCase() ||
-                        (tabName.toLowerCase() === 'products' && (!c.name || (c.name || '').toLowerCase() === 'products'));
+      const mainMatch = (c.name || '').toLowerCase() === tabName.toLowerCase();
       if (mainMatch) {
         if (c.subcategory) dbCats.push(c.subcategory);
         if (c.subSubcategory) dbCats.push(c.subSubcategory);
-      }
-      if (c.name && c.name.toLowerCase() !== tabName.toLowerCase()) {
-        dbCats.push(c.name);
       }
     });
 
@@ -4253,7 +4250,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
               >
                 <div className="relative aspect-[1.1/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                  {(item.tag === 'Jobs' || item.subNavbarCategory === 'Jobs') ? (
+                    <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                      <Briefcase className="w-8 h-8 text-amber-500" />
+                      <span className="text-[9px] text-slate-450 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
+                    </div>
+                  ) : (
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                  )}
                   
                   {/* Rating star on left top */}
                   <div className="absolute left-2.5 top-2.5 bg-white/90 backdrop-blur-xs text-slate-900 text-[11px] font-black px-2.5 py-1 rounded-full flex items-center gap-0.5 shadow-3xs">
@@ -4801,10 +4805,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
       let matchesSalary = true;
       if (selectedJobSalaries.length > 0) {
+        const numericSalary = job.price || 0;
         matchesSalary = selectedJobSalaries.some(sal => {
-          if (sal === 'under-15l') return job.id === 'job-1';
-          if (sal === '15l-25l') return job.id === 'job-2' || job.id === 'job-1';
-          if (sal === 'above-25l') return job.id === 'job-3';
+          if (sal === '0-5l') return numericSalary >= 0 && numericSalary <= 5;
+          if (sal === '5l-10l') return numericSalary > 5 && numericSalary <= 10;
+          if (sal === '10l-15l') return numericSalary > 10 && numericSalary <= 15;
+          if (sal === '15l-20l') return numericSalary > 15 && numericSalary <= 20;
+          if (sal === '20l-30l') return numericSalary > 20 && numericSalary <= 30;
+          if (sal === '30l-50l') return numericSalary > 30 && numericSalary <= 50;
+          if (sal === 'above-50l') return numericSalary > 50;
           return true;
         });
       }
@@ -5113,9 +5122,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Salaries</option>
-                    <option value="under-15l">Under ₹15L L.P.A</option>
-                    <option value="15l-25l">₹15L - ₹25L L.P.A</option>
-                    <option value="above-25l">Above ₹25L L.P.A</option>
+                    <option value="0-5l">₹0 - ₹5L L.P.A</option>
+                    <option value="5l-10l">₹5L - ₹10L L.P.A</option>
+                    <option value="10l-15l">₹10L - ₹15L L.P.A</option>
+                    <option value="15l-20l">₹15L - ₹20L L.P.A</option>
+                    <option value="20l-30l">₹20L - ₹30L L.P.A</option>
+                    <option value="30l-50l">₹30L - ₹50L L.P.A</option>
+                    <option value="above-50l">Above ₹50L L.P.A</option>
                   </select>
                 </>
               )}
@@ -5365,7 +5378,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       return (
                         <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
                           <div className="relative aspect-[1.4/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
-                            <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                            {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs') ? (
+                              <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                                <Briefcase className="w-8 h-8 text-amber-500" />
+                                <span className="text-[9px] text-slate-450 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
+                              </div>
+                            ) : (
+                              <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                            )}
                             {product.subNavbarCategory === 'Food' && (
                               <div className="absolute top-0 left-0 z-10 w-16 h-16 overflow-hidden pointer-events-none">
                                 <div className={`absolute top-3 -left-6.5 w-20 py-0.5 text-[7px] font-black text-center uppercase tracking-widest rotate-[-45deg] text-white shadow-xs ${
@@ -5570,7 +5590,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           {/* LEFT: Gallery + About Property */}
           <div className="lg:col-span-4 flex flex-col gap-5">
             <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
-              <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
+                <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                  <Briefcase className="w-12 h-12 text-amber-500" />
+                  <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                </div>
+              ) : (
+                <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              )}
               <button onClick={() => toggleFavorite(selectedProduct.id)} className="absolute right-3 top-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center shadow-md cursor-pointer border-none"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} /></button>
               <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
               <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
@@ -5692,7 +5719,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           {/* LEFT: Gallery + About + Ratings */}
           <div className="lg:col-span-4 flex flex-col gap-5">
             <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
-              <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
+                <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                  <Briefcase className="w-12 h-12 text-amber-500" />
+                  <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                </div>
+              ) : (
+                <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              )}
               <button onClick={() => toggleFavorite(selectedProduct.id)} className="absolute right-3 top-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center shadow-md cursor-pointer border-none"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} /></button>
               <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
               <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
@@ -5845,11 +5879,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
               {/* Main Large Display with Page indicator and nav arrows */}
               <div className="relative flex-grow aspect-[4/3] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-850 overflow-hidden flex items-center justify-center">
-                <img 
-                  src={activeProductImage || selectedProduct.image} 
-                  alt={selectedProduct.name} 
-                  className="w-full h-full object-cover"
-                />
+                {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
+                  <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                    <Briefcase className="w-12 h-12 text-amber-500" />
+                    <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                  </div>
+                ) : (
+                  <img 
+                    src={activeProductImage || selectedProduct.image} 
+                    alt={selectedProduct.name} 
+                    className="w-full h-full object-cover"
+                  />
+                )}
 
                 {/* Left/Right nav arrows */}
                 <button 
@@ -6653,16 +6694,23 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
               {/* Main Large Display */}
               <div className="relative flex-grow aspect-square bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-850 overflow-hidden flex items-center justify-center p-4">
-                <img 
-                  src={activeProductImage || selectedProduct.image} 
-                  alt={selectedProduct.name} 
-                  className={`w-full h-full object-contain max-h-[420px] transition-all duration-300 ${
-                    activeThumbnailIndex === 1 ? 'contrast-125 saturate-125' :
-                    activeThumbnailIndex === 2 ? 'hue-rotate-15' :
-                    activeThumbnailIndex === 3 ? 'brightness-90' :
-                    activeThumbnailIndex === 4 ? 'sepia-10' : ''
-                  }`}
-                />
+                {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
+                  <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2 rounded-xl">
+                    <Briefcase className="w-12 h-12 text-amber-500" />
+                    <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                  </div>
+                ) : (
+                  <img 
+                    src={activeProductImage || selectedProduct.image} 
+                    alt={selectedProduct.name} 
+                    className={`w-full h-full object-contain max-h-[420px] transition-all duration-300 ${
+                      activeThumbnailIndex === 1 ? 'contrast-125 saturate-125' :
+                      activeThumbnailIndex === 2 ? 'hue-rotate-15' :
+                      activeThumbnailIndex === 3 ? 'brightness-90' :
+                      activeThumbnailIndex === 4 ? 'sepia-10' : ''
+                    }`}
+                  />
+                )}
                 
                 {/* Heart wishlist button */}
                 <button 
@@ -7150,7 +7198,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-3xs hover:shadow-md transition-all duration-300 flex flex-col justify-between cursor-pointer hover:-translate-y-0.5"
                   >
                     <div className="relative aspect-[0.95/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center border-b border-slate-100 dark:border-slate-800/60 select-none">
-                      <img src={prod.image} alt={prod.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                      {(prod.tag === 'Jobs' || prod.subNavbarCategory === 'Jobs') ? (
+                        <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                          <Briefcase className="w-8 h-8 text-amber-500" />
+                          <span className="text-[9px] text-slate-450 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
+                        </div>
+                      ) : (
+                        <img src={prod.image} alt={prod.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                      )}
                       {prod.tag && <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[7px] font-black px-2 py-0.5 rounded uppercase">{prod.tag}</span>}
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleFavorite(prod.id); }} 
@@ -7504,10 +7559,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <span>Subtotal:</span>
                   <span className="font-extrabold text-slate-900 dark:text-white">₹{cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Shipping Fee:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">FREE</span>
-                </div>
+                {!cart.some(item => 
+                  ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
+                  ['Services', 'Stay', 'Travel'].includes(item.tag)
+                ) && (
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>Shipping Fee:</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">FREE</span>
+                  </div>
+                )}
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline">
                   <span className="text-sm font-black text-slate-900 dark:text-white">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
@@ -8549,7 +8609,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : 'Select Check-In Date'}</span>
-                            <span className="text-[9px] font-bold text-slate-400">Scroll for dates →</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                const container = e.currentTarget.parentElement?.nextElementSibling;
+                                if (container) {
+                                  container.scrollBy({ left: 150, behavior: 'smooth' });
+                                }
+                              }}
+                              className="text-[9px] font-extrabold text-blue-500 hover:text-blue-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
+                            >
+                              Scroll for dates →
+                            </button>
                           </div>
                           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                             {generateUpcomingDates(formatDateYYYYMMDD(todayObj), 14).map((d) => {
@@ -8647,7 +8718,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
-                            <span className="text-[9px] font-bold text-slate-400">Scroll for dates →</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                const container = e.currentTarget.parentElement?.nextElementSibling;
+                                if (container) {
+                                  container.scrollBy({ left: 150, behavior: 'smooth' });
+                                }
+                              }}
+                              className="text-[9px] font-extrabold text-emerald-600 hover:text-emerald-700 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
+                            >
+                              Scroll for dates →
+                            </button>
                           </div>
                           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                             {generateUpcomingDates(stayCheckInDate, 14).slice(1).map((d) => {
@@ -9004,7 +9086,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : 'Select Check-In Date'}</span>
-                            <span className="text-[9px] font-bold text-slate-400">Scroll for dates →</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                const container = e.currentTarget.parentElement?.nextElementSibling;
+                                if (container) {
+                                  container.scrollBy({ left: 150, behavior: 'smooth' });
+                                }
+                              }}
+                              className="text-[9px] font-extrabold text-blue-500 hover:text-blue-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
+                            >
+                              Scroll for dates →
+                            </button>
                           </div>
                           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                             {generateUpcomingDates(formatDateYYYYMMDD(todayObj), 14).map((d) => {
@@ -9102,7 +9195,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
-                            <span className="text-[9px] font-bold text-slate-400">Scroll for dates →</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                const container = e.currentTarget.parentElement?.nextElementSibling;
+                                if (container) {
+                                  container.scrollBy({ left: 150, behavior: 'smooth' });
+                                }
+                              }}
+                              className="text-[9px] font-extrabold text-emerald-600 hover:text-emerald-700 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
+                            >
+                              Scroll for dates →
+                            </button>
                           </div>
                           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                             {generateUpcomingDates(stayCheckInDate, 14).slice(1).map((d) => {
