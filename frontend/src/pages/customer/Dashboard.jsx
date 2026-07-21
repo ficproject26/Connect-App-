@@ -5557,7 +5557,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="flex gap-2 overflow-x-auto no-scrollbar">{thumbnails.slice(0, 8).map((t, i) => (<button key={i} onClick={() => { setActiveProductImage(t); setActiveThumbnailIndex(i); }} className={`w-14 h-10 rounded-lg border-2 overflow-hidden shrink-0 cursor-pointer ${activeThumbnailIndex === i ? 'border-amber-400 shadow-md' : 'border-slate-200 dark:border-slate-800'}`}><img src={t} alt="" className="w-full h-full object-cover" /></button>))}</div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 text-left">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">About Property</span>
-              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm shrink-0"><Building2 className="w-5 h-5" /></div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">Hotel {selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500" /></h3><span className="text-[11px] text-slate-450 font-bold">{selectedProduct.category || 'Luxury Hotels'}</span></div></div>
+              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm shrink-0"><Building2 className="w-5 h-5" /></div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">Hotel {selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" /></h3><span className="text-[11px] text-slate-450 font-bold">{selectedProduct.category || 'Luxury Hotels'}</span></div></div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{selectedProduct.description || 'Experience luxury and comfort like never before. Spacious rooms, excellent amenities and top-notch hospitality await you.'}</p>
               <div className="grid grid-cols-3 gap-3 pt-2">{[{l:'Elite Property',i:<ShieldCheck className="w-4 h-4"/>},{l:'24/7 Reception',i:<Clock className="w-4 h-4"/>},{l:'Free Wi-Fi',i:<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01"/></svg>},{l:'Restaurant',i:<Utensils className="w-4 h-4"/>},{l:'Swimming Pool',i:<Activity className="w-4 h-4"/>},{l:'Free Parking',i:<MapPin className="w-4 h-4"/>}].map((f, fi) => (<div key={fi} className="flex flex-col items-center text-center gap-1.5 py-2"><span className="text-slate-500 dark:text-slate-400">{f.i}</span><span className="text-[8px] font-bold text-slate-500 uppercase leading-tight">{f.l}</span></div>))}</div>
             </div>
@@ -5680,7 +5680,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 text-left">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">About {selectedProduct.name}</span>
-              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black text-[9px] shrink-0 uppercase tracking-wider">{(selectedProduct.name || 'GYM').substring(0, 4)}</div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">{selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500" /></h3><span className="text-[11px] text-slate-450 font-bold">{selectedProduct.category || 'Premium Gym & Fitness Center'}</span></div></div>
+              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black text-[9px] shrink-0 uppercase tracking-wider">{(selectedProduct.name || 'GYM').substring(0, 4)}</div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">{selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" /></h3><span className="text-[11px] text-slate-450 font-bold">{selectedProduct.category || 'Premium Gym & Fitness Center'}</span></div></div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{selectedProduct.description || 'A group workout and fitness center with state-of-the-art equipment, expert trainers and world-class facilities to help you achieve your fitness goals.'}</p>
               <div className="grid grid-cols-3 gap-3 pt-2">{[{l:'Certified Trainers',i:<UserCheck className="w-4 h-4"/>},{l:'Modern Equipment',i:<Activity className="w-4 h-4"/>},{l:'Hygienic Environment',i:<ShieldCheck className="w-4 h-4"/>},{l:'Personal Training',i:<Briefcase className="w-4 h-4"/>},{l:'Diet & Nutrition',i:<Utensils className="w-4 h-4"/>},{l:'Flexible Hours',i:<Clock className="w-4 h-4"/>}].map((f, fi) => (<div key={fi} className="flex flex-col items-center text-center gap-1.5 py-2"><span className="text-slate-500 dark:text-slate-400">{f.i}</span><span className="text-[8px] font-bold text-slate-500 uppercase leading-tight">{f.l}</span></div>))}</div>
             </div>
@@ -5699,7 +5699,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div className="lg:col-span-5 flex flex-col gap-5 text-left">
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2">
               <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Partner</span>
-              <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">{selectedProduct.name} <CheckCircle2 className="w-5 h-5 text-blue-500 fill-blue-500" /></h1>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">{selectedProduct.name} <CheckCircle2 className="w-5 h-5 text-white dark:text-white fill-blue-500 shrink-0" /></h1>
               <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Gym Membership'}</span>
               <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || '2,450'} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Partner</span></div>
             </div>
@@ -5876,7 +5876,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">About Operator</span>
                   <h3 className="text-base font-black text-slate-900 dark:text-white mt-1.5 flex items-center gap-1.5">
                     {selectedProduct.name}
-                    <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500 text-white dark:text-blue-500" />
+                    <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" />
                   </h3>
                   <span className="text-[11px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5">
                     Operated by {selectedProduct.name} Tours & Travels Pvt. Ltd.
@@ -6695,7 +6695,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight mb-2 flex items-center gap-1.5">
                 {selectedProduct.name}
-                <CheckCircle2 className="w-5 h-5 text-blue-500 fill-blue-500 text-white dark:text-blue-500" />
+                <CheckCircle2 className="w-5 h-5 text-white dark:text-white fill-blue-500 shrink-0" />
               </h1>
 
               <div className="text-left space-y-0.5 mb-3.5">
@@ -7016,12 +7016,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight text-left">More Savings Across Connect Ecosystem</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
             {[
+              { name: "Products", desc: "Save More on 3200+ Products", icon: ShoppingBag, bg: "from-rose-400/10 to-pink-500/10 hover:border-rose-400", activeTab: "Products" },
+              { name: "Services", desc: "Save More on 100+ Services", icon: Sparkles, bg: "from-purple-400/10 to-pink-500/10 hover:border-purple-400", activeTab: "Services" },
               { name: "Food", desc: "Save More on 1000+ Restaurants", icon: Utensils, bg: "from-amber-400/10 to-orange-500/10 hover:border-amber-400", activeTab: "Food" },
               { name: "Stay", desc: "Save More on 5000+ Hotels", icon: BedDouble, bg: "from-blue-400/10 to-indigo-500/10 hover:border-blue-400", activeTab: "Stay" },
               { name: "Travel", desc: "Save More on Flights, Buses & Cabs", icon: Plane, bg: "from-cyan-400/10 to-teal-500/10 hover:border-cyan-400", activeTab: "Travel" },
-              { name: "Services", desc: "Save More on 100+ Services", icon: Sparkles, bg: "from-purple-400/10 to-pink-500/10 hover:border-purple-400", activeTab: "Services" },
               { name: "Daily Needs", desc: "Save More on Groceries & Essentials", icon: ShoppingBag, bg: "from-emerald-400/10 to-teal-500/10 hover:border-emerald-400", activeTab: "Daily Needs" }
-            ].map((e, idx) => {
+            ].filter(item => item.activeTab !== activeTab).slice(0, 5).map((e, idx) => {
               const Icon = e.icon;
               return (
                 <div key={idx} className={`bg-gradient-to-br ${e.bg} border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 flex flex-col justify-between items-start text-left group transition-all hover:scale-102 cursor-pointer shadow-3xs`}
@@ -8395,7 +8396,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     
                     <h3 className="text-base font-black text-slate-850 dark:text-white mt-3 flex items-center gap-1 justify-center w-full">
                       <span className="truncate max-w-[80%]">{activeScheduleModalItem.name}</span>
-                      <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" />
                     </h3>
                     
                     <span className="text-xs font-bold text-slate-450 dark:text-slate-400 mt-1 block">{terms.category}</span>
@@ -9246,7 +9247,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="text-left flex-grow">
                         <h4 className="text-xs font-black text-slate-850 dark:text-white flex items-center gap-0.5 w-full">
                           <span className="truncate max-w-[80%]">{activeBookNowModalItem.name}</span>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-500 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-white dark:text-white fill-blue-500 shrink-0" />
                         </h4>
                         <span className="text-[9px] text-slate-400 block leading-none mt-1">{terms.category}</span>
                         <div className="flex items-center gap-0.5 mt-1.5 text-[9px] font-black text-slate-650 dark:text-amber-400">
