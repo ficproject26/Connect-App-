@@ -1807,6 +1807,30 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const travelMegaMenu = useMemo(() => mergeDbCategories(travelMegaMenuData, 'Travel'), [dbCategories]);
   const jobMegaMenu = useMemo(() => mergeDbCategories(jobMegaMenuData, 'Jobs'), [dbCategories]);
 
+  const getCategoriesForTab = (tabName) => {
+    const prodCats = products
+      .filter(p => p.subNavbarCategory === tabName || tabName === 'Products')
+      .map(p => p.category)
+      .filter(Boolean);
+
+    const dbCats = [];
+    dbCategories.forEach(c => {
+      if (!c || c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') return;
+      const mainMatch = (c.name || '').toLowerCase() === tabName.toLowerCase() ||
+                        (tabName.toLowerCase() === 'products' && (!c.name || (c.name || '').toLowerCase() === 'products'));
+      if (mainMatch) {
+        if (c.subcategory) dbCats.push(c.subcategory);
+        if (c.subSubcategory) dbCats.push(c.subSubcategory);
+      }
+      if (c.name && c.name.toLowerCase() !== tabName.toLowerCase()) {
+        dbCats.push(c.name);
+      }
+    });
+
+    return [...new Set([...prodCats, ...dbCats])].sort();
+  };
+
+
   // Filters State
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
@@ -2595,7 +2619,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesCategoryFilter = selectedCategories.length === 0 || 
         (activeTab === 'Home' 
           ? selectedCategories.includes(product.subNavbarCategory) 
-          : selectedCategories.includes(product.category));
+          : selectedCategories.some(cat => 
+              (product.category || '').toLowerCase().includes(cat.toLowerCase()) ||
+              (product.subSubcategory || '').toLowerCase().includes(cat.toLowerCase()) ||
+              (product.subcategory || '').toLowerCase().includes(cat.toLowerCase()) ||
+              (product.name || '').toLowerCase().includes(cat.toLowerCase())
+            ));
 
       const matchesBrandFilter = selectedBrands.length === 0 || 
         selectedBrands.includes(product.vendorName);
@@ -4805,7 +4834,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Categories</option>
-                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Products').map(p => p.category).filter(Boolean))].map(cat => (
+                    {getCategoriesForTab('Products').map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
@@ -4842,7 +4871,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Service Types</option>
-                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Services').map(p => p.category).filter(Boolean))].map(type => (
+                    {getCategoriesForTab('Services').map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
@@ -4872,7 +4901,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Categories</option>
-                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Daily Needs').map(p => p.category).filter(Boolean))].map(type => (
+                    {getCategoriesForTab('Daily Needs').map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
@@ -4933,7 +4962,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Accommodations</option>
-                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Stay').map(p => p.category).filter(Boolean))].map(type => (
+                    {getCategoriesForTab('Stay').map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
@@ -5014,7 +5043,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Categories</option>
-                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Travel').map(p => p.category).filter(Boolean))].map(type => (
+                    {getCategoriesForTab('Travel').map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
