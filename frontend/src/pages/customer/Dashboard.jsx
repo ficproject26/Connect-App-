@@ -3516,7 +3516,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         imageUrl: banner.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600',
         redirectLink: banner.redirectLink || '/promotions',
         targetAudience: banner.targetAudience || 'all',
-        description: 'Special Promotion Offer'
+        description: banner.redirectLink || 'Special Promotion Offer'
       })),
       { id: 'static-0', isDb: false, idx: 0 },
       { id: 'static-1', isDb: false, idx: 1 },
