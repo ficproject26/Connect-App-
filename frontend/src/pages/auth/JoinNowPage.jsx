@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Mail, Lock, Eye, EyeOff, User, Store, Truck, Check, 
+  Mail, Lock, Eye, EyeOff, User, Check, 
   ShieldCheck, Phone, UserPlus, Wrench, UtensilsCrossed, 
   Bed, Plane, ShoppingCart, Briefcase, LayoutGrid, Headphones, 
   Tag, Award, CreditCard, FileText 
@@ -8,14 +8,13 @@ import {
 import logoImg from '../../assets/images/forge india logo.jpg';
 
 export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToLoginPage }) {
-  const [role, setRole] = useState('customer'); // 'customer' | 'vendor' | 'delivery'
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
@@ -44,13 +43,13 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
       setIsSubmitting(false);
       setSuccess(true);
       
-      const displayName = fullName || (role === 'vendor' ? 'Elite Vendor' : (role === 'delivery' ? 'Express Rider' : 'Connect Member'));
+      const displayName = fullName || 'Connect Member';
 
       setTimeout(() => {
         onAuthSuccess({
           name: displayName,
           email: email || 'user@connectapp.com',
-          role: role,
+          role: 'customer',
           aadhaar: aadhaarNumber,
           pan: panNumber
         });
@@ -73,12 +72,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
           >
             <img 
               src={logoImg} 
-              alt="Forge India Connect Logo" 
+              alt="Connect App Logo" 
               className="w-10 h-10 object-cover rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs group-hover:scale-105 transition-transform" 
             />
             <div>
               <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none uppercase">
-                Forge India <span className="text-[#FFB800]">Connect</span>
+                Connect <span className="text-[#FFB800]">App</span>
               </h1>
               <p className="text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5">All Services, One Platform</p>
             </div>
@@ -105,23 +104,23 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
               </div>
               <h2 className="text-2xl font-black text-slate-900 dark:text-white">Account Created!</h2>
               <p className="text-xs font-semibold text-slate-500 mt-1">
-                Welcome to Forge India Connect! Preparing your dashboard...
+                Welcome to Connect App! Preparing your dashboard...
               </p>
             </div>
           ) : (
             <>
               {/* Title Header */}
-              <div className="mb-3 text-left">
+              <div className="mb-4 text-left">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   Create Your <span className="text-[#FFB800]">Account</span>
                 </h2>
                 <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                  Join Forge India Connect and explore endless opportunities.
+                  Join Connect App and explore endless opportunities.
                 </p>
               </div>
 
               {/* Form Fields */}
-              <form onSubmit={handleSignupSubmit} className="space-y-2.5">
+              <form onSubmit={handleSignupSubmit} className="space-y-3">
                 
                 {/* Row 1: Full Name & Phone Number */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -180,7 +179,48 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                   </div>
                 </div>
 
-                {/* Row 3: Create Password & Strength Bar */}
+                {/* Row 3: Aadhaar Card & PAN Card Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Aadhaar Card Number */}
+                  <div className="text-left">
+                    <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      Aadhaar Card Number
+                    </label>
+                    <div className="relative">
+                      <CreditCard className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        required
+                        maxLength={12}
+                        value={aadhaarNumber}
+                        onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, ''))}
+                        placeholder="12-digit Aadhaar number"
+                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* PAN Card Number */}
+                  <div className="text-left">
+                    <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      PAN Card Number
+                    </label>
+                    <div className="relative">
+                      <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        required
+                        maxLength={10}
+                        value={panNumber}
+                        onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                        placeholder="10-character PAN number"
+                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold uppercase text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 4: Create Password & Strength Bar */}
                 <div className="text-left">
                   <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
                     Create Password
@@ -222,7 +262,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                   )}
                 </div>
 
-                {/* Row 4: Confirm Password */}
+                {/* Row 5: Confirm Password */}
                 <div className="text-left">
                   <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
                     Confirm Password
@@ -247,151 +287,8 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                   </div>
                 </div>
 
-                {/* Role Selection Cards ("I am a") */}
-                <div className="pt-0.5 text-left">
-                  <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                    I am a
-                  </label>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Customer */}
-                    <div
-                      onClick={() => setRole('customer')}
-                      className={`relative rounded-2xl p-2.5 border transition-all cursor-pointer flex flex-col justify-between text-left ${
-                        role === 'customer'
-                          ? 'border-[#FFB800] bg-amber-50/70 dark:bg-amber-950/20 ring-2 ring-[#FFB800]/30 shadow-xs'
-                          : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="w-7 h-7 rounded-full bg-[#FFB800]/20 text-[#D49900] dark:text-[#FFB800] flex items-center justify-center shrink-0">
-                          <User className="w-3.5 h-3.5" />
-                        </div>
-                        {role === 'customer' ? (
-                          <div className="w-4 h-4 rounded-full bg-[#FFB800] text-slate-950 flex items-center justify-center text-[9px] font-black shrink-0">✓</div>
-                        ) : (
-                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none">Customer</h4>
-                        <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                          Book services & explore
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Vendor */}
-                    <div
-                      onClick={() => setRole('vendor')}
-                      className={`relative rounded-2xl p-2.5 border transition-all cursor-pointer flex flex-col justify-between text-left ${
-                        role === 'vendor'
-                          ? 'border-[#FFB800] bg-amber-50/70 dark:bg-amber-950/20 ring-2 ring-[#FFB800]/30 shadow-xs'
-                          : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/60 text-[#003B95] dark:text-blue-400 flex items-center justify-center shrink-0">
-                          <Store className="w-3.5 h-3.5" />
-                        </div>
-                        {role === 'vendor' ? (
-                          <div className="w-4 h-4 rounded-full bg-[#FFB800] text-slate-950 flex items-center justify-center text-[9px] font-black shrink-0">✓</div>
-                        ) : (
-                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none">Vendor</h4>
-                        <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                          Sell products or services
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Delivery Partner */}
-                    <div
-                      onClick={() => setRole('delivery')}
-                      className={`relative rounded-2xl p-2.5 border transition-all cursor-pointer flex flex-col justify-between text-left ${
-                        role === 'delivery'
-                          ? 'border-[#FFB800] bg-amber-50/70 dark:bg-amber-950/20 ring-2 ring-[#FFB800]/30 shadow-xs'
-                          : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/60 text-[#003B95] dark:text-blue-400 flex items-center justify-center shrink-0">
-                          <Truck className="w-3.5 h-3.5" />
-                        </div>
-                        {role === 'delivery' ? (
-                          <div className="w-4 h-4 rounded-full bg-[#FFB800] text-slate-950 flex items-center justify-center text-[9px] font-black shrink-0">✓</div>
-                        ) : (
-                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none truncate">Delivery Partner</h4>
-                        <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                          Deliver orders & earn
-                        </p>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Aadhaar Card & PAN Card Details (Required for Vendor / Delivery Partner) */}
-                {(role === 'vendor' || role === 'delivery') && (
-                  <div className="bg-amber-50/50 dark:bg-slate-900/80 border border-[#FFB800]/40 dark:border-amber-900/40 rounded-2xl p-2.5 space-y-2 text-left animate-fade-in">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-slate-900 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-[#FFB800]" /> Identity Verification Details
-                      </span>
-                      <span className="text-[8.5px] font-bold text-slate-400">Government ID Compliance</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {/* Aadhaar Card Number */}
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                          Aadhaar Card Number *
-                        </label>
-                        <div className="relative">
-                          <CreditCard className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            required
-                            maxLength={12}
-                            value={aadhaarNumber}
-                            onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, ''))}
-                            placeholder="12-digit Aadhaar number"
-                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800]"
-                          />
-                        </div>
-                      </div>
-
-                      {/* PAN Card Number */}
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                          PAN Card Number *
-                        </label>
-                        <div className="relative">
-                          <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            required
-                            maxLength={10}
-                            value={panNumber}
-                            onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-                            placeholder="10-character PAN (e.g. ABCDE1234F)"
-                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold uppercase text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Terms Agreement Checkbox */}
-                <div className="pt-0.5 text-left">
+                <div className="pt-1 text-left">
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -412,7 +309,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                 <button
                   type="submit"
                   disabled={isSubmitting || !agreeTerms}
-                  className="w-full py-3 px-6 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full py-3 px-6 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed mt-2"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -430,55 +327,6 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                   )}
                 </button>
               </form>
-
-              {/* Social Signup Divider */}
-              <div className="relative my-2.5 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200 dark:border-slate-800" />
-                </div>
-                <span className="relative bg-white dark:bg-[#030712] px-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                  or sign up with
-                </span>
-              </div>
-
-              {/* Social Buttons */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSignupSubmit()}
-                  className="py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.3 7.31 24 12 24z"/>
-                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.99 0 12s.46 3.84 1.26 5.42l4.02-3.15z"/>
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                  </svg>
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Google</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSignupSubmit()}
-                  className="py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <svg className="w-3.5 h-3.5 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Facebook</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSignupSubmit()}
-                  className="py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <svg className="w-3.5 h-3.5 shrink-0 fill-slate-900 dark:fill-white" viewBox="0 0 24 24">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.35c.67-.82 1.12-1.96.99-3.1-.97.04-2.14.65-2.84 1.46-.62.72-1.16 1.88-1.01 3 .01 0 .03.01.05.01 1.08 0 2.15-.56 2.81-1.37z"/>
-                  </svg>
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Apple</span>
-                </button>
-              </div>
             </>
           )}
 
@@ -486,7 +334,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
         {/* Footer Note */}
         <div className="text-center text-[10px] text-slate-400 dark:text-slate-500 font-semibold pt-1 shrink-0">
-          Forge India Connect • All rights reserved
+          Connect App Platform Onboarding • All rights reserved
         </div>
 
       </div>
@@ -509,7 +357,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
             <span className="text-xs font-black text-slate-900 tracking-wider mb-1 uppercase drop-shadow-xs">Let's Connect!</span>
             {/* Main white circle avatar containing Logo */}
             <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full bg-white p-2 flex items-center justify-center shadow-xl shadow-amber-950/20 border-4 border-white/90 transform hover:scale-105 transition-transform cursor-pointer">
-              <img src={logoImg} alt="Forge India Connect Logo" className="w-full h-full object-cover rounded-full" />
+              <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-cover rounded-full" />
             </div>
           </div>
         </div>
@@ -526,7 +374,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
             </h2>
             <div className="w-10 h-1 bg-slate-900 rounded-full mx-auto my-2" />
             <p className="text-xs font-semibold text-slate-800 leading-relaxed max-w-sm mx-auto">
-              Forge India Connect brings all services together to make your life easier, faster and smarter.
+              Connect App brings all services together to make your life easier, faster and smarter.
             </p>
           </div>
 
@@ -571,14 +419,23 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
         </div>
 
-        {/* City Silhouette Transition Graphic & Bottom Navy Blue Bar */}
+        {/* Smooth Wave Transition & Navy Blue Bottom Section */}
         <div className="w-full shrink-0 relative mt-auto">
           
-          {/* Skyline Curve Transition Graphic */}
-          <div className="w-full h-8 bg-gradient-to-t from-[#0A1E38] to-transparent pointer-events-none" />
+          {/* Smooth Curved SVG Wave Separator */}
+          <div className="w-full overflow-hidden leading-none z-10 block pointer-events-none">
+            <svg 
+              className="relative block w-full h-8 sm:h-10 text-[#0A1E38]" 
+              viewBox="0 0 1200 120" 
+              preserveAspectRatio="none"
+              fill="currentColor"
+            >
+              <path d="M0,0 C150,90 350,-40 500,50 C650,120 900,10 1200,40 L1200,120 L0,120 Z"></path>
+            </svg>
+          </div>
 
           {/* Bottom Deep Navy Blue Feature Bar */}
-          <div className="bg-[#0A1E38] text-white p-4 pt-3 border-t border-blue-900/30">
+          <div className="bg-[#0A1E38] text-white p-4 pt-2 border-t border-blue-900/30">
             <div className="grid grid-cols-4 gap-2 text-center max-w-lg mx-auto">
               
               {/* Feature 1 */}
