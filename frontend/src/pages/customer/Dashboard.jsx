@@ -444,16 +444,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setPreviewMembershipTier(membershipTier || 'Gold Elite');
   }, [membershipTier]);
 
-  const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
+  const [isHeroBannerHovered, setIsHeroBannerHovered] = useState(false);
 
   useEffect(() => {
+    if (isHeroBannerHovered) return;
     const total = (dbBanners?.length || 0) + 4;
     const timer = setInterval(() => {
       setActiveHeroSlide((prev) => (prev + 1) % total);
-    }, 6000);
+    }, 5000);
     return () => clearInterval(timer);
-  }, [dbBanners]);
+  }, [dbBanners, isHeroBannerHovered]);
 
   // Category-specific Filter States
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([]);
@@ -3475,12 +3476,56 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const currentSlideIdx = activeHeroSlide % totalSlides;
     const activeSlideObj = slides[currentSlideIdx];
 
-    const nextSlide = () => {
+    const nextSlide = (e) => {
+      if (e) e.stopPropagation();
       setActiveHeroSlide((prev) => (prev + 1) % totalSlides);
     };
 
-    const prevSlide = () => {
+    const prevSlide = (e) => {
+      if (e) e.stopPropagation();
       setActiveHeroSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+    };
+
+    const handleBannerAction = (slide) => {
+      if (!slide) return;
+      if (slide.isDb) {
+        const link = (slide.redirectLink || '').toLowerCase();
+        if (link.includes('food')) {
+          setActiveTab('Food');
+          setSelectedSubNavbarCategory('Food');
+        } else if (link.includes('service')) {
+          setActiveTab('Services');
+          setSelectedSubNavbarCategory('Services');
+        } else if (link.includes('stay')) {
+          setActiveTab('Stay');
+          setSelectedSubNavbarCategory('Stay');
+        } else if (link.includes('travel')) {
+          setActiveTab('Travel');
+          setSelectedSubNavbarCategory('Travel');
+        } else {
+          setActiveTab('Products');
+          setSelectedSubNavbarCategory('Products');
+        }
+        triggerNotification(`Exploring: ${slide.title}`);
+      } else {
+        if (slide.idx === 0) {
+          setActiveTab('Food');
+          setSelectedSubNavbarCategory('Food');
+          triggerNotification("Welcome to Domino's! Explore our pizza catalog.");
+        } else if (slide.idx === 1) {
+          setActiveTab('Stay');
+          setSelectedSubNavbarCategory('Stay');
+          triggerNotification("Explore partner hotels and luxury stays.");
+        } else if (slide.idx === 2) {
+          setActiveTab('Travel');
+          setSelectedSubNavbarCategory('Travel');
+          triggerNotification("Search and book flights at member rates.");
+        } else if (slide.idx === 3) {
+          setActiveTab('Services');
+          setSelectedSubNavbarCategory('Services');
+          triggerNotification("Book cleaning, salon, plumbing services.");
+        }
+      }
     };
 
     return (
@@ -3523,16 +3568,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
         </div>
 
-        {/* Right Side Graphics: Slider Carousel (Large size!) */}
-        <div className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] h-[340px] shrink-0 mt-6 md:mt-0 select-none">
-          {/* Card Frame Wrapper (larger max-width!) */}
-          <div className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent">
-            
+        {/* Right Side Graphics: Slider Carousel with Hover Pause & Prev/Next Overlay */}
+        <div 
+          onMouseEnter={() => setIsHeroBannerHovered(true)}
+          onMouseLeave={() => setIsHeroBannerHovered(false)}
+          className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] h-[340px] shrink-0 mt-6 md:mt-0 select-none group/slider"
+        >
+          {/* Previous Slide Button */}
+          <button 
+            type="button"
+            onClick={prevSlide}
+            className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+            aria-label="Previous Slide"
+          >
+            <ChevronLeft className="w-5 h-5 text-white" />
+          </button>
+
+          {/* Next Slide Button */}
+          <button 
+            type="button"
+            onClick={nextSlide}
+            className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+            aria-label="Next Slide"
+          >
+            <ChevronRight className="w-5 h-5 text-white" />
+          </button>
+
+          {/* Card Frame Wrapper */}
+          <div 
+            onClick={() => handleBannerAction(activeSlideObj)}
+            className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
+          >
             {/* Dynamic DB Banners */}
             {activeSlideObj?.isDb && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                {/* Clock indicator in top right */}
-                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
                   <Clock className="w-3 h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
@@ -3552,7 +3622,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <h3 className="text-base sm:text-lg font-black text-white leading-tight">
                         {activeSlideObj.title}
                       </h3>
-                      <p className="text-xs font-bold text-slate-350 mt-1.5">{activeSlideObj.description}</p>
+                      <p className="text-xs font-bold text-slate-300 mt-1.5">{activeSlideObj.description}</p>
                     </div>
                   </div>
 
@@ -3568,27 +3638,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <button 
-                    onClick={() => {
-                      const link = (activeSlideObj.redirectLink || '').toLowerCase();
-                      if (link.includes('food')) {
-                        setActiveTab('Food');
-                        setSelectedSubNavbarCategory('Food');
-                      } else if (link.includes('service')) {
-                        setActiveTab('Services');
-                        setSelectedSubNavbarCategory('Services');
-                      } else if (link.includes('stay')) {
-                        setActiveTab('Stay');
-                        setSelectedSubNavbarCategory('Stay');
-                      } else if (link.includes('travel')) {
-                        setActiveTab('Travel');
-                        setSelectedSubNavbarCategory('Travel');
-                      } else if (link.includes('product')) {
-                        setActiveTab('Products');
-                        setSelectedSubNavbarCategory('Products');
-                      }
-                      triggerNotification(`Exploring: ${activeSlideObj.title}`);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Explore Now</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -3599,7 +3653,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <img 
                     src={activeSlideObj.imageUrl} 
                     alt={activeSlideObj.title} 
-                    className="w-full h-full object-cover rounded-r-2xl" 
+                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
                   />
                 </div>
               </div>
@@ -3608,24 +3662,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 0: Domino's Pizza Offer */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 0 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
-                {/* Clock indicator in top right */}
-                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
                   <Clock className="w-3 h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
-                {/* Left Side Info content */}
                 <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1.5">
-                    {/* Logo block */}
                     <div className="flex items-center gap-1.5 font-bold tracking-tight text-white font-sans text-xs">
                       <div className="flex gap-[1px] rotate-[-20deg] scale-90 origin-center shrink-0">
-                        {/* Domino left: red with 2 dots */}
                         <div className="w-4 h-4 bg-red-600 rounded-sm relative flex items-center justify-center shadow-xs">
                           <div className="w-1 h-1 bg-white rounded-full absolute top-1 left-1" />
                           <div className="w-1 h-1 bg-white rounded-full absolute bottom-1 right-1" />
                         </div>
-                        {/* Domino right: blue with 1 dot */}
                         <div className="w-4 h-4 bg-blue-600 rounded-sm relative flex items-center justify-center shadow-xs">
                           <div className="w-1 h-1 bg-white rounded-full" />
                         </div>
@@ -3633,21 +3682,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Domino's</span>
                     </div>
 
-                    {/* Gold Tag */}
                     <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
                       ★ Exclusive Offer
                     </div>
 
-                    {/* Headline info */}
                     <div className="pt-2 leading-tight">
                       <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Flat <span className="text-[#FFC107]">50% OFF</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-355 mt-1.5">On all Pizza Orders</p>
+                      <p className="text-xs font-bold text-slate-300 mt-1.5">On all Pizza Orders</p>
                     </div>
                   </div>
 
-                  {/* Delivery indicators */}
                   <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
                     <div className="flex items-center gap-2">
                       <Truck className="w-4 h-4 text-[#FFC107] shrink-0" />
@@ -3659,26 +3705,23 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                   </div>
 
-                  {/* Action Button */}
                   <button 
-                    onClick={() => {
-                      setActiveTab('Food');
-                      setSelectedSubNavbarCategory('Food');
-                      triggerNotification("Welcome to Domino's! Explore our pizza catalog.");
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Order Now</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                {/* Right Side pizza picture */}
                 <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0e0e]">
                   <img 
                     src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" 
                     alt="Pizza Special Offer" 
-                    className="w-full h-full object-cover rounded-r-2xl" 
+                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
                   />
                 </div>
               </div>
@@ -3687,15 +3730,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 1: Radisson Blu Hotel Stay */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 1 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
-                {/* Clock indicator in top right */}
-                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
                   <Clock className="w-3 h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
                 <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1.5">
-                    {/* Logo block */}
                     <div className="flex items-center gap-1.5 font-bold text-white text-xs">
                       <BedDouble className="w-4.5 h-4.5 text-[#FFC107] shrink-0" />
                       <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Radisson Blu</span>
@@ -3709,11 +3750,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Extra <span className="text-[#FFC107]">30% OFF</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-350 mt-1.5">On Luxury Suites & Stays</p>
+                      <p className="text-xs font-bold text-slate-300 mt-1.5">On Luxury Suites & Stays</p>
                     </div>
                   </div>
 
-                  {/* Indicators */}
                   <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
@@ -3726,12 +3766,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <button 
-                    onClick={() => {
-                      setActiveTab('Stay');
-                      setSelectedSubNavbarCategory('Stay');
-                      triggerNotification("Explore partner hotels and luxury stays.");
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Book Now</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -3742,7 +3781,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <img 
                     src={hotelActual} 
                     alt="Radisson Suite Stay" 
-                    className="w-full h-full object-cover rounded-r-2xl" 
+                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
                   />
                 </div>
               </div>
@@ -3751,7 +3790,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 2: Air India Travels */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 2 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
-                {/* Left Side Info content */}
                 <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 font-bold text-white text-xs">
@@ -3767,7 +3805,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Save <span className="text-[#FFC107]">₹2,000</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-350 mt-1.5">On International Bookings</p>
+                      <p className="text-xs font-bold text-slate-300 mt-1.5">On International Bookings</p>
                     </div>
                   </div>
 
@@ -3783,12 +3821,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <button 
-                    onClick={() => {
-                      setActiveTab('Travel');
-                      setSelectedSubNavbarCategory('Travel');
-                      triggerNotification("Search and book flights at member rates.");
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Claim Now</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -3799,7 +3836,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <img 
                     src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80" 
                     alt="Flight Travel Offer" 
-                    className="w-full h-full object-cover rounded-r-2xl" 
+                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
                   />
                 </div>
               </div>
@@ -3808,8 +3845,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 3: Urban Connect Services */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 3 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                {/* Clock indicator in top right */}
-                <div className="absolute top-3 right-3 bg-red-655 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-red-500/20">
+                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
                   <Clock className="w-3 h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
@@ -3829,7 +3865,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <h3 className="text-base sm:text-lg font-black text-white leading-none">
                         Flat <span className="text-[#FFC107]">25% OFF</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-350 mt-1.5">On all Home Services</p>
+                      <p className="text-xs font-bold text-slate-300 mt-1.5">On all Home Services</p>
                     </div>
                   </div>
 
@@ -3845,12 +3881,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <button 
-                    onClick={() => {
-                      setActiveTab('Services');
-                      setSelectedSubNavbarCategory('Services');
-                      triggerNotification("Book cleaning, salon, plumbing services.");
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-102"
+                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Book Now</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -3861,7 +3896,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <img 
                     src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80" 
                     alt="Home Services Special" 
-                    className="w-full h-full object-cover rounded-r-2xl" 
+                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
                   />
                 </div>
               </div>
@@ -3888,6 +3923,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       </div>
     );
   };
+
 
   const renderTopCategoriesGrid = () => {
     const categories = [
