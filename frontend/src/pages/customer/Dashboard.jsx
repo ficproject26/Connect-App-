@@ -27,7 +27,7 @@ L.Icon.Default.mergeOptions({
 });
 
 import { 
-  Search, Star, SlidersHorizontal, ShoppingBag, Check, Plus, X, Zap,
+  Search, Star, SlidersHorizontal, ShoppingBag, Check, Minus, Plus, X, Zap,
   ChevronLeft, ChevronRight, Sparkles, Percent, Heart, ShieldCheck, 
   ShoppingCart, Truck, User, Info, RefreshCw, ChevronDown, ChevronUp,
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
