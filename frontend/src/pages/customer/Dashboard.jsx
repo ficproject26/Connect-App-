@@ -2358,7 +2358,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    const totalAmount = Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - 50);
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
     if (walletBalance < totalAmount) {
       triggerNotification("Insufficient wallet balance!");
       return;
@@ -7434,7 +7434,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
                 <h4 className="text-lg font-bold text-slate-800 dark:text-white">Order Placed Successfully!</h4>
                 <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-                  Your payment has been authorized, and items are now routing to shipping. Flat ₹50 discounts applied!
+                  Your payment has been authorized, and items are now routing to shipping.
                 </p>
               </div>
             ) : cart.length === 0 ? (
@@ -7510,14 +7510,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <span>Shipping Fee:</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">FREE</span>
                 </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>1st Order Coupon:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">-₹50</span>
-                </div>
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline">
                   <span className="text-sm font-black text-slate-900 dark:text-white">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
-                    ₹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0) - 50).toLocaleString()}
+                    ₹{cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
                   </span>
                 </div>
               </div>
