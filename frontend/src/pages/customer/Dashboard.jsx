@@ -121,8 +121,16 @@ const getModalTerms = (item) => {
     summaryLabel: ""
   };
   
-  const isStay = item.subNavbarCategory === 'Stay' || item.tag === 'Stay';
-  const isTravel = item.subNavbarCategory === 'Travel' || item.tag === 'Travel';
+  const catLower = (item.category || '').toLowerCase();
+  const subNavLower = (item.subNavbarCategory || '').toLowerCase();
+  const tagLower = (item.tag || '').toLowerCase();
+  const nameLower = (item.name || '').toLowerCase();
+
+  const isTravel = subNavLower === 'travel' || tagLower === 'travel' || 
+    catLower.includes('travel') || catLower.includes('bus') || catLower.includes('flight') || catLower.includes('tour') ||
+    nameLower.includes('travel') || nameLower.includes('bus');
+  
+  const isStay = !isTravel && (subNavLower === 'stay' || tagLower === 'stay' || catLower.includes('hotel') || catLower.includes('resort') || catLower.includes('stay'));
   
   if (isStay) {
     return {
@@ -138,11 +146,11 @@ const getModalTerms = (item) => {
   }
   if (isTravel) {
     return {
-      title: 'Select Package & Date',
+      title: 'Select Travel Ticket & Date',
       label: "Agent",
       category: item.category || "Travel Tour",
-      type1: "Private Tour",
-      type2: "Group Tour",
+      type1: "AC Sleeper",
+      type2: "Seater",
       feeLabel: "Travel Ticket Fee",
       durationText: "Departure details sent after booking approval",
       summaryLabel: "Travel Ticket"
@@ -7970,17 +7978,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <div className="w-full mt-6 space-y-2 border-t border-slate-100 dark:border-slate-850/40 pt-4 text-left">
-                    <div className="flex items-center justify-between text-xs font-medium">
-                      <span className="text-slate-405 dark:text-slate-400">{terms.type2}</span>
-                      <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-medium">
-                      <span className="text-slate-405 dark:text-slate-400">{terms.type1}</span>
-                      <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
-                    </div>
+                    {!isTravelItem && (
+                      <>
+                        <div className="flex items-center justify-between text-xs font-medium">
+                          <span className="text-slate-405 dark:text-slate-400">{terms.type2}</span>
+                          <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs font-medium">
+                          <span className="text-slate-405 dark:text-slate-400">{terms.type1}</span>
+                          <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-center justify-between text-xs font-medium border-t border-slate-50 dark:border-slate-850/30 pt-2.5">
                       <span className="text-slate-405 dark:text-slate-400">{terms.feeLabel}</span>
-                      <span className="text-slate-850 dark:text-white font-extrabold">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
+                      <div className="text-right">
+                        <span className="text-slate-850 dark:text-white font-extrabold">₹{totalPrice.toLocaleString()}</span>
+                        {isStayItem && diffNights > 1 && (
+                          <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -7998,7 +8015,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </span>
                     </div>
                     
-                    {/* Toggle Button Types */}
+                    {/* Toggle Button Types (Hidden for Travel) */}
+                    {!isTravelItem && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <button 
                         onClick={() => setSelectedModalType(terms.type2)}
@@ -8023,24 +8041,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <span className="truncate">{terms.type1}</span>
                       </button>
                     </div>
+                    )}
 
                     {/* Check-In & Check-Out Cards with Available / Not Available dates & times */}
                     <div className="space-y-4 mb-4 select-none">
-                      {/* Check-In Details Card */}
+                      {/* Check-In / Departure Details Card */}
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> Check-In Details
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : 'Check-In Details'}
                           </span>
                           <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-full">
                             {formatDateFromYYYYMMDD(stayCheckInDate)} • {checkInTime}
                           </span>
                         </div>
 
-                        {/* Check-In Date Strip (Available & Not Available) */}
+                        {/* Check-In / Departure Date Strip */}
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-In Date</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : 'Select Check-In Date'}</span>
                             <span className="text-[9px] font-bold text-slate-400">Scroll for dates →</span>
                           </div>
                           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
@@ -8085,9 +8104,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
 
-                        {/* Check-In Time Slots */}
+                        {/* Check-In / Departure Time Slots */}
                         <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-In Time Slot</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : 'Select Check-In Time Slot'}</span>
                           <div className="grid grid-cols-5 gap-2">
                             {checkInTimeSlots.map((slot) => {
                               const isSelected = checkInTime === slot.time;
@@ -8123,7 +8142,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      {/* Check-Out Details Card */}
+                      {/* Check-Out Details Card (Hidden for Travel) */}
+                      {!isTravelItem && (
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -8212,6 +8232,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
                       </div>
+                      )}
                     </div>
 
                     {/* Guest/Traveler Counter Block */}
@@ -8455,21 +8476,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                     {/* Check-In & Check-Out Cards with Available / Not Available view */}
                     <div className="space-y-4 mb-4 select-none">
-                      {/* Check-In Details Card */}
+                      {/* Check-In / Departure Details Card */}
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> Check-In Details
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : 'Check-In Details'}
                           </span>
                           <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-full">
                             {formatDateFromYYYYMMDD(stayCheckInDate)} • {checkInTime}
                           </span>
                         </div>
 
-                        {/* Check-In Date Strip (Available & Not Available) */}
+                        {/* Check-In / Departure Date Strip */}
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-In Date</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : 'Select Check-In Date'}</span>
                             <span className="text-[9px] font-bold text-slate-400">Scroll for dates →</span>
                           </div>
                           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
@@ -8514,9 +8535,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
 
-                        {/* Check-In Time Slots */}
+                        {/* Check-In / Departure Time Slots */}
                         <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-In Time Slot</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : 'Select Check-In Time Slot'}</span>
                           <div className="grid grid-cols-5 gap-2">
                             {checkInTimeSlots.map((slot) => {
                               const isSelected = checkInTime === slot.time;
@@ -8552,7 +8573,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      {/* Check-Out Details Card */}
+                      {/* Check-Out Details Card (Hidden for Travel) */}
+                      {!isTravelItem && (
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -8621,7 +8643,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     isSelected
                                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
                                       : !isAvail
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed line-through'
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
                                         : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
                                   }`}
                                 >
@@ -8641,6 +8663,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
                       </div>
+                      )}
                     </div>
 
                     {/* Guest/Traveler Counter Block */}
@@ -8720,15 +8743,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     )}
                   </div>
 
-                  {/* Stay Summary Badge */}
+                  {/* Stay / Travel Summary Badge */}
                   {(() => {
-                    const s = new Date(stayCheckInDate + 'T00:00:00');
-                    const e = new Date(stayCheckOutDate + 'T00:00:00');
-                    const diff = Math.max(1, Math.ceil((e - s) / 86400000));
+                    if (isTravelItem) {
+                      return (
+                        <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
+                          <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                          <span>Travel Summary: Departure Date: {formatDateFromYYYYMMDD(stayCheckInDate)} at {checkInTime}</span>
+                        </div>
+                      );
+                    }
                     return (
                       <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
                         <Clock className="w-4 h-4 text-blue-500 shrink-0" />
-                        <span>Stay Summary: {diff} {diff === 1 ? 'Night' : 'Nights'} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                        <span>Stay Summary: {diffNights} {diffNights === 1 ? 'Night' : 'Nights'} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
                       </div>
                     );
                   })()}
