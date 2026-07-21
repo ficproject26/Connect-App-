@@ -8420,8 +8420,31 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                   <button
                     onClick={() => {
-                      triggerNotification(`Appointment scheduled for Check-in: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime}) to Check-out: ${formatDateFromYYYYMMDD(stayCheckOutDate)} (${checkOutTime})!`);
+                      const itemToCart = {
+                        ...activeScheduleModalItem,
+                        price: totalPrice,
+                        basePrice: basePrice,
+                        nights: isStayItem ? diffNights : 1,
+                        bookingDate: formatDateFromYYYYMMDD(stayCheckInDate),
+                        checkInDate: stayCheckInDate,
+                        checkOutDate: isTravelItem ? undefined : stayCheckOutDate,
+                        checkInTime: checkInTime,
+                        checkOutTime: isTravelItem ? undefined : checkOutTime,
+                        bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
+                        bookingType: selectedModalType,
+                        adults: adultCount,
+                        children: childCount
+                      };
+                      if (!cart.find(item => item.id === itemToCart.id)) {
+                        addToCart(itemToCart);
+                      }
                       setActiveScheduleModalItem(null);
+                      setIsCartOpen(true);
+                      if (isTravelItem) {
+                        triggerNotification(`Travel Booking scheduled & added to Cart! Departure: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime})`);
+                      } else {
+                        triggerNotification(`Booking scheduled & added to Cart! Check-In: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime}), Check-Out: ${formatDateFromYYYYMMDD(stayCheckOutDate)} (${checkOutTime}) (${diffNights} nights)`);
+                      }
                     }}
                     className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1 border-none active:scale-[0.99]"
                   >
