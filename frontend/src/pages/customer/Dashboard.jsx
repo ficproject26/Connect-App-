@@ -1071,7 +1071,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             productId: selectedJob?.id,
             name: selectedJob?.title,
             price: 0,
-            quantity: item.quantity || 1
+            quantity: 1
           }],
           candidateEmail: applicantEmail,
           candidateResume: applicantResume,
