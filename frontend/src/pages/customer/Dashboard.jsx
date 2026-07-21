@@ -7924,6 +7924,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         const terms = getModalTerms(activeScheduleModalItem);
         const isStayItem = terms.summaryLabel === 'Hotel Stay';
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
+        const basePrice = activeScheduleModalItem.price || 0;
+        const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
+        const totalPrice = isStayItem ? basePrice * diffNights : basePrice;
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveScheduleModalItem(null)} className="absolute inset-0" />
@@ -8469,6 +8472,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         const terms = getModalTerms(activeBookNowModalItem);
         const isStayItem = terms.summaryLabel === 'Hotel Stay';
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
+        const basePrice = activeBookNowModalItem.price || 0;
+        const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
+        const totalPrice = isStayItem ? basePrice * diffNights : basePrice;
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveBookNowModalItem(null)} className="absolute inset-0" />
@@ -8865,7 +8871,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                       <div className="flex items-center justify-between">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
-                        <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeBookNowModalItem.price || 0).toLocaleString()}</span>
+                        <div className="text-right">
+                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
+                          {isStayItem && diffNights > 1 && (
+                            <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -8875,12 +8886,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       onClick={() => {
                         const itemToCart = {
                           ...activeBookNowModalItem,
+                          price: totalPrice,
+                          basePrice: basePrice,
+                          nights: isStayItem ? diffNights : 1,
                           bookingDate: formatDateFromYYYYMMDD(stayCheckInDate),
                           checkInDate: stayCheckInDate,
-                          checkOutDate: stayCheckOutDate,
+                          checkOutDate: isTravelItem ? undefined : stayCheckOutDate,
                           checkInTime: checkInTime,
-                          checkOutTime: checkOutTime,
-                          bookingTime: `${checkInTime} - ${checkOutTime}`,
+                          checkOutTime: isTravelItem ? undefined : checkOutTime,
+                          bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
                           bookingType: selectedModalType,
                           adults: adultCount,
                           children: childCount
@@ -8890,7 +8904,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         }
                         setActiveBookNowModalItem(null);
                         setIsCartOpen(true);
-                        triggerNotification(`Booking added to Cart! Check-In: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime}), Check-Out: ${formatDateFromYYYYMMDD(stayCheckOutDate)} (${checkOutTime})`);
+                        if (isTravelItem) {
+                          triggerNotification(`Travel Booking added to Cart! Departure: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime})`);
+                        } else {
+                          triggerNotification(`Booking added to Cart! Check-In: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime}), Check-Out: ${formatDateFromYYYYMMDD(stayCheckOutDate)} (${checkOutTime}) (${diffNights} nights)`);
+                        }
                       }}
                       className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none active:scale-[0.99]"
                     >
