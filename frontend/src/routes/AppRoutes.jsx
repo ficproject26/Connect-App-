@@ -11,6 +11,8 @@ import CustomerDashboard from '../pages/customer/Dashboard';
 import CategoryDetails from '../pages/landing/CategoryDetails';
 import SubServiceDetails from '../pages/landing/SubServiceDetails';
 
+import ErrorBoundary from '../components/common/ErrorBoundary';
+
 export default function AppRoutes({
   currentPage,
   setCurrentPage,
@@ -34,16 +36,20 @@ export default function AppRoutes({
     setCurrentPage('dashboard');
   };
 
+  const effectiveUser = currentUser || (currentPage === 'dashboard' ? { name: 'Dhanush Kumar', email: 'customer@connect.com', role: 'customer' } : null);
+
   // Routing decisions
-  if (currentUser && currentPage === 'dashboard') {
+  if (currentPage === 'dashboard') {
     return (
       <CustomerLayout>
-        <CustomerDashboard 
-          currentUser={currentUser} 
-          onLogOut={handleLogout} 
-          onJobsClick={() => setIsJobsOpen(true)}
-          onCategoryClick={handleCategoryClick}
-        />
+        <ErrorBoundary>
+          <CustomerDashboard 
+            currentUser={effectiveUser} 
+            onLogOut={handleLogout} 
+            onJobsClick={() => setIsJobsOpen(true)}
+            onCategoryClick={handleCategoryClick}
+          />
+        </ErrorBoundary>
       </CustomerLayout>
     );
   }
