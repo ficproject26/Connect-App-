@@ -476,10 +476,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     if (savedUser) {
       try {
         const u = JSON.parse(savedUser);
-        return u.name || currentUser?.name || 'Dhanush Kumar';
+        return u.name || currentUser?.name || 'Dhanush Tamilarasan';
       } catch (e) {}
     }
-    return currentUser?.name || 'Dhanush Kumar';
+    return currentUser?.name || 'Dhanush Tamilarasan';
   });
   const [profileEmail, setProfileEmail] = useState(() => {
     const savedUser = localStorage.getItem('connect_current_user');
@@ -512,7 +512,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return [
       {
         id: 'addr1',
-        name: 'Dhanush Kumar',
+        name: 'Dhanush Tamilarasan',
         phone: '9876543210',
         pincode: '560001',
         locality: 'Indiranagar',
@@ -576,6 +576,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [ratingValue, setRatingValue] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSuccess, setRatingSuccess] = useState(false);
+
+  // Derived filtered orders based on selected orders tab
+  const filteredCustomerOrders = useMemo(() => {
+    if (selectedOrdersTab === 'All Orders') return customerOrders;
+    return customerOrders.filter(o => {
+      const status = (o.status || '').toLowerCase();
+      const tab = selectedOrdersTab.toLowerCase();
+      if (tab === 'processing') return ['order received', 'preparing', 'ready for pickup'].includes(status);
+      if (tab === 'in transit') return ['out for delivery', 'delivery partner accepted', 'picked up', 'near customer', 'assigned to delivery partner'].includes(status);
+      if (tab === 'delivered') return ['delivered', 'completed'].includes(status);
+      if (tab === 'cancelled') return status === 'cancelled';
+      if (tab === 'returned') return status === 'returned';
+      return true;
+    });
+  }, [customerOrders, selectedOrdersTab]);
 
   // Map references
   const customerMapRef = useRef(null);
@@ -674,7 +689,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     try {
       const res = await apiFetch('/orders');
       if (res.status === 'success') {
-        const name = profileName || currentUser?.name || 'Dhanush Kumar';
+        const name = profileName || currentUser?.name || 'Dhanush Tamilarasan';
         const filtered = (res.data || []).filter(o => o.customer_name === name);
         setCustomerOrders(filtered);
       }
@@ -948,11 +963,27 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Job Application States
   const [appliedJobId, setAppliedJobId] = useState(null);
-  const [applicantName, setApplicantName] = useState(profileName || currentUser?.name || 'Dhanush Kumar');
+  const [applicantName, setApplicantName] = useState(profileName || currentUser?.name || 'Dhanush Tamilarasan');
   const [applicantEmail, setApplicantEmail] = useState(profileEmail || currentUser?.email || 'dhanush@connect.app');
   const [applicantResume, setApplicantResume] = useState('');
   const [isJobSubmitting, setIsJobSubmitting] = useState(false);
   const [jobSubmitSuccess, setJobSubmitSuccess] = useState(false);
+
+  // Additional job application & orders tab state variables
+  const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
+  const [applicantPhone, setApplicantPhone] = useState('+91 98765 43210');
+  const [applicantLocation, setApplicantLocation] = useState('Bangalore, Karnataka');
+  const [applicantLinkedIn, setApplicantLinkedIn] = useState('https://linkedin.com/in/username');
+  const [applicantPortfolio, setApplicantPortfolio] = useState('https://yourportfolio.com');
+  const [applicantExperience, setApplicantExperience] = useState('Fresher');
+  const [applicantCurrentCompany, setApplicantCurrentCompany] = useState('');
+  const [applicantNoticePeriod, setApplicantNoticePeriod] = useState('Immediate');
+  const [resumeFile, setResumeFile] = useState(() => {
+    const name = currentUser?.name || profileName || 'Dhanush Tamilarasan';
+    const formattedName = name.replace(/\s+/g, '_') + '_Resume.pdf';
+    return { name: formattedName, size: '450 KB' };
+  });
+  const [applicantCoverLetter, setApplicantCoverLetter] = useState('');
 
   // Sync applicant name/email when profile updates
   useEffect(() => {
@@ -2256,7 +2287,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         method: 'POST',
         body: JSON.stringify({
           vendor_id: vendorId,
-          customer_name: profileName || currentUser?.name || 'Dhanush Kumar',
+          customer_name: profileName || currentUser?.name || 'Dhanush Tamilarasan',
           customer_phone: profilePhone || '+91 98765 43210',
           customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
           customer_latitude: 12.9498,
@@ -7355,28 +7386,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-50 bg-white dark:bg-[#0b1329] w-screen h-screen flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-800 dark:text-slate-200">
             {/* Modal Left Navigation Sidebar */}
-            <div className="w-full md:w-64 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/60 p-5 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
+            <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
               <div className="space-y-6 text-left">
-                <div className="flex flex-col items-center text-center gap-3 pb-5 border-b border-slate-200 w-full">
-                  <div className="w-16 h-16 rounded-full bg-rose-100 text-[#f43397] flex items-center justify-center font-bold text-2xl border border-rose-200 shadow-xs shrink-0">
+                {/* Logo */}
+                <div className="flex flex-col items-center pb-2 border-b border-slate-100 dark:border-slate-800/60 w-full">
+                  <img 
+                    src={logoImg} 
+                    alt="Forge India Connect" 
+                    className="h-16 object-contain" 
+                  />
+                </div>
+
+                {/* Profile Details */}
+                <div className="flex flex-col items-center text-center gap-2 pb-5 border-b border-slate-100 dark:border-slate-800/60 w-full">
+                  <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0">
                     {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
                   </div>
-                  <div className="w-full overflow-hidden">
+                  <div className="w-full overflow-hidden mt-1">
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-all leading-tight">
                       {currentUser?.name || profileName}
                     </h4>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold tracking-wider block mt-1.5">Customer Member</span>
+                    <span className="inline-block px-3 py-0.5 text-[9px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 rounded-full mt-1.5 uppercase tracking-wider">
+                      Customer Member
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex flex-row md:flex-col gap-1.5 overflow-x-auto no-scrollbar">
+                {/* Navigation Menu */}
+                <div className="flex flex-row md:flex-col gap-1 overflow-x-auto no-scrollbar py-2">
                   {[
                     { id: 'orders', label: 'My Orders', icon: ShoppingBag },
                     { id: 'wallet', label: 'Connect Wallet', icon: Wallet },
                     { id: 'payments', label: 'Payments', icon: CreditCard },
                     { id: 'card', label: 'Membership Card', icon: Sparkles },
                     { id: 'edit', label: 'Edit Profile', icon: User },
-                    { id: 'settings', label: 'Settings', icon: Info }
+                    { id: 'settings', label: 'Settings', icon: Settings }
                   ].map(tab => {
                     const TabIcon = tab.icon;
                     const isActive = activeProfileTab === tab.id;
@@ -7384,13 +7428,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <button
                         key={tab.id}
                         onClick={() => setActiveProfileTab(tab.id)}
-                        className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all w-full text-left whitespace-nowrap cursor-pointer ${
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all w-full text-left whitespace-nowrap cursor-pointer border-none ${
                           isActive 
-                            ? 'bg-[#0b1e36] text-white shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 hover:text-slate-900 dark:hover:bg-slate-800/60 dark:hover:text-white'
+                            ? 'bg-[#FFB300] text-slate-950 shadow-sm font-extrabold'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white bg-transparent'
                         }`}
                       >
-                        <TabIcon className="w-4 h-4" />
+                        <TabIcon className={`w-4.5 h-4.5 ${isActive ? 'text-slate-950' : 'text-slate-500'}`} />
                         <span>{tab.label}</span>
                       </button>
                     );
@@ -7398,31 +7442,35 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
               </div>
 
+              {/* Logout Button */}
               <button 
                 onClick={() => {
                   setIsProfileModalOpen(false);
                   onLogOut();
                 }}
-                className="mt-6 w-full py-2.5 bg-rose-50 text-red-600 border border-rose-100 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="mt-6 w-full py-3 bg-white hover:bg-red-50 text-red-600 border border-red-200 dark:bg-slate-900 dark:hover:bg-red-950/20 dark:border-red-900/50 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
               >
-                <span>Logout Session</span>
+                <LogOut className="w-4 h-4 text-red-600" />
+                <span>Logout</span>
               </button>
             </div>
 
             {/* Modal Right Content Panel */}
-            <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-white dark:bg-[#0b1329] text-slate-800 dark:text-slate-200">
+            <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative">
               <button 
                 onClick={() => setIsProfileModalOpen(false)}
-                className="absolute right-5 top-5 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                className="absolute right-5 top-5 p-1 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer z-10"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="flex-grow">
                 {/* 1. MY ORDERS TAB */}
+                {/* 1. MY ORDERS TAB */}
                 {activeProfileTab === 'orders' && (
-                  <div className="space-y-4 animate-fade-in text-left">
+                  <div className="space-y-6 animate-fade-in text-left flex flex-col h-full justify-between">
                     {trackingOrder ? (
+                      /* Live Tracking UI */
                       <div className="space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
                           <button
@@ -7443,14 +7491,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-800 rounded-2xl space-y-2 text-xs text-slate-800 dark:text-slate-200">
-                            <h4 className="font-bold">Order #{trackingOrder.order_number}</h4>
+                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
+                            <h4 className="font-bold text-slate-900 dark:text-white">Order #{trackingOrder.order_number}</h4>
                             <p className="text-slate-500 dark:text-slate-400">Address: <strong>{trackingOrder.customer_address}</strong></p>
                             <p className="text-slate-500 dark:text-slate-400">Items: <strong>{trackingOrder.product_details}</strong></p>
                             <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">₹{trackingOrder.amount}</strong></p>
                           </div>
                           
-                          <div className="bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1">
+                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1 shadow-xs">
                             <span className="text-[10px] uppercase font-bold text-slate-500">Estimated Arrival</span>
                             {eta ? (
                               <span className="text-xl font-black text-amber-500">{eta} mins remaining</span>
@@ -7458,24 +7506,23 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <span className="text-xs font-bold text-slate-400">Calculating ETA...</span>
                             )}
                             {distanceRemaining !== null && (
-                              <span className="text-[10px] text-slate-500">{distanceRemaining.toFixed(2)} km away</span>
+                              <span className="text-[10px] text-slate-500 mt-0.5">{distanceRemaining.toFixed(2)} km away</span>
                             )}
                           </div>
                         </div>
 
                         {/* Live Leaflet Map container */}
-                        <div className="bg-slate-50 dark:bg-slate-950/40 p-2 border border-slate-150 dark:border-slate-800 rounded-2xl">
+                        <div className="bg-white dark:bg-slate-900 p-2 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xs">
                           <div id="customer-tracking-map" className="h-[240px] rounded-xl bg-slate-950 relative overflow-hidden flex items-center justify-center border border-slate-900">
                             <span className="text-xs text-slate-500 animate-pulse font-bold">Initializing live GPS map...</span>
                           </div>
                         </div>
 
                         {/* Animated Timeline */}
-                        <div className="bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-800 rounded-2xl text-center">
+                        <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
                           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 text-left">Delivery Progress Timeline</h4>
                           <div className="flex justify-between items-center relative w-full px-2">
-                            {/* Connector Line */}
-                            <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-800 -z-10" />
+                            <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 -z-10" />
                             
                             {['Order Placed', 'Preparing', 'Ready For Pickup', 'Delivery Partner Accepted', 'Out For Delivery', 'Delivered'].map((step, idx) => {
                               const statusMap = {
@@ -7496,14 +7543,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               
                               return (
                                 <div key={idx} className="flex flex-col items-center gap-1.5 z-10">
-                                  <div className={`w-6.5 h-6.5 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
                                     isCompleted 
                                       ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
                                       : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
                                   }`}>
                                     {isCompleted ? '✓' : idx + 1}
                                   </div>
-                                  <span className={`text-[8px] font-bold uppercase transition-colors duration-350 ${
+                                  <span className={`text-[8px] font-bold uppercase transition-colors ${
                                     isActive ? 'text-[#f43397]' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
                                   }`}>
                                     {step.replace('Delivery Partner ', '')}
@@ -7514,24 +7561,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
 
-                        {/* Delivery Partner Details / Action Panel */}
+                        {/* Delivery Partner Details */}
                         {trackingPartner ? (
-                          <div className="bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-800 rounded-2xl flex items-center justify-between">
+                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between shadow-xs">
                             <div className="flex items-center gap-3">
                               <img src={trackingPartner.photo} className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-800 bg-white" />
                               <div className="text-left">
-                                <h4 className="text-xs font-bold text-slate-850 dark:text-white leading-tight">{trackingPartner.name}</h4>
+                                <h4 className="text-xs font-bold text-slate-800 dark:text-white leading-tight">{trackingPartner.name}</h4>
                                 <span className="text-[10px] text-slate-500 block mt-0.5">{trackingPartner.vehicle_type} • {trackingPartner.vehicle_number}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <a href={`tel:${trackingPartner.mobile}`} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-900 text-slate-500 dark:text-slate-450 rounded-full border border-slate-250 dark:border-slate-800 transition-colors flex items-center justify-center">
+                              <a href={`tel:${trackingPartner.mobile}`} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 rounded-full border border-slate-200 dark:border-slate-800 transition-colors flex items-center justify-center">
                                 <Phone className="w-4 h-4" />
                               </a>
-                              
-                              {/* OTP Verification code display */}
                               {!['Delivered', 'Completed', 'Cancelled'].includes(trackingOrder.status) && (
-                                <div className="bg-amber-400/10 border border-amber-400/30 text-amber-600 dark:text-amber-450 rounded-xl px-3.5 py-1 text-center shrink-0 flex flex-col justify-center">
+                                <div className="bg-amber-400/10 border border-amber-400/30 text-amber-600 dark:text-amber-400 rounded-xl px-3.5 py-1 text-center shrink-0 flex flex-col justify-center">
                                   <span className="text-[8px] uppercase font-bold tracking-wider leading-none">Share Delivery OTP</span>
                                   <span className="text-xs font-black tracking-widest mt-0.5">{trackingOrder.id.replace(/[^\d]/g, '').slice(-4) || '1234'}</span>
                                 </div>
@@ -7544,11 +7589,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         )}
 
-                        {/* Rating Sub-panel when order status is Delivered */}
+                        {/* Rating Sub-panel */}
                         {['Delivered', 'Completed'].includes(trackingOrder.status) && (
-                          <div className="bg-slate-50 dark:bg-slate-950/40 p-4 border border-slate-150 dark:border-slate-800 rounded-2xl space-y-3 mt-4 text-center">
+                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-3 mt-4 text-center shadow-xs">
                             <h4 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider text-left">Rate your Delivery Experience</h4>
-                            
                             {ratingSuccess ? (
                               <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-500 font-bold text-xs flex items-center justify-center gap-1.5 animate-scale-up">
                                 <CheckCircle2 className="w-4 h-4" />
@@ -7558,31 +7602,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <form onSubmit={submitRating} className="space-y-3 text-left">
                                 <div className="flex items-center gap-1.5">
                                   {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                      key={star}
-                                      type="button"
-                                      onClick={() => setRatingValue(star)}
-                                      className="p-1 cursor-pointer transition-transform hover:scale-110 border-none bg-transparent"
-                                    >
-                                      <Star className={`w-5 h-5 ${star <= ratingValue ? 'fill-amber-400 text-amber-400' : 'text-slate-350'}`} />
+                                    <button key={star} type="button" onClick={() => setRatingValue(star)} className="p-1 cursor-pointer transition-transform hover:scale-110 border-none bg-transparent">
+                                      <Star className={`w-5 h-5 ${star <= ratingValue ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
                                     </button>
                                   ))}
                                   <span className="text-[10px] font-bold text-slate-500 ml-2">({ratingValue} Stars)</span>
                                 </div>
-                                
-                                <textarea
-                                  rows={2}
-                                  value={ratingComment}
-                                  onChange={(e) => setRatingComment(e.target.value)}
-                                  placeholder="Add comments about delivery speed, politeness, safety..."
-                                  className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-xs text-white placeholder-slate-700 resize-none focus:outline-none focus:border-amber-400"
-                                />
-                                
-                                <button
-                                  type="submit"
-                                  onClick={() => setRatingOrder(trackingOrder)}
-                                  className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow animate-pulse"
-                                >
+                                <textarea rows={2} value={ratingComment} onChange={(e) => setRatingComment(e.target.value)} placeholder="Add comments about delivery speed, politeness, safety..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 resize-none focus:outline-none focus:border-amber-400" />
+                                <button type="submit" onClick={() => setRatingOrder(trackingOrder)} className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow">
                                   Submit Delivery Review
                                 </button>
                               </form>
@@ -7591,69 +7618,189 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         )}
                       </div>
                     ) : (
-                      <>
+                      /* Main Orders Tab Layout */
+                      <div className="space-y-6 flex-grow flex flex-col justify-between">
                         <div>
-                          <h3 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight">Recent Orders</h3>
-                          <p className="text-[11px] text-slate-400 mt-0.5">Track your shopping orders and deliveries</p>
+                          {/* Header with notification bell & support */}
+                          <div className="flex justify-between items-start mb-6">
+                            <div>
+                              <h3 className="text-xl font-bold text-slate-900 dark:text-white font-sans tracking-tight">Recent Orders</h3>
+                              <p className="text-xs text-slate-500 mt-1">Track your shopping orders and deliveries</p>
+                            </div>
+                            <div className="flex items-center gap-4 text-slate-700 dark:text-slate-300">
+                              <button className="relative p-2 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer border-none bg-transparent">
+                                <Bell className="w-5 h-5" />
+                                <span className="absolute top-0 right-0 w-4 h-4 bg-[#FFC107] text-slate-950 text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">3</span>
+                              </button>
+                              <button className="flex items-center gap-1.5 text-xs font-bold hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent">
+                                <Phone className="w-4 h-4" />
+                                <span>Help & Support</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Stats Grid cards */}
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            {[
+                              { label: 'Total Orders', value: customerOrders.length > 0 ? String(customerOrders.length).padStart(2, '0') : '12', sub: 'All Time', icon: ShoppingBag, iconColor: 'text-indigo-600', bgColor: 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900/40' },
+                              { label: 'Delivered Orders', value: customerOrders.filter(o => ['Delivered','Completed'].includes(o.status)).length > 0 ? String(customerOrders.filter(o => ['Delivered','Completed'].includes(o.status)).length).padStart(2, '0') : '08', sub: 'This Year', icon: CheckCircle2, iconColor: 'text-emerald-600', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/40' },
+                              { label: 'In Transit', value: customerOrders.filter(o => ['Out For Delivery','Delivery Partner Accepted','Picked Up'].includes(o.status)).length > 0 ? String(customerOrders.filter(o => ['Out For Delivery','Delivery Partner Accepted','Picked Up'].includes(o.status)).length).padStart(2, '0') : '02', sub: 'Right Now', icon: Clock, iconColor: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40' },
+                              { label: 'Cancelled', value: customerOrders.filter(o => o.status === 'Cancelled').length > 0 ? String(customerOrders.filter(o => o.status === 'Cancelled').length).padStart(2, '0') : '02', sub: 'This Year', icon: X, iconColor: 'text-rose-600', bgColor: 'bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/40' }
+                            ].map((stat, i) => {
+                              const StatIcon = stat.icon;
+                              return (
+                                <div key={i} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 rounded-2xl flex items-center gap-4 shadow-xs text-left">
+                                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 ${stat.bgColor}`}>
+                                    <StatIcon className={`w-5 h-5 ${stat.iconColor}`} />
+                                  </div>
+                                  <div className="text-left leading-none">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{stat.label}</span>
+                                    <span className="text-xl font-black text-slate-900 dark:text-white block mt-1.5">{stat.value}</span>
+                                    <span className="text-[9px] font-semibold text-slate-400 mt-1 block">{stat.sub}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Filter Options tab bar */}
+                          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-2 shadow-xs mb-6">
+                            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                              {['All Orders', 'Processing', 'In Transit', 'Delivered', 'Cancelled', 'Returned'].map((tabName) => {
+                                const isSelected = selectedOrdersTab === tabName;
+                                return (
+                                  <button
+                                    key={tabName}
+                                    onClick={() => setSelectedOrdersTab(tabName)}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer border-none ${
+                                      isSelected
+                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 font-extrabold'
+                                        : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white bg-transparent'
+                                    }`}
+                                  >
+                                    {tabName}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <select className="bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none">
+                                <option>Last 30 Days</option>
+                                <option>Last 6 Months</option>
+                                <option>All Time</option>
+                              </select>
+                              <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors">
+                                <SlidersHorizontal className="w-3.5 h-3.5" />
+                                <span>Filter</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Orders List or Empty State */}
+                          <div className="flex-grow">
+                            {filteredCustomerOrders.length === 0 ? (
+                              <div className="border border-dashed border-blue-200/80 dark:border-slate-700 rounded-3xl p-8 md:p-12 text-center bg-white dark:bg-slate-900 shadow-xs flex flex-col items-center">
+                                <div className="w-48 h-48 mb-4 relative">
+                                  <svg className="w-full h-full" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="100" cy="100" r="80" fill="#EEF2F6" opacity="0.3" />
+                                    <path d="M40 100C40 70 60 50 90 50C120 50 140 70 140 100" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="4 4" />
+                                    <circle cx="150" cy="80" r="6" fill="#A5B4FC" opacity="0.6" />
+                                    <path d="M165 95L172 88" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" />
+                                    <path d="M35 120L28 113" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" />
+                                    <rect x="105" y="70" width="45" height="60" rx="6" fill="#FFFFFF" stroke="#818CF8" strokeWidth="3" />
+                                    <rect x="115" y="65" width="25" height="8" rx="2" fill="#A5B4FC" />
+                                    <line x1="115" y1="85" x2="140" y2="85" stroke="#E2E8F0" strokeWidth="3" strokeLinecap="round" />
+                                    <line x1="115" y1="95" x2="140" y2="95" stroke="#E2E8F0" strokeWidth="3" strokeLinecap="round" />
+                                    <line x1="115" y1="105" x2="130" y2="105" stroke="#E2E8F0" strokeWidth="3" strokeLinecap="round" />
+                                    <path d="M60 90H95C98 90 100 92 100 95V140C100 143 98 145 95 145H60C57 145 55 143 55 140V95C55 92 57 90 60 90Z" fill="#4F46E5" />
+                                    <path d="M66 90V80C66 73 71 68 78 68C85 68 90 73 90 80V90" stroke="#818CF8" strokeWidth="3" strokeLinecap="round" />
+                                    <rect x="75" y="112" width="30" height="30" rx="4" fill="#FFB300" />
+                                    <path d="M82 112V107C82 104 84 102 87 102C90 102 92 104 92 107V112" stroke="#D4AF37" strokeWidth="2" />
+                                  </svg>
+                                </div>
+                                <h4 className="text-lg font-bold text-slate-800 dark:text-white">No Orders Yet!</h4>
+                                <p className="text-xs text-slate-500 mt-2 max-w-sm leading-relaxed">
+                                  Looks like you haven't placed any orders yet.<br />Explore deals and place your first order now.
+                                </p>
+                                <button 
+                                  onClick={() => setIsProfileModalOpen(false)}
+                                  className="mt-6 px-6 py-3 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-1.5 border-none"
+                                >
+                                  <ShoppingCart className="w-4 h-4 text-slate-950" />
+                                  <span>Explore Deals</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                                {filteredCustomerOrders.map(ord => (
+                                  <div key={ord.id} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-xl bg-amber-400/15 border border-amber-400/20 flex items-center justify-center text-amber-500 text-xs">
+                                        <ShoppingBag className="w-5 h-5" />
+                                      </div>
+                                      <div className="text-left">
+                                        <h4 className="text-xs font-bold text-slate-800 dark:text-white line-clamp-1">{ord.product_details}</h4>
+                                        <span className="text-[9px] text-slate-400 block mt-0.5">Order No: #{ord.order_number}</span>
+                                        <span className="text-[9px] text-slate-400 block mt-0.5">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-right flex flex-col items-end gap-1.5 shrink-0">
+                                      <span className="text-xs font-extrabold text-slate-800 dark:text-white">₹{ord.amount}</span>
+                                      <div className="flex gap-2 items-center">
+                                        {!['Delivered', 'Cancelled'].includes(ord.status) && (
+                                          <button onClick={() => setTrackingOrder(ord)} className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer">
+                                            Track Live
+                                          </button>
+                                        )}
+                                        {['Delivered'].includes(ord.status) && (
+                                          <button onClick={() => setTrackingOrder(ord)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer">
+                                            Rate Partner ★
+                                          </button>
+                                        )}
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                                          ord.status === 'Delivered'
+                                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                            : ord.status === 'Cancelled'
+                                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                            : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                        }`}>
+                                          {ord.status.replace('Delivery Partner ', '')}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                          {customerOrders.length === 0 ? (
-                            <div className="py-12 text-center text-slate-400 text-xs border border-slate-150 dark:border-slate-800/60 rounded-xl bg-slate-50/50 dark:bg-slate-950/20">
-                              You haven't placed any orders yet. Place some deals to start tracking!
-                            </div>
-                          ) : (
-                            customerOrders.map(ord => (
-                              <div key={ord.id} className="border border-slate-200 dark:border-slate-800/60 rounded-xl p-4 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 text-slate-800 dark:text-white">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-amber-400/15 border border-amber-400/20 flex items-center justify-center text-amber-500 text-xs">
-                                    
-                                  </div>
-                                  <div className="text-left">
-                                    <h4 className="text-xs font-bold text-slate-800 dark:text-white line-clamp-1">{ord.product_details}</h4>
-                                    <span className="text-[9px] text-slate-400 block mt-0.5">Order No: #{ord.order_number}</span>
-                                    <span className="text-[9px] text-slate-400 block mt-0.5">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</span>
-                                  </div>
+                        {/* Bottom trust factors row */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xs mt-6 text-left shrink-0">
+                          {[
+                            { title: 'Secure Payments', desc: '100% safe and secured payments', icon: ShieldCheck, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40' },
+                            { title: '24/7 Support', desc: 'We are here to help you anytime', icon: Phone, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' },
+                            { title: 'Best Offers', desc: 'Exclusive deals & amazing discounts', icon: Award, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40' },
+                            { title: 'Fast Delivery', desc: 'Quick and reliable delivery service', icon: Truck, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/40' }
+                          ].map((item, i) => {
+                            const IconComp = item.icon;
+                            return (
+                              <div key={i} className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
+                                  <IconComp className="w-4 h-4" />
                                 </div>
-                                <div className="text-right flex flex-col items-end gap-1.5 shrink-0">
-                                  <span className="text-xs font-extrabold text-slate-850 dark:text-white">₹{ord.amount}</span>
-                                  <div className="flex gap-2 items-center">
-                                    {!['Delivered', 'Cancelled'].includes(ord.status) && (
-                                      <button
-                                        onClick={() => setTrackingOrder(ord)}
-                                        className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
-                                      >
-                                        Track Live
-                                      </button>
-                                    )}
-                                    {['Delivered'].includes(ord.status) && (
-                                      <button
-                                        onClick={() => {
-                                          setTrackingOrder(ord);
-                                        }}
-                                        className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer"
-                                      >
-                                        Rate Partner ★
-                                      </button>
-                                    )}
-                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
-                                      ord.status === 'Delivered'
-                                        ? 'bg-emerald-500/10 text-emerald-450 border-emerald-500/20'
-                                        : ord.status === 'Cancelled'
-                                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                                        : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                    }`}>
-                                      {ord.status.replace('Delivery Partner ', '')}
-                                    </span>
-                                  </div>
+                                <div className="leading-tight text-left">
+                                  <h5 className="text-[11px] font-bold text-slate-800 dark:text-white">{item.title}</h5>
+                                  <p className="text-[9px] text-slate-400 mt-0.5 font-medium">{item.desc}</p>
                                 </div>
                               </div>
-                            ))
-                          )}
+                            );
+                          })}
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
+
                 )}
 
 

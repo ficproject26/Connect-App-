@@ -36,7 +36,7 @@ export default function AppRoutes({
     setCurrentPage('dashboard');
   };
 
-  const effectiveUser = currentUser || (currentPage === 'dashboard' ? { name: 'Dhanush Kumar', email: 'customer@connect.com', role: 'customer' } : null);
+  const effectiveUser = currentUser || (currentPage === 'dashboard' ? { name: 'Dhanush Tamilarasan', email: 'customer@connect.com', role: 'customer' } : null);
 
   // Routing decisions
   if (currentPage === 'dashboard') {
