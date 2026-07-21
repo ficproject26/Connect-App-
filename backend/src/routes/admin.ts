@@ -1,6 +1,52 @@
 import { Router, Request, Response } from 'express';
+import { db } from '../db';
 
 const router = Router();
+
+// GET: /api/admin/categories
+router.get('/categories', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const categories = await mongoDb.collection('categories').find().sort({ name: 1 }).toArray();
+      return res.json(categories);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching categories in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// GET: /api/admin/public/banners
+router.get('/public/banners', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const banners = await mongoDb.collection('banners').find({ isActive: true }).toArray();
+      return res.json(banners);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching public banners in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// GET: /api/admin/banners
+router.get('/banners', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const banners = await mongoDb.collection('banners').find().toArray();
+      return res.json(banners);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching banners in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
 
 // Mock Data
 const dashboardStats = {

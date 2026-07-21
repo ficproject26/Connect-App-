@@ -298,6 +298,10 @@ class DatabaseManager {
     return this.isFallback ? 'Mock JSON Fallback' : 'MongoDB';
   }
 
+  public getDb(): Db | null {
+    return this.mongoDb;
+  }
+
   // Expose raw query (deprecated for SQL, throw error)
   public async query(text: string, params?: any[]) {
     throw new Error('Database is running MongoDB / Mock mode. SQL Raw query method is no longer supported.');
