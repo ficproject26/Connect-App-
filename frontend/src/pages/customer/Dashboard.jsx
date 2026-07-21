@@ -444,6 +444,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setPreviewMembershipTier(membershipTier || 'Gold Elite');
   }, [membershipTier]);
 
+  const [dbBanners, setDbBanners] = useState([]);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [isHeroBannerHovered, setIsHeroBannerHovered] = useState(false);
 
@@ -671,7 +672,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [activeTravelCategory, setActiveTravelCategory] = useState('ALL');
 
   const [dbCategories, setDbCategories] = useState([]);
-  const [dbBanners, setDbBanners] = useState([]);
 
   useEffect(() => {
     const fetchDbCategories = async () => {
