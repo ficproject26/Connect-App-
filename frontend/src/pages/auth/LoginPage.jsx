@@ -56,7 +56,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
             />
             <div>
               <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none uppercase">
-                Forge India <span className="text-[#FFB800]">Connect</span>
+                Connect <span className="text-[#FFB800]">App</span>
               </h1>
               <p className="text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5">All Services, One Platform</p>
             </div>
@@ -95,34 +95,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                 </p>
               </div>
 
-              {/* Role Switcher Pill Bar */}
-              <div className="bg-slate-100/80 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-800 grid grid-cols-2 gap-1 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('customer')}
-                  className={`py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    role === 'customer'
-                      ? 'bg-white dark:bg-slate-800 text-[#003B95] dark:text-[#FFB800] shadow-sm border border-[#FFB800]/50'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>User Login</span>
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => setRole('vendor')}
-                  className={`py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    role === 'vendor'
-                      ? 'bg-white dark:bg-slate-800 text-[#003B95] dark:text-[#FFB800] shadow-sm border border-[#FFB800]/50'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  <Store className="w-3.5 h-3.5" />
-                  <span>Vendor Login</span>
-                </button>
-              </div>
 
               {/* Main Login Form */}
               <form onSubmit={handleLoginSubmit} className="space-y-3 sm:space-y-3.5">
@@ -214,57 +187,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                 </button>
               </form>
 
-              {/* Social Login Divider */}
-              <div className="relative my-4 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200 dark:border-slate-800" />
-                </div>
-                <span className="relative bg-white dark:bg-[#030712] px-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                  or continue with
-                </span>
-              </div>
 
-              {/* Social Buttons (Google, Facebook, Apple) */}
-              <div className="grid grid-cols-3 gap-2">
-                {/* Google */}
-                <button
-                  type="button"
-                  onClick={() => handleLoginSubmit()}
-                  className="py-2 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.3 7.31 24 12 24z"/>
-                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.99 0 12s.46 3.84 1.26 5.42l4.02-3.15z"/>
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                  </svg>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Google</span>
-                </button>
-
-                {/* Facebook */}
-                <button
-                  type="button"
-                  onClick={() => handleLoginSubmit()}
-                  className="py-2 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Facebook</span>
-                </button>
-
-                {/* Apple */}
-                <button
-                  type="button"
-                  onClick={() => handleLoginSubmit()}
-                  className="py-2 px-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <svg className="w-4 h-4 shrink-0 fill-slate-900 dark:fill-white" viewBox="0 0 24 24">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.35c.67-.82 1.12-1.96.99-3.1-.97.04-2.14.65-2.84 1.46-.62.72-1.16 1.88-1.01 3 .01 0 .03.01.05.01 1.08 0 2.15-.56 2.81-1.37z"/>
-                  </svg>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Apple</span>
-                </button>
-              </div>
             </>
           )}
 
@@ -309,7 +232,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
             </h2>
             <div className="w-10 h-1 bg-slate-900 rounded-full mx-auto my-2.5" />
             <p className="text-xs font-semibold text-slate-800 leading-relaxed max-w-sm mx-auto">
-              Forge India Connect brings all services together to make your life easier, faster and smarter.
+              Connect App brings all services together to make your life easier, faster and smarter.
             </p>
           </div>
 
