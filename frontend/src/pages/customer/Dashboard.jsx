@@ -7450,22 +7450,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
 
           {cart.length > 0 && !orderSuccess && (
-            <div className="border-t border-slate-200 pt-6">
+            <div className="border-t border-slate-200 dark:border-slate-800/80 pt-6">
               <div className="space-y-2.5 mb-4 text-xs font-semibold">
-                <div className="flex justify-between text-slate-500">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Subtotal:</span>
-                  <span className="font-bold text-slate-800">₹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">₹{cart.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-slate-500">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Shipping Fee:</span>
-                  <span className="text-emerald-600 font-bold">FREE</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">FREE</span>
                 </div>
-                <div className="flex justify-between text-slate-500">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>1st Order Coupon:</span>
-                  <span className="text-emerald-600 font-bold">-₹50</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">-₹50</span>
                 </div>
-                <div className="border-t border-slate-100 pt-2.5 flex justify-between items-baseline text-slate-800">
-                  <span className="text-sm font-bold">Estimated Total:</span>
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline">
+                  <span className="text-sm font-black text-slate-900 dark:text-white">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
                     ₹{Math.max(0, cart.reduce((sum, item) => sum + (item.price || 0), 0) - 50).toLocaleString()}
                   </span>
@@ -7474,7 +7474,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               
               <button 
                 onClick={handleCheckout}
-                className="w-full py-3 bg-[#0b1e36] hover:bg-[#13325a] text-white font-bold text-xs uppercase tracking-widest rounded shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 animate-pulse"
+                className="w-full py-3 bg-[#0b1e36] hover:bg-[#13325a] dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-[#0b1e36] font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 animate-pulse"
               >
                 <span>{getCartCheckoutButtonText()}</span>
               </button>
