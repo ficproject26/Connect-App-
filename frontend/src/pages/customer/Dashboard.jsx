@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
@@ -7,6 +7,15 @@ import { socketService } from '../../services/socketService';
 import useCustomer from '../../hooks/useCustomer';
 import WalletPage from './Wallet';
 import Offers from './Offers';
+
+const LiveClock = React.memo(({ prefix = '' }) => {
+  const [time, setTime] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return <span>{prefix}{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>;
+});
 
 // Fix leaflet marker default icon issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -202,19 +211,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [selectedBusClass, setSelectedBusClass] = useState('');
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [customTimeInput, setCustomTimeInput] = useState('');
   const [checkInTime, setCheckInTime] = useState('12:00 PM');
   const [checkOutTime, setCheckOutTime] = useState('11:00 AM');
   const [adultCount, setAdultCount] = useState(1);
   const [childCount, setChildCount] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
@@ -2299,8 +2300,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
   };
 
-  // Filtered & Sorted products list
-  let filteredProducts = products.filter(product => {
+  // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)
+  const filteredProducts = useMemo(() => {
     const normalizeCity = (city) => {
       if (!city) return 'bangalore';
       const c = city.toLowerCase();
@@ -2308,68 +2309,152 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       return c;
     };
 
-    const matchesLocation = !selectedLocation?.city || 
-      normalizeCity(product.vendorCity) === normalizeCity(selectedLocation.city);
+    let result = products.filter(product => {
+      const matchesLocation = !selectedLocation?.city || 
+        normalizeCity(product.vendorCity) === normalizeCity(selectedLocation.city);
 
-    const matchesSearch = (searchQuery === '' || 
-      (product.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
-      (product.category || '').toLowerCase().includes((searchQuery || '').toLowerCase())) &&
-      (searchCategory === 'All' || product.subNavbarCategory === searchCategory);
+      const matchesSearch = (searchQuery === '' || 
+        (product.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
+        (product.category || '').toLowerCase().includes((searchQuery || '').toLowerCase())) &&
+        (searchCategory === 'All' || product.subNavbarCategory === searchCategory);
 
-    const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
-      product.subNavbarCategory === selectedSubNavbarCategory;
+      const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
+        product.subNavbarCategory === selectedSubNavbarCategory;
 
-    // Services Filter Checks
-    if (activeTab === 'Services') {
-      const matchesServiceType = selectedServiceTypes.length === 0 ||
-        selectedServiceTypes.includes(product.category);
+      // Services Filter Checks
+      if (activeTab === 'Services') {
+        const matchesServiceType = selectedServiceTypes.length === 0 ||
+          selectedServiceTypes.includes(product.category);
 
-      const matchesLocType = selectedLocTypes.length === 0 ||
-        selectedLocTypes.some(loc => (product.city || product.vendorCity || product.locationType)?.toLowerCase() === loc.toLowerCase());
+        const matchesLocType = selectedLocTypes.length === 0 ||
+          selectedLocTypes.some(loc => (product.city || product.vendorCity || product.locationType)?.toLowerCase() === loc.toLowerCase());
 
-      const matchesRatingFilter = selectedRating === null || 
-        product.rating >= selectedRating;
+        const matchesRatingFilter = selectedRating === null || 
+          product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesLocation && matchesServiceType && matchesLocType && matchesRatingFilter;
-    }
-
-    // Food Filter Checks
-    if (activeTab === 'Food') {
-      const matchesCuisine = selectedCuisines.length === 0 ||
-        selectedCuisines.includes(product.category);
-
-      let matchesDistance = true;
-      if (selectedDistances.length > 0) {
-        matchesDistance = selectedDistances.some(dist => {
-          const num = parseFloat(product.distance || '2');
-          if (dist === 'under-2km') return num < 2;
-          if (dist === '2km-5km') return num >= 2 && num <= 5;
-          if (dist === 'above-5km') return num > 5;
-          return true;
-        });
+        return matchesSearch && matchesSubNavbar && matchesLocation && matchesServiceType && matchesLocType && matchesRatingFilter;
       }
 
-      const matchesRatingFilter = selectedRating === null || 
-        product.rating >= selectedRating;
+      // Food Filter Checks
+      if (activeTab === 'Food') {
+        const matchesCuisine = selectedCuisines.length === 0 ||
+          selectedCuisines.includes(product.category);
 
-      const matchesFoodType = selectedFoodType === 'All' ||
-        product.foodType === selectedFoodType;
+        let matchesDistance = true;
+        if (selectedDistances.length > 0) {
+          matchesDistance = selectedDistances.some(dist => {
+            const num = parseFloat(product.distance || '2');
+            if (dist === 'under-2km') return num < 2;
+            if (dist === '2km-5km') return num >= 2 && num <= 5;
+            if (dist === 'above-5km') return num > 5;
+            return true;
+          });
+        }
 
-      return matchesSearch && matchesSubNavbar && matchesLocation && matchesCuisine && matchesDistance && matchesRatingFilter && matchesFoodType;
-    }
+        const matchesRatingFilter = selectedRating === null || 
+          product.rating >= selectedRating;
 
-    // Stay Filter Checks
-    if (activeTab === 'Stay') {
-      const matchesAccom = selectedAccomTypes.length === 0 ||
-        selectedAccomTypes.includes(product.category);
+        const matchesFoodType = selectedFoodType === 'All' ||
+          product.foodType === selectedFoodType;
 
-      let matchesPrice = true;
+        return matchesSearch && matchesSubNavbar && matchesLocation && matchesCuisine && matchesDistance && matchesRatingFilter && matchesFoodType;
+      }
+
+      // Stay Filter Checks
+      if (activeTab === 'Stay') {
+        const matchesAccom = selectedAccomTypes.length === 0 ||
+          selectedAccomTypes.includes(product.category);
+
+        let matchesPrice = true;
+        if (selectedPrices.length > 0) {
+          matchesPrice = selectedPrices.some(range => {
+            if (range === 'under-1000') return product.price < 1000;
+            if (range === '1000-2000') return product.price >= 1000 && product.price <= 2000;
+            if (range === '2000-5000') return product.price >= 2000 && product.price <= 5000;
+            if (range === 'above-5000') return product.price > 5000;
+            return true;
+          });
+        }
+
+        const matchesRatingFilter = selectedRating === null || 
+          product.rating >= selectedRating;
+
+        return matchesSearch && matchesSubNavbar && matchesLocation && matchesAccom && matchesPrice && matchesRatingFilter;
+      }
+
+      // Travel Filter Checks
+      if (activeTab === 'Travel') {
+        const matchesTravelType = selectedTravelTypes.length === 0 ||
+          selectedTravelTypes.includes(product.category);
+
+        let matchesPrice = true;
+        if (selectedPrices.length > 0) {
+          matchesPrice = selectedPrices.some(range => {
+            if (range === 'under-500') return product.price < 500;
+            if (range === '500-2000') return product.price >= 500 && product.price <= 2000;
+            if (range === 'above-2000') return product.price > 2000;
+            return true;
+          });
+        }
+
+        const matchesRatingFilter = selectedRating === null || 
+          product.rating >= selectedRating;
+
+        const matchesFrom = !fromLocation || 
+          (product.fromCity && product.fromCity.toLowerCase() === (fromLocation || '').toLowerCase());
+        
+        const matchesTo = !toLocation || 
+          (product.toCity && product.toCity.toLowerCase() === (toLocation || '').toLowerCase());
+        
+        const matchesBusType = !selectedBusType || 
+          (product.busType && product.busType.toLowerCase() === (selectedBusType || '').toLowerCase());
+
+        const matchesBusClass = !selectedBusClass || 
+          (product.busClass && product.busClass.toLowerCase() === (selectedBusClass || '').toLowerCase());
+
+        return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && matchesPrice && matchesRatingFilter && matchesFrom && matchesTo && matchesBusType && matchesBusClass;
+      }
+
+      // Daily Needs Filter Checks
+      if (activeTab === 'Daily Needs') {
+        const matchesDailyNeedsType = selectedDailyNeedsTypes.length === 0 ||
+          selectedDailyNeedsTypes.some(type => product.tag?.toLowerCase().includes(type.toLowerCase()) || product.category?.toLowerCase().includes(type.toLowerCase()));
+
+        let matchesPrice = true;
+        if (selectedPrices.length > 0) {
+          matchesPrice = selectedPrices.some(range => {
+            if (range === 'under-100') return product.price < 100;
+            if (range === '100-200') return product.price >= 100 && product.price <= 200;
+            if (range === 'above-200') return product.price > 200;
+            return true;
+          });
+        }
+
+        const matchesRatingFilter = selectedRating === null || 
+          product.rating >= selectedRating;
+
+        return matchesSearch && matchesSubNavbar && matchesLocation && matchesDailyNeedsType && matchesPrice && matchesRatingFilter;
+      }
+
+      // Default Products / Other tabs Filter Checks
+      const matchesCategoryFilter = selectedCategories.length === 0 || 
+        (activeTab === 'Home' 
+          ? selectedCategories.includes(product.subNavbarCategory) 
+          : selectedCategories.includes(product.category));
+
+      const matchesBrandFilter = selectedBrands.length === 0 || 
+        selectedBrands.includes(product.vendorName);
+
+      const matchesColorFilter = selectedColors.length === 0 || 
+        selectedColors.includes(product.color);
+
+      let matchesPriceFilter = true;
       if (selectedPrices.length > 0) {
-        matchesPrice = selectedPrices.some(range => {
-          if (range === 'under-1000') return product.price < 1000;
-          if (range === '1000-2000') return product.price >= 1000 && product.price <= 2000;
-          if (range === '2000-5000') return product.price >= 2000 && product.price <= 5000;
-          if (range === 'above-5000') return product.price > 5000;
+        matchesPriceFilter = selectedPrices.some(range => {
+          if (range === 'under-199') return product.price < 199;
+          if (range === '199-399') return product.price >= 199 && product.price <= 399;
+          if (range === '399-599') return product.price >= 399 && product.price <= 599;
+          if (range === 'above-599') return product.price > 599;
           return true;
         });
       }
@@ -2377,102 +2462,28 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       const matchesRatingFilter = selectedRating === null || 
         product.rating >= selectedRating;
 
-      return matchesSearch && matchesSubNavbar && matchesLocation && matchesAccom && matchesPrice && matchesRatingFilter;
+      return matchesSearch && matchesSubNavbar && matchesLocation && matchesCategoryFilter && 
+             matchesBrandFilter && matchesColorFilter && matchesPriceFilter && matchesRatingFilter;
+    });
+
+    if (sortBy === 'price-asc') {
+      result.sort((a, b) => (a.price || 0) - (b.price || 0));
+    } else if (sortBy === 'price-desc') {
+      result.sort((a, b) => (b.price || 0) - (a.price || 0));
+    } else if (sortBy === 'rating-desc') {
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
 
-    // Travel Filter Checks
-    if (activeTab === 'Travel') {
-      const matchesTravelType = selectedTravelTypes.length === 0 ||
-        selectedTravelTypes.includes(product.category);
+    return result;
+  }, [
+    products, selectedLocation, searchQuery, searchCategory, selectedSubNavbarCategory, activeTab,
+    selectedServiceTypes, selectedLocTypes, selectedRating, selectedCuisines, selectedDistances,
+    selectedFoodType, selectedAccomTypes, selectedPrices, selectedTravelTypes, fromLocation,
+    toLocation, selectedBusType, selectedBusClass, selectedDailyNeedsTypes, selectedCategories,
+    selectedBrands, selectedColors, sortBy
+  ]);
 
-      let matchesPrice = true;
-      if (selectedPrices.length > 0) {
-        matchesPrice = selectedPrices.some(range => {
-          if (range === 'under-500') return product.price < 500;
-          if (range === '500-2000') return product.price >= 500 && product.price <= 2000;
-          if (range === 'above-2000') return product.price > 2000;
-          return true;
-        });
-      }
-
-      const matchesRatingFilter = selectedRating === null || 
-        product.rating >= selectedRating;
-
-      const matchesFrom = !fromLocation || 
-        (product.fromCity && product.fromCity.toLowerCase() === (fromLocation || '').toLowerCase());
-      
-      const matchesTo = !toLocation || 
-        (product.toCity && product.toCity.toLowerCase() === (toLocation || '').toLowerCase());
-      
-      const matchesBusType = !selectedBusType || 
-        (product.busType && product.busType.toLowerCase() === (selectedBusType || '').toLowerCase());
-
-      const matchesBusClass = !selectedBusClass || 
-        (product.busClass && product.busClass.toLowerCase() === (selectedBusClass || '').toLowerCase());
-
-      return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && matchesPrice && matchesRatingFilter && matchesFrom && matchesTo && matchesBusType && matchesBusClass;
-    }
-
-    // Daily Needs Filter Checks
-    if (activeTab === 'Daily Needs') {
-      const matchesDailyNeedsType = selectedDailyNeedsTypes.length === 0 ||
-        selectedDailyNeedsTypes.some(type => product.tag?.toLowerCase().includes(type.toLowerCase()) || product.category?.toLowerCase().includes(type.toLowerCase()));
-
-      let matchesPrice = true;
-      if (selectedPrices.length > 0) {
-        matchesPrice = selectedPrices.some(range => {
-          if (range === 'under-100') return product.price < 100;
-          if (range === '100-200') return product.price >= 100 && product.price <= 200;
-          if (range === 'above-200') return product.price > 200;
-          return true;
-        });
-      }
-
-      const matchesRatingFilter = selectedRating === null || 
-        product.rating >= selectedRating;
-
-      return matchesSearch && matchesSubNavbar && matchesLocation && matchesDailyNeedsType && matchesPrice && matchesRatingFilter;
-    }
-
-    // Default Products / Other tabs Filter Checks
-    const matchesCategoryFilter = selectedCategories.length === 0 || 
-      (activeTab === 'Home' 
-        ? selectedCategories.includes(product.subNavbarCategory) 
-        : selectedCategories.includes(product.category));
-
-    const matchesBrandFilter = selectedBrands.length === 0 || 
-      selectedBrands.includes(product.vendorName);
-
-    const matchesColorFilter = selectedColors.length === 0 || 
-      selectedColors.includes(product.color);
-
-    let matchesPriceFilter = true;
-    if (selectedPrices.length > 0) {
-      matchesPriceFilter = selectedPrices.some(range => {
-        if (range === 'under-199') return product.price < 199;
-        if (range === '199-399') return product.price >= 199 && product.price <= 399;
-        if (range === '399-599') return product.price >= 399 && product.price <= 599;
-        if (range === 'above-599') return product.price > 599;
-        return true;
-      });
-    }
-
-    const matchesRatingFilter = selectedRating === null || 
-      product.rating >= selectedRating;
-
-    return matchesSearch && matchesSubNavbar && matchesLocation && matchesCategoryFilter && 
-           matchesBrandFilter && matchesColorFilter && matchesPriceFilter && matchesRatingFilter;
-  });
-
-  if (sortBy === 'price-asc') {
-    filteredProducts.sort((a, b) => a.price - b.price);
-  } else if (sortBy === 'price-desc') {
-    filteredProducts.sort((a, b) => b.price - a.price);
-  } else if (sortBy === 'rating-desc') {
-    filteredProducts.sort((a, b) => b.rating - a.rating);
-  }
-
-  const wishlistProducts = (() => {
+  const wishlistProducts = useMemo(() => {
     const allItems = Array.isArray(products) ? products : [];
     const map = new Map();
     allItems.forEach(item => {
@@ -2481,7 +2492,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       }
     });
     return Array.from(map.values());
-  })();
+  }, [products, favorites]);
 
   // RENDER HELPERS
   const renderHeaderIcons = (isMobile = false) => {
@@ -7983,7 +7994,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </h3>
                       <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2.5 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0">
                         <Clock className="w-3.5 h-3.5 animate-pulse" />
-                        <span>Live: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        <LiveClock prefix="Live: " />
                       </span>
                     </div>
                     
@@ -8362,7 +8373,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Booking Time (Live)</span>
                           <span className="font-extrabold text-slate-850 dark:text-white flex items-center gap-1.5">
-                            <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            <LiveClock />
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                           </span>
                         </div>
@@ -8438,7 +8449,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </h3>
                       <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0 animate-pulse">
                         <Clock className="w-3.5 h-3.5" />
-                        <span>Live: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        <LiveClock prefix="Live: " />
                       </span>
                     </div>
 
@@ -8791,7 +8802,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-blue-500 animate-pulse" /> Booking Time (Live)</span>
                         <span className="font-extrabold text-slate-855 dark:text-white flex items-center gap-1.5">
-                          <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                          <LiveClock />
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                         </span>
                       </div>
