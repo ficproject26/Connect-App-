@@ -2305,18 +2305,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const addToCart = (product) => {
+    if (!product) return;
+    const prodId = product.id || `prod-${Date.now()}`;
+    const prodName = product.name || 'Selected Item';
+    const prodPrice = product.price || product.fee || 0;
+    const prodImg = product.image || product.img || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600';
+
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => item && item.id === prodId);
       if (existing) {
         return prev.map(item =>
-          item.id === product.id
+          item && item.id === prodId
             ? { ...item, quantity: (item.quantity || 1) + 1 }
             : item
         );
       }
-      return [...prev, { ...product, quantity: product.quantity || 1 }];
+      return [...prev, { ...product, id: prodId, name: prodName, price: prodPrice, image: prodImg, quantity: product.quantity || 1 }];
     });
-    triggerNotification(`Added "${product.name}" to cart!`);
+    triggerNotification(`Added "${prodName}" to cart!`);
   };
 
   const removeFromCart = (id) => {
@@ -4427,9 +4433,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <button 
                         onClick={(e) => { 
                           e.stopPropagation(); 
-                          if (!cart.find(item => item.id === product.id)) {
-                            addToCart(product);
-                          }
+                          addToCart(product);
                           setIsCartOpen(true);
                         }} 
                         className="flex-1 inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
@@ -5455,9 +5459,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          if (!cart.find(item => item.id === product.id)) {
-                                            addToCart(product);
-                                          }
+                                          addToCart(product);
                                           setIsCartOpen(true);
                                         }} 
                                         className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
@@ -6931,9 +6933,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           setSelectedModalType(selectedProduct.subNavbarCategory === 'Stay' ? 'Standard Room' : (selectedProduct.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
                           setSelectedTimeOfDayTab('Morning');
                         } else {
-                          if (!cart.find(item => item.id === selectedProduct.id)) {
-                            setCart(prev => [...prev, selectedProduct]);
-                          }
+                          addToCart(selectedProduct);
                           setIsCartOpen(true);
                           triggerNotification(`Proceeding to checkout...`);
                         }
@@ -7186,9 +7186,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           <button 
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              if (!cart.find(item => item.id === prod.id)) {
-                                addToCart(prod);
-                              }
+                              addToCart(prod);
                               setIsCartOpen(true);
                             }} 
                             className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
@@ -8926,9 +8924,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         adults: adultCount,
                         children: childCount
                       };
-                      if (!cart.find(item => item.id === itemToCart.id)) {
-                        addToCart(itemToCart);
-                      }
+                      addToCart(itemToCart);
                       setActiveScheduleModalItem(null);
                       setIsCartOpen(true);
                       if (isTravelItem) {
@@ -9387,9 +9383,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           adults: adultCount,
                           children: childCount
                         };
-                        if (!cart.find(item => item.id === itemToCart.id)) {
-                          addToCart(itemToCart);
-                        }
+                        addToCart(itemToCart);
                         setActiveBookNowModalItem(null);
                         setIsCartOpen(true);
                         if (isTravelItem) {
