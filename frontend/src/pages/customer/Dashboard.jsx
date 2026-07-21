@@ -577,6 +577,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSuccess, setRatingSuccess] = useState(false);
 
+  const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
   // Derived filtered orders based on selected orders tab
   const filteredCustomerOrders = useMemo(() => {
     if (selectedOrdersTab === 'All Orders') return customerOrders;
@@ -970,7 +971,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [jobSubmitSuccess, setJobSubmitSuccess] = useState(false);
 
   // Additional job application & orders tab state variables
-  const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
   const [applicantPhone, setApplicantPhone] = useState('+91 98765 43210');
   const [applicantLocation, setApplicantLocation] = useState('Bangalore, Karnataka');
   const [applicantLinkedIn, setApplicantLinkedIn] = useState('https://linkedin.com/in/username');
