@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { 
   Mail, Lock, Eye, EyeOff, User, Store, Truck, Check, 
-  ShieldCheck, Phone, UserPlus, ShoppingBag, UtensilsCrossed, 
-  Bed, Plane, Headphones, Tag, Star, CreditCard, FileText 
+  ShieldCheck, Phone, UserPlus, Wrench, UtensilsCrossed, 
+  Bed, Plane, ShoppingCart, Briefcase, LayoutGrid, Headphones, 
+  Tag, Award, CreditCard, FileText 
 } from 'lucide-react';
 import logoImg from '../../assets/images/forge india logo.jpg';
 
@@ -25,7 +26,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   const getPasswordStrength = (pass) => {
     if (!pass) return { score: 0, label: 'Weak', color: 'bg-slate-200 dark:bg-slate-800' };
     if (pass.length < 6) return { score: 1, label: 'Weak', color: 'bg-rose-500' };
-    if (pass.length < 9) return { score: 2, label: 'Medium', color: 'bg-amber-500' };
+    if (pass.length < 9) return { score: 2, label: 'Medium', color: 'bg-[#FFB800]' };
     if (/[A-Z]/.test(pass) && /[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) {
       return { score: 4, label: 'Strong', color: 'bg-emerald-500' };
     }
@@ -61,7 +62,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   return (
     <div className="w-full h-screen max-h-screen overflow-hidden flex bg-white dark:bg-[#030712] text-slate-900 dark:text-slate-100 font-sans select-none">
       
-      {/* ==================== LEFT PANEL: SIGNUP FORM ==================== */}
+      {/* ==================== LEFT PANEL: FORM SECTION ==================== */}
       <div className="w-full lg:w-1/2 h-full flex flex-col justify-between p-5 sm:p-7 lg:p-9 bg-white dark:bg-[#030712] overflow-y-auto">
         
         {/* Top Header Logo & Login Link */}
@@ -72,12 +73,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
           >
             <img 
               src={logoImg} 
-              alt="Connect App Logo" 
-              className="w-10 h-10 object-cover rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md group-hover:scale-105 transition-transform" 
+              alt="Forge India Connect Logo" 
+              className="w-10 h-10 object-cover rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs group-hover:scale-105 transition-transform" 
             />
             <div>
-              <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 leading-none">
-                Connect <span className="text-[#5b3af0]">App</span>
+              <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none uppercase">
+                Forge India <span className="text-[#FFB800]">Connect</span>
               </h1>
               <p className="text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5">All Services, One Platform</p>
             </div>
@@ -87,7 +88,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
             Already have an account?{' '}
             <button
               onClick={onNavigateToLoginPage}
-              className="font-extrabold text-[#5b3af0] dark:text-indigo-400 hover:underline bg-transparent border-none p-0 inline cursor-pointer"
+              className="font-extrabold text-[#003B95] dark:text-[#FFB800] hover:underline bg-transparent border-none p-0 inline cursor-pointer"
             >
               Login
             </button>
@@ -99,12 +100,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
           
           {success ? (
             <div className="text-center py-8 animate-fade-in">
-              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3 border border-emerald-200 dark:border-emerald-800 shadow-lg animate-bounce">
+              <div className="w-14 h-14 bg-amber-100 dark:bg-amber-950/50 text-[#FFB800] rounded-full flex items-center justify-center mx-auto mb-3 border border-amber-300 dark:border-amber-700 shadow-lg animate-bounce">
                 <Check className="w-7 h-7 stroke-[3]" />
               </div>
               <h2 className="text-2xl font-black text-slate-900 dark:text-white">Account Created!</h2>
               <p className="text-xs font-semibold text-slate-500 mt-1">
-                Welcome to Connect App! Preparing your personalized dashboard...
+                Welcome to Forge India Connect! Preparing your dashboard...
               </p>
             </div>
           ) : (
@@ -112,10 +113,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
               {/* Title Header */}
               <div className="mb-3 text-left">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                  Create Your Account
+                  Create Your <span className="text-[#FFB800]">Account</span>
                 </h2>
                 <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                  Sign up to explore all the amazing services we offer.
+                  Join Forge India Connect and explore endless opportunities.
                 </p>
               </div>
 
@@ -137,7 +138,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Enter your full name"
-                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                       />
                     </div>
                   </div>
@@ -155,7 +156,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         placeholder="Enter your phone number"
-                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                        className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                       />
                     </div>
                   </div>
@@ -174,7 +175,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
-                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                     />
                   </div>
                 </div>
@@ -192,7 +193,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Create a strong password"
-                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl py-2 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                     />
                     <button
                       type="button"
@@ -234,7 +235,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-2 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0] focus:ring-2 focus:ring-[#5b3af0]/20 transition-all"
+                      className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl py-2 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                     />
                     <button
                       type="button"
@@ -258,24 +259,24 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       onClick={() => setRole('customer')}
                       className={`relative rounded-2xl p-2.5 border transition-all cursor-pointer flex flex-col justify-between text-left ${
                         role === 'customer'
-                          ? 'border-[#5b3af0] bg-purple-50/70 dark:bg-purple-950/20 ring-2 ring-[#5b3af0]/20 shadow-sm'
+                          ? 'border-[#FFB800] bg-amber-50/70 dark:bg-amber-950/20 ring-2 ring-[#FFB800]/30 shadow-xs'
                           : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <div className="w-7 h-7 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-[#5b3af0] dark:text-purple-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-[#FFB800]/20 text-[#D49900] dark:text-[#FFB800] flex items-center justify-center shrink-0">
                           <User className="w-3.5 h-3.5" />
                         </div>
                         {role === 'customer' ? (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px] shrink-0">✓</div>
+                          <div className="w-4 h-4 rounded-full bg-[#FFB800] text-slate-950 flex items-center justify-center text-[9px] font-black shrink-0">✓</div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
                         )}
                       </div>
                       <div>
                         <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none">Customer</h4>
                         <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                          Book & explore
+                          Book services & explore
                         </p>
                       </div>
                     </div>
@@ -285,24 +286,24 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       onClick={() => setRole('vendor')}
                       className={`relative rounded-2xl p-2.5 border transition-all cursor-pointer flex flex-col justify-between text-left ${
                         role === 'vendor'
-                          ? 'border-[#5b3af0] bg-purple-50/70 dark:bg-purple-950/20 ring-2 ring-[#5b3af0]/20 shadow-sm'
+                          ? 'border-[#FFB800] bg-amber-50/70 dark:bg-amber-950/20 ring-2 ring-[#FFB800]/30 shadow-xs'
                           : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <div className="w-7 h-7 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/60 text-[#003B95] dark:text-blue-400 flex items-center justify-center shrink-0">
                           <Store className="w-3.5 h-3.5" />
                         </div>
                         {role === 'vendor' ? (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px] shrink-0">✓</div>
+                          <div className="w-4 h-4 rounded-full bg-[#FFB800] text-slate-950 flex items-center justify-center text-[9px] font-black shrink-0">✓</div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
                         )}
                       </div>
                       <div>
                         <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none">Vendor</h4>
                         <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                          Sell services
+                          Sell products or services
                         </p>
                       </div>
                     </div>
@@ -312,24 +313,24 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       onClick={() => setRole('delivery')}
                       className={`relative rounded-2xl p-2.5 border transition-all cursor-pointer flex flex-col justify-between text-left ${
                         role === 'delivery'
-                          ? 'border-[#5b3af0] bg-purple-50/70 dark:bg-purple-950/20 ring-2 ring-[#5b3af0]/20 shadow-sm'
+                          ? 'border-[#FFB800] bg-amber-50/70 dark:bg-amber-950/20 ring-2 ring-[#FFB800]/30 shadow-xs'
                           : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <div className="w-7 h-7 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/60 text-[#003B95] dark:text-blue-400 flex items-center justify-center shrink-0">
                           <Truck className="w-3.5 h-3.5" />
                         </div>
                         {role === 'delivery' ? (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[#5b3af0] text-white flex items-center justify-center text-[9px] shrink-0">✓</div>
+                          <div className="w-4 h-4 rounded-full bg-[#FFB800] text-slate-950 flex items-center justify-center text-[9px] font-black shrink-0">✓</div>
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
                         )}
                       </div>
                       <div>
                         <h4 className="text-[11px] font-black text-slate-900 dark:text-white leading-none truncate">Delivery Partner</h4>
                         <p className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                          Deliver & earn
+                          Deliver orders & earn
                         </p>
                       </div>
                     </div>
@@ -337,12 +338,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                   </div>
                 </div>
 
-                {/* Aadhaar Card & PAN Card Details (Required for Vendor / Delivery Partner or Verification) */}
+                {/* Aadhaar Card & PAN Card Details (Required for Vendor / Delivery Partner) */}
                 {(role === 'vendor' || role === 'delivery') && (
-                  <div className="bg-slate-50/80 dark:bg-slate-900/80 border border-purple-200/80 dark:border-purple-900/40 rounded-2xl p-3 space-y-2 text-left animate-fade-in">
+                  <div className="bg-amber-50/50 dark:bg-slate-900/80 border border-[#FFB800]/40 dark:border-amber-900/40 rounded-2xl p-2.5 space-y-2 text-left animate-fade-in">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-[#5b3af0] dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-[#5b3af0]" /> Identity Verification Details
+                      <span className="text-[10px] font-black text-slate-900 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#FFB800]" /> Identity Verification Details
                       </span>
                       <span className="text-[8.5px] font-bold text-slate-400">Government ID Compliance</span>
                     </div>
@@ -362,7 +363,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                             value={aadhaarNumber}
                             onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, ''))}
                             placeholder="12-digit Aadhaar number"
-                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0]"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800]"
                           />
                         </div>
                       </div>
@@ -381,7 +382,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                             value={panNumber}
                             onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
                             placeholder="10-character PAN (e.g. ABCDE1234F)"
-                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold uppercase text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#5b3af0]"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-2 text-[11px] font-semibold uppercase text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800]"
                           />
                         </div>
                       </div>
@@ -396,26 +397,26 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       type="checkbox"
                       checked={agreeTerms}
                       onChange={(e) => setAgreeTerms(e.target.checked)}
-                      className="w-3.5 h-3.5 rounded border-slate-300 text-[#5b3af0] focus:ring-[#5b3af0] accent-[#5b3af0] cursor-pointer shrink-0"
+                      className="w-3.5 h-3.5 rounded border-slate-300 text-[#FFB800] focus:ring-[#FFB800] accent-[#FFB800] cursor-pointer shrink-0"
                     />
                     <span>
                       I agree to the{' '}
-                      <a href="#" onClick={(e) => e.preventDefault()} className="text-[#5b3af0] dark:text-indigo-400 hover:underline">Terms & Conditions</a>
+                      <a href="#" onClick={(e) => e.preventDefault()} className="text-slate-900 dark:text-amber-400 font-extrabold hover:underline">Terms & Conditions</a>
                       {' '}and{' '}
-                      <a href="#" onClick={(e) => e.preventDefault()} className="text-[#5b3af0] dark:text-indigo-400 hover:underline">Privacy Policy</a>
+                      <a href="#" onClick={(e) => e.preventDefault()} className="text-slate-900 dark:text-amber-400 font-extrabold hover:underline">Privacy Policy</a>
                     </span>
                   </label>
                 </div>
 
-                {/* Create Account Button */}
+                {/* Create Account Button (Bright Gold/Yellow) */}
                 <button
                   type="submit"
                   disabled={isSubmitting || !agreeTerms}
-                  className="w-full py-2.5 px-6 bg-[#5b3af0] hover:bg-[#4b2ae0] text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full py-3 px-6 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-4 w-4 text-slate-950" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
@@ -485,199 +486,148 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
         {/* Footer Note */}
         <div className="text-center text-[10px] text-slate-400 dark:text-slate-500 font-semibold pt-1 shrink-0">
-          Connect App Platform Onboarding • All rights reserved
+          Forge India Connect • All rights reserved
         </div>
 
       </div>
 
 
-      {/* ==================== RIGHT PANEL: PHONE MOCKUP & FEATURES SIDE ==================== */}
-      <div className="hidden lg:flex w-1/2 h-full bg-gradient-to-br from-[#dfe2fe] via-[#ebedff] to-[#f6f7ff] dark:from-[#0b1029] dark:via-[#111738] dark:to-[#070b1f] relative overflow-hidden flex-col justify-between p-8 lg:p-10 xl:p-12 text-slate-900 dark:text-white select-none">
+      {/* ==================== RIGHT PANEL: YELLOW BRANDING & CATEGORIES SIDE ==================== */}
+      <div className="hidden lg:flex w-1/2 h-full bg-gradient-to-b from-[#FFB800] via-[#FFC700] to-[#E5A500] relative overflow-hidden flex-col justify-between text-slate-900 select-none">
         
-        {/* Soft Ambient Background Glows */}
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-300/30 dark:bg-purple-900/20 rounded-full blur-[130px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-300/30 dark:bg-indigo-950/30 rounded-full blur-[130px] pointer-events-none" />
-
-        {/* Top Header Section */}
-        <div className="max-w-md text-left z-10 shrink-0">
-          <h2 className="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            Join Connect App<br />and simplify your life!
-          </h2>
-          <div className="w-10 h-1 bg-[#5b3af0] rounded-full my-2" />
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 leading-relaxed max-w-sm">
-            One platform for all your needs. Save time, save money, and get the best experience.
-          </p>
+        {/* Subtle Decorative Pattern Dots at Top Right */}
+        <div className="absolute top-4 right-4 grid grid-cols-6 gap-1 opacity-25 pointer-events-none">
+          {[...Array(24)].map((_, i) => (
+            <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+          ))}
         </div>
 
-        {/* Center Realistic Phone Mockup Section */}
-        <div className="my-auto z-10 flex items-center justify-center relative py-2">
+        {/* Top Floating White Circle Logo Avatar */}
+        <div className="pt-8 flex flex-col items-center justify-center z-10 shrink-0">
+          <div className="relative flex flex-col items-center">
+            {/* Arc text label */}
+            <span className="text-xs font-black text-slate-900 tracking-wider mb-1 uppercase drop-shadow-xs">Let's Connect!</span>
+            {/* Main white circle avatar containing Logo */}
+            <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full bg-white p-2 flex items-center justify-center shadow-xl shadow-amber-950/20 border-4 border-white/90 transform hover:scale-105 transition-transform cursor-pointer">
+              <img src={logoImg} alt="Forge India Connect Logo" className="w-full h-full object-cover rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        {/* Center Text & Category Grid Section */}
+        <div className="z-10 flex flex-col items-center text-center px-8 my-auto py-2">
           
-          {/* Circular Orbit Path */}
-          <div className="absolute w-64 h-64 lg:w-72 lg:h-72 rounded-full border border-dashed border-[#5b3af0]/20 dark:border-indigo-400/20 animate-spin-slow pointer-events-none" />
-
-          {/* Floating Category Icons Around Phone */}
-          
-          {/* Food Icon (Left) */}
-          <div className="absolute left-6 lg:left-10 top-1/4 -translate-y-1/2 w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-bounce" style={{ animationDuration: '3s' }}>
-            <UtensilsCrossed className="w-5 h-5" />
+          {/* Main Title & Tagline */}
+          <div className="max-w-md mx-auto text-center mb-4">
+            <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+              All Services,<br />
+              One Platform,<br />
+              <span className="text-[#003B95]">Infinite Possibilities!</span>
+            </h2>
+            <div className="w-10 h-1 bg-slate-900 rounded-full mx-auto my-2" />
+            <p className="text-xs font-semibold text-slate-800 leading-relaxed max-w-sm mx-auto">
+              Forge India Connect brings all services together to make your life easier, faster and smarter.
+            </p>
           </div>
 
-          {/* Shopping Bag (Top Right) */}
-          <div className="absolute right-6 lg:right-10 top-4 w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-600/20 animate-bounce" style={{ animationDuration: '3.5s' }}>
-            <ShoppingBag className="w-5 h-5" />
-          </div>
-
-          {/* Stay / Bed (Bottom Left) */}
-          <div className="absolute left-8 lg:left-12 bottom-8 w-10 h-10 rounded-2xl bg-pink-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/20 animate-bounce" style={{ animationDuration: '4s' }}>
-            <Bed className="w-5 h-5" />
-          </div>
-
-          {/* Travel / Plane (Right) */}
-          <div className="absolute right-4 lg:right-8 bottom-1/3 w-10 h-10 rounded-2xl bg-sky-500 text-white flex items-center justify-center shadow-lg shadow-sky-500/20 animate-bounce" style={{ animationDuration: '3.2s' }}>
-            <Plane className="w-5 h-5" />
-          </div>
-
-          {/* iPhone Frame Container */}
-          <div className="w-[220px] sm:w-[240px] h-[440px] sm:h-[470px] bg-slate-900 rounded-[40px] p-2.5 shadow-2xl border-4 border-slate-800 relative z-20 flex flex-col overflow-hidden transform hover:scale-[1.02] transition-transform">
-            
-            {/* Dynamic Island / Notch */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-3.5 bg-black rounded-full z-30 flex items-center justify-between px-2">
-              <div className="w-2 h-2 rounded-full bg-slate-800" />
-              <div className="w-2 h-2 rounded-full bg-blue-950" />
+          {/* Service Category Cards (7 Badges: Services, Food, Stay, Travel, Daily Needs, Jobs, More) */}
+          <div className="w-full max-w-md mx-auto space-y-2.5 my-1">
+            {/* Top Row: 4 Cards */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white/80 hover:scale-105 transition-transform cursor-pointer">
+                <Wrench className="w-5 h-5 text-[#003B95]" />
+                <span className="text-[10px] font-black text-slate-900 mt-1">Services</span>
+              </div>
+              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white/80 hover:scale-105 transition-transform cursor-pointer">
+                <UtensilsCrossed className="w-5 h-5 text-[#D49900]" />
+                <span className="text-[10px] font-black text-slate-900 mt-1">Food</span>
+              </div>
+              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white/80 hover:scale-105 transition-transform cursor-pointer">
+                <Bed className="w-5 h-5 text-[#003B95]" />
+                <span className="text-[10px] font-black text-slate-900 mt-1">Stay</span>
+              </div>
+              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white/80 hover:scale-105 transition-transform cursor-pointer">
+                <Plane className="w-5 h-5 text-[#003B95]" />
+                <span className="text-[10px] font-black text-slate-900 mt-1">Travel</span>
+              </div>
             </div>
 
-            {/* Phone Screen Mockup View */}
-            <div className="w-full h-full bg-slate-50 dark:bg-[#0b1329] rounded-[30px] overflow-hidden flex flex-col pt-6 px-2.5 text-left">
+            {/* Bottom Row: 3 Cards */}
+            <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white/80 hover:scale-105 transition-transform cursor-pointer">
+                <ShoppingCart className="w-5 h-5 text-[#003B95]" />
+                <span className="text-[10px] font-black text-slate-900 mt-1">Daily Needs</span>
+              </div>
+              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white/80 hover:scale-105 transition-transform cursor-pointer">
+                <Briefcase className="w-5 h-5 text-[#003B95]" />
+                <span className="text-[10px] font-black text-slate-900 mt-1">Jobs</span>
+              </div>
+              <div className="bg-white/90 backdrop-blur-md rounded-2xl p-2.5 flex flex-col items-center justify-center shadow-xs border border-white/80 hover:scale-105 transition-transform cursor-pointer">
+                <LayoutGrid className="w-5 h-5 text-[#D49900]" />
+                <span className="text-[10px] font-black text-slate-900 mt-1">More</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* City Silhouette Transition Graphic & Bottom Navy Blue Bar */}
+        <div className="w-full shrink-0 relative mt-auto">
+          
+          {/* Skyline Curve Transition Graphic */}
+          <div className="w-full h-8 bg-gradient-to-t from-[#0A1E38] to-transparent pointer-events-none" />
+
+          {/* Bottom Deep Navy Blue Feature Bar */}
+          <div className="bg-[#0A1E38] text-white p-4 pt-3 border-t border-blue-900/30">
+            <div className="grid grid-cols-4 gap-2 text-center max-w-lg mx-auto">
               
-              {/* App Greeting Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <span className="text-[10px] font-black text-slate-850 dark:text-white block">Hello, John! 👋</span>
-                  <span className="text-[7.5px] font-bold text-slate-400 block">What are you looking for today?</span>
+              {/* Feature 1 */}
+              <div className="flex flex-col items-center">
+                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
+                  <ShieldCheck className="w-4 h-4" />
                 </div>
-                <div className="w-5.5 h-5.5 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-                  <User className="w-2.5 h-2.5 text-slate-600 dark:text-slate-300" />
-                </div>
+                <h4 className="text-[10px] font-black text-white">Secure & Safe</h4>
+                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
+                  Top data security.
+                </p>
               </div>
 
-              {/* Mini Search Bar */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl px-2 py-1 flex items-center justify-between text-[7.5px] text-slate-400 mb-2.5 shadow-3xs">
-                <span>🔍 Search services, products...</span>
-                <span>▼</span>
+              {/* Feature 2 */}
+              <div className="flex flex-col items-center">
+                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
+                  <Award className="w-4 h-4" />
+                </div>
+                <h4 className="text-[10px] font-black text-white">Trusted Platform</h4>
+                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
+                  Thousands of users.
+                </p>
               </div>
 
-              {/* Mini Banner Card */}
-              <div className="bg-gradient-to-r from-[#5b3af0] to-[#7c3aed] text-white rounded-xl p-2 mb-2.5 shadow-xs">
-                <span className="text-[8.5px] font-black block">Special Offer!</span>
-                <span className="text-[7px] opacity-90 block mt-0.5">Up to 40% off on first booking</span>
-                <span className="mt-1 inline-block bg-white text-[#5b3af0] text-[6.5px] font-black px-1.5 py-0.5 rounded-md">Explore Now</span>
+              {/* Feature 3 */}
+              <div className="flex flex-col items-center">
+                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
+                  <Headphones className="w-4 h-4" />
+                </div>
+                <h4 className="text-[10px] font-black text-white">24/7 Support</h4>
+                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
+                  Here to help anytime.
+                </p>
               </div>
 
-              {/* Categories Grid */}
-              <div className="mb-2">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[8px] font-black text-slate-800 dark:text-white">Top Categories</span>
-                  <span className="text-[7px] font-bold text-[#5b3af0]">View All</span>
+              {/* Feature 4 */}
+              <div className="flex flex-col items-center">
+                <div className="w-7 h-7 rounded-xl bg-[#FFB800]/20 text-[#FFB800] flex items-center justify-center mb-1">
+                  <Tag className="w-4 h-4" />
                 </div>
-                <div className="grid grid-cols-4 gap-1 text-center">
-                  <div className="bg-blue-50 dark:bg-blue-950/40 p-1 rounded-lg flex flex-col items-center">
-                    <span className="text-[10px]">🔧</span>
-                    <span className="text-[6px] font-bold text-slate-700 dark:text-slate-300 mt-0.5">Services</span>
-                  </div>
-                  <div className="bg-amber-50 dark:bg-amber-950/40 p-1 rounded-lg flex flex-col items-center">
-                    <span className="text-[10px]">🍽️</span>
-                    <span className="text-[6px] font-bold text-slate-700 dark:text-slate-300 mt-0.5">Food</span>
-                  </div>
-                  <div className="bg-emerald-50 dark:bg-emerald-950/40 p-1 rounded-lg flex flex-col items-center">
-                    <span className="text-[10px]">🏨</span>
-                    <span className="text-[6px] font-bold text-slate-700 dark:text-slate-300 mt-0.5">Stay</span>
-                  </div>
-                  <div className="bg-sky-50 dark:bg-sky-950/40 p-1 rounded-lg flex flex-col items-center">
-                    <span className="text-[10px]">✈️</span>
-                    <span className="text-[6px] font-bold text-slate-700 dark:text-slate-300 mt-0.5">Travel</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Popular Services Mini Grid */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[8px] font-black text-slate-800 dark:text-white">Popular Services</span>
-                </div>
-                <div className="grid grid-cols-3 gap-1">
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-lg p-1 text-center">
-                    <span className="text-[6px] font-bold text-slate-700 dark:text-slate-300 block">Home Cleaning</span>
-                  </div>
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-lg p-1 text-center">
-                    <span className="text-[6px] font-bold text-slate-700 dark:text-slate-300 block">Electrician</span>
-                  </div>
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-lg p-1 text-center">
-                    <span className="text-[6px] font-bold text-slate-700 dark:text-slate-300 block">Beauty & Spa</span>
-                  </div>
-                </div>
+                <h4 className="text-[10px] font-black text-white">Best Offers</h4>
+                <p className="text-[8.5px] text-slate-300 font-medium leading-tight mt-0.5">
+                  Exclusive discounts.
+                </p>
               </div>
 
             </div>
-
           </div>
 
-        </div>
-
-        {/* Bottom 4 Feature Cards (White Glass Box) */}
-        <div className="z-10 bg-white dark:bg-[#0b1329] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-xl max-w-xl mx-auto w-full shrink-0">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-left sm:text-center">
-            
-            {/* Feature 1 */}
-            <div className="flex flex-col items-start sm:items-center">
-              <div className="w-7 h-7 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-[#5b3af0] dark:text-purple-400 flex items-center justify-center mb-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-              </div>
-              <h4 className="text-[11px] font-black text-slate-900 dark:text-white">Secure & Safe</h4>
-              <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                Top level security.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="flex flex-col items-start sm:items-center">
-              <div className="w-7 h-7 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-1">
-                <Star className="w-3.5 h-3.5" />
-              </div>
-              <h4 className="text-[11px] font-black text-slate-900 dark:text-white">Trusted Platform</h4>
-              <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                Thousands trust us daily.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="flex flex-col items-start sm:items-center">
-              <div className="w-7 h-7 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-1">
-                <Headphones className="w-3.5 h-3.5" />
-              </div>
-              <h4 className="text-[11px] font-black text-slate-900 dark:text-white">24/7 Support</h4>
-              <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                Always here to help.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="flex flex-col items-start sm:items-center">
-              <div className="w-7 h-7 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-1">
-                <Tag className="w-3.5 h-3.5" />
-              </div>
-              <h4 className="text-[11px] font-black text-slate-900 dark:text-white">Best Offers</h4>
-              <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                Exclusive discounts.
-              </p>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Footer Legal Terms Note */}
-        <div className="z-10 text-center text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 pt-2 flex items-center justify-center gap-1 shrink-0">
-          <ShieldCheck className="w-3 h-3 text-[#5b3af0]" />
-          <span>By creating an account, you agree to our <a href="#" onClick={(e) => e.preventDefault()} className="text-[#5b3af0] hover:underline">Terms & Conditions</a></span>
         </div>
 
       </div>
