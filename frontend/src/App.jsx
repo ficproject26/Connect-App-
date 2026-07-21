@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SplashLoader from './components/common/Loader';
 import JobsModal from './components/common/Modal';
 import FloatingDock from './components/common/FloatingDock';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -150,12 +151,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CustomerProvider>
-        <VendorProvider>
-          <AppContent />
-        </VendorProvider>
-      </CustomerProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CustomerProvider>
+          <VendorProvider>
+            <AppContent />
+          </VendorProvider>
+        </CustomerProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
