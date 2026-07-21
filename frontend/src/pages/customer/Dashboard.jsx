@@ -2091,7 +2091,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                     return (
                       <tr key={ord.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-800 dark:text-slate-100 transition-colors">
-                        <td className="py-3 px-3 font-mono text-[10px] text-slate-500 dark:text-slate-400">TXN_{ord.order_number || ord.id.slice(-6).toUpperCase()}</td>
+                        <td className="py-3 px-3 font-mono text-[10px] text-slate-500 dark:text-slate-400">TXN_{ord.order_number || String(ord.id || '').slice(-6).toUpperCase()}</td>
                         <td className="py-3 px-3 max-w-[150px] truncate font-medium">{ord.product_details}</td>
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</td>
                         <td className="py-3 px-3 font-semibold text-slate-650 dark:text-slate-350">Connect Wallet</td>
@@ -2312,8 +2312,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       normalizeCity(product.vendorCity) === normalizeCity(selectedLocation.city);
 
     const matchesSearch = (searchQuery === '' || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      product.category.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (product.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
+      (product.category || '').toLowerCase().includes((searchQuery || '').toLowerCase())) &&
       (searchCategory === 'All' || product.subNavbarCategory === searchCategory);
 
     const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
@@ -2399,16 +2399,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         product.rating >= selectedRating;
 
       const matchesFrom = !fromLocation || 
-        (product.fromCity && product.fromCity.toLowerCase() === fromLocation.toLowerCase());
+        (product.fromCity && product.fromCity.toLowerCase() === (fromLocation || '').toLowerCase());
       
       const matchesTo = !toLocation || 
-        (product.toCity && product.toCity.toLowerCase() === toLocation.toLowerCase());
+        (product.toCity && product.toCity.toLowerCase() === (toLocation || '').toLowerCase());
       
       const matchesBusType = !selectedBusType || 
-        (product.busType && product.busType.toLowerCase() === selectedBusType.toLowerCase());
+        (product.busType && product.busType.toLowerCase() === (selectedBusType || '').toLowerCase());
 
       const matchesBusClass = !selectedBusClass || 
-        (product.busClass && product.busClass.toLowerCase() === selectedBusClass.toLowerCase());
+        (product.busClass && product.busClass.toLowerCase() === (selectedBusClass || '').toLowerCase());
 
       return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && matchesPrice && matchesRatingFilter && matchesFrom && matchesTo && matchesBusType && matchesBusClass;
     }
@@ -3281,8 +3281,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 setSelectedCategories([]);
                 setHoveredLink(null);
                 const matchedJob = jobsList.find(j => 
-                  j.title.toLowerCase().includes(subCat.toLowerCase()) || 
-                  subCat.toLowerCase().includes(j.title.toLowerCase())
+                  (j.title || '').toLowerCase().includes((subCat || '').toLowerCase()) || 
+                  (subCat || '').toLowerCase().includes((j.title || '').toLowerCase())
                 );
                 if (matchedJob) {
                   setAppliedJobId(matchedJob.id);
@@ -4447,8 +4447,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const renderCatalogSection = () => {
     const filteredJobs = jobsList.filter(job => {
       const matchesSearch = searchQuery === '' || 
-        job.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        job.desc.toLowerCase().includes(searchQuery.toLowerCase());
+        (job.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
+        (job.desc || '').toLowerCase().includes((searchQuery || '').toLowerCase());
 
       const matchesDept = selectedJobDepts.length === 0 || 
         selectedJobDepts.includes(job.department);
@@ -5030,7 +5030,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             <div>
                               <h4 className="text-[14px] sm:text-[15px] font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-blue-600 transition-colors">{product.name}</h4>
                               <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1 font-medium">
-                                {product.description || `All types of ${product.category.toLowerCase()} services`}
+                                {product.description || `All types of ${(product.category || '').toLowerCase()} services`}
                               </p>
                               
                               {/* Rating & Duration Row */}
@@ -6500,7 +6500,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  {selectedProduct.description || `Experienced specialist offering comprehensive premium ${selectedProduct.category.toLowerCase()} consultations and personalized diagnostic treatment plans.`}
+                  {selectedProduct.description || `Experienced specialist offering comprehensive premium ${(selectedProduct.category || '').toLowerCase()} consultations and personalized diagnostic treatment plans.`}
                 </p>
               </div>
 
@@ -7843,7 +7843,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <div className={`border rounded-2xl p-4 flex gap-3 text-left ${tier.name.toLowerCase().includes('silver') ? 'bg-slate-50/50 dark:bg-slate-800/10 border-slate-300 dark:border-slate-700/60' : 'opacity-60 border-slate-100 dark:border-slate-900 bg-transparent'}`}>
+                  <div className={`border rounded-2xl p-4 flex gap-3 text-left ${(tier?.name || '').toLowerCase().includes('silver') ? 'bg-slate-50/50 dark:bg-slate-800/10 border-slate-300 dark:border-slate-700/60' : 'opacity-60 border-slate-100 dark:border-slate-900 bg-transparent'}`}>
                     <div className="w-8 h-8 rounded-full bg-slate-400/15 flex items-center justify-center shrink-0 border border-slate-400/20 text-slate-405">
                       <Star className="w-4 h-4 fill-current text-slate-400" />
                     </div>
@@ -7858,7 +7858,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                   </div>
 
-                  <div className={`border rounded-2xl p-4 flex gap-3 text-left ${tier.name.toLowerCase().includes('gold') ? 'bg-amber-500/5 dark:bg-amber-400/5 border-amber-300 dark:border-amber-900/40' : 'opacity-60 border-slate-100 dark:border-slate-900 bg-transparent'}`}>
+                  <div className={`border rounded-2xl p-4 flex gap-3 text-left ${(tier?.name || '').toLowerCase().includes('gold') ? 'bg-amber-500/5 dark:bg-amber-400/5 border-amber-300 dark:border-amber-900/40' : 'opacity-60 border-slate-100 dark:border-slate-900 bg-transparent'}`}>
                     <div className="w-8 h-8 rounded-full bg-amber-400/15 flex items-center justify-center shrink-0 border border-amber-400/20 text-amber-500">
                       <Sparkles className="w-4 h-4 fill-current" />
                     </div>
@@ -7874,7 +7874,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                   </div>
 
-                  <div className={`border rounded-2xl p-4 flex gap-3 text-left md:col-span-2 ${tier.name.toLowerCase().includes('diamond') ? 'bg-cyan-500/5 dark:bg-cyan-400/5 border-cyan-300 dark:border-cyan-900/40' : 'opacity-60 border-slate-100 dark:border-slate-900 bg-transparent'}`}>
+                  <div className={`border rounded-2xl p-4 flex gap-3 text-left md:col-span-2 ${(tier?.name || '').toLowerCase().includes('diamond') ? 'bg-cyan-500/5 dark:bg-cyan-400/5 border-cyan-300 dark:border-cyan-900/40' : 'opacity-60 border-slate-100 dark:border-slate-900 bg-transparent'}`}>
                     <div className="w-8 h-8 rounded-full bg-cyan-400/15 flex items-center justify-center shrink-0 border border-cyan-400/20 text-cyan-555">
                       <Gem className="w-4 h-4 fill-current text-cyan-500" />
                     </div>
