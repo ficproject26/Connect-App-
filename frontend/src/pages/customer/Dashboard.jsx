@@ -1760,6 +1760,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const mergeDbCategories = (staticData, mainCategoryName) => {
     const merged = JSON.parse(JSON.stringify(staticData));
+
+    // 1. Process exclusion/deletion markers to remove deleted/inactive categories
+    const exclusionMarkers = dbCategories.filter(c => 
+      c &&
+      (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') &&
+      ((c.name || '').toLowerCase() === mainCategoryName.toLowerCase() ||
+       (mainCategoryName.toLowerCase() === 'products' && (!c.name || (c.name || '').toLowerCase() === 'products')))
+    );
+
+    exclusionMarkers.forEach(c => {
+      // Find subcategory to exclude
+      const subName = c.subcategory || (c.name && c.name.toLowerCase() !== mainCategoryName.toLowerCase() ? c.name : null);
+      if (subName && merged[subName]) {
+        if (c.subSubcategory) {
+          if (merged[subName].items) {
+            merged[subName].items = merged[subName].items.filter(item => item !== c.subSubcategory);
+          }
+        } else {
+          delete merged[subName];
+        }
+      } else if (!c.subcategory) {
+        // If main category itself is inactive/deleted, delete all keys
+        Object.keys(merged).forEach(k => delete merged[k]);
+      }
+    });
+
+    // 2. Process active database categories
     const activeDbCats = dbCategories.filter(c => 
       c &&
       c.isActive !== false && 
