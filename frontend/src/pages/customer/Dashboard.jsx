@@ -3271,7 +3271,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     onItemClick(subCat, e);
                   } else {
                     // Stay inside the dashboard — switch to the relevant tab and filter
-                    const tabForLink = hoveredLink || title;
+                    const validTabs = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+                    const tabForLink = hoveredLink || (validTabs.includes(activeTab) ? activeTab : 'Products');
                     setHoveredLink(null);
                     if (tabForLink === 'Jobs') {
                       // Jobs handled separately via onItemClick
