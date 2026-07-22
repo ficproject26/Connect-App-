@@ -1844,40 +1844,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const merged = JSON.parse(JSON.stringify(staticData));
     const targetNorm = normalizeMainCatName(mainCategoryName);
 
-    // 1. Process exclusion/deletion markers to remove deleted/inactive categories
-    const exclusionMarkers = dbCategories.filter(c => 
-      c && (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER')
-    );
-
-    exclusionMarkers.forEach(c => {
-      // Exclude sub-subcategory (child item) if present
-      if (c.subSubcategory) {
-        const targetChild = c.subSubcategory.trim().toLowerCase();
-        Object.keys(merged).forEach(k => {
-          if (merged[k] && merged[k].items) {
-            merged[k].items = merged[k].items.filter(
-              item => item.trim().toLowerCase() !== targetChild
-            );
-          }
-        });
-      }
-
-      // Exclude subcategory if present or if name matches a subcategory
-      const candidateSubNames = [c.subcategory, c.name].filter(Boolean);
-      candidateSubNames.forEach(rawSub => {
-        const subLower = rawSub.trim().toLowerCase();
-        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subLower);
-        if (existingKey && !c.subSubcategory) {
-          delete merged[existingKey];
-        }
-      });
-
-      // If main category itself is marked inactive/deleted and matches targetNorm
-      if (!c.subcategory && c.name && normalizeMainCatName(c.name) === targetNorm) {
-        Object.keys(merged).forEach(k => delete merged[k]);
-      }
-    });
-
     // 2. Process active database categories
     const activeDbCats = dbCategories.filter(c => 
       c &&
