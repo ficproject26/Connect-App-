@@ -440,6 +440,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
   const [dbCategories, setDbCategories] = useState([]);
 
+  const normalizeMainCatName = (rawName) => {
+    if (!rawName) return '';
+    const n = rawName.trim().toLowerCase();
+    if (n === 'stores' || n === 'products' || n === 'product' || n === 'store') return 'products';
+    if (n === 'hotels' || n === 'stay' || n === 'hotel') return 'stay';
+    if (n === 'restaurants' || n === 'food' || n === 'restaurant') return 'food';
+    if (n === 'daily need' || n === 'daily needs') return 'daily needs';
+    if (n === 'job' || n === 'jobs') return 'jobs';
+    if (n === 'service' || n === 'services') return 'services';
+    if (n === 'travel') return 'travel';
+    return n;
+  };
+
   // Dynamic Sub-navbar categories
   const subNavbarCategories = useMemo(() => {
     const defaultMainCats = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
@@ -453,7 +466,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     dbCategories.forEach(c => {
       if (c && !c.subcategory && !c.subSubcategory) {
         if (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') {
-          inactiveMainCats.add((c.name || '').trim().toLowerCase());
+          inactiveMainCats.add(normalizeMainCatName(c.name));
         }
       }
     });
@@ -463,18 +476,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     dbCategories.forEach(c => {
       if (c && !c.subcategory && !c.subSubcategory) {
         if (!c.isDeleted && c.isActive !== false && c.description !== 'DELETED_HIERARCHY_MARKER') {
-          const nameTrimmed = (c.name || '').trim();
-          const nameLower = nameTrimmed.toLowerCase();
-          const isDefault = defaultMainCats.some(d => d.toLowerCase() === nameLower);
-          if (!isDefault && !activeCustomMainCats.some(x => x.toLowerCase() === nameLower)) {
-            activeCustomMainCats.push(nameTrimmed);
+          const normName = normalizeMainCatName(c.name);
+          const isDefault = defaultMainCats.some(d => normalizeMainCatName(d) === normName);
+          if (!isDefault && !activeCustomMainCats.some(x => normalizeMainCatName(x) === normName)) {
+            activeCustomMainCats.push((c.name || '').trim());
           }
         }
       }
     });
 
     // 3. Filter default list by excluding inactive ones
-    const filteredDefaults = defaultMainCats.filter(d => !inactiveMainCats.has(d.trim().toLowerCase()));
+    const filteredDefaults = defaultMainCats.filter(d => !inactiveMainCats.has(normalizeMainCatName(d)));
 
     // 4. Combine Home, filtered defaults, and active custom main categories
     return ['Home', ...filteredDefaults, ...activeCustomMainCats];
@@ -1819,18 +1831,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const mergeDbCategories = (staticData, mainCategoryName) => {
     const merged = JSON.parse(JSON.stringify(staticData));
+    const targetNorm = normalizeMainCatName(mainCategoryName);
 
     // 1. Process exclusion/deletion markers to remove deleted/inactive categories
     const exclusionMarkers = dbCategories.filter(c => 
       c &&
       (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') &&
-      ((c.name || '').toLowerCase() === mainCategoryName.toLowerCase() ||
-       (mainCategoryName.toLowerCase() === 'products' && (!c.name || (c.name || '').toLowerCase() === 'products')))
+      (!c.name || normalizeMainCatName(c.name) === targetNorm)
     );
 
     exclusionMarkers.forEach(c => {
       // Find subcategory to exclude
-      const subName = c.subcategory || (c.name && c.name.toLowerCase() !== mainCategoryName.toLowerCase() ? c.name : null);
+      const subName = c.subcategory || (c.name && normalizeMainCatName(c.name) !== targetNorm ? c.name : null);
       if (subName) {
         const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase());
         const matchedKey = existingKey || subName;
@@ -1855,8 +1867,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       c.isActive !== false && 
       !c.isDeleted && 
       c.description !== 'DELETED_HIERARCHY_MARKER' &&
-      ((c.name || '').toLowerCase() === mainCategoryName.toLowerCase() ||
-       (mainCategoryName.toLowerCase() === 'products' && (!c.name || (c.name || '').toLowerCase() === 'products')))
+      (!c.name || normalizeMainCatName(c.name) === targetNorm)
     );
 
     activeDbCats.forEach(c => {
@@ -1879,7 +1890,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         }
       }
       // 2. When record has name as subcategory and subSubcategory as child
-      else if (c.name && c.name.toLowerCase() !== mainCategoryName.toLowerCase()) {
+      else if (c.name && normalizeMainCatName(c.name) !== targetNorm) {
         const existingKey = Object.keys(merged).find(k => k.toLowerCase() === c.name.toLowerCase());
         const subName = existingKey || c.name;
         if (!merged[subName]) {
@@ -1922,22 +1933,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   }, [dbCategories, subNavbarCategories]);
 
   const getCategoriesForTab = (tabName) => {
+    const menuData = allMegaMenus[tabName] || {};
+    const megaSubCats = Object.keys(menuData);
+
     const prodCats = products
-      .filter(p => p.subNavbarCategory === tabName)
+      .filter(p => p.subNavbarCategory && normalizeMainCatName(p.subNavbarCategory) === normalizeMainCatName(tabName))
       .map(p => p.category)
       .filter(Boolean);
 
-    const dbCats = [];
+    const deletedCats = new Set();
     dbCategories.forEach(c => {
-      if (!c || c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') return;
-      const mainMatch = (c.name || '').toLowerCase() === tabName.toLowerCase();
-      if (mainMatch) {
-        if (c.subcategory) dbCats.push(c.subcategory);
-        if (c.subSubcategory) dbCats.push(c.subSubcategory);
+      if (!c) return;
+      if (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') {
+        if (c.subcategory) deletedCats.add(c.subcategory.toLowerCase());
+        if (c.subSubcategory) deletedCats.add(c.subSubcategory.toLowerCase());
       }
     });
 
-    return [...new Set([...prodCats, ...dbCats])].sort();
+    const combined = [...new Set([...megaSubCats, ...prodCats])].filter(cat => !deletedCats.has(cat.toLowerCase()));
+    return combined.sort();
   };
 
 
