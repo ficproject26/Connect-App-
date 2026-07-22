@@ -2691,29 +2691,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   }, [dbCategories]);
 
   const isProductCategoryDeleted = (product) => {
-    if (!product) return false;
-    const mainNorm = normalizeMainCatName(product.subNavbarCategory || product.mainCategory || '');
-    const cat = (product.category || '').trim().toLowerCase();
-    const subCat = (product.subcategory || product.subCategory || '').trim().toLowerCase();
-    const childCat = (product.subSubcategory || product.childCategory || '').trim().toLowerCase();
-
-    // 1. Check main category deletion
-    if (mainNorm && deletedCategoryInfo.deletedMain.has(mainNorm)) return true;
-
-    // 2. Check subcategory deletion
-    if (subCat && deletedCategoryInfo.deletedSub.has(subCat)) return true;
-    if (cat && deletedCategoryInfo.deletedSub.has(cat)) return true;
-
-    // 3. Check child category deletion
-    if (childCat && deletedCategoryInfo.deletedChild.has(childCat)) return true;
-    if (cat && deletedCategoryInfo.deletedChild.has(cat)) return true;
-
+    // Admin category deletion should NOT remove or hide products, services, and other vendor items
     return false;
   };
 
   const activeProducts = useMemo(() => {
-    return products.filter(p => !isProductCategoryDeleted(p));
-  }, [products, deletedCategoryInfo]);
+    return products;
+  }, [products]);
 
   // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)
   const filteredProducts = useMemo(() => {
@@ -3236,11 +3220,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     let items = [];
     let title = "";
 
-    const isDeletedSubCategory = (subName) => {
-      if (!subName) return false;
-      const norm = subName.trim().toLowerCase();
-      return deletedCategoryInfo.deletedSub.has(norm) || deletedCategoryInfo.deletedChild.has(norm);
-    };
+    const isDeletedSubCategory = (subName) => false;
 
     const validCategories = Object.keys(dataDict || {}).filter(cat => !isDeletedSubCategory(cat));
 
