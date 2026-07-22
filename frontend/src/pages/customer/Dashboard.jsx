@@ -2636,6 +2636,79 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
   };
 
+  // Extract deleted/inactive main categories, subcategories, and child categories from DB
+  const deletedCategoryInfo = useMemo(() => {
+    const deletedMain = new Set();
+    const deletedSub = new Set();
+    const deletedChild = new Set();
+
+    const activeMain = new Set();
+    const activeSub = new Set();
+    const activeChild = new Set();
+
+    dbCategories.forEach(c => {
+      if (!c) return;
+      const isDeletedOrInactive = c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER';
+      
+      const normMain = c.name ? normalizeMainCatName(c.name) : '';
+      const normSub = (c.subcategory || '').trim().toLowerCase();
+      const normChild = (c.subSubcategory || '').trim().toLowerCase();
+
+      if (!isDeletedOrInactive) {
+        if (normMain) activeMain.add(normMain);
+        if (normSub) activeSub.add(normSub);
+        if (normChild) activeChild.add(normChild);
+      }
+    });
+
+    dbCategories.forEach(c => {
+      if (!c) return;
+      const isDeletedOrInactive = c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER';
+      if (isDeletedOrInactive) {
+        const normMain = c.name ? normalizeMainCatName(c.name) : '';
+        const normSub = (c.subcategory || '').trim().toLowerCase();
+        const normChild = (c.subSubcategory || '').trim().toLowerCase();
+
+        if (normChild) {
+          if (!activeChild.has(normChild)) deletedChild.add(normChild);
+        }
+        if (normSub) {
+          if (!activeSub.has(normSub)) deletedSub.add(normSub);
+        }
+        if (normMain && !normSub && !normChild) {
+          if (!activeMain.has(normMain)) deletedMain.add(normMain);
+        }
+      }
+    });
+
+    return { deletedMain, deletedSub, deletedChild };
+  }, [dbCategories]);
+
+  const isProductCategoryDeleted = (product) => {
+    if (!product) return false;
+    const mainNorm = normalizeMainCatName(product.subNavbarCategory || product.mainCategory || '');
+    const cat = (product.category || '').trim().toLowerCase();
+    const subCat = (product.subcategory || product.subCategory || '').trim().toLowerCase();
+    const childCat = (product.subSubcategory || product.childCategory || '').trim().toLowerCase();
+
+    // 1. Check main category deletion
+    if (mainNorm && deletedCategoryInfo.deletedMain.has(mainNorm)) return true;
+
+    // 2. Check subcategory deletion
+    if (subCat && deletedCategoryInfo.deletedSub.has(subCat)) return true;
+    if (cat && deletedCategoryInfo.deletedSub.has(cat)) return true;
+
+    // 3. Check child category deletion
+    if (childCat && deletedCategoryInfo.deletedChild.has(childCat)) return true;
+    if (cat && deletedCategoryInfo.deletedChild.has(cat)) return true;
+
+    return false;
+  };
+
+  const activeProducts = useMemo(() => {
+    return products.filter(p => !isProductCategoryDeleted(p));
+  }, [products, deletedCategoryInfo]);
+
   // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)
   const filteredProducts = useMemo(() => {
     const normalizeCity = (city) => {
@@ -2645,7 +2718,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       return c;
     };
 
-    let result = products.filter(product => {
+    let result = activeProducts.filter(product => {
       const pCity = (product.vendorCity || product.city || '').trim().toLowerCase();
       const sCity = (selectedLocation?.city || '').trim().toLowerCase();
       const matchesLocation = !selectedLocation?.city || 
@@ -4592,7 +4665,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // 5. STAY BEST OFFERS (LEFT)
   const renderStayOffers = () => {
-    const stays = products.filter(p => p.subNavbarCategory === 'Stay').slice(0, 4);
+    const stays = activeProducts.filter(p => p.subNavbarCategory === 'Stay').slice(0, 4);
     if (stays.length === 0) return null;
     return (
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-200">
@@ -4633,7 +4706,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // 6. POPULAR RESTAURANTS (LEFT)
   const renderPopularRestaurants = () => {
-    const restaurants = products.filter(p => p.subNavbarCategory === 'Food').slice(0, 4);
+    const restaurants = activeProducts.filter(p => p.subNavbarCategory === 'Food').slice(0, 4);
     if (restaurants.length === 0) return null;
     return (
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-805 dark:text-slate-200">
