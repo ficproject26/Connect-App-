@@ -737,7 +737,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       try {
         let res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
         if (!res.ok) {
-          res = await fetch('http://localhost:8001/api/admin/categories');
+          res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
         }
         if (res.ok) {
           const data = await res.json();
@@ -747,7 +747,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         }
       } catch (err) {
         try {
-          const res = await fetch('http://localhost:8001/api/admin/categories');
+          const res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data)) setDbCategories(data);
@@ -762,7 +762,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       try {
         let res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
         if (!res.ok) {
-          res = await fetch('http://localhost:8001/api/admin/public/banners');
+          res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
         }
         if (res.ok) {
           const data = await res.json();
@@ -772,7 +772,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         }
       } catch (err) {
         try {
-          const res = await fetch('http://localhost:8001/api/admin/public/banners');
+          const res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data)) setDbBanners(data);

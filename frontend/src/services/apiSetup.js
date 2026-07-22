@@ -42,7 +42,7 @@ export const getAdminBackendUrl = () => {
     hostname.startsWith('192.168.') || 
     hostname.startsWith('10.')
   ) {
-    return `http://${hostname || 'localhost'}:8001`;
+    return `http://${hostname || 'localhost'}:5001`;
   }
   
   return import.meta.env.VITE_ADMIN_BACKEND_URL || 'https://connect-admin.onrender.com';
