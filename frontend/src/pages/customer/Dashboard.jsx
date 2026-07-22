@@ -5980,6 +5980,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     <button 
                                       onClick={(e) => { 
                                         e.stopPropagation(); 
+                                        setActiveTab('Jobs');
+                                        setAppliedJobId(product.id);
                                         triggerNotification(`Applying for ${product.name}...`);
                                       }} 
                                       className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
@@ -7454,6 +7456,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 ) : (
                   <button
                     onClick={() => {
+                      setSelectedProduct(null);
+                      setActiveTab('Jobs');
+                      setAppliedJobId(selectedProduct.id);
                       triggerNotification(`Applying for ${selectedProduct.name}...`);
                     }}
                     className="flex-1 py-3.5 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
