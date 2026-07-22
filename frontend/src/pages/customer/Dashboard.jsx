@@ -1895,7 +1895,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             merged[subName].items.push(childName);
           }
         }
-        }
       }
     });
     return merged;
