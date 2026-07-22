@@ -1831,13 +1831,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     exclusionMarkers.forEach(c => {
       // Find subcategory to exclude
       const subName = c.subcategory || (c.name && c.name.toLowerCase() !== mainCategoryName.toLowerCase() ? c.name : null);
-      if (subName && merged[subName]) {
-        if (c.subSubcategory) {
-          if (merged[subName].items) {
-            merged[subName].items = merged[subName].items.filter(item => item !== c.subSubcategory);
+      if (subName) {
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase());
+        const matchedKey = existingKey || subName;
+        if (merged[matchedKey]) {
+          if (c.subSubcategory) {
+            if (merged[matchedKey].items) {
+              merged[matchedKey].items = merged[matchedKey].items.filter(item => item.toLowerCase() !== c.subSubcategory.toLowerCase());
+            }
+          } else {
+            delete merged[matchedKey];
           }
-        } else {
-          delete merged[subName];
         }
       } else if (!c.subcategory) {
         // If main category itself is inactive/deleted, delete all keys
@@ -1858,7 +1862,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     activeDbCats.forEach(c => {
       // 1. When record has subcategory field
       if (c.subcategory) {
-        const subName = c.subcategory;
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === c.subcategory.toLowerCase());
+        const subName = existingKey || c.subcategory;
         if (!merged[subName]) {
           merged[subName] = {
             title: subName,
@@ -1867,22 +1872,29 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         }
         if (c.subSubcategory) {
           const childName = c.subSubcategory;
-          if (!merged[subName].items.includes(childName)) {
+          const childExists = (merged[subName].items || []).some(item => item.toLowerCase() === childName.toLowerCase());
+          if (!childExists) {
             merged[subName].items.push(childName);
           }
         }
       }
       // 2. When record has name as subcategory and subSubcategory as child
       else if (c.name && c.name.toLowerCase() !== mainCategoryName.toLowerCase()) {
-        const subName = c.name;
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === c.name.toLowerCase());
+        const subName = existingKey || c.name;
         if (!merged[subName]) {
           merged[subName] = {
             title: subName,
             items: []
           };
         }
-        if (c.subSubcategory && !merged[subName].items.includes(c.subSubcategory)) {
-          merged[subName].items.push(c.subSubcategory);
+        if (c.subSubcategory) {
+          const childName = c.subSubcategory;
+          const childExists = (merged[subName].items || []).some(item => item.toLowerCase() === childName.toLowerCase());
+          if (!childExists) {
+            merged[subName].items.push(childName);
+          }
+        }
         }
       }
     });
