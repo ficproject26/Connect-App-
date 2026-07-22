@@ -2640,16 +2640,27 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     };
 
     let result = products.filter(product => {
+      const pCity = (product.vendorCity || product.city || '').trim().toLowerCase();
+      const sCity = (selectedLocation?.city || '').trim().toLowerCase();
       const matchesLocation = !selectedLocation?.city || 
-        normalizeCity(product.vendorCity) === normalizeCity(selectedLocation.city);
+        sCity === '' ||
+        sCity === 'all' || 
+        sCity === 'any' || 
+        pCity === '' ||
+        pCity === 'all' || 
+        pCity === 'any' || 
+        pCity === 'online' || 
+        pCity === 'pan india' || 
+        pCity === 'india' ||
+        normalizeCity(pCity) === normalizeCity(sCity);
 
       const matchesSearch = (searchQuery === '' || 
         (product.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
         (product.category || '').toLowerCase().includes((searchQuery || '').toLowerCase())) &&
-        (searchCategory === 'All' || product.subNavbarCategory === searchCategory);
+        (searchCategory === 'All' || normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(searchCategory));
 
       const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
-        product.subNavbarCategory === selectedSubNavbarCategory;
+        normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(selectedSubNavbarCategory);
 
       // Services Filter Checks
       if (activeTab === 'Services') {
