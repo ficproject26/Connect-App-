@@ -5538,32 +5538,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     </div>
                                   </div>
 
-                                  {/* 4. Cover Letter (Optional) */}
-                                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
-                                    <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                                      <Info className="w-4 h-4 text-slate-400" />
-                                      <div>
-                                        <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider">
-                                          4. Cover Letter (Optional)
-                                        </h3>
-                                        <p className="text-[10px] text-slate-400">Tell us why you're a good fit for this role</p>
-                                      </div>
-                                    </div>
 
-                                    <div className="space-y-1 relative">
-                                      <textarea
-                                        rows={5}
-                                        maxLength={1000}
-                                        value={applicantCoverLetter}
-                                        onChange={(e) => setApplicantCoverLetter(e.target.value)}
-                                        placeholder="Write your cover letter here..."
-                                        className="w-full px-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-amber-400 resize-none font-medium leading-relaxed"
-                                      />
-                                      <div className="text-right text-[10px] font-bold text-slate-400">
-                                        {applicantCoverLetter.length}/1000
-                                      </div>
-                                    </div>
-                                  </div>
 
                                   {/* Trust Notice & Actions */}
                                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
