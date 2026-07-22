@@ -627,10 +627,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [ratingSuccess, setRatingSuccess] = useState(false);
 
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
+
+  const ordersForActiveTab = useMemo(() => {
+    if (activeProfileTab === 'orders') {
+      return customerOrders.filter(o => o.type !== 'Job' && o.type !== 'Jobs' && o.type !== 'Booking' && o.type !== 'Stay' && o.type !== 'Travel' && o.type !== 'Appointment');
+    }
+    if (activeProfileTab === 'bookings') {
+      return customerOrders.filter(o => o.type === 'Booking' || o.type === 'Stay' || o.type === 'Travel' || o.type === 'Appointment');
+    }
+    if (activeProfileTab === 'myjobs') {
+      return customerOrders.filter(o => o.type === 'Job' || o.type === 'Jobs');
+    }
+    return customerOrders;
+  }, [customerOrders, activeProfileTab]);
+
   // Derived filtered orders based on selected orders tab
   const filteredCustomerOrders = useMemo(() => {
-    if (selectedOrdersTab === 'All Orders') return customerOrders;
-    return customerOrders.filter(o => {
+    const orders = ordersForActiveTab;
+    if (selectedOrdersTab === 'All Orders') return orders;
+    return orders.filter(o => {
       const status = (o.status || '').toLowerCase();
       const tab = selectedOrdersTab.toLowerCase();
       if (tab === 'processing') return ['order received', 'preparing', 'ready for pickup'].includes(status);
@@ -640,7 +655,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       if (tab === 'returned') return status === 'returned';
       return true;
     });
-  }, [customerOrders, selectedOrdersTab]);
+  }, [ordersForActiveTab, selectedOrdersTab]);
 
   // Map references
   const customerMapRef = useRef(null);
@@ -5943,26 +5958,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          setActiveScheduleModalItem(product);
-                                          setSelectedModalDate('Wed, 21 May 2025');
-                                          setSelectedModalTime('11:00 AM');
-                                          setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
-                                        }} 
-                                        className="flex-1 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 border border-amber-500/30 leading-none h-9"
-                                      >
-                                        <Clock className="w-3.5 h-3.5" />
-                                        <span>Schedule</span>
-                                      </button>
-                                      <button 
-                                        onClick={(e) => { 
-                                          e.stopPropagation(); 
                                           setActiveBookNowModalItem(product);
                                           setSelectedModalDate('Wednesday, 21 May 2025');
                                           setSelectedModalTime('11:00 AM');
                                           setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
                                           setSelectedTimeOfDayTab('Morning');
                                         }} 
-                                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
+                                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
                                       >
                                         <span>Book Now</span>
                                       </button>
@@ -8206,14 +8208,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Modal Left Navigation Sidebar */}
             <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
               <div className="space-y-6 text-left">
-                {/* Logo */}
-                <div className="flex flex-col items-center pb-2 border-b border-slate-100 dark:border-slate-800/60 w-full">
-                  <img 
-                    src={logoImg} 
-                    alt="Forge India Connect" 
-                    className="h-16 object-contain" 
-                  />
-                </div>
+
 
                 {/* Profile Details */}
                 <div className="flex flex-col items-center text-center gap-2 pb-5 border-b border-slate-100 dark:border-slate-800/60 w-full">
@@ -8234,6 +8229,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <div className="flex flex-row md:flex-col gap-1 overflow-x-auto no-scrollbar py-2">
                   {[
                     { id: 'orders', label: 'My Orders', icon: ShoppingBag },
+                    { id: 'bookings', label: 'My Bookings', icon: Calendar },
+                    { id: 'myjobs', label: 'My Jobs', icon: Briefcase },
                     { id: 'wallet', label: 'Connect Wallet', icon: Wallet },
                     { id: 'payments', label: 'Payments', icon: CreditCard },
                     { id: 'card', label: 'Membership Card', icon: Sparkles },
