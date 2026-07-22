@@ -80,6 +80,8 @@ export interface Order {
   prescriptionUrl?: string;
   candidateEmail?: string;
   candidateResume?: string;
+  experience?: string;
+  candidateEducation?: string;
   items?: any[];
   vendorId?: string;
   memberId?: string;
