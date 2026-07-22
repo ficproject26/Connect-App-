@@ -183,7 +183,8 @@ router.post('/', async (req: Request, res: Response) => {
     vendor_id, customer_name, customer_phone, customer_address,
     product_details, amount, customer_latitude, customer_longitude,
     type, appointmentDate, appointmentTimeSlot, doctorName,
-    tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items
+    tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items,
+    experience, candidateEducation
   } = req.body;
 
   if (!customer_name || !customer_phone || !customer_address || amount === undefined || amount === null) {
@@ -223,6 +224,8 @@ router.post('/', async (req: Request, res: Response) => {
       prescriptionUrl,
       candidateEmail,
       candidateResume,
+      experience,
+      candidateEducation,
       items: items || []
     });
 
@@ -271,6 +274,8 @@ router.post('/', async (req: Request, res: Response) => {
         finalAmount: amount,
         candidateEmail: candidateEmail || req.body.candidateEmail,
         candidateResume: candidateResume || req.body.candidateResume,
+        experience: experience || req.body.experience,
+        candidateEducation: candidateEducation || req.body.candidateEducation,
         appointmentDate,
         appointmentTimeSlot,
         doctorName,

@@ -935,7 +935,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   useEffect(() => {
-    if (trackingOrder && activeProfileTab === 'orders') {
+    if (trackingOrder && activeProfileTab === 'orders' && trackingOrder.type !== 'Job') {
       const timer = setTimeout(() => {
         initCustomerMap();
       }, 300);
@@ -1048,7 +1048,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
       type: 'Full-time',
       desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`,
-      price: p.price
+      price: p.price,
+      rating: p.rating
     }))
   ];
 
@@ -1075,7 +1076,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             quantity: 1
           }],
           candidateEmail: applicantEmail,
-          candidateResume: applicantResume,
+          candidateResume: applicantResume || (resumeFile ? resumeFile.name : 'Dhanush_Resume.pdf'),
+          experience: applicantExperience || 'Fresher',
+          candidateEducation: 'Graduate',
           type: 'Job'
         })
       });
@@ -4820,6 +4823,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       return matchesSearch && matchesDept && matchesType && matchesSalary;
     });
 
+    if (sortBy === 'price-asc') {
+      filteredJobs.sort((a, b) => (a.price || 0) - (b.price || 0));
+    } else if (sortBy === 'price-desc') {
+      filteredJobs.sort((a, b) => (b.price || 0) - (a.price || 0));
+    } else if (sortBy === 'rating-desc') {
+      filteredJobs.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+
     return (
       <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-6 text-slate-800 dark:text-slate-200">
         <div className="flex flex-col gap-6 w-full items-stretch">
@@ -5667,46 +5678,72 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {filteredJobs.map((job) => (
-                        <div 
-                          key={job.id} 
-                          className="p-5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200"
-                        >
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between gap-2.5 flex-wrap">
-                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                                {job.type}
-                              </span>
-                              <span className="text-[10px] text-amber-500 dark:text-amber-400 font-extrabold flex items-center">
-                                {job.salary}
-                              </span>
+                      {filteredJobs.map((job) => {
+                        const appliedOrder = customerOrders.find(o => 
+                          o.type === 'Job' && o.items?.some(item => item.productId === job.id)
+                        );
+                        return (
+                          <div 
+                            key={job.id} 
+                            className="p-5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200"
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between gap-2.5 flex-wrap">
+                                <div className="flex gap-2">
+                                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    {job.type}
+                                  </span>
+                                  {appliedOrder && (
+                                    <span className="bg-amber-500/10 dark:bg-amber-400/10 text-amber-500 text-[8px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-amber-500/20">
+                                      Under Preview
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-amber-500 dark:text-amber-400 font-extrabold flex items-center">
+                                  {job.salary}
+                                </span>
+                              </div>
+                              
+                              <div>
+                                <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100 group-hover/job:text-amber-500 transition-colors leading-tight font-sans">
+                                  {job.title}
+                                </h3>
+                                <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-wide">
+                                  <span>{job.department}</span>
+                                  <span>•</span>
+                                  <span>{job.location}</span>
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1 line-clamp-3 font-medium">
+                                {job.desc}
+                              </p>
                             </div>
                             
-                            <div>
-                              <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100 group-hover/job:text-amber-500 transition-colors leading-tight font-sans">
-                                {job.title}
-                              </h3>
-                              <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-wide">
-                                <span>{job.department}</span>
-                                <span>•</span>
-                                <span>{job.location}</span>
-                              </div>
-                            </div>
-
-                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-1 line-clamp-3 font-medium">
-                              {job.desc}
-                            </p>
+                            {appliedOrder ? (
+                              <button 
+                                onClick={() => {
+                                  setIsProfileModalOpen(true);
+                                  setActiveProfileTab('orders');
+                                  setTrackingOrder(appliedOrder);
+                                }}
+                                className="w-full text-center bg-transparent border-2 border-[#0b1e36] dark:border-amber-400 text-[#0b1e36] dark:text-amber-400 hover:bg-[#0b1e36]/5 dark:hover:bg-amber-400/15 font-black text-xs uppercase tracking-widest py-2.5 rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-1"
+                              >
+                                <span>View Status</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => setAppliedJobId(job.id)}
+                                className="w-full text-center bg-[#0b1e36] dark:bg-amber-400 hover:bg-amber-500 dark:hover:bg-amber-500 text-white dark:text-[#0b1e36] font-black text-xs uppercase tracking-widest py-3 rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-1"
+                              >
+                                <span>Apply Now</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
-                          
-                          <button 
-                            onClick={() => setAppliedJobId(job.id)}
-                            className="w-full text-center bg-[#0b1e36] dark:bg-amber-400 hover:bg-amber-500 dark:hover:bg-amber-500 text-white dark:text-[#0b1e36] font-black text-xs uppercase tracking-widest py-3 rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-1"
-                          >
-                            <span>Apply Now</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -5894,6 +5931,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   );
                                 } else {
                                   // Jobs
+                                  const appliedOrder = customerOrders.find(o => 
+                                    o.type === 'Job' && o.items?.some(item => item.productId === product.id)
+                                  );
+                                  if (appliedOrder) {
+                                    return (
+                                      <button 
+                                        onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          setIsProfileModalOpen(true);
+                                          setActiveProfileTab('orders');
+                                          setTrackingOrder(appliedOrder);
+                                        }} 
+                                        className="w-full py-2.5 bg-transparent border border-blue-600 hover:bg-blue-600/5 text-blue-600 font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center leading-none h-9 animate-fade-in"
+                                      >
+                                        <span>View Status</span>
+                                      </button>
+                                    );
+                                  }
                                   return (
                                     <button 
                                       onClick={(e) => { 
@@ -8189,153 +8244,277 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {activeProfileTab === 'orders' && (
                   <div className="space-y-6 animate-fade-in text-left flex flex-col h-full justify-between">
                     {trackingOrder ? (
-                      /* Live Tracking UI */
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
-                          <button
-                            onClick={() => {
-                              setTrackingOrder(null);
-                              setTrackingTimeline([]);
-                              setTrackingPartner(null);
-                              setTrackingCoords(null);
-                            }}
-                            className="text-xs text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span>Back to Order History</span>
-                          </button>
-                          <span className="text-[10px] bg-amber-400/10 text-amber-500 border border-amber-400/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                            Live Tracking
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
-                            <h4 className="font-bold text-slate-900 dark:text-white">Order #{trackingOrder.order_number}</h4>
-                            <p className="text-slate-500 dark:text-slate-400">Address: <strong>{trackingOrder.customer_address}</strong></p>
-                            <p className="text-slate-500 dark:text-slate-400">Items: <strong>{trackingOrder.product_details}</strong></p>
-                            <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">₹{trackingOrder.amount}</strong></p>
+                      trackingOrder.type === 'Job' ? (
+                        /* Beautiful Job Application Status Tracking UI */
+                        <div className="space-y-4 animate-fade-in">
+                          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
+                            <button
+                              onClick={() => {
+                                setTrackingOrder(null);
+                                setTrackingTimeline([]);
+                                setTrackingPartner(null);
+                                setTrackingCoords(null);
+                              }}
+                              className="text-xs text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                              <span>Back to Applications</span>
+                            </button>
+                            <span className="text-[10px] bg-amber-400/10 text-amber-500 border border-amber-400/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              Application Status
+                            </span>
                           </div>
-                          
-                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1 shadow-xs">
-                            <span className="text-[10px] uppercase font-bold text-slate-500">Estimated Arrival</span>
-                            {eta ? (
-                              <span className="text-xl font-black text-amber-500">{eta} mins remaining</span>
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400">Calculating ETA...</span>
-                            )}
-                            {distanceRemaining !== null && (
-                              <span className="text-[10px] text-slate-500 mt-0.5">{distanceRemaining.toFixed(2)} km away</span>
-                            )}
-                          </div>
-                        </div>
 
-                        {/* Live Leaflet Map container */}
-                        <div className="bg-white dark:bg-slate-900 p-2 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xs">
-                          <div id="customer-tracking-map" className="h-[240px] rounded-xl bg-slate-950 relative overflow-hidden flex items-center justify-center border border-slate-900">
-                            <span className="text-xs text-slate-500 animate-pulse font-bold">Initializing live GPS map...</span>
-                          </div>
-                        </div>
-
-                        {/* Animated Timeline */}
-                        <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 text-left">Delivery Progress Timeline</h4>
-                          <div className="flex justify-between items-center relative w-full px-2">
-                            <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 -z-10" />
-                            
-                            {['Order Placed', 'Preparing', 'Ready For Pickup', 'Delivery Partner Accepted', 'Out For Delivery', 'Delivered'].map((step, idx) => {
-                              const statusMap = {
-                                'Order Received': 0,
-                                'Preparing': 1,
-                                'Ready For Pickup': 2,
-                                'Assigned To Delivery Partner': 2,
-                                'Delivery Partner Accepted': 3,
-                                'Picked Up': 3,
-                                'Out For Delivery': 4,
-                                'Near Customer': 4,
-                                'Delivered': 5,
-                                'Completed': 5
-                              };
-                              const currentIdx = statusMap[trackingOrder.status] || 0;
-                              const isCompleted = idx <= currentIdx;
-                              const isActive = idx === currentIdx;
-                              
-                              return (
-                                <div key={idx} className="flex flex-col items-center gap-1.5 z-10">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
-                                    isCompleted 
-                                      ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
-                                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
-                                  }`}>
-                                    {isCompleted ? '✓' : idx + 1}
-                                  </div>
-                                  <span className={`text-[8px] font-bold uppercase transition-colors ${
-                                    isActive ? 'text-[#f43397]' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
-                                  }`}>
-                                    {step.replace('Delivery Partner ', '')}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Delivery Partner Details */}
-                        {trackingPartner ? (
-                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between shadow-xs">
-                            <div className="flex items-center gap-3">
-                              <img src={trackingPartner.photo} className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-800 bg-white" />
-                              <div className="text-left">
-                                <h4 className="text-xs font-bold text-slate-800 dark:text-white leading-tight">{trackingPartner.name}</h4>
-                                <span className="text-[10px] text-slate-500 block mt-0.5">{trackingPartner.vehicle_type} • {trackingPartner.vehicle_number}</span>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2.5 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
+                              <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">{trackingOrder.product_details}</h4>
+                              <div className="space-y-1">
+                                <p className="text-slate-500 dark:text-slate-400">Application Number: <strong className="text-slate-800 dark:text-white">#{trackingOrder.order_number}</strong></p>
+                                <p className="text-slate-500 dark:text-slate-400">Applied On: <strong className="text-slate-800 dark:text-white">{new Date(trackingOrder.created_at || Date.now()).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></p>
+                                <p className="text-slate-500 dark:text-slate-400">Candidate Name: <strong className="text-slate-800 dark:text-white">{trackingOrder.customer_name}</strong></p>
+                                <p className="text-slate-500 dark:text-slate-400">Candidate Email: <strong className="text-slate-800 dark:text-white">{trackingOrder.candidateEmail || 'N/A'}</strong></p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <a href={`tel:${trackingPartner.mobile}`} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 rounded-full border border-slate-200 dark:border-slate-800 transition-colors flex items-center justify-center">
-                                <Phone className="w-4 h-4" />
-                              </a>
-                              {!['Delivered', 'Completed', 'Cancelled'].includes(trackingOrder.status) && (
-                                <div className="bg-amber-400/10 border border-amber-400/30 text-amber-600 dark:text-amber-400 rounded-xl px-3.5 py-1 text-center shrink-0 flex flex-col justify-center">
-                                  <span className="text-[8px] uppercase font-bold tracking-wider leading-none">Share Delivery OTP</span>
-                                  <span className="text-xs font-black tracking-widest mt-0.5">{trackingOrder.id.replace(/[^\d]/g, '').slice(-4) || '1234'}</span>
-                                </div>
+                            
+                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1.5 shadow-xs">
+                              <span className="text-[10px] uppercase font-bold text-slate-450 tracking-wider">Current Decision Status</span>
+                              <div className="inline-block mx-auto">
+                                <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${
+                                  trackingOrder.status === 'Cancelled'
+                                    ? 'bg-red-500/10 text-red-500 border-red-500/25'
+                                    : ['Delivered', 'Completed'].includes(trackingOrder.status)
+                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25'
+                                    : 'bg-amber-500/10 text-amber-500 border-amber-500/25'
+                                }`}>
+                                  {trackingOrder.status === 'Order Received' ? 'Under Preview' :
+                                   trackingOrder.status === 'Preparing' ? 'Resume Screening' :
+                                   ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(trackingOrder.status) ? 'Shortlisted' :
+                                   ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(trackingOrder.status) ? 'Interview Scheduled' :
+                                   ['Delivered', 'Completed'].includes(trackingOrder.status) ? 'Selected / Offered' :
+                                   trackingOrder.status === 'Cancelled' ? 'Application Rejected' : 'Under Review'}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-semibold">
+                                {trackingOrder.status === 'Cancelled'
+                                  ? 'Thank you for your interest. We will not be moving forward with your candidacy at this time.'
+                                  : ['Delivered', 'Completed'].includes(trackingOrder.status)
+                                  ? 'Congratulations! You have been selected. Check your email for the official offer letter.'
+                                  : 'Our HR team is currently reviewing your details. We will contact you soon.'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Customized Recruiting Progress Timeline */}
+                          <div className="bg-white dark:bg-slate-900 p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-5 text-left">Recruiting Progress Timeline</h4>
+                            <div className="flex justify-between items-center relative w-full px-2">
+                              <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 -z-10" />
+                              
+                              {['Application Received', 'Resume Screening', 'Shortlisted', 'Interview Scheduled', 'Selected / Offered'].map((step, idx) => {
+                                const statusMap = {
+                                  'Order Received': 0,
+                                  'Preparing': 1,
+                                  'Ready For Pickup': 2,
+                                  'Assigned To Delivery Partner': 2,
+                                  'Delivery Partner Accepted': 2,
+                                  'Picked Up': 3,
+                                  'Out For Delivery': 3,
+                                  'Near Customer': 3,
+                                  'Delivered': 4,
+                                  'Completed': 4
+                                };
+                                const isCancelled = trackingOrder.status === 'Cancelled';
+                                const currentIdx = statusMap[trackingOrder.status] || 0;
+                                const isCompleted = !isCancelled && idx <= currentIdx;
+                                const isActive = !isCancelled && idx === currentIdx;
+                                
+                                return (
+                                  <div key={idx} className="flex flex-col items-center gap-1.5 z-10">
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
+                                      isCancelled && idx === currentIdx
+                                        ? 'bg-rose-500 border-rose-400 text-white shadow-[0_0_8px_#F43F5E]'
+                                        : isCompleted 
+                                          ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
+                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
+                                    }`}>
+                                      {isCancelled && idx === currentIdx ? '✗' : isCompleted ? '✓' : idx + 1}
+                                    </div>
+                                    <span className={`text-[8px] font-bold uppercase transition-colors whitespace-nowrap ${
+                                      isCancelled && idx === currentIdx ? 'text-rose-500' : isActive ? 'text-amber-500' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
+                                    }`}>
+                                      {step}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Next Steps Box */}
+                          <div className="bg-slate-50 dark:bg-slate-950 p-4 border border-slate-100 dark:border-slate-800/80 rounded-2xl text-left space-y-2.5">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-350">What to expect next?</h4>
+                            <ul className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
+                              {trackingOrder.status === 'Cancelled' ? (
+                                <li>Your profile will be kept in our talent pool for future openings that match your skills.</li>
+                              ) : (
+                                <>
+                                  <li>Our recruiting team reviews resumes within 3-5 business days.</li>
+                                  <li>If your profile matches the role requirements, you will receive an invitation email for a technical screening.</li>
+                                  <li>Make sure to check your spam folder for emails from <strong>recruiting@connectapp.com</strong>.</li>
+                                </>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Live Tracking UI */
+                        <div className="space-y-4 animate-fade-in">
+                          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
+                            <button
+                              onClick={() => {
+                                setTrackingOrder(null);
+                                setTrackingTimeline([]);
+                                setTrackingPartner(null);
+                                setTrackingCoords(null);
+                              }}
+                              className="text-xs text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                              <span>Back to Order History</span>
+                            </button>
+                            <span className="text-[10px] bg-amber-400/10 text-amber-500 border border-amber-400/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              Live Tracking
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
+                              <h4 className="font-bold text-slate-900 dark:text-white">Order #{trackingOrder.order_number}</h4>
+                              <p className="text-slate-500 dark:text-slate-400">Address: <strong>{trackingOrder.customer_address}</strong></p>
+                              <p className="text-slate-500 dark:text-slate-400">Items: <strong>{trackingOrder.product_details}</strong></p>
+                              <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">₹{trackingOrder.amount}</strong></p>
+                            </div>
+                            
+                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1 shadow-xs">
+                              <span className="text-[10px] uppercase font-bold text-slate-500">Estimated Arrival</span>
+                              {eta ? (
+                                <span className="text-xl font-black text-amber-500">{eta} mins remaining</span>
+                              ) : (
+                                <span className="text-xs font-bold text-slate-400">Calculating ETA...</span>
+                              )}
+                              {distanceRemaining !== null && (
+                                <span className="text-[10px] text-slate-500 mt-0.5">{distanceRemaining.toFixed(2)} km away</span>
                               )}
                             </div>
                           </div>
-                        ) : (
-                          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center text-xs text-amber-600 dark:text-amber-400 font-bold">
-                            Waiting for a delivery partner to accept your order...
-                          </div>
-                        )}
 
-                        {/* Rating Sub-panel */}
-                        {['Delivered', 'Completed'].includes(trackingOrder.status) && (
-                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-3 mt-4 text-center shadow-xs">
-                            <h4 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider text-left">Rate your Delivery Experience</h4>
-                            {ratingSuccess ? (
-                              <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-500 font-bold text-xs flex items-center justify-center gap-1.5 animate-scale-up">
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span>Review submitted! Thank you for your feedback.</span>
-                              </div>
-                            ) : (
-                              <form onSubmit={submitRating} className="space-y-3 text-left">
-                                <div className="flex items-center gap-1.5">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <button key={star} type="button" onClick={() => setRatingValue(star)} className="p-1 cursor-pointer transition-transform hover:scale-110 border-none bg-transparent">
-                                      <Star className={`w-5 h-5 ${star <= ratingValue ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
-                                    </button>
-                                  ))}
-                                  <span className="text-[10px] font-bold text-slate-500 ml-2">({ratingValue} Stars)</span>
-                                </div>
-                                <textarea rows={2} value={ratingComment} onChange={(e) => setRatingComment(e.target.value)} placeholder="Add comments about delivery speed, politeness, safety..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 resize-none focus:outline-none focus:border-amber-400" />
-                                <button type="submit" onClick={() => setRatingOrder(trackingOrder)} className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow">
-                                  Submit Delivery Review
-                                </button>
-                              </form>
-                            )}
+                          {/* Live Leaflet Map container */}
+                          <div className="bg-white dark:bg-slate-900 p-2 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xs">
+                            <div id="customer-tracking-map" className="h-[240px] rounded-xl bg-slate-950 relative overflow-hidden flex items-center justify-center border border-slate-900">
+                              <span className="text-xs text-slate-500 animate-pulse font-bold">Initializing live GPS map...</span>
+                            </div>
                           </div>
-                        )}
-                      </div>
+
+                          {/* Animated Timeline */}
+                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 text-left">Delivery Progress Timeline</h4>
+                            <div className="flex justify-between items-center relative w-full px-2">
+                              <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 -z-10" />
+                              
+                              {['Order Placed', 'Preparing', 'Ready For Pickup', 'Delivery Partner Accepted', 'Out For Delivery', 'Delivered'].map((step, idx) => {
+                                const statusMap = {
+                                  'Order Received': 0,
+                                  'Preparing': 1,
+                                  'Ready For Pickup': 2,
+                                  'Assigned To Delivery Partner': 2,
+                                  'Delivery Partner Accepted': 3,
+                                  'Picked Up': 3,
+                                  'Out For Delivery': 4,
+                                  'Near Customer': 4,
+                                  'Delivered': 5,
+                                  'Completed': 5
+                                };
+                                const currentIdx = statusMap[trackingOrder.status] || 0;
+                                const isCompleted = idx <= currentIdx;
+                                const isActive = idx === currentIdx;
+                                
+                                return (
+                                  <div key={idx} className="flex flex-col items-center gap-1.5 z-10">
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
+                                      isCompleted 
+                                        ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
+                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
+                                    }`}>
+                                      {isCompleted ? '✓' : idx + 1}
+                                    </div>
+                                    <span className={`text-[8px] font-bold uppercase transition-colors ${
+                                      isActive ? 'text-[#f43397]' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
+                                    }`}>
+                                      {step.replace('Delivery Partner ', '')}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Delivery Partner Details */}
+                          {trackingPartner ? (
+                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between shadow-xs">
+                              <div className="flex items-center gap-3">
+                                <img src={trackingPartner.photo} className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-800 bg-white" />
+                                <div className="text-left">
+                                  <h4 className="text-xs font-bold text-slate-800 dark:text-white leading-tight">{trackingPartner.name}</h4>
+                                  <span className="text-[10px] text-slate-500 block mt-0.5">{trackingPartner.vehicle_type} • {trackingPartner.vehicle_number}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <a href={`tel:${trackingPartner.mobile}`} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 rounded-full border border-slate-200 dark:border-slate-800 transition-colors flex items-center justify-center">
+                                  <Phone className="w-4 h-4" />
+                                </a>
+                                {!['Delivered', 'Completed', 'Cancelled'].includes(trackingOrder.status) && (
+                                  <div className="bg-amber-400/10 border border-amber-400/30 text-amber-600 dark:text-amber-400 rounded-xl px-3.5 py-1 text-center shrink-0 flex flex-col justify-center">
+                                    <span className="text-[8px] uppercase font-bold tracking-wider leading-none">Share Delivery OTP</span>
+                                    <span className="text-xs font-black tracking-widest mt-0.5">{trackingOrder.id.replace(/[^\d]/g, '').slice(-4) || '1234'}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center text-xs text-amber-600 dark:text-amber-400 font-bold">
+                              Waiting for a delivery partner to accept your order...
+                            </div>
+                          )}
+
+                          {/* Rating Sub-panel */}
+                          {['Delivered', 'Completed'].includes(trackingOrder.status) && (
+                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-3 mt-4 text-center shadow-xs">
+                              <h4 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider text-left">Rate your Delivery Experience</h4>
+                              {ratingSuccess ? (
+                                <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-500 font-bold text-xs flex items-center justify-center gap-1.5 animate-scale-up">
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>Review submitted! Thank you for your feedback.</span>
+                                </div>
+                              ) : (
+                                <form onSubmit={submitRating} className="space-y-3 text-left">
+                                  <div className="flex items-center gap-1.5">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <button key={star} type="button" onClick={() => setRatingValue(star)} className="p-1 cursor-pointer transition-transform hover:scale-110 border-none bg-transparent">
+                                        <Star className={`w-5 h-5 ${star <= ratingValue ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                                      </button>
+                                    ))}
+                                    <span className="text-[10px] font-bold text-slate-500 ml-2">({ratingValue} Stars)</span>
+                                  </div>
+                                  <textarea rows={2} value={ratingComment} onChange={(e) => setRatingComment(e.target.value)} placeholder="Add comments about delivery speed, politeness, safety..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 resize-none focus:outline-none focus:border-amber-400" />
+                                  <button type="submit" onClick={() => setRatingOrder(trackingOrder)} className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow">
+                                    Submit Delivery Review
+                                  </button>
+                                </form>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
                     ) : (
                       /* Main Orders Tab Layout */
                       <div className="space-y-6 flex-grow flex flex-col justify-between">

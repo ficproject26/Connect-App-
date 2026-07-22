@@ -346,6 +346,8 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
           finalAmount: body.amount || 0,
           candidateEmail: body.candidateEmail,
           candidateResume: body.candidateResume,
+          experience: body.experience,
+          candidateEducation: body.candidateEducation,
           appointmentDate: body.appointmentDate,
           appointmentTimeSlot: body.appointmentTimeSlot,
           doctorName: body.doctorName,

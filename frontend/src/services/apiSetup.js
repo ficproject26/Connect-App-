@@ -26,7 +26,7 @@ export const getVendorBackendUrl = () => {
     hostname.startsWith('192.168.') || 
     hostname.startsWith('10.')
   ) {
-    return `http://${hostname || 'localhost'}:8001`;
+    return `http://${hostname || 'localhost'}:8000`;
   }
   
   return import.meta.env.VITE_VENDOR_BACKEND_URL || 'https://connect-vendor.onrender.com';
