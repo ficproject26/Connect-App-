@@ -33,7 +33,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, Tag, Clock, Trash2, Users, ThumbsUp, Calendar
+  Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -8365,6 +8365,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
               <div className="space-y-6 text-left">
 
+                {/* Back to Home Button */}
+                <button
+                  onClick={() => {
+                    setIsProfileModalOpen(false);
+                    setActiveTab('Home');
+                  }}
+                  className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs"
+                >
+                  <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                  <span>Back to Home</span>
+                </button>
 
                 {/* Profile Details */}
                 <div className="flex flex-col items-center text-center gap-2 pb-5 border-b border-slate-100 dark:border-slate-800/60 w-full">
@@ -8428,12 +8439,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             {/* Modal Right Content Panel */}
             <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative">
-              <button 
-                onClick={() => setIsProfileModalOpen(false)}
-                className="absolute right-5 top-5 p-1 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="absolute right-5 top-5 flex items-center gap-2.5 z-10">
+                <button 
+                  onClick={() => {
+                    setIsProfileModalOpen(false);
+                    setActiveTab('Home');
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 shadow-xs cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+                  <span>Back to Normal Page</span>
+                </button>
+                <button 
+                  onClick={() => setIsProfileModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
               <div className="flex-grow">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
