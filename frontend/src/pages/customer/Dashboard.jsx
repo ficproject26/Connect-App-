@@ -438,6 +438,52 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
   const [favorites, setFavorites] = useState([]);
   const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
+  const [dbCategories, setDbCategories] = useState([]);
+
+  // Dynamic Sub-navbar categories
+  const subNavbarCategories = useMemo(() => {
+    const defaultMainCats = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+    
+    if (!dbCategories || dbCategories.length === 0) {
+      return ['Home', ...defaultMainCats];
+    }
+
+    // 1. Find all deleted/inactive main categories in DB
+    const inactiveMainCats = new Set();
+    dbCategories.forEach(c => {
+      if (c && !c.subcategory && !c.subSubcategory) {
+        if (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') {
+          inactiveMainCats.add((c.name || '').trim().toLowerCase());
+        }
+      }
+    });
+
+    // 2. Find all active custom main categories defined in DB
+    const activeCustomMainCats = [];
+    dbCategories.forEach(c => {
+      if (c && !c.subcategory && !c.subSubcategory) {
+        if (!c.isDeleted && c.isActive !== false && c.description !== 'DELETED_HIERARCHY_MARKER') {
+          const nameTrimmed = (c.name || '').trim();
+          const nameLower = nameTrimmed.toLowerCase();
+          const isDefault = defaultMainCats.some(d => d.toLowerCase() === nameLower);
+          if (!isDefault && !activeCustomMainCats.some(x => x.toLowerCase() === nameLower)) {
+            activeCustomMainCats.push(nameTrimmed);
+          }
+        }
+      }
+    });
+
+    // 3. Filter default list by excluding inactive ones
+    const filteredDefaults = defaultMainCats.filter(d => !inactiveMainCats.has(d.trim().toLowerCase()));
+
+    // 4. Combine Home, filtered defaults, and active custom main categories
+    return ['Home', ...filteredDefaults, ...activeCustomMainCats];
+  }, [dbCategories]);
+
+  const megaMenuLinks = useMemo(() => {
+    return subNavbarCategories.filter(cat => cat !== 'Home' && cat !== 'Offers' && cat !== 'Membership');
+  }, [subNavbarCategories]);
+
   const [previewMembershipTier, setPreviewMembershipTier] = useState(membershipTier || 'Gold Elite');
 
   useEffect(() => {
@@ -670,8 +716,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [activeFoodCategory, setActiveFoodCategory] = useState('ALL');
   const [activeStayCategory, setActiveStayCategory] = useState('ALL');
   const [activeTravelCategory, setActiveTravelCategory] = useState('ALL');
-
-  const [dbCategories, setDbCategories] = useState([]);
 
   useEffect(() => {
     const fetchDbCategories = async () => {
@@ -985,6 +1029,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Hover Mega Menu State & Handlers
   const [hoveredLink, setHoveredLink] = useState(null);
+  const [activeMegaCategory, setActiveMegaCategory] = useState('ALL');
   const enterTimeoutRef = React.useRef(null);
   const leaveTimeoutRef = React.useRef(null);
 
@@ -994,6 +1039,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     
     enterTimeoutRef.current = setTimeout(() => {
       setHoveredLink(linkName);
+      setActiveMegaCategory('ALL');
     }, 500); // 500ms delay: show only if cursor stops/pauses on the tab
   };
 
@@ -1179,8 +1225,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     };
   };
   const cardStyle = getCardStyle();
-
-  const megaMenuLinks = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
 
   const jobMegaMenuData = {
     'Banking': [
@@ -1830,13 +1874,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return merged;
   };
 
-  const serviceMegaMenu = useMemo(() => mergeDbCategories(serviceMegaMenuData, 'Services'), [dbCategories]);
-  const productMegaMenu = useMemo(() => mergeDbCategories(productMegaMenuData, 'Products'), [dbCategories]);
-  const dailyNeedsMegaMenu = useMemo(() => mergeDbCategories(dailyNeedsMegaMenuData, 'Daily Needs'), [dbCategories]);
-  const foodMegaMenu = useMemo(() => mergeDbCategories(foodMegaMenuData, 'Food'), [dbCategories]);
-  const stayMegaMenu = useMemo(() => mergeDbCategories(stayMegaMenuData, 'Stay'), [dbCategories]);
-  const travelMegaMenu = useMemo(() => mergeDbCategories(travelMegaMenuData, 'Travel'), [dbCategories]);
-  const jobMegaMenu = useMemo(() => mergeDbCategories(jobMegaMenuData, 'Jobs'), [dbCategories]);
+  const allMegaMenus = useMemo(() => {
+    const menus = {
+      'Services': mergeDbCategories(serviceMegaMenuData, 'Services'),
+      'Products': mergeDbCategories(productMegaMenuData, 'Products'),
+      'Daily Needs': mergeDbCategories(dailyNeedsMegaMenuData, 'Daily Needs'),
+      'Food': mergeDbCategories(foodMegaMenuData, 'Food'),
+      'Stay': mergeDbCategories(stayMegaMenuData, 'Stay'),
+      'Travel': mergeDbCategories(travelMegaMenuData, 'Travel'),
+      'Jobs': mergeDbCategories(jobMegaMenuData, 'Jobs')
+    };
+
+    // Also add any custom main categories that are not default
+    subNavbarCategories.forEach(cat => {
+      if (cat !== 'Home' && !menus[cat]) {
+        menus[cat] = mergeDbCategories({}, cat);
+      }
+    });
+
+    return menus;
+  }, [dbCategories, subNavbarCategories]);
 
   const getCategoriesForTab = (tabName) => {
     const prodCats = products
@@ -2511,17 +2568,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setOpenFilters(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Sub-navbar categories
-  const subNavbarCategories = [
-    'Home',
-    'Products',
-    'Services',
-    'Daily Needs',
-    'Food',
-    'Stay',
-    'Travel',
-    'Jobs'
-  ];
+
 
   // Filters logic
   const handleCheckboxChange = (value, list, setList) => {
@@ -3502,20 +3549,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             onMouseLeave={handleMouseLeave}
             className="absolute top-[calc(100%+2px)] left-6 right-6 bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-md shadow-2xl border border-slate-200/80 dark:border-slate-800/60 rounded-2xl py-8 px-8 z-50 flex transition-all duration-300 ease-out text-slate-800 dark:text-slate-200"
           >
-            {hoveredLink === 'Services' ? (
-              renderSidebarMegaMenu(activeServiceCategory, setActiveServiceCategory, serviceMegaMenu)
-            ) : hoveredLink === 'Products' ? (
-              renderSidebarMegaMenu(activeProductCategory, setActiveProductCategory, productMegaMenu)
-            ) : hoveredLink === 'Daily Needs' ? (
-              renderSidebarMegaMenu(activeDailyNeedsCategory, setActiveDailyNeedsCategory, dailyNeedsMegaMenu)
-            ) : hoveredLink === 'Food' ? (
-              renderSidebarMegaMenu(activeFoodCategory, setActiveFoodCategory, foodMegaMenu)
-            ) : hoveredLink === 'Stay' ? (
-              renderSidebarMegaMenu(activeStayCategory, setActiveStayCategory, stayMegaMenu)
-            ) : hoveredLink === 'Travel' ? (
-              renderSidebarMegaMenu(activeTravelCategory, setActiveTravelCategory, travelMegaMenu)
-            ) : hoveredLink === 'Jobs' ? (
-              renderSidebarMegaMenu(activeJobCategory, setActiveJobCategory, jobMegaMenu, (subCat) => {
+            {hoveredLink === 'Jobs' ? (
+              renderSidebarMegaMenu(activeMegaCategory, setActiveMegaCategory, allMegaMenus[hoveredLink], (subCat) => {
                 setActiveTab('Jobs');
                 setSelectedSubNavbarCategory('Jobs');
                 setSelectedCategories([]);
@@ -3530,6 +3565,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   setAppliedJobId(null);
                 }
               })
+            ) : allMegaMenus[hoveredLink] ? (
+              renderSidebarMegaMenu(activeMegaCategory, setActiveMegaCategory, allMegaMenus[hoveredLink])
             ) : null}
           </div>
         )}
