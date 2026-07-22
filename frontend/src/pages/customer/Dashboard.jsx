@@ -1846,28 +1846,34 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
     // 1. Process exclusion/deletion markers to remove deleted/inactive categories
     const exclusionMarkers = dbCategories.filter(c => 
-      c &&
-      (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') &&
-      (!c.name || normalizeMainCatName(c.name) === targetNorm)
+      c && (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER')
     );
 
     exclusionMarkers.forEach(c => {
-      // Find subcategory to exclude
-      const subName = c.subcategory || (c.name && normalizeMainCatName(c.name) !== targetNorm ? c.name : null);
-      if (subName) {
-        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase());
-        const matchedKey = existingKey || subName;
-        if (merged[matchedKey]) {
-          if (c.subSubcategory) {
-            if (merged[matchedKey].items) {
-              merged[matchedKey].items = merged[matchedKey].items.filter(item => item.toLowerCase() !== c.subSubcategory.toLowerCase());
-            }
-          } else {
-            delete merged[matchedKey];
+      // Exclude sub-subcategory (child item) if present
+      if (c.subSubcategory) {
+        const targetChild = c.subSubcategory.trim().toLowerCase();
+        Object.keys(merged).forEach(k => {
+          if (merged[k] && merged[k].items) {
+            merged[k].items = merged[k].items.filter(
+              item => item.trim().toLowerCase() !== targetChild
+            );
           }
+        });
+      }
+
+      // Exclude subcategory if present or if name matches a subcategory
+      const candidateSubNames = [c.subcategory, c.name].filter(Boolean);
+      candidateSubNames.forEach(rawSub => {
+        const subLower = rawSub.trim().toLowerCase();
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subLower);
+        if (existingKey && !c.subSubcategory) {
+          delete merged[existingKey];
         }
-      } else if (!c.subcategory) {
-        // If main category itself is inactive/deleted, delete all keys
+      });
+
+      // If main category itself is marked inactive/deleted and matches targetNorm
+      if (!c.subcategory && c.name && normalizeMainCatName(c.name) === targetNorm) {
         Object.keys(merged).forEach(k => delete merged[k]);
       }
     });
@@ -3230,21 +3236,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     let items = [];
     let title = "";
 
+    const isDeletedSubCategory = (subName) => {
+      if (!subName) return false;
+      const norm = subName.trim().toLowerCase();
+      return deletedCategoryInfo.deletedSub.has(norm) || deletedCategoryInfo.deletedChild.has(norm);
+    };
+
+    const validCategories = Object.keys(dataDict || {}).filter(cat => !isDeletedSubCategory(cat));
+
     if (activeCat === 'ALL') {
       title = "All Items";
-      Object.keys(dataDict).forEach((cat) => {
+      validCategories.forEach((cat) => {
         const catData = dataDict[cat];
-        const catItems = catData.items || catData;
+        const catItems = catData ? (catData.items || catData) : [];
         if (Array.isArray(catItems)) {
-          items = [...items, ...catItems];
+          const validChildItems = catItems.filter(item => !isDeletedSubCategory(item));
+          items = [...items, ...validChildItems];
         }
       });
       items = Array.from(new Set(items));
     } else {
-      const activeData = dataDict[activeCat];
-      if (activeData) {
-        items = activeData.items || activeData;
-        title = activeData.title || `${activeCat} Jobs`;
+      if (!isDeletedSubCategory(activeCat)) {
+        const activeData = dataDict[activeCat];
+        if (activeData) {
+          const rawItems = activeData.items || activeData;
+          items = Array.isArray(rawItems) ? rawItems.filter(item => !isDeletedSubCategory(item)) : [];
+          title = activeData.title || `${activeCat}`;
+        }
       }
     }
 
@@ -3269,7 +3287,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
-          {Object.keys(dataDict).map((cat) => {
+          {validCategories.map((cat) => {
             const isActive = activeCat === cat;
             return (
               <button
@@ -4186,7 +4204,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
 
   const renderTopCategoriesGrid = () => {
-    const categories = [
+    const defaultCategories = [
       { id: 'Products', title: 'Products', count: '3,200+ Items', icon: ShoppingBag, color: 'text-red-500 bg-red-50 border-red-150' },
       { id: 'Services', title: 'Services', count: '1,200+ Services', icon: Settings, color: 'text-blue-500 bg-blue-50 border-blue-150' },
       { id: 'Daily Needs', title: 'Daily Needs', count: '1,800+ Items', icon: Truck, color: 'text-emerald-500 bg-emerald-50 border-emerald-150' },
@@ -4195,6 +4213,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       { id: 'Travel', title: 'Travel', count: '1,000+ Trips', icon: Plane, color: 'text-sky-500 bg-sky-50 border-sky-150' },
       { id: 'Jobs', title: 'Jobs', count: '2,000+ Jobs', icon: Briefcase, color: 'text-amber-500 bg-amber-50 border-amber-150' }
     ];
+
+    const categories = defaultCategories.filter(cat => 
+      subNavbarCategories.some(sub => normalizeMainCatName(sub) === normalizeMainCatName(cat.id))
+    );
 
     return (
       <div className="space-y-4 text-left w-full">
