@@ -33,7 +33,7 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, Home, ArrowRight, Tag, Clock, Trash2, Users, ThumbsUp, Calendar
+  Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, Tag, Clock, Trash2, Users, ThumbsUp, Calendar
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -633,7 +633,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
   // Delivery Tracking State Variables
@@ -2427,9 +2427,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
-  const triggerNotification = (message) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 3000);
+  const triggerNotification = (message, type = 'info') => {
+    const id = Date.now() + Math.random();
+    const text = typeof message === 'object' ? (message.message || message.text) : message;
+    const msgType = typeof message === 'object' ? (message.type || type) : type;
+    const newToast = { id, text, type: msgType };
+    setToasts(prev => [...prev.slice(-4), newToast]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
   };
 
   const toggleFavorite = (id) => {
@@ -7917,13 +7923,43 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-800 dark:text-slate-200 font-sans antialiased flex flex-col transition-colors duration-300">
-      {/* -------------------- NOTIFICATION TOAST -------------------- */}
-      {notification && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-55 bg-[#0b1e36] text-white border border-white/10 px-5 py-3 rounded-full text-xs font-black shadow-2xl flex items-center gap-2.5 animate-bounce">
-          <Sparkles className="w-4.5 h-4.5 text-[#FFC107] animate-pulse" />
-          <span>{notification}</span>
-        </div>
-      )}
+      {/* -------------------- SLEEK TOAST NOTIFICATIONS -------------------- */}
+      <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+        {toasts.map((t) => {
+          const isError = t.type === 'error' || (t.text || '').toLowerCase().includes('failed') || (t.text || '').toLowerCase().includes('error') || (t.text || '').toLowerCase().includes('denied') || (t.text || '').toLowerCase().includes('insufficient');
+          const isSuccess = t.type === 'success' || (t.text || '').toLowerCase().includes('success') || (t.text || '').toLowerCase().includes('added') || (t.text || '').toLowerCase().includes('saved') || (t.text || '').toLowerCase().includes('placed') || (t.text || '').toLowerCase().includes('congratulations');
+
+          return (
+            <div 
+              key={t.id}
+              className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-xl transition-all duration-300 transform translate-y-0 animate-in fade-in slide-in-from-top-4 ${
+                isError 
+                  ? 'bg-rose-950/90 text-rose-100 border-rose-800/60 shadow-rose-950/40' 
+                  : isSuccess 
+                  ? 'bg-emerald-950/90 text-emerald-100 border-emerald-800/60 shadow-emerald-950/40'
+                  : 'bg-slate-900/90 dark:bg-[#0b1329]/95 text-slate-100 border-slate-700/60 shadow-slate-950/50'
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                {isError ? (
+                  <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                ) : isSuccess ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-amber-400 shrink-0 animate-pulse" />
+                )}
+                <span className="text-xs font-bold leading-snug break-words">{t.text}</span>
+              </div>
+              <button 
+                onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer border-none shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       {/* -------------------- HEADER NAVIGATION -------------------- */}
       {renderDashboardHeader()}
