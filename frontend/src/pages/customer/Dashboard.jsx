@@ -1832,7 +1832,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const mergeDbCategories = (staticData, mainCategoryName) => {
-    const merged = JSON.parse(JSON.stringify(staticData || {}));
+    let merged = JSON.parse(JSON.stringify(staticData || {}));
     const targetNorm = normalizeMainCatName(mainCategoryName);
 
     if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
@@ -1850,53 +1850,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           return {};
         }
 
+        // Database is the authoritative source for this main category! Reset merged to empty object.
+        merged = {};
+
         if (Array.isArray(rootMain.children)) {
           rootMain.children.forEach(subNode => {
             if (!subNode || !subNode.name) return;
             const subName = subNode.name.trim();
 
             if (subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') {
-              deletedSubNames.add(subName.toLowerCase());
-              Object.keys(merged).forEach(sk => {
-                if (sk.toLowerCase() === subName.toLowerCase()) {
-                  delete merged[sk];
-                }
-              });
               return;
             }
 
-            const existingSubKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
-            if (!merged[existingSubKey]) {
-              merged[existingSubKey] = {
-                title: subName,
-                items: []
-              };
-            }
-
+            const items = [];
             if (Array.isArray(subNode.children)) {
               subNode.children.forEach(childNode => {
                 if (!childNode || !childNode.name) return;
                 const childName = childNode.name.trim();
 
                 if (childNode.isActive === false || childNode.isDeleted || childNode.description === 'DELETED_HIERARCHY_MARKER') {
-                  deletedChildNames.add(`${subName.toLowerCase()}::${childName.toLowerCase()}`);
-                  if (merged[existingSubKey]?.items) {
-                    merged[existingSubKey].items = merged[existingSubKey].items.filter(item =>
-                      (typeof item === 'string' ? item : item.name).toLowerCase() !== childName.toLowerCase()
-                    );
-                  }
                   return;
                 }
 
-                const items = merged[existingSubKey].items || [];
-                const childExists = items.some(item => (typeof item === 'string' ? item : item.name).toLowerCase() === childName.toLowerCase());
-                if (!childExists) {
+                if (!items.includes(childName)) {
                   items.push(childName);
                 }
               });
             }
+
+            merged[subName] = {
+              title: subName,
+              items: items
+            };
           });
         }
+        return merged;
       }
     }
 
