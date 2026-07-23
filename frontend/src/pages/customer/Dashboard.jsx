@@ -8470,16 +8470,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
               <div className="space-y-6 text-left">
 
-                {/* Back to Home Button */}
+                {/* Back Button */}
                 <button
                   onClick={() => {
                     setIsProfileModalOpen(false);
                     setActiveTab('Home');
                   }}
-                  className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs"
+                  className="w-10 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs shrink-0"
+                  aria-label="Back"
+                  title="Back"
                 >
-                  <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                  <span>Back to Home</span>
+                  <ArrowLeft className="w-4.5 h-4.5 text-slate-700 dark:text-slate-200" />
                 </button>
 
                 {/* Profile Details */}
