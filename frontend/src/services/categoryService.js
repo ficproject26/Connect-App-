@@ -181,62 +181,38 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     }
   });
 
-  // 2. Handle 3-Tier Hierarchical Array (from API)
-  if (Array.isArray(dbCategories) && dbCategories.length > 0 && dbCategories[0]?.level === 'main') {
-    dbCategories.forEach(mainCat => {
-      if (!mainCat || !mainCat.name) return;
+  if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
+    return catTree;
+  }
+
+  // 2. Handle 3-Tier Hierarchical Array
+  const hierarchicalMains = dbCategories.filter(c => c && c.level === 'main');
+  if (hierarchicalMains.length > 0) {
+    hierarchicalMains.forEach(mainCat => {
       const mainName = normalizeCategoryName(mainCat.name);
-      
       if (mainCat.isActive === false || mainCat.isDeleted) {
         delete catTree[mainName];
         return;
       }
 
-      // If main category exists in DB, DB is the source of truth for its subcategories!
-      if (catTree[mainName]) {
-        catTree[mainName].subcategories = {};
-      } else {
-        catTree[mainName] = {
-          name: mainName,
-          isActive: true,
-          subcategories: {}
-        };
-      }
-      catTree[mainName].isActive = true;
+      catTree[mainName] = {
+        name: mainName,
+        isActive: true,
+        subcategories: {}
+      };
 
       if (Array.isArray(mainCat.children)) {
         mainCat.children.forEach(subCat => {
           if (!subCat || !subCat.name) return;
           const subName = subCat.name.trim();
-
-          // Handle deletion/inactivation of sub category
-          if (subCat.isActive === false || subCat.isDeleted || subCat.description === 'DELETED_HIERARCHY_MARKER') {
-            if (catTree[mainName]?.subcategories) {
-              delete catTree[mainName].subcategories[subName];
-              Object.keys(catTree[mainName].subcategories).forEach(sk => {
-                if (sk.toLowerCase() === subName.toLowerCase()) {
-                  delete catTree[mainName].subcategories[sk];
-                }
-              });
-            }
-            return;
-          }
+          if (subCat.isActive === false || subCat.isDeleted || subCat.description === 'DELETED_HIERARCHY_MARKER') return;
 
           const childItems = [];
           if (Array.isArray(subCat.children)) {
             subCat.children.forEach(childCat => {
               if (!childCat || !childCat.name) return;
-              const childName = childCat.name.trim();
-
-              // Handle deletion/inactivation of child category
-              if (childCat.isActive === false || childCat.isDeleted || childCat.description === 'DELETED_HIERARCHY_MARKER') {
-                return;
-              }
-
-              const exists = childItems.some(ch => (typeof ch === 'string' ? ch.toLowerCase() === childName.toLowerCase() : ch.name.toLowerCase() === childName.toLowerCase()));
-              if (!exists) {
-                childItems.push(childName);
-              }
+              if (childCat.isActive === false || childCat.isDeleted || childCat.description === 'DELETED_HIERARCHY_MARKER') return;
+              childItems.push(childCat.name.trim());
             });
           }
 
@@ -250,65 +226,55 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     });
   }
 
-  // 3. Process flat records if any (for flat deletion markers or legacy DB records)
-  (dbCategories || []).forEach(c => {
-    if (!c || !c.name) return;
-    const mainName = normalizeCategoryName(c.name);
-    const isDeletedOrInactive = c.isDeleted === true || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER';
+  // 3. Handle Flat DB Records
+  const flatSubs = dbCategories.filter(c => c && c.subcategory);
+  if (flatSubs.length > 0) {
+    const flatByMain = {};
+    dbCategories.forEach(c => {
+      if (!c || !c.name) return;
+      const mainName = normalizeCategoryName(c.name);
+      if (!flatByMain[mainName]) flatByMain[mainName] = [];
+      flatByMain[mainName].push(c);
+    });
 
-    if (isDeletedOrInactive) {
-      if (catTree[mainName]) {
-        if (c.subcategory) {
-          const subName = c.subcategory.trim();
-          Object.keys(catTree[mainName].subcategories || {}).forEach(sk => {
-            if (sk.toLowerCase() === subName.toLowerCase()) {
-              if (c.subSubcategory) {
-                const childName = c.subSubcategory.trim().toLowerCase();
-                catTree[mainName].subcategories[sk].childCategories = 
-                  (catTree[mainName].subcategories[sk].childCategories || [])
-                    .filter(ch => (typeof ch === 'string' ? ch.toLowerCase() !== childName : ch.name.toLowerCase() !== childName));
-              } else {
-                delete catTree[mainName].subcategories[sk];
-              }
-            }
-          });
-        }
-      }
-      return;
-    }
+    Object.keys(flatByMain).forEach(mainName => {
+      const records = flatByMain[mainName];
+      const activeSubs = records.filter(c => 
+        c.subcategory && 
+        c.subcategory !== 'ALL_SUBCATEGORIES_DELETED_MARKER' && 
+        c.isActive !== false && 
+        !c.isDeleted && 
+        c.description !== 'DELETED_HIERARCHY_MARKER'
+      );
+      const hasAllDeleted = records.some(c => 
+        c.subcategory === 'ALL_SUBCATEGORIES_DELETED_MARKER' || c.description === 'DELETED_HIERARCHY_MARKER'
+      );
 
-    if (!catTree[mainName]) {
-      catTree[mainName] = {
-        name: mainName,
-        isActive: true,
-        subcategories: {}
-      };
-    } else {
-      catTree[mainName].isActive = true;
-    }
-
-    if (c.subcategory) {
-      const subName = c.subcategory.trim();
-      if (!catTree[mainName].subcategories[subName]) {
-        catTree[mainName].subcategories[subName] = {
-          name: subName,
+      if (activeSubs.length > 0 || hasAllDeleted) {
+        catTree[mainName] = {
+          name: mainName,
           isActive: true,
-          childCategories: []
+          subcategories: {}
         };
-      } else {
-        catTree[mainName].subcategories[subName].isActive = true;
+        activeSubs.forEach(c => {
+          const subName = c.subcategory.trim();
+          if (!catTree[mainName].subcategories[subName]) {
+            catTree[mainName].subcategories[subName] = {
+              name: subName,
+              isActive: true,
+              childCategories: []
+            };
+          }
+          if (c.subSubcategory && c.subSubcategory.trim()) {
+            const childName = c.subSubcategory.trim();
+            if (!catTree[mainName].subcategories[subName].childCategories.includes(childName)) {
+              catTree[mainName].subcategories[subName].childCategories.push(childName);
+            }
+          }
+        });
       }
-
-      if (c.subSubcategory) {
-        const childName = c.subSubcategory.trim();
-        const childArr = catTree[mainName].subcategories[subName].childCategories;
-        const exists = childArr.some(ch => (typeof ch === 'string' ? ch.toLowerCase() === childName.toLowerCase() : ch.name.toLowerCase() === childName.toLowerCase()));
-        if (!exists) {
-          childArr.push(childName);
-        }
-      }
-    }
-  });
+    });
+  }
 
   return catTree;
 };
