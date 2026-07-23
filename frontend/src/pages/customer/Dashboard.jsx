@@ -8484,16 +8484,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative">
               <div className="absolute right-5 top-5 flex items-center gap-2.5 z-10">
                 <button 
-                  onClick={() => {
-                    setIsProfileModalOpen(false);
-                    setActiveTab('Home');
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 shadow-xs cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-                  <span>Back to Normal Page</span>
-                </button>
-                <button 
                   onClick={() => setIsProfileModalOpen(false)}
                   className="p-1.5 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
                   title="Close"
@@ -8517,8 +8507,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 setTrackingTimeline([]);
                                 setTrackingPartner(null);
                                 setTrackingCoords(null);
-                                setIsProfileModalOpen(false);
-                                setActiveTab('Jobs');
+                                setActiveProfileTab('myjobs');
                               }}
                               className="text-xs text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
                             >
@@ -9085,22 +9074,46 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <span className="text-xs font-extrabold text-slate-800 dark:text-white">₹{ord.amount}</span>
                                       <div className="flex gap-2 items-center">
                                         {ord.type === 'Job' || ord.type === 'Jobs' ? (
-                                          <button onClick={() => setTrackingOrder(ord)} className="px-2.5 py-1 bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer">
+                                          <button 
+                                            onClick={() => {
+                                              setActiveProfileTab('myjobs');
+                                              setTrackingOrder(ord);
+                                            }} 
+                                            className="px-2.5 py-1 bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
+                                          >
                                             View Status
                                           </button>
                                         ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? (
-                                          <button onClick={() => setTrackingOrder(ord)} className="px-2.5 py-1 bg-blue-600 text-white hover:bg-blue-700 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer">
+                                          <button 
+                                            onClick={() => {
+                                              setActiveProfileTab('bookings');
+                                              setTrackingOrder(ord);
+                                            }} 
+                                            className="px-2.5 py-1 bg-blue-600 text-white hover:bg-blue-700 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
+                                          >
                                             Booking Details
                                           </button>
                                         ) : (
                                           <>
                                             {!['Delivered', 'Cancelled'].includes(ord.status) && (
-                                              <button onClick={() => setTrackingOrder(ord)} className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer">
+                                              <button 
+                                                onClick={() => {
+                                                  setActiveProfileTab('orders');
+                                                  setTrackingOrder(ord);
+                                                }} 
+                                                className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
+                                              >
                                                 Track Live
                                               </button>
                                             )}
                                             {['Delivered'].includes(ord.status) && (
-                                              <button onClick={() => setTrackingOrder(ord)} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer">
+                                              <button 
+                                                onClick={() => {
+                                                  setActiveProfileTab('orders');
+                                                  setTrackingOrder(ord);
+                                                }} 
+                                                className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer"
+                                              >
                                                 Rate Partner ★
                                               </button>
                                             )}
