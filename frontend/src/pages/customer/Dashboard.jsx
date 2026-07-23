@@ -5911,7 +5911,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <button 
                                 onClick={() => {
                                   setIsProfileModalOpen(true);
-                                  setActiveProfileTab('orders');
+                                  setActiveProfileTab('myjobs');
                                   setTrackingOrder(appliedOrder);
                                 }}
                                 className="w-full text-center bg-transparent border-2 border-[#0b1e36] dark:border-amber-400 text-[#0b1e36] dark:text-amber-400 hover:bg-[#0b1e36]/5 dark:hover:bg-amber-400/15 font-black text-xs uppercase tracking-widest py-2.5 rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-1"
@@ -6070,8 +6070,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 </>
                               )}
                             </div>
-
-                            {/* Action Buttons based on category type */}
+                              {/* Action Buttons based on category type */}
                             <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-850/60 w-full flex items-center gap-2">
                               {(() => {
                                 const category = activeTab === 'Home' ? product.subNavbarCategory : activeTab;
