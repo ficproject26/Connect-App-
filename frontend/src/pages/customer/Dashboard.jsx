@@ -890,6 +890,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
   }, [isProfileModalOpen]);
 
+  useEffect(() => {
+    if (trackingOrder && (trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs')) {
+      setActiveProfileTab('myjobs');
+    }
+  }, [trackingOrder]);
+
   // Subscribe to order channel when tracking starts
   useEffect(() => {
     if (trackingOrder) {
@@ -8587,7 +8593,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     return (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveProfileTab(tab.id)}
+                        onClick={() => {
+                          setActiveProfileTab(tab.id);
+                          if (['myjobs', 'orders', 'bookings'].includes(tab.id)) {
+                            setTrackingOrder(null);
+                          }
+                        }}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all w-full text-left whitespace-nowrap cursor-pointer border-none ${
                           isActive 
                             ? 'bg-[#FFB300] text-slate-950 shadow-sm font-extrabold'
@@ -9170,6 +9181,84 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     {activeProfileTab === 'orders' ? 'Explore Deals' : activeProfileTab === 'bookings' ? 'Explore Stays & Services' : 'Explore Jobs'}
                                   </span>
                                 </button>
+                              </div>
+                            ) : activeProfileTab === 'myjobs' ? (
+                              /* Dedicated Interactive Grid of Applied Job Cards */
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[460px] overflow-y-auto pr-1">
+                                {filteredCustomerOrders.map(ord => {
+                                  const isCancelled = ord.status === 'Cancelled';
+                                  const statusLabel = 
+                                    ord.status === 'Order Received' ? 'Under Preview' :
+                                    ord.status === 'Preparing' ? 'Resume Screening' :
+                                    ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(ord.status) ? 'Shortlisted' :
+                                    ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(ord.status) ? 'Interview Scheduled' :
+                                    ['Delivered', 'Completed'].includes(ord.status) ? 'Selected / Offered' :
+                                    isCancelled ? 'Rejected' : 'Under Review';
+
+                                  const statusBadgeStyle = 
+                                    statusLabel === 'Selected / Offered' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
+                                    statusLabel === 'Interview Scheduled' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' :
+                                    statusLabel === 'Shortlisted' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' :
+                                    statusLabel === 'Resume Screening' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' :
+                                    statusLabel === 'Rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                    'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+
+                                  return (
+                                    <div 
+                                      key={ord.id} 
+                                      onClick={() => {
+                                        setActiveProfileTab('myjobs');
+                                        setTrackingOrder(ord);
+                                      }}
+                                      className="group border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs hover:shadow-md hover:border-amber-400 dark:hover:border-amber-400 transition-all duration-300 cursor-pointer flex flex-col justify-between space-y-4 text-left"
+                                    >
+                                      <div className="flex justify-between items-start gap-3">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
+                                            <Briefcase className="w-5.5 h-5.5" />
+                                          </div>
+                                          <div>
+                                            <h4 className="text-sm font-black text-slate-900 dark:text-white leading-tight group-hover:text-amber-500 transition-colors">
+                                              {ord.product_details}
+                                            </h4>
+                                            <span className="text-[10px] font-bold text-slate-400 block mt-1">
+                                              App No: <strong className="text-slate-600 dark:text-slate-300">#{ord.order_number}</strong>
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <span className={`px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase tracking-wider border shrink-0 ${statusBadgeStyle}`}>
+                                          {statusLabel}
+                                        </span>
+                                      </div>
+
+                                      <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                        <div className="flex justify-between items-center text-[10.5px]">
+                                          <span className="font-semibold">Applied Date:</span>
+                                          <span className="font-bold text-slate-700 dark:text-slate-200">
+                                            {new Date(ord.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[10.5px]">
+                                          <span className="font-semibold">Candidate Email:</span>
+                                          <span className="font-bold text-slate-700 dark:text-slate-200 truncate max-w-[150px]">
+                                            {ord.candidateEmail || profileEmail || currentUser?.email || 'N/A'}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div className="pt-1 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60">
+                                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                          <span>Click card for details</span>
+                                        </span>
+                                        <span className="text-xs font-black text-[#0b1e36] dark:text-amber-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                                          <span>View Status & Timeline</span>
+                                          <ChevronRight className="w-4 h-4" />
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             ) : (
                               <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
