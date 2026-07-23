@@ -43,48 +43,16 @@ export default function JobsModal({ isOpen, onClose }) {
     return () => { active = false; };
   }, [isOpen]);
 
-  const jobsList = [
-    {
-      id: 'job-1',
-      vendorId: '3w8hhon38mqg7ni0u',
-      title: 'Luxury Travel Concierge',
-      department: 'Operations',
-      location: 'Mumbai, India / Hybrid',
-      salary: '₹12L - ₹18L L.P.A',
-      type: 'Full-time',
-      desc: 'Deliver elite, end-to-end bespoke travel management and high-touch VIP assistance to our premium tier members.'
-    },
-    {
-      id: 'job-2',
-      vendorId: '3w8hhon38mqg7ni0u',
-      title: 'Partner Relations Lead',
-      department: 'Business Development',
-      location: 'Bangalore, India / Remote',
-      salary: '₹15L - ₹22L L.P.A',
-      type: 'Full-time',
-      desc: 'Acquire, negotiate, and curate strategic alliances with five-star hospitality brands, luxury dining partners, and boutique hotels.'
-    },
-    {
-      id: 'job-3',
-      vendorId: '3w8hhon38mqg7ni0u',
-      title: 'Senior Frontend Engineer',
-      department: 'Technology',
-      location: 'Remote (India)',
-      salary: '₹24L - ₹32L L.P.A',
-      type: 'Full-time',
-      desc: 'Build highly performant, animation-rich, visual-first interfaces and client applications using React, TailwindCSS, and canvas APIs.'
-    },
-    ...vendorJobs.map(j => ({
-      id: j.id,
-      vendorId: j.vendorId,
-      title: j.name,
-      department: j.category || 'General',
-      location: j.description?.split('\n')[0] || 'Remote (India)',
-      salary: `₹${j.price.toLocaleString()} L.P.A`,
-      type: 'Full-time',
-      desc: j.description || `${j.name} position at ${j.vendorName || 'our partner organization'}.`
-    }))
-  ];
+  const jobsList = vendorJobs.map(j => ({
+    id: j.id,
+    vendorId: j.vendorId,
+    title: j.name,
+    department: j.category || 'General',
+    location: j.description?.split('\n')[0] || 'Remote (India)',
+    salary: j.price ? `₹${(j.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
+    type: 'Full-time',
+    desc: j.description || `${j.name} position at ${j.vendorName || 'our partner organization'}.`
+  }));
 
   if (!isOpen) return null;
 
