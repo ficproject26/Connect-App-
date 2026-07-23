@@ -35,7 +35,8 @@ import {
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
   LifeBuoy, LogOut, MapPin, Phone, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
-  Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar
+  Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar,
+  Wifi, Crown, Headphones
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
