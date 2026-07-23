@@ -91,9 +91,9 @@ export const productService = {
     };
 
     try {
-      // 1. Try Network Fetch with Abort Controller (2s timeout limit)
+      // 1. Try Network Fetch with Abort Controller (8s timeout limit)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const res = await fetch(`${getVendorBackendUrl()}/api/public/products`, { signal: controller.signal });
       clearTimeout(timeoutId);
