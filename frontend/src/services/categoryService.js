@@ -145,9 +145,9 @@ export const BASE_TAXONOMY = {
 export const normalizeCategoryName = (rawName) => {
   if (!rawName) return '';
   const n = rawName.trim().toLowerCase();
-  if (n === 'stores' || n === 'products' || n === 'product' || n === 'store') return 'Products';
-  if (n === 'hotels' || n === 'stay' || n === 'hotel') return 'Stay';
-  if (n === 'restaurants' || n === 'food' || n === 'restaurant') return 'Food';
+  if (n === 'products' || n === 'product') return 'Products';
+  if (n === 'stay') return 'Stay';
+  if (n === 'food') return 'Food';
   if (n === 'daily need' || n === 'daily needs') return 'Daily Needs';
   if (n === 'job' || n === 'jobs') return 'Jobs';
   if (n === 'service' || n === 'services') return 'Services';
@@ -203,7 +203,11 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
             }
           }
         } else {
-          delete catTree[mainName];
+          // Only delete main category if it matches exact main category name
+          const canonicals = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+          if (canonicals.includes(mainName) && c.name.trim().toLowerCase() === mainName.toLowerCase()) {
+            delete catTree[mainName];
+          }
         }
       }
       return;
@@ -265,7 +269,17 @@ export const getDynamicMenuData = (dbCategories = []) => {
 
 export const getActiveMainCategories = (dbCategories = []) => {
   const catTree = buildActiveCategoryTree(dbCategories);
-  return Object.keys(catTree);
+  const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+  const activeKeys = Object.keys(catTree);
+  
+  const sorted = [];
+  canonicalMains.forEach(m => {
+    if (activeKeys.includes(m)) sorted.push(m);
+  });
+  activeKeys.forEach(k => {
+    if (!sorted.includes(k)) sorted.push(k);
+  });
+  return sorted;
 };
 
 export const fetchAdminCategories = async () => {
