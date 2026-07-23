@@ -234,6 +234,7 @@ const DEFAULT_BASELINE_PRODUCTS = [
     category: 'IT Jobs',
     subcategory: 'Software Engineering',
     subNavbarCategory: 'Jobs',
+    tag: 'Jobs',
     price: 45000,
     originalPrice: 55000,
     rating: 4.8,
@@ -242,16 +243,55 @@ const DEFAULT_BASELINE_PRODUCTS = [
     vendorName: 'SK Technologies',
     city: 'Bangalore',
     description: 'Full-time position for Node.js & React developer with 3+ years experience.'
+  },
+  {
+    id: 'base-job-2',
+    name: 'hi Job - Full Stack Developer',
+    category: 'Full Time',
+    subcategory: 'IT Jobs',
+    subNavbarCategory: 'Jobs',
+    tag: 'Jobs',
+    price: 50000,
+    originalPrice: 65000,
+    rating: 4.9,
+    reviews: 95,
+    image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=500&auto=format&fit=crop&q=60',
+    vendorName: 'SK Technologies',
+    city: 'Bangalore',
+    description: 'Full-time opening for MERN Stack Developer. Competitive salary & remote options.'
+  },
+  {
+    id: 'base-job-3',
+    name: 'Business Operations Manager',
+    category: 'Management',
+    subcategory: 'Operations',
+    subNavbarCategory: 'Jobs',
+    tag: 'Jobs',
+    price: 60000,
+    originalPrice: 75000,
+    rating: 4.7,
+    reviews: 64,
+    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&auto=format&fit=crop&q=60',
+    vendorName: 'Connect Corp',
+    city: 'Bangalore',
+    description: 'Lead operations and client service teams for local enterprise partnerships.'
   }
 ];
 
 const inferSubNavbarCategory = (p) => {
   if (p.subNavbarCategory) return p.subNavbarCategory;
   if (p.mainCategory) return p.mainCategory;
+
+  // Direct Job property indicators
+  if (p.tag === 'Jobs' || p.tag === 'Job' || p.type === 'Job' || p.type === 'Jobs') return 'Jobs';
+  if (p.jobTitle || p.salary || p.offeredSalary || p.salaryRange || p.jobType) return 'Jobs';
+
   const cat = (p.category || '').toLowerCase().trim();
   const subcat = (p.subcategory || '').toLowerCase().trim();
   const name = (p.name || '').toLowerCase().trim();
   const desc = (p.description || '').toLowerCase().trim();
+  const tag = (p.tag || '').toLowerCase().trim();
+  const type = (p.type || '').toLowerCase().trim();
 
   const mainCatsMap = {
     'services': 'Services',
@@ -265,13 +305,22 @@ const inferSubNavbarCategory = (p) => {
 
   if (mainCatsMap[cat]) return mainCatsMap[cat];
   if (mainCatsMap[subcat]) return mainCatsMap[subcat];
+  if (mainCatsMap[tag]) return mainCatsMap[tag];
+  if (mainCatsMap[type]) return mainCatsMap[type];
 
-  // Specific Food keywords BEFORE general Services keyword
+  // Job keywords check BEFORE other categories
+  if (['full stack developer', 'full time', 'part time', 'job', 'developer', 'engineer', 'manager', 'executive', 'technician', 'hiring', 'opening', 'recruitment', 'work from home', 'remote job', 'fresher', 'bpo', 'sales executive', 'ui/ux', 'hi job', 'hi'].some(k => name.includes(k) || cat.includes(k) || subcat.includes(k) || desc.includes(k) || tag.includes(k))) {
+    if (tag === 'jobs' || tag === 'job' || type === 'job' || cat.includes('job') || subcat.includes('job') || name.includes('job') || name.includes('hi') || desc.includes('job') || cat === 'full time' || cat === 'part time') {
+      return 'Jobs';
+    }
+  }
+
+  // Specific Food keywords
   if (['fine dining', 'restaurants', 'fast food', 'cafes', 'south indian', 'north indian', 'biryani', 'healthy food', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'pizza', 'burger', 'dosa', 'idli', 'parotta', 'food', 'salna', 'curry', 'thali'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k) || desc.includes(k))) {
     return 'Food';
   }
 
-  // Specific Travel keywords BEFORE general Services
+  // Specific Travel keywords
   if (['family packages', 'exclusive offers', 'flight', 'train', 'bus', 'cab', 'car rental', 'bike rental', 'tour', 'honeymoon', 'travel', 'pass', 'taxi', 'sleeper', 'ac sleeper'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k) || desc.includes(k))) {
     return 'Travel';
   }
