@@ -4951,31 +4951,71 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
+  const getProductPrices = (product) => {
+    let price = Number(product?.price || 0);
+    let originalPrice = Number(product?.originalPrice || 0);
+
+    let discountVal = product?.discountPercent || product?.discountPercentage;
+    if (!discountVal && typeof product?.discount === 'string') {
+      const match = product.discount.match(/(\d+)/);
+      if (match) discountVal = parseFloat(match[1]);
+    } else if (!discountVal && typeof product?.discount === 'number') {
+      discountVal = product.discount;
+    }
+
+    if (originalPrice > 0 && price > originalPrice) {
+      const temp = price;
+      price = originalPrice;
+      originalPrice = temp;
+    } else if (originalPrice === 0 && price > 0 && discountVal > 0 && discountVal < 100) {
+      originalPrice = Math.round(price / (1 - discountVal / 100));
+    } else if (originalPrice === 0 && price > 0) {
+      originalPrice = Math.round(price / 0.8);
+      discountVal = 20;
+    }
+
+    const discountPercent = (originalPrice > price && originalPrice > 0)
+      ? Math.round(((originalPrice - price) / originalPrice) * 100)
+      : (discountVal || 20);
+
+    return {
+      price,
+      originalPrice,
+      discountPercent,
+      discountText: `${discountPercent}% off`
+    };
+  };
+
   const formatJobSalary = (job) => {
-    if (!job) return '3 LPA';
-    if (job.salary) {
-      const raw = String(job.salary).trim();
-      if (raw.toLowerCase().includes('lpa') || raw.toLowerCase().includes('l.p.a')) {
-        return raw.startsWith('₹') ? raw : `₹${raw}`;
+    if (!job) return '3LPA';
+    let raw = '';
+    if (typeof job === 'string' || typeof job === 'number') {
+      raw = String(job);
+    } else if (job.salary) {
+      raw = String(job.salary);
+    } else if (job.price) {
+      const priceNum = Number(job.price || 0);
+      if (priceNum > 1000) {
+        return `${Math.round(priceNum / 100000)}LPA`;
+      } else if (priceNum > 0) {
+        return `${priceNum}LPA`;
       }
-      const numMatch = raw.match(/[\d,.]+/);
-      if (numMatch) {
-        const parsed = parseFloat(numMatch[0].replace(/,/g, ''));
-        if (parsed > 1000) {
-          return `₹${Math.round(parsed / 100000)} LPA`;
-        } else if (parsed > 0) {
-          return `₹${parsed} LPA`;
-        }
+    }
+    
+    if (!raw) return '3LPA';
+    
+    raw = raw.replace(/₹/g, '').replace(/,/g, '').trim();
+    const numMatch = raw.match(/[\d.]+/);
+    if (numMatch) {
+      const parsed = parseFloat(numMatch[0]);
+      if (parsed > 1000) {
+        return `${Math.round(parsed / 100000)}LPA`;
+      } else if (parsed > 0) {
+        return `${parsed}LPA`;
       }
-      return `₹${raw} LPA`;
     }
-    const priceNum = Number(job.price || 0);
-    if (priceNum > 1000) {
-      return `₹${Math.round(priceNum / 100000)} LPA`;
-    } else if (priceNum > 0) {
-      return `₹${priceNum} LPA`;
-    }
-    return '₹3 LPA';
+    const clean = raw.replace(/l\.?p\.?a\.?/gi, '').replace(/\s+/g, '');
+    return clean ? `${clean}LPA` : '3LPA';
   };
 
   // 12. CATALOG SECTION
@@ -6051,14 +6091,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 </div>
                               ) : (
                                 <>
-                                  <div className="mt-3.5 space-y-1">
-                                    <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
-                                    <div className="flex items-baseline gap-1.5">
-                                      <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
-                                      <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
-                                      <span className="text-[10px] sm:text-[11px] text-emerald-600 font-extrabold">{product.discount || '20% off'}</span>
-                                    </div>
-                                  </div>
+                                  {(() => {
+                                    const { price: cardPrice, originalPrice: cardOrigPrice, discountText: cardDiscountText } = getProductPrices(product);
+                                    return (
+                                      <div className="mt-3.5 space-y-1">
+                                        <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
+                                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                                          <span className="text-[15px] sm:text-[16px] font-black text-slate-900 dark:text-white">₹{cardPrice.toLocaleString()}</span>
+                                          {cardOrigPrice > cardPrice && (
+                                            <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{cardOrigPrice.toLocaleString()}</span>
+                                          )}
+                                          <span className="text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-extrabold">{cardDiscountText}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
 
                                   {/* Member Tag */}
                                   <div className="mt-3.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/30 rounded-xl px-3 py-1.5 flex items-center gap-1.5 shadow-2xs">
@@ -7435,21 +7482,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
                 </div>
               ) : (
-                <div className="flex items-baseline gap-3 mb-5 mt-1">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white">
-                    ₹{pGold.toLocaleString()}
-                  </span>
-                  {pRegular > pGold && (
-                    <>
-                      <span className="text-xs text-slate-400 line-through">
-                        ₹{pRegular.toLocaleString()}
+                (() => {
+                  const { price: modalPrice, originalPrice: modalOrigPrice, discountText: modalDiscountText } = getProductPrices(selectedProduct);
+                  return (
+                    <div className="flex items-baseline gap-3 mb-5 mt-1 flex-wrap">
+                      <span className="text-2xl font-black text-slate-900 dark:text-white">
+                        ₹{modalPrice.toLocaleString()}
                       </span>
-                      <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-sm">
-                        {selectedProduct.discount || `${Math.round((1 - pGold/pRegular) * 100)}% off`}
-                      </span>
-                    </>
-                  )}
-                </div>
+                      {modalOrigPrice > modalPrice && (
+                        <>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 line-through">
+                            ₹{modalOrigPrice.toLocaleString()}
+                          </span>
+                          <span className="text-xs font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-md">
+                            {modalDiscountText}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()
               )}
 
               {/* Product Options: Colors & Sizes */}
