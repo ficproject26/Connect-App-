@@ -155,10 +155,14 @@ export const normalizeCategoryName = (rawName) => {
   return rawName.trim();
 };
 
+/**
+ * Builds the active category tree STRICTLY based on Admin Category Management API records (dbCategories).
+ * Removes hardcoded category memory override when admin deletes or deactivates categories/subcategories.
+ */
 export const buildActiveCategoryTree = (dbCategories = []) => {
   const catTree = {};
 
-  // 1. Initialize from baseline TAXONOMY
+  // 1. Initialize with BASE_TAXONOMY baseline
   Object.keys(BASE_TAXONOMY).forEach(mainName => {
     catTree[mainName] = {
       name: mainName,
@@ -177,30 +181,35 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     }
   });
 
-  // 2. Process dbCategories (additions, deletions, status toggles from Admin Category Management)
+  // 2. Process all Admin Category Management records (DB overrides)
   (dbCategories || []).forEach(c => {
     if (!c || !c.name) return;
     const mainName = normalizeCategoryName(c.name);
+    const isDeletedOrInactive = c.isDeleted === true || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER';
 
-    // Deletion / Inactive Markers
-    if (c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER' || c.isActive === false) {
+    // ── DELETION & INACTIVATION RECOVERY ──
+    if (isDeletedOrInactive) {
       if (catTree[mainName]) {
-        if (c.subcategory && catTree[mainName].subcategories?.[c.subcategory]) {
-          if (c.subSubcategory) {
-            catTree[mainName].subcategories[c.subcategory].childCategories = 
-              (catTree[mainName].subcategories[c.subcategory].childCategories || [])
-                .filter(ch => (typeof ch === 'string' ? ch !== c.subSubcategory : ch.name !== c.subSubcategory));
-          } else {
-            delete catTree[mainName].subcategories[c.subcategory];
+        if (c.subcategory) {
+          const subName = c.subcategory;
+          if (catTree[mainName].subcategories?.[subName]) {
+            if (c.subSubcategory) {
+              const childName = c.subSubcategory;
+              catTree[mainName].subcategories[subName].childCategories = 
+                (catTree[mainName].subcategories[subName].childCategories || [])
+                  .filter(ch => (typeof ch === 'string' ? ch !== childName : ch.name !== childName));
+            } else {
+              delete catTree[mainName].subcategories[subName];
+            }
           }
-        } else if (!c.subcategory) {
+        } else {
           delete catTree[mainName];
         }
       }
       return;
     }
 
-    // Add or Ensure Active Main Category
+    // ── ADDITION & ACTIVATION ──
     if (!catTree[mainName]) {
       catTree[mainName] = {
         name: mainName,
@@ -211,7 +220,6 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       catTree[mainName].isActive = true;
     }
 
-    // Add or Ensure Active Subcategory
     if (c.subcategory) {
       const subName = c.subcategory;
       if (!catTree[mainName].subcategories[subName]) {
@@ -224,7 +232,6 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
         catTree[mainName].subcategories[subName].isActive = true;
       }
 
-      // Add or Ensure Active Child Category
       if (c.subSubcategory) {
         const childName = c.subSubcategory;
         const childArr = catTree[mainName].subcategories[subName].childCategories;
@@ -248,7 +255,7 @@ export const getDynamicMenuData = (dbCategories = []) => {
     const subs = catTree[mainName].subcategories || {};
     Object.keys(subs).forEach(subName => {
       menuData[mainName][subName] = {
-        items: subs[subName].childCategories || []
+        items: (subs[subName].childCategories || []).map(ch => typeof ch === 'string' ? ch : ch.name)
       };
     });
   });

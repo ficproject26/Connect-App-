@@ -26,7 +26,7 @@ import saree2 from '../../assets/images/saree_2.png';
 import saree3 from '../../assets/images/saree_3.png';
 import saree4 from '../../assets/images/saree_4.png';
 
-import { buildActiveCategoryTree, fetchAdminCategories } from '../../services/categoryService';
+import { buildActiveCategoryTree, fetchAdminCategories, normalizeCategoryName } from '../../services/categoryService';
 
 export default function CategoryDetails({ category, onBack, onSubCategoryClick }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -295,21 +295,17 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
       };
     }
 
-    // Otherwise, combine active subcategories from Category Management tree with dynamic products
+    // Combine active subcategories from Category Management tree with dynamic products
     const activeTree = buildActiveCategoryTree(dbCategories);
-    const activeMainObj = activeTree[safeCat];
+    const activeMainObj = activeTree[safeCat] || activeTree[normalizeCategoryName(safeCat)];
 
     const grouped = {};
-    if (activeMainObj && activeMainObj.subcategories && Object.keys(activeMainObj.subcategories).length > 0) {
+    if (activeMainObj && activeMainObj.subcategories) {
       Object.keys(activeMainObj.subcategories).forEach(subName => {
         const subObj = activeMainObj.subcategories[subName];
         if (subObj && subObj.isActive !== false) {
           grouped[subName] = (subObj.childCategories || []).map(ch => (typeof ch === 'string' ? ch : ch.name));
         }
-      });
-    } else {
-      (staticData.subCategories || []).forEach(sub => {
-        grouped[sub.title] = [...(sub.items || [])];
       });
     }
 

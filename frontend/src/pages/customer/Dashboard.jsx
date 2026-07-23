@@ -5,6 +5,7 @@ import { apiFetch } from '../../services/api';
 import { getAdminBackendUrl } from '../../services/apiSetup';
 import { productService } from '../../services/productService';
 import { socketService } from '../../services/socketService';
+import { getActiveMainCategories } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
 import WalletPage from './Wallet';
 import Offers from './Offers';
@@ -455,52 +456,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   // Dynamic Sub-navbar categories
   const subNavbarCategories = useMemo(() => {
-    const defaultMainCats = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-    
-    if (!dbCategories || dbCategories.length === 0) {
-      return ['Home', ...defaultMainCats];
-    }
-
-    // 1. Gather all normalized active main category names in DB
-    const activeMainCatNorms = new Set();
-    dbCategories.forEach(c => {
-      if (c && c.isActive !== false && !c.isDeleted && c.description !== 'DELETED_HIERARCHY_MARKER') {
-        if (c.name) activeMainCatNorms.add(normalizeMainCatName(c.name));
-      }
-    });
-
-    // 2. Find all deleted/inactive main categories in DB (only if they have NO active category records)
-    const inactiveMainCats = new Set();
-    dbCategories.forEach(c => {
-      if (c && !c.subcategory && !c.subSubcategory) {
-        if (c.isDeleted || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER') {
-          const norm = normalizeMainCatName(c.name);
-          if (!activeMainCatNorms.has(norm)) {
-            inactiveMainCats.add(norm);
-          }
-        }
-      }
-    });
-
-    // 3. Find all active custom main categories defined in DB
-    const activeCustomMainCats = [];
-    dbCategories.forEach(c => {
-      if (c && !c.subcategory && !c.subSubcategory) {
-        if (!c.isDeleted && c.isActive !== false && c.description !== 'DELETED_HIERARCHY_MARKER') {
-          const normName = normalizeMainCatName(c.name);
-          const isDefault = defaultMainCats.some(d => normalizeMainCatName(d) === normName);
-          if (!isDefault && !activeCustomMainCats.some(x => normalizeMainCatName(x) === normName)) {
-            activeCustomMainCats.push((c.name || '').trim());
-          }
-        }
-      }
-    });
-
-    // 4. Filter default list by excluding inactive ones
-    const filteredDefaults = defaultMainCats.filter(d => !inactiveMainCats.has(normalizeMainCatName(d)));
-
-    // 5. Combine Home, filtered defaults, and active custom main categories
-    return ['Home', ...filteredDefaults, ...activeCustomMainCats];
+    const activeMains = getActiveMainCategories(dbCategories);
+    return ['Home', ...activeMains];
   }, [dbCategories]);
 
   const megaMenuLinks = useMemo(() => {
