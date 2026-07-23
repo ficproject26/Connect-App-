@@ -6031,34 +6031,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             ) : (
               /* ================= STANDARD PRODUCTS/SERVICES/ETC GRID ================= */
               <>
-                {filteredProducts.length === 0 && (
-                  <div className="w-full text-center py-10 px-6 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs text-slate-800 dark:text-slate-200 space-y-4 mb-6">
-                    <div className="w-14 h-14 bg-amber-500/10 dark:bg-amber-400/10 rounded-2xl flex items-center justify-center mx-auto border border-amber-500/20">
-                      <Sparkles className="w-7 h-7 text-amber-500 animate-pulse" />
-                    </div>
-                    <div>
-                      <span className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-md mb-2">
-                        ★ Active 3-Tier Category
-                      </span>
-                      <h4 className="text-lg font-black text-slate-900 dark:text-white">
-                        {selectedCategories[0] ? `${selectedCategories[0]} Category` : 'No Specific Items Found'}
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto leading-relaxed font-medium">
-                        {selectedCategories[0] 
-                          ? `The "${selectedCategories[0]}" category is active. Showing available items below.`
-                          : 'Try resetting your filter parameters or search query.'}
-                      </p>
-                    </div>
-                    <div className="flex justify-center gap-3 pt-1">
-                      <button 
-                        onClick={clearAllFilters} 
-                        className="text-xs font-black uppercase tracking-wider text-slate-950 bg-[#FFC107] hover:bg-amber-500 px-6 py-2.5 rounded-full transition-all shadow cursor-pointer border-none"
-                      >
-                        Explore All Categories
-                      </button>
-                    </div>
-                  </div>
-                )}
                 {displayProducts.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
                     {displayProducts.map((product) => {
