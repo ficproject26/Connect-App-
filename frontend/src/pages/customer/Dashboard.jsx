@@ -1826,56 +1826,140 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const mergeDbCategories = (staticData, mainCategoryName) => {
-    const merged = JSON.parse(JSON.stringify(staticData));
+    const merged = JSON.parse(JSON.stringify(staticData || {}));
     const targetNorm = normalizeMainCatName(mainCategoryName);
 
-    // 2. Process active database categories
-    const activeDbCats = dbCategories.filter(c => 
-      c &&
-      c.isActive !== false && 
-      !c.isDeleted && 
-      c.description !== 'DELETED_HIERARCHY_MARKER' &&
-      (!c.name || normalizeMainCatName(c.name) === targetNorm)
-    );
+    if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
+      return merged;
+    }
 
-    activeDbCats.forEach(c => {
-      // 1. When record has subcategory field
-      if (c.subcategory) {
-        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === c.subcategory.toLowerCase());
-        const subName = existingKey || c.subcategory;
-        if (!merged[subName]) {
-          merged[subName] = {
-            title: subName,
-            items: []
-          };
+    const deletedSubNames = new Set();
+    const deletedChildNames = new Set();
+
+    // 1. Process 3-Tier Hierarchical Array from API
+    if (dbCategories[0]?.level === 'main') {
+      const rootMain = dbCategories.find(m => m && normalizeMainCatName(m.name) === targetNorm);
+      if (rootMain) {
+        if (rootMain.isActive === false || rootMain.isDeleted) {
+          return {};
         }
-        if (c.subSubcategory) {
-          const childName = c.subSubcategory;
-          const childExists = (merged[subName].items || []).some(item => item.toLowerCase() === childName.toLowerCase());
-          if (!childExists) {
-            merged[subName].items.push(childName);
-          }
+
+        if (Array.isArray(rootMain.children)) {
+          rootMain.children.forEach(subNode => {
+            if (!subNode || !subNode.name) return;
+            const subName = subNode.name.trim();
+
+            if (subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') {
+              deletedSubNames.add(subName.toLowerCase());
+              Object.keys(merged).forEach(sk => {
+                if (sk.toLowerCase() === subName.toLowerCase()) {
+                  delete merged[sk];
+                }
+              });
+              return;
+            }
+
+            const existingSubKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
+            if (!merged[existingSubKey]) {
+              merged[existingSubKey] = {
+                title: subName,
+                items: []
+              };
+            }
+
+            if (Array.isArray(subNode.children)) {
+              subNode.children.forEach(childNode => {
+                if (!childNode || !childNode.name) return;
+                const childName = childNode.name.trim();
+
+                if (childNode.isActive === false || childNode.isDeleted || childNode.description === 'DELETED_HIERARCHY_MARKER') {
+                  deletedChildNames.add(`${subName.toLowerCase()}::${childName.toLowerCase()}`);
+                  if (merged[existingSubKey]?.items) {
+                    merged[existingSubKey].items = merged[existingSubKey].items.filter(item =>
+                      (typeof item === 'string' ? item : item.name).toLowerCase() !== childName.toLowerCase()
+                    );
+                  }
+                  return;
+                }
+
+                const items = merged[existingSubKey].items || [];
+                const childExists = items.some(item => (typeof item === 'string' ? item : item.name).toLowerCase() === childName.toLowerCase());
+                if (!childExists) {
+                  items.push(childName);
+                }
+              });
+            }
+          });
         }
       }
-      // 2. When record has name as subcategory and subSubcategory as child
-      else if (c.name && normalizeMainCatName(c.name) !== targetNorm) {
-        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === c.name.toLowerCase());
-        const subName = existingKey || c.name;
-        if (!merged[subName]) {
-          merged[subName] = {
-            title: subName,
-            items: []
-          };
+    }
+
+    // 2. Process Flat Category Records (for flat DB structures or deletion markers)
+    dbCategories.forEach(c => {
+      if (!c) return;
+      const cMainNorm = normalizeMainCatName(c.name || c.mainCategory || '');
+      const isDeletedOrInactive = c.isDeleted === true || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER';
+
+      if (isDeletedOrInactive) {
+        if (c.subcategory) {
+          const subLower = c.subcategory.trim().toLowerCase();
+          if (c.subSubcategory) {
+            const childLower = c.subSubcategory.trim().toLowerCase();
+            deletedChildNames.add(`${subLower}::${childLower}`);
+
+            Object.keys(merged).forEach(sKey => {
+              if (sKey.toLowerCase() === subLower && merged[sKey]?.items) {
+                merged[sKey].items = merged[sKey].items.filter(item => 
+                  (typeof item === 'string' ? item : item.name).toLowerCase() !== childLower
+                );
+              }
+            });
+          } else {
+            deletedSubNames.add(subLower);
+            Object.keys(merged).forEach(sKey => {
+              if (sKey.toLowerCase() === subLower) {
+                delete merged[sKey];
+              }
+            });
+          }
         }
-        if (c.subSubcategory) {
-          const childName = c.subSubcategory;
-          const childExists = (merged[subName].items || []).some(item => item.toLowerCase() === childName.toLowerCase());
-          if (!childExists) {
-            merged[subName].items.push(childName);
+        return;
+      }
+
+      if (c.subcategory && (cMainNorm === targetNorm || !cMainNorm)) {
+        const subName = c.subcategory.trim();
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
+
+        if (!deletedSubNames.has(subName.toLowerCase())) {
+          if (!merged[existingKey]) {
+            merged[existingKey] = {
+              title: subName,
+              items: []
+            };
+          }
+          if (c.subSubcategory) {
+            const childName = c.subSubcategory.trim();
+            if (!deletedChildNames.has(`${subName.toLowerCase()}::${childName.toLowerCase()}`)) {
+              const items = merged[existingKey].items || [];
+              const childExists = items.some(item => (typeof item === 'string' ? item : item.name).toLowerCase() === childName.toLowerCase());
+              if (!childExists) {
+                items.push(childName);
+              }
+            }
           }
         }
       }
     });
+
+    // Remove any explicitly deleted subcategories
+    deletedSubNames.forEach(subLower => {
+      Object.keys(merged).forEach(sKey => {
+        if (sKey.toLowerCase() === subLower) {
+          delete merged[sKey];
+        }
+      });
+    });
+
     return merged;
   };
 

@@ -184,9 +184,14 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
   // 2. Handle 3-Tier Hierarchical Array (from API)
   if (Array.isArray(dbCategories) && dbCategories.length > 0 && dbCategories[0]?.level === 'main') {
     dbCategories.forEach(mainCat => {
-      if (!mainCat || !mainCat.name || mainCat.isActive === false) return;
+      if (!mainCat || !mainCat.name) return;
       const mainName = normalizeCategoryName(mainCat.name);
       
+      if (mainCat.isActive === false || mainCat.isDeleted) {
+        delete catTree[mainName];
+        return;
+      }
+
       if (!catTree[mainName]) {
         catTree[mainName] = {
           name: mainName,
@@ -199,8 +204,21 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
 
       if (Array.isArray(mainCat.children)) {
         mainCat.children.forEach(subCat => {
-          if (!subCat || !subCat.name || subCat.isActive === false) return;
+          if (!subCat || !subCat.name) return;
           const subName = subCat.name.trim();
+
+          // Handle deletion/inactivation of sub category
+          if (subCat.isActive === false || subCat.isDeleted || subCat.description === 'DELETED_HIERARCHY_MARKER') {
+            if (catTree[mainName]?.subcategories) {
+              delete catTree[mainName].subcategories[subName];
+              Object.keys(catTree[mainName].subcategories).forEach(sk => {
+                if (sk.toLowerCase() === subName.toLowerCase()) {
+                  delete catTree[mainName].subcategories[sk];
+                }
+              });
+            }
+            return;
+          }
 
           if (!catTree[mainName].subcategories[subName]) {
             catTree[mainName].subcategories[subName] = {
@@ -208,14 +226,27 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
               isActive: true,
               childCategories: []
             };
+          } else {
+            catTree[mainName].subcategories[subName].isActive = true;
           }
 
           if (Array.isArray(subCat.children)) {
             subCat.children.forEach(childCat => {
-              if (!childCat || !childCat.name || childCat.isActive === false) return;
+              if (!childCat || !childCat.name) return;
               const childName = childCat.name.trim();
+
+              // Handle deletion/inactivation of child category
+              if (childCat.isActive === false || childCat.isDeleted || childCat.description === 'DELETED_HIERARCHY_MARKER') {
+                if (catTree[mainName]?.subcategories?.[subName]?.childCategories) {
+                  catTree[mainName].subcategories[subName].childCategories = 
+                    catTree[mainName].subcategories[subName].childCategories
+                      .filter(ch => (typeof ch === 'string' ? ch.toLowerCase() !== childName.toLowerCase() : ch.name.toLowerCase() !== childName.toLowerCase()));
+                }
+                return;
+              }
+
               const childArr = catTree[mainName].subcategories[subName].childCategories;
-              const exists = childArr.some(ch => (typeof ch === 'string' ? ch === childName : ch.name === childName));
+              const exists = childArr.some(ch => (typeof ch === 'string' ? ch.toLowerCase() === childName.toLowerCase() : ch.name.toLowerCase() === childName.toLowerCase()));
               if (!exists) {
                 childArr.push(childName);
               }
@@ -224,10 +255,9 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
         });
       }
     });
-    return catTree;
   }
 
-  // 3. Process flat records if any
+  // 3. Process flat records if any (for flat deletion markers or legacy DB records)
   (dbCategories || []).forEach(c => {
     if (!c || !c.name) return;
     const mainName = normalizeCategoryName(c.name);
@@ -236,22 +266,19 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     if (isDeletedOrInactive) {
       if (catTree[mainName]) {
         if (c.subcategory) {
-          const subName = c.subcategory;
-          if (catTree[mainName].subcategories?.[subName]) {
-            if (c.subSubcategory) {
-              const childName = c.subSubcategory;
-              catTree[mainName].subcategories[subName].childCategories = 
-                (catTree[mainName].subcategories[subName].childCategories || [])
-                  .filter(ch => (typeof ch === 'string' ? ch !== childName : ch.name !== childName));
-            } else {
-              delete catTree[mainName].subcategories[subName];
+          const subName = c.subcategory.trim();
+          Object.keys(catTree[mainName].subcategories || {}).forEach(sk => {
+            if (sk.toLowerCase() === subName.toLowerCase()) {
+              if (c.subSubcategory) {
+                const childName = c.subSubcategory.trim().toLowerCase();
+                catTree[mainName].subcategories[sk].childCategories = 
+                  (catTree[mainName].subcategories[sk].childCategories || [])
+                    .filter(ch => (typeof ch === 'string' ? ch.toLowerCase() !== childName : ch.name.toLowerCase() !== childName));
+              } else {
+                delete catTree[mainName].subcategories[sk];
+              }
             }
-          }
-        } else {
-          const canonicals = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-          if (canonicals.includes(mainName) && c.name.trim().toLowerCase() === mainName.toLowerCase()) {
-            delete catTree[mainName];
-          }
+          });
         }
       }
       return;
@@ -268,7 +295,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     }
 
     if (c.subcategory) {
-      const subName = c.subcategory;
+      const subName = c.subcategory.trim();
       if (!catTree[mainName].subcategories[subName]) {
         catTree[mainName].subcategories[subName] = {
           name: subName,
@@ -280,9 +307,9 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       }
 
       if (c.subSubcategory) {
-        const childName = c.subSubcategory;
+        const childName = c.subSubcategory.trim();
         const childArr = catTree[mainName].subcategories[subName].childCategories;
-        const exists = childArr.some(ch => (typeof ch === 'string' ? ch === childName : ch.name === childName));
+        const exists = childArr.some(ch => (typeof ch === 'string' ? ch.toLowerCase() === childName.toLowerCase() : ch.name.toLowerCase() === childName.toLowerCase()));
         if (!exists) {
           childArr.push(childName);
         }
