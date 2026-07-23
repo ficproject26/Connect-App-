@@ -26,7 +26,7 @@ import saree2 from '../../assets/images/saree_2.png';
 import saree3 from '../../assets/images/saree_3.png';
 import saree4 from '../../assets/images/saree_4.png';
 
-import { getAdminBackendUrl } from '../../services/apiSetup';
+import { buildActiveCategoryTree, fetchAdminCategories } from '../../services/categoryService';
 
 export default function CategoryDetails({ category, onBack, onSubCategoryClick }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,17 +35,9 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
   const [dbCategories, setDbCategories] = useState([]);
 
   useEffect(() => {
-    const fetchDbCategories = async () => {
-      try {
-        const res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
-        if (res.ok) {
-          setDbCategories(await res.json());
-        }
-      } catch (err) {
-        console.warn("Failed to fetch dynamic categories in customer app", err);
-      }
-    };
-    fetchDbCategories();
+    fetchAdminCategories().then(data => {
+      if (Array.isArray(data)) setDbCategories(data);
+    });
   }, []);
 
   // Geolocation States
@@ -277,62 +269,69 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
     }
   };
 
-  // Dynamically construct data based ONLY on vendorProducts
+  // Dynamically construct data based on static templates and vendorProducts
   const getDynamicCategoryData = () => {
-    const staticData = categoryData[category] || categoryData['Services'];
+    const safeCat = category || 'Services';
+    const catLower = safeCat.toLowerCase();
+    const staticData = categoryData[safeCat] || categoryData['Services'];
     
     const matchingProducts = vendorProducts.filter(p => 
-      (p.subNavbarCategory || '').toLowerCase() === category.toLowerCase()
+      (p.subNavbarCategory || '').toLowerCase() === catLower ||
+      (p.category || '').toLowerCase() === catLower
     );
 
-    // If it's Products category or isProductGrid, show only dynamic vendor products
-    if (staticData.isProductGrid || category === 'Products') {
+    // If it's Products category or isProductGrid, merge static & dynamic products
+    if (staticData.isProductGrid || safeCat === 'Products') {
+      const combinedProducts = [...(staticData.products || [])];
+      matchingProducts.forEach(mp => {
+        if (!combinedProducts.some(p => p.id === mp.id || p.name === mp.name)) {
+          combinedProducts.push(mp);
+        }
+      });
       return {
         tagline: staticData.tagline || 'Explore exclusive luxury deals.',
         isProductGrid: true,
-        products: matchingProducts
+        products: combinedProducts
       };
     }
 
-    // Otherwise, group vendor products into subcategories dynamically
-    const dbSubcats = dbCategories
-      .filter(c => {
-        let main = c.name;
-        if (main === 'Restaurants') main = 'Food';
-        if (main === 'Hotels') main = 'Stay';
-        if (main === 'Stores') main = 'Products';
-        return main.toLowerCase() === category.toLowerCase();
-      })
-      .map(c => c.subcategory)
-      .filter(Boolean);
+    // Otherwise, combine active subcategories from Category Management tree with dynamic products
+    const activeTree = buildActiveCategoryTree(dbCategories);
+    const activeMainObj = activeTree[safeCat];
 
     const grouped = {};
-    dbSubcats.forEach(sub => {
-      if (!grouped[sub]) {
-        grouped[sub] = [];
-      }
-    });
+    if (activeMainObj && activeMainObj.subcategories && Object.keys(activeMainObj.subcategories).length > 0) {
+      Object.keys(activeMainObj.subcategories).forEach(subName => {
+        const subObj = activeMainObj.subcategories[subName];
+        if (subObj && subObj.isActive !== false) {
+          grouped[subName] = (subObj.childCategories || []).map(ch => (typeof ch === 'string' ? ch : ch.name));
+        }
+      });
+    } else {
+      (staticData.subCategories || []).forEach(sub => {
+        grouped[sub.title] = [...(sub.items || [])];
+      });
+    }
 
     matchingProducts.forEach(p => {
       const subcat = p.category || 'General';
       if (!grouped[subcat]) {
         grouped[subcat] = [];
       }
-      if (!grouped[subcat].includes(p.name)) {
+      if (p.name && !grouped[subcat].includes(p.name)) {
         grouped[subcat].push(p.name);
       }
     });
 
-    const newSubCategories = Object.keys(grouped)
-      .map(subcat => ({
-        title: subcat,
-        items: grouped[subcat]
-      }))
-      .filter(sub => sub.items.length > 0 || dbSubcats.includes(sub.title));
+    const mergedSubCategories = Object.keys(grouped).map(subcat => ({
+      title: subcat,
+      items: grouped[subcat]
+    }));
 
-    // Build partner list ONLY from vendorProducts
-    const mergedPartners = [];
-    const seenPartnerNames = new Set();
+    // Build partner list merging static and vendor products
+    const mergedPartners = [...(staticData.mockPartners || [])];
+    const seenPartnerNames = new Set(mergedPartners.map(p => (p.name || '').toLowerCase()));
+    
     matchingProducts.forEach(p => {
       if (p.vendorName && !seenPartnerNames.has(p.vendorName.toLowerCase())) {
         seenPartnerNames.add(p.vendorName.toLowerCase());
@@ -348,7 +347,7 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
 
     return {
       tagline: staticData.tagline || 'Audited partner catalog.',
-      subCategories: newSubCategories,
+      subCategories: mergedSubCategories,
       mockPartners: mergedPartners
     };
   };

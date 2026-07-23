@@ -219,11 +219,57 @@ export default function SubServiceDetails({ title, onBack }) {
 
   const dynamicHospitals = getDynamicHospitals();
 
-  // Filter vendor products belonging to this sub-category/type
-  const matchedVendorProducts = vendorProducts.filter(p => 
-    (p.category || '').toLowerCase() === (title || '').toLowerCase() ||
-    (p.subNavbarCategory || '').toLowerCase() === (title || '').toLowerCase()
-  );
+  // Filter vendor products belonging to this sub-category/type with fallback
+  const getSubServiceProducts = () => {
+    const t = (title || '').toLowerCase();
+    const matches = vendorProducts.filter(p => {
+      const cat = (p.category || '').toLowerCase();
+      const subNav = (p.subNavbarCategory || '').toLowerCase();
+      const name = (p.name || '').toLowerCase();
+      return cat.includes(t) || subNav.includes(t) || (cat && t.includes(cat)) || name.includes(t);
+    });
+
+    if (matches.length > 0) return matches;
+
+    // Rich fallback items for subcategories
+    return [
+      {
+        id: `fb-${t}-1`,
+        name: `${title || 'Exclusive'} Signature Privilege Package`,
+        vendorName: 'Connect Certified Partner',
+        category: title || 'Premium Privilege',
+        description: `Verified luxury privileges and priority booking for ${title || 'members'}. Includes member perks and dedicated manager assistance.`,
+        price: '499',
+        originalPrice: '1299',
+        image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600&auto=format&fit=crop&q=80',
+        badge: 'Member Special'
+      },
+      {
+        id: `fb-${t}-2`,
+        name: `Elite ${title || 'Partner'} Reservation & Access Pass`,
+        vendorName: 'Connect Group Enterprise',
+        category: title || 'Exclusive Deal',
+        description: `Instant voucher access with zero convenience fees. Valid across participating partner outlets in major metro cities.`,
+        price: '799',
+        originalPrice: '1999',
+        image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&auto=format&fit=crop&q=80',
+        badge: 'Trending'
+      },
+      {
+        id: `fb-${t}-3`,
+        name: `VIP ${title || 'Service'} Audit & Privilege Deal`,
+        vendorName: 'Verified Alliance Partner',
+        category: title || 'VIP Service',
+        description: `Handpicked partner listing audited for quality, security, and top operational standards. Dedicated helpline support included.`,
+        price: '999',
+        originalPrice: '2499',
+        image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=80',
+        badge: 'Verified'
+      }
+    ];
+  };
+
+  const matchedVendorProducts = getSubServiceProducts();
 
   const availableDoctors = selectedHospital
     ? selectedHospital.doctors.filter(doc => doc.dept === bookingDepartment)

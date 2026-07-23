@@ -97,14 +97,22 @@ function AppContent() {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const handleCategoryClick = (categoryName, isSubService = false) => {
-    if (categoryName === 'Jobs') {
+    if (!categoryName) return;
+    const nameLower = categoryName.toLowerCase();
+    const MAIN_CATS = ['services', 'products', 'daily needs', 'food', 'stay', 'travel'];
+
+    if (categoryName === 'Jobs' || nameLower === 'jobs') {
       setIsJobsOpen(true);
-    } else if (isSubService) {
+    } else if (MAIN_CATS.includes(nameLower) && !isSubService) {
+      let canonicalName = 'Services';
+      if (nameLower === 'daily needs') canonicalName = 'Daily Needs';
+      else canonicalName = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+      
+      setActiveCategory(canonicalName);
+      setCurrentPage('details');
+    } else {
       setActiveSubService(categoryName);
       setCurrentPage('sub-details');
-    } else {
-      setActiveCategory(categoryName);
-      setCurrentPage('details');
     }
   };
 

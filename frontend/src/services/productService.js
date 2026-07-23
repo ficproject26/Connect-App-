@@ -17,6 +17,35 @@ const sanitizeString = (str) => {
     .replace(/ðŸ›°ï¸ /g, '');
 };
 
+const inferSubNavbarCategory = (p) => {
+  if (p.subNavbarCategory) return p.subNavbarCategory;
+  const cat = (p.category || '').toLowerCase();
+  const name = (p.name || '').toLowerCase();
+
+  if (['hospitals', 'physiotherapy', 'it services', 'non-it', 'job consulting', 'business consulting', 'healthcare', 'education', 'financial', 'insurance', 'home services', 'legal', 'digital', 'automobile services'].some(k => cat.includes(k) || name.includes(k))) {
+    return 'Services';
+  }
+  if (['smartphones', 'headphones', 'monitors', 'electronics', 'furniture', 'fashion', 'beauty', 'baby care', 'sports', 'books', 'gaming', 'kitchen', 'pet', 'stores', 'saree'].some(k => cat.includes(k) || name.includes(k))) {
+    return 'Products';
+  }
+  if (['rice', 'eggs', 'grocery', 'fruits', 'vegetables', 'dairy', 'water', 'household', 'personal care', 'pharmacy'].some(k => cat.includes(k) || name.includes(k))) {
+    return 'Daily Needs';
+  }
+  if (['fine dining', 'restaurants', 'fast food', 'cafes', 'south indian', 'north indian', 'biryani', 'healthy food', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'pizza'].some(k => cat.includes(k) || name.includes(k))) {
+    return 'Food';
+  }
+  if (['deluxe', 'hotels', 'resorts', 'homestays', 'service apartments', 'vacation', 'student accommodation', 'corporate stay', 'suite', 'stay'].some(k => cat.includes(k) || name.includes(k))) {
+    return 'Stay';
+  }
+  if (['family packages', 'exclusive offers', 'flight', 'train', 'bus', 'cab', 'car rental', 'bike rental', 'tour', 'honeymoon', 'travel', 'pass'].some(k => cat.includes(k) || name.includes(k))) {
+    return 'Travel';
+  }
+  if (['full stack developer', 'banking', 'it', 'non-it', 'bpo', 'sales', 'healthcare jobs', 'job'].some(k => cat.includes(k) || name.includes(k))) {
+    return 'Jobs';
+  }
+  return 'Services';
+};
+
 const sanitizeProduct = (p) => {
   const updated = { ...p };
   for (const key in updated) {
@@ -26,6 +55,7 @@ const sanitizeProduct = (p) => {
       updated[key] = updated[key].map(item => typeof item === 'string' ? sanitizeString(item) : item);
     }
   }
+  updated.subNavbarCategory = inferSubNavbarCategory(updated);
   return updated;
 };
 

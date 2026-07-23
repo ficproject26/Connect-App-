@@ -152,11 +152,13 @@ const ROLE_CONFIG = {
   visitor: { label: 'Guest', icon: Globe, cls: 'text-amber-400' },
 };
 
+import { fetchAdminCategories, getDynamicMenuData, getActiveMainCategories, BASE_TAXONOMY } from '../../services/categoryService';
+
 /* ══════════════════════════════════════════════════════════════
    GLASSMORPHIC MEGA DROPDOWN  (matches CustomerDashboard style)
    ══════════════════════════════════════════════════════════════ */
-function GlassMegaDropdown({ menuKey, onClose, onCategoryClick, setIsJobsOpen, onMouseEnter, onMouseLeave }) {
-  const data = MENU_DATA[menuKey] || {};
+function GlassMegaDropdown({ menuKey, onClose, onCategoryClick, setIsJobsOpen, onMouseEnter, onMouseLeave, menuDataOverride }) {
+  const data = (menuDataOverride && menuDataOverride[menuKey]) || BASE_TAXONOMY[menuKey] || {};
   const cats = Object.keys(data);
   const [activeCat, setActiveCat] = useState('ALL');
 
@@ -170,13 +172,14 @@ function GlassMegaDropdown({ menuKey, onClose, onCategoryClick, setIsJobsOpen, o
     title = `All ${menuKey}`;
     cats.forEach(cat => {
       const catData = data[cat];
-      if (catData?.items) items = [...items, ...catData.items];
+      const catItems = Array.isArray(catData) ? catData : (catData?.items || []);
+      items = [...items, ...catItems];
     });
     items = Array.from(new Set(items));
   } else {
     const activeData = data[activeCat];
     if (activeData) {
-      items = activeData.items || [];
+      items = Array.isArray(activeData) ? activeData : (activeData.items || []);
       title = activeCat;
     }
   }
@@ -344,16 +347,27 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const menuConfig = [
-    { label: 'SERVICES',    menuKey: 'Services' },
-    { label: 'PRODUCTS',    menuKey: 'Products' },
-    { label: 'DAILY NEEDS', menuKey: 'Daily Needs' },
-    { label: 'FOOD',        menuKey: 'Food' },
-    { label: 'STAY',        menuKey: 'Stay' },
-    { label: 'TRAVEL',      menuKey: 'Travel' },
-    { label: 'MEMBERSHIP',  menuKey: null },
-    { label: 'JOBS',        menuKey: 'Jobs' },
-  ];
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    fetchAdminCategories().then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        setDbCategories(data);
+      }
+    });
+  }, []);
+
+  const dynamicMenuData = useMemo(() => getDynamicMenuData(dbCategories), [dbCategories]);
+  const activeMainCatNames = useMemo(() => getActiveMainCategories(dbCategories), [dbCategories]);
+
+  const menuConfig = useMemo(() => {
+    const list = activeMainCatNames.map(name => ({
+      label: name.toUpperCase(),
+      menuKey: name
+    }));
+    list.push({ label: 'MEMBERSHIP', menuKey: null });
+    return list;
+  }, [activeMainCatNames]);
 
   const handleLinkClick = (link) => {
     if (link.label === 'MEMBERSHIP') {
@@ -364,10 +378,10 @@ export default function Navbar({
         onHomeClick();
         setTimeout(() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }), 100);
       }
-    } else if (link.label === 'JOBS') {
+    } else if (link.label === 'JOBS' || link.menuKey === 'Jobs') {
       setIsJobsOpen(true);
     } else {
-      onCategoryClick(link.label.charAt(0) + link.label.slice(1).toLowerCase().replace(' needs', ' Needs'));
+      onCategoryClick(link.menuKey || link.label);
     }
     closeAll();
   };
@@ -493,9 +507,10 @@ export default function Navbar({
         onMouseEnter={cancelLeave}
         onMouseLeave={handleMouseLeave}
       >
-        {openMenu && MEGA_MENU_LINKS.includes(openMenu) && (
+        {openMenu && activeMainCatNames.includes(openMenu) && (
           <GlassMegaDropdown
             menuKey={openMenu}
+            menuDataOverride={dynamicMenuData}
             onClose={() => setOpenMenu(null)}
             onCategoryClick={onCategoryClick}
             setIsJobsOpen={setIsJobsOpen}
