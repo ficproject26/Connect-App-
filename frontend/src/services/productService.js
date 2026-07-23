@@ -282,75 +282,50 @@ const inferSubNavbarCategory = (p) => {
   if (p.subNavbarCategory) return p.subNavbarCategory;
   if (p.mainCategory) return p.mainCategory;
 
-  // Direct Job property indicators
-  if (p.tag === 'Jobs' || p.tag === 'Job' || p.type === 'Job' || p.type === 'Jobs') return 'Jobs';
-  if (p.jobTitle || p.salary || p.offeredSalary || p.salaryRange || p.jobType) return 'Jobs';
-
-  const cat = (p.category || '').toLowerCase().trim();
-  const subcat = (p.subcategory || '').toLowerCase().trim();
-  const name = (p.name || '').toLowerCase().trim();
-  const desc = (p.description || '').toLowerCase().trim();
-  const tag = (p.tag || '').toLowerCase().trim();
-  const type = (p.type || '').toLowerCase().trim();
-
-  const mainCatsMap = {
-    'services': 'Services',
-    'products': 'Products',
-    'daily needs': 'Daily Needs',
-    'food': 'Food',
-    'stay': 'Stay',
-    'travel': 'Travel',
-    'jobs': 'Jobs'
+  const normalizeCat = (val) => {
+    if (!val || typeof val !== 'string') return '';
+    const v = val.trim().toLowerCase();
+    if (v === 'services' || v === 'service') return 'Services';
+    if (v === 'products' || v === 'product') return 'Products';
+    if (v === 'daily needs' || v === 'daily-needs' || v === 'dailyneeds' || v === 'grocery' || v === 'groceries') return 'Daily Needs';
+    if (v === 'food' || v === 'foods' || v === 'dining' || v === 'restaurant') return 'Food';
+    if (v === 'stay' || v === 'stays' || v === 'hotel' || v === 'hotels') return 'Stay';
+    if (v === 'travel' || v === 'travels' || v === 'tour' || v === 'tours') return 'Travel';
+    if (v === 'jobs' || v === 'job' || v === 'hiring' || v === 'recruitment') return 'Jobs';
+    return '';
   };
 
-  if (mainCatsMap[cat]) return mainCatsMap[cat];
-  if (mainCatsMap[subcat]) return mainCatsMap[subcat];
-  if (mainCatsMap[tag]) return mainCatsMap[tag];
-  if (mainCatsMap[type]) return mainCatsMap[type];
+  const directTag = normalizeCat(p.tag) || normalizeCat(p.type);
+  if (directTag) return directTag;
 
-  // Specific Food keywords
-  if (['fine dining', 'restaurants', 'fast food', 'cafes', 'south indian', 'north indian', 'biryani', 'healthy food', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'pizza', 'burger', 'dosa', 'idli', 'parotta', 'food', 'salna', 'curry', 'thali'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
+  const directCat = normalizeCat(p.category) || normalizeCat(p.subcategory) || normalizeCat(p.subSubcategory);
+  if (directCat) return directCat;
+
+  if (p.jobTitle || p.offeredSalary || p.salary || p.jobType) return 'Jobs';
+
+  const catStr = `${p.category || ''} ${p.subcategory || ''} ${p.subSubcategory || ''} ${p.tag || ''}`.toLowerCase();
+
+  if (['parotta', 'biryani', 'dosa', 'idli', 'thali', 'pizza', 'burger', 'fast food', 'south indian', 'north indian', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'restaurant', 'cafe'].some(k => catStr.includes(k))) {
     return 'Food';
   }
-
-  // Job keywords check
-  if (['full stack developer', 'software engineer', 'developer', 'engineer', 'manager', 'executive', 'technician', 'hiring', 'opening', 'recruitment', 'work from home', 'remote job', 'fresher', 'bpo', 'sales executive', 'ui/ux'].some(k => name.includes(k) || cat.includes(k) || subcat.includes(k) || desc.includes(k) || tag.includes(k))) {
-    return 'Jobs';
-  }
-  if (name === 'hi' || name === 'hi job' || name.startsWith('hi job')) {
-    return 'Jobs';
-  }
-
-  // Specific Travel keywords
-  if (['family packages', 'exclusive offers', 'flight', 'train', 'bus', 'cab', 'car rental', 'bike rental', 'tour', 'honeymoon', 'travel', 'pass', 'taxi', 'sleeper', 'ac sleeper'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k) || desc.includes(k))) {
+  if (['cab', 'taxi', 'bus', 'sleeper', 'flight', 'train', 'car rental', 'bike rental', 'tour package', 'travel'].some(k => catStr.includes(k))) {
     return 'Travel';
   }
-
-  // Specific Stay keywords
-  if (['deluxe', 'hotels', 'resorts', 'homestays', 'service apartments', 'vacation', 'student accommodation', 'corporate stay', 'suite', 'stay', 'room', 'lodge'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k) || desc.includes(k))) {
+  if (['hotel', 'resort', 'homestay', 'suite', 'deluxe room', 'lodge', 'accommodation', 'stay'].some(k => catStr.includes(k))) {
     return 'Stay';
   }
-
-  // Specific Daily Needs
-  if (['rice', 'eggs', 'grocery', 'fruits', 'vegetables', 'dairy', 'mineral water', 'household', 'personal care', 'pharmacy', 'supermarket', 'daily'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k) || desc.includes(k))) {
+  if (['rice', 'egg', 'eggs', 'fruits', 'vegetables', 'dairy', 'milk', 'supermarket', 'daily needs', 'pharmacy'].some(k => catStr.includes(k))) {
     return 'Daily Needs';
   }
-
-  // Specific Jobs
-  if (['full stack developer', 'banking', 'bpo', 'sales', 'healthcare jobs', 'job', 'developer', 'engineer', 'manager'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k) || desc.includes(k))) {
+  if (['full time', 'part time', 'full stack', 'developer', 'software engineer', 'it jobs', 'non-it jobs', 'bpo jobs', 'jobs', 'opening'].some(k => catStr.includes(k))) {
     return 'Jobs';
   }
-
-  // General Services
-  if (['hospitals', 'physiotherapy', 'it services', 'non-it', 'job consulting', 'business consulting', 'healthcare', 'education', 'financial', 'insurance', 'home services', 'legal', 'digital', 'automobile services', 'repair', 'salon', 'spa', 'cleaning', 'plumbing', 'electrician', 'mechanic', 'pest control', 'carpenter', 'doctor', 'clinic', 'dentist'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
+  if (['doctor', 'clinic', 'hospital', 'physiotherapy', 'home service', 'repair', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting'].some(k => catStr.includes(k))) {
     return 'Services';
   }
-
-  if (['smartphones', 'headphones', 'monitors', 'electronics', 'furniture', 'fashion', 'beauty', 'baby care', 'sports', 'books', 'gaming', 'kitchen', 'pet', 'stores', 'saree', 'waterbottle', 'bottle', 'watch', 'jewellery', 'appliances', 'mobile', 'laptop', 'clothing'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
+  if (['saree', 'fashion', 'electronics', 'mobile', 'smartphone', 'laptop', 'watch', 'jewellery', 'furniture', 'appliance'].some(k => catStr.includes(k))) {
     return 'Products';
   }
-
-  if (cat.includes('service') || subcat.includes('service')) return 'Services';
 
   return 'Products';
 };
