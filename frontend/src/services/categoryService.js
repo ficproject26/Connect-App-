@@ -185,8 +185,8 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     return catTree;
   }
 
-  // 2. Handle 3-Tier Hierarchical Array
-  const hierarchicalMains = dbCategories.filter(c => c && c.level === 'main');
+  // 2. Handle 3-Tier Hierarchical Array (ONLY if children array is populated)
+  const hierarchicalMains = dbCategories.filter(c => c && c.level === 'main' && Array.isArray(c.children) && c.children.length > 0);
   if (hierarchicalMains.length > 0) {
     hierarchicalMains.forEach(mainCat => {
       const mainName = normalizeCategoryName(mainCat.name);

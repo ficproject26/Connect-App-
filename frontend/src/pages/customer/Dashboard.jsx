@@ -1839,8 +1839,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       return merged;
     }
 
-    // 1. Process 3-Tier Hierarchical Structure
-    const rootMain = dbCategories.find(m => m && m.level === 'main' && normalizeMainCatName(m.name) === targetNorm);
+    // 1. Process 3-Tier Hierarchical Structure (ONLY if children array is populated)
+    const rootMain = dbCategories.find(m => m && m.level === 'main' && normalizeMainCatName(m.name) === targetNorm && Array.isArray(m.children) && m.children.length > 0);
     if (rootMain) {
       if (rootMain.isActive === false || rootMain.isDeleted) {
         return {};
