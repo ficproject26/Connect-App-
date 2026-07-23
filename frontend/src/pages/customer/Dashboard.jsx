@@ -521,6 +521,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
     return currentUser?.email || 'dhanush.kumar@gmail.com';
   });
+
+  const activeCustomerId = useMemo(() => {
+    if (currentUser?.customerId) return currentUser.customerId;
+    const savedUser = localStorage.getItem('connect_current_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        if (u.customerId) return u.customerId;
+      } catch (e) {}
+    }
+    const email = currentUser?.email || profileEmail || 'dhanush.kumar@gmail.com';
+    const key = `connect_customer_id_${email.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    let existing = localStorage.getItem(key);
+    if (!existing) {
+      existing = 'FIC-CUST-849201';
+      try { localStorage.setItem(key, existing); } catch (e) {}
+    }
+    return existing;
+  }, [currentUser, profileEmail]);
   const [profilePhone, setProfilePhone] = useState(() => {
     return localStorage.getItem('connect_profile_phone') || '+91 98765 43210';
   });
@@ -8400,13 +8419,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0">
                     {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
                   </div>
-                  <div className="w-full overflow-hidden mt-1">
+                  <div className="w-full overflow-hidden mt-1 flex flex-col items-center">
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-all leading-tight">
                       {currentUser?.name || profileName}
                     </h4>
                     <span className="inline-block px-3 py-0.5 text-[9px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 rounded-full mt-1.5 uppercase tracking-wider">
                       Customer Member
                     </span>
+                    <div className="mt-2 flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/20 dark:bg-amber-950/30 dark:border-amber-900/40 px-3 py-1 rounded-xl shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer ID:</span>
+                      <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 font-mono tracking-wider">
+                        {activeCustomerId}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
