@@ -308,16 +308,17 @@ const inferSubNavbarCategory = (p) => {
   if (mainCatsMap[tag]) return mainCatsMap[tag];
   if (mainCatsMap[type]) return mainCatsMap[type];
 
-  // Job keywords check BEFORE other categories
-  if (['full stack developer', 'full time', 'part time', 'job', 'developer', 'engineer', 'manager', 'executive', 'technician', 'hiring', 'opening', 'recruitment', 'work from home', 'remote job', 'fresher', 'bpo', 'sales executive', 'ui/ux', 'hi job', 'hi'].some(k => name.includes(k) || cat.includes(k) || subcat.includes(k) || desc.includes(k) || tag.includes(k))) {
-    if (tag === 'jobs' || tag === 'job' || type === 'job' || cat.includes('job') || subcat.includes('job') || name.includes('job') || name.includes('hi') || desc.includes('job') || cat === 'full time' || cat === 'part time') {
-      return 'Jobs';
-    }
+  // Specific Food keywords
+  if (['fine dining', 'restaurants', 'fast food', 'cafes', 'south indian', 'north indian', 'biryani', 'healthy food', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'pizza', 'burger', 'dosa', 'idli', 'parotta', 'food', 'salna', 'curry', 'thali'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
+    return 'Food';
   }
 
-  // Specific Food keywords
-  if (['fine dining', 'restaurants', 'fast food', 'cafes', 'south indian', 'north indian', 'biryani', 'healthy food', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'pizza', 'burger', 'dosa', 'idli', 'parotta', 'food', 'salna', 'curry', 'thali'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k) || desc.includes(k))) {
-    return 'Food';
+  // Job keywords check
+  if (['full stack developer', 'software engineer', 'developer', 'engineer', 'manager', 'executive', 'technician', 'hiring', 'opening', 'recruitment', 'work from home', 'remote job', 'fresher', 'bpo', 'sales executive', 'ui/ux'].some(k => name.includes(k) || cat.includes(k) || subcat.includes(k) || desc.includes(k) || tag.includes(k))) {
+    return 'Jobs';
+  }
+  if (name === 'hi' || name === 'hi job' || name.startsWith('hi job')) {
+    return 'Jobs';
   }
 
   // Specific Travel keywords
