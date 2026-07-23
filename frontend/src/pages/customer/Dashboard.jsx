@@ -4923,6 +4923,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   };
 
+  const formatJobSalary = (job) => {
+    if (!job) return '3 LPA';
+    if (job.salary) {
+      const raw = String(job.salary).trim();
+      if (raw.toLowerCase().includes('lpa') || raw.toLowerCase().includes('l.p.a')) {
+        return raw.startsWith('₹') ? raw : `₹${raw}`;
+      }
+      const numMatch = raw.match(/[\d,.]+/);
+      if (numMatch) {
+        const parsed = parseFloat(numMatch[0].replace(/,/g, ''));
+        if (parsed > 1000) {
+          return `₹${Math.round(parsed / 100000)} LPA`;
+        } else if (parsed > 0) {
+          return `₹${parsed} LPA`;
+        }
+      }
+      return `₹${raw} LPA`;
+    }
+    const priceNum = Number(job.price || 0);
+    if (priceNum > 1000) {
+      return `₹${Math.round(priceNum / 100000)} LPA`;
+    } else if (priceNum > 0) {
+      return `₹${priceNum} LPA`;
+    }
+    return '₹3 LPA';
+  };
+
   // 12. CATALOG SECTION
   const renderCatalogSection = () => {
     const filteredJobs = jobsList.filter(job => {
@@ -5831,8 +5858,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[10px] text-amber-500 dark:text-amber-400 font-extrabold flex items-center">
-                                  {job.salary}
+                                <span className="text-xs font-black text-[#0b1e36] dark:text-[#FFC107] bg-amber-400/15 dark:bg-amber-400/20 px-3 py-1 rounded-full border border-amber-400/30 flex items-center">
+                                  {formatJobSalary(job)}
                                 </span>
                               </div>
                               
@@ -5981,23 +6008,39 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 })()}
                               </div>
 
-                              {/* Price Section */}
-                              <div className="mt-3.5 space-y-1">
-                                <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
-                                  <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
-                                  <span className="text-[10px] sm:text-[11px] text-emerald-600 font-extrabold">{product.discount || '20% off'}</span>
+                              {/* Price or Salary Section */}
+                              {product.subNavbarCategory === 'Jobs' || product.tag === 'Jobs' || product.category === 'Jobs' ? (
+                                <div className="mt-3.5 space-y-1 text-left">
+                                  <span className="text-[9px] sm:text-[10px] text-amber-500 uppercase tracking-wider block font-black leading-none">Offered Salary</span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white font-mono">
+                                      {formatJobSalary(product)}
+                                    </span>
+                                    <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-900/30 px-2 py-0.5 rounded-full">
+                                      Full-time
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
+                              ) : (
+                                <>
+                                  <div className="mt-3.5 space-y-1">
+                                    <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                      <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
+                                      <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
+                                      <span className="text-[10px] sm:text-[11px] text-emerald-600 font-extrabold">{product.discount || '20% off'}</span>
+                                    </div>
+                                  </div>
 
-                              {/* Member Tag */}
-                              <div className="mt-3.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/30 rounded-xl px-3 py-1.5 flex items-center gap-1.5 shadow-2xs">
-                                <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-400 leading-none">
-                                  Extra 5% Member Reward
-                                </span>
-                              </div>
+                                  {/* Member Tag */}
+                                  <div className="mt-3.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/30 rounded-xl px-3 py-1.5 flex items-center gap-1.5 shadow-2xs">
+                                    <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-400 leading-none">
+                                      Extra 5% Member Reward
+                                    </span>
+                                  </div>
+                                </>
+                              )}
                             </div>
 
                             {/* Action Buttons based on category type */}
@@ -7351,22 +7394,36 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
               </div>
 
-              {/* Clean Price Display */}
-              <div className="flex items-baseline gap-3 mb-5 mt-1">
-                <span className="text-2xl font-black text-slate-900 dark:text-white">
-                  ₹{pGold.toLocaleString()}
-                </span>
-                {pRegular > pGold && (
-                  <>
-                    <span className="text-xs text-slate-400 line-through">
-                      ₹{pRegular.toLocaleString()}
+              {/* Clean Price Display / Salary Display for Jobs */}
+              {selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.tag === 'Jobs' || selectedProduct.category === 'Jobs' ? (
+                <div className="mb-5 mt-1 text-left">
+                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block mb-1">Offered Salary</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
+                      {formatJobSalary(selectedProduct)}
                     </span>
-                    <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-sm">
-                      {selectedProduct.discount || `${Math.round((1 - pGold/pRegular) * 100)}% off`}
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-900/30">
+                      {selectedProduct.type || 'Full-Time Position'}
                     </span>
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-3 mb-5 mt-1">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">
+                    ₹{pGold.toLocaleString()}
+                  </span>
+                  {pRegular > pGold && (
+                    <>
+                      <span className="text-xs text-slate-400 line-through">
+                        ₹{pRegular.toLocaleString()}
+                      </span>
+                      <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-sm">
+                        {selectedProduct.discount || `${Math.round((1 - pGold/pRegular) * 100)}% off`}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Product Options: Colors & Sizes */}
               {getProductOptions(selectedProduct) && (() => {
