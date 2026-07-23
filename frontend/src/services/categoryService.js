@@ -181,13 +181,58 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     }
   });
 
-  // 2. Process all Admin Category Management records (DB overrides)
+  // 2. Handle 3-Tier Hierarchical Array (from API)
+  if (Array.isArray(dbCategories) && dbCategories.length > 0 && dbCategories[0]?.level === 'main') {
+    dbCategories.forEach(mainCat => {
+      if (!mainCat || !mainCat.name || mainCat.isActive === false) return;
+      const mainName = normalizeCategoryName(mainCat.name);
+      
+      if (!catTree[mainName]) {
+        catTree[mainName] = {
+          name: mainName,
+          isActive: true,
+          subcategories: {}
+        };
+      } else {
+        catTree[mainName].isActive = true;
+      }
+
+      if (Array.isArray(mainCat.children)) {
+        mainCat.children.forEach(subCat => {
+          if (!subCat || !subCat.name || subCat.isActive === false) return;
+          const subName = subCat.name.trim();
+
+          if (!catTree[mainName].subcategories[subName]) {
+            catTree[mainName].subcategories[subName] = {
+              name: subName,
+              isActive: true,
+              childCategories: []
+            };
+          }
+
+          if (Array.isArray(subCat.children)) {
+            subCat.children.forEach(childCat => {
+              if (!childCat || !childCat.name || childCat.isActive === false) return;
+              const childName = childCat.name.trim();
+              const childArr = catTree[mainName].subcategories[subName].childCategories;
+              const exists = childArr.some(ch => (typeof ch === 'string' ? ch === childName : ch.name === childName));
+              if (!exists) {
+                childArr.push(childName);
+              }
+            });
+          }
+        });
+      }
+    });
+    return catTree;
+  }
+
+  // 3. Process flat records if any
   (dbCategories || []).forEach(c => {
     if (!c || !c.name) return;
     const mainName = normalizeCategoryName(c.name);
     const isDeletedOrInactive = c.isDeleted === true || c.isActive === false || c.description === 'DELETED_HIERARCHY_MARKER';
 
-    // ── DELETION & INACTIVATION RECOVERY ──
     if (isDeletedOrInactive) {
       if (catTree[mainName]) {
         if (c.subcategory) {
@@ -203,7 +248,6 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
             }
           }
         } else {
-          // Only delete main category if it matches exact main category name
           const canonicals = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
           if (canonicals.includes(mainName) && c.name.trim().toLowerCase() === mainName.toLowerCase()) {
             delete catTree[mainName];
@@ -213,7 +257,6 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       return;
     }
 
-    // ── ADDITION & ACTIVATION ──
     if (!catTree[mainName]) {
       catTree[mainName] = {
         name: mainName,
@@ -268,18 +311,32 @@ export const getDynamicMenuData = (dbCategories = []) => {
 };
 
 export const getActiveMainCategories = (dbCategories = []) => {
-  const catTree = buildActiveCategoryTree(dbCategories);
   const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-  const activeKeys = Object.keys(catTree);
+
+  // If hierarchical API response is passed
+  if (Array.isArray(dbCategories) && dbCategories.length > 0 && dbCategories[0]?.level) {
+    const activeMains = dbCategories
+      .filter(c => c.level === 'main' && c.isActive !== false)
+      .map(c => normalizeCategoryName(c.name));
+
+    const sorted = [];
+    canonicalMains.forEach(m => {
+      if (activeMains.includes(m)) sorted.push(m);
+    });
+    activeMains.forEach(k => {
+      if (!sorted.includes(k) && k) sorted.push(k);
+    });
+    return sorted.length > 0 ? sorted : canonicalMains;
+  }
+
+  const catTree = buildActiveCategoryTree(dbCategories);
+  const activeKeys = Object.keys(catTree).filter(k => canonicalMains.includes(k));
   
   const sorted = [];
   canonicalMains.forEach(m => {
     if (activeKeys.includes(m)) sorted.push(m);
   });
-  activeKeys.forEach(k => {
-    if (!sorted.includes(k)) sorted.push(k);
-  });
-  return sorted;
+  return sorted.length > 0 ? sorted : canonicalMains;
 };
 
 export const fetchAdminCategories = async () => {
