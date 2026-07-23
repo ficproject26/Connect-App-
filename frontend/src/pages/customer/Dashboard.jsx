@@ -227,6 +227,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [checkOutTime, setCheckOutTime] = useState('11:00 AM');
   const [adultCount, setAdultCount] = useState(1);
   const [childCount, setChildCount] = useState(0);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [flippedCardKey, setFlippedCardKey] = useState(null);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
@@ -2873,53 +2875,61 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const renderMembershipPrestigeView = () => {
-    const details = {
-      'Silver Tier': {
+    const tierList = [
+      {
+        key: 'Silver Tier',
         name: 'Silver Tier',
+        titleBadge: 'SILVER MEMBER',
         price: '₹4,000/year',
         discount: '10% OFF',
-        badgeColor: 'bg-slate-400 text-white',
+        badgeColor: 'bg-slate-300 text-slate-900 border-slate-400',
+        waveGradient: 'from-slate-200 via-slate-300 to-slate-400',
+        waveText: 'text-slate-800',
+        chipBg: 'from-slate-300 to-slate-400',
+        sealBg: 'from-slate-200 via-slate-100 to-slate-300 text-slate-850 border-slate-300',
+        sealText: 'SILVER MEMBER',
+        btnBg: 'bg-slate-700 hover:bg-slate-800 text-white dark:bg-slate-300 dark:hover:bg-slate-200 dark:text-slate-950',
         benefits: [
           'Flat 10% Off on all Products and Daily Needs',
           'Standard priority order packaging & delivery',
           'Earn 1.2x reward points on all transactions',
           'Free standard shipping on orders over ₹499'
-        ],
-        cardBg: 'bg-gradient-to-tr from-slate-400 via-slate-100 to-slate-500',
-        cardText: 'text-slate-900',
-        brandText: 'text-slate-850',
-        subText: 'text-slate-500',
-        accentText: 'text-slate-900',
-        borderClass: 'border-slate-300',
-        glowColor: 'bg-slate-300/20',
-        btnBg: 'bg-slate-400 hover:bg-slate-500 text-white'
+        ]
       },
-      'Gold Elite': {
+      {
+        key: 'Gold Elite',
         name: 'Gold Elite',
+        titleBadge: 'PREMIUM MEMBER',
         price: '₹8,000/year',
         discount: '20% OFF',
-        badgeColor: 'bg-amber-400 text-[#0b1e36]',
+        badgeColor: 'bg-amber-400 text-[#0b1e36] border-amber-300',
+        waveGradient: 'from-[#fef08a] via-[#eab308] to-[#ca8a04]',
+        waveText: 'text-[#422006]',
+        chipBg: 'from-amber-300 to-amber-500',
+        sealBg: 'from-amber-300 via-yellow-100 to-amber-500 text-[#422006] border-amber-300',
+        sealText: 'PREMIUM MEMBER',
+        btnBg: 'bg-amber-500 hover:bg-amber-600 text-[#0b1e36] font-extrabold',
         benefits: [
           'Flat 15% discount on partner Stay bookings',
           'Flat 10% off restaurant bills & food vouchers',
           'Priority shipping & express package dispatch',
           'Earn 2.0x reward points on all transactions',
           'Access to dedicated Gold customer support hotline'
-        ],
-        cardBg: 'bg-gradient-to-tr from-[#eed48f] via-[#fff3d4] to-[#eed48f]',
-        cardText: 'text-[#5c3e07]',
-        brandText: 'text-[#704f05]',
-        subText: 'text-[#916b14]',
-        accentText: 'text-[#704f05]',
-        borderClass: 'border-amber-300',
-        glowColor: 'bg-yellow-400/20',
-        btnBg: 'bg-amber-400 hover:bg-amber-500 text-[#0b1e36]'
+        ]
       },
-      'Diamond Prestige': {
+      {
+        key: 'Diamond Prestige',
         name: 'Diamond Prestige',
+        titleBadge: 'DIAMOND MEMBER',
         price: '₹20,000/year',
         discount: '30% OFF',
-        badgeColor: 'bg-cyan-400 text-cyan-950',
+        badgeColor: 'bg-cyan-400 text-cyan-950 border-cyan-300',
+        waveGradient: 'from-cyan-200 via-cyan-400 to-sky-600',
+        waveText: 'text-cyan-950',
+        chipBg: 'from-cyan-300 to-sky-500',
+        sealBg: 'from-cyan-200 via-sky-100 to-cyan-400 text-cyan-950 border-cyan-300',
+        sealText: 'DIAMOND MEMBER',
+        btnBg: 'bg-cyan-400 hover:bg-cyan-500 text-cyan-950 font-black',
         benefits: [
           'Complimentary global airport VIP lounge access',
           'Flat 25% discount on stays and private pool villas',
@@ -2927,223 +2937,249 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           'Earn 3.0x reward points on all transactions',
           'Dedicated 24/7 personal banking concierge',
           'Unlimited next-day express deliveries'
-        ],
-        cardBg: 'bg-gradient-to-tr from-cyan-650 via-cyan-150 to-cyan-850',
-        cardText: 'text-white',
-        brandText: 'text-cyan-100',
-        subText: 'text-cyan-200',
-        accentText: 'text-white',
-        borderClass: 'border-cyan-300',
-        glowColor: 'bg-cyan-400/20',
-        btnBg: 'bg-cyan-400 hover:bg-cyan-500 text-cyan-950'
+        ]
       }
-    }[previewMembershipTier] || {
-      name: 'Gold Elite',
-      price: '₹8,000/year',
-      discount: '20% OFF',
-      badgeColor: 'bg-amber-400 text-[#0b1e36]',
-      benefits: [
-        'Flat 15% discount on partner Stay bookings',
-        'Flat 10% off restaurant bills & food vouchers',
-        'Priority shipping & express package dispatch',
-        'Earn 2.0x reward points on all transactions',
-        'Access to dedicated Gold customer support hotline'
-      ],
-      cardBg: 'bg-gradient-to-tr from-[#eed48f] via-[#fff3d4] to-[#eed48f]',
-      cardText: 'text-[#5c3e07]',
-      brandText: 'text-[#704f05]',
-      subText: 'text-[#916b14]',
-      accentText: 'text-[#704f05]',
-      borderClass: 'border-amber-300',
-      glowColor: 'bg-yellow-400/20',
-      btnBg: 'bg-amber-400 hover:bg-amber-500 text-[#0b1e36]'
-    };
+    ];
 
-    const isActivePlan = (currentMembershipTier || 'Gold Elite').toLowerCase().includes((details?.name || 'Gold Elite').split(' ')[0].toLowerCase());
+    const currentNorm = (currentMembershipTier || 'Gold Elite').toLowerCase();
 
     return (
-      <div className="p-6 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl text-left text-slate-800 dark:text-white max-w-4xl mx-auto space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl text-left text-slate-800 dark:text-white max-w-7xl mx-auto space-y-8 animate-fade-in">
         {/* Header Title */}
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-black text-slate-850 dark:text-white tracking-tight uppercase">Choose Your Prestige</h2>
-          <p className="text-xs font-semibold text-slate-450 dark:text-slate-400">Scroll down to explore tiers, or click the active card to view benefits.</p>
+        <div className="text-center space-y-2 max-w-2xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
+            Forge India Connect Memberships
+          </h2>
+          <p className="text-xs md:text-sm font-semibold text-slate-500 dark:text-slate-400">
+            Compare all 3 Membership Privilege Cards (Silver, Gold, Diamond). Tap any card to flip and view security details.
+          </p>
         </div>
 
-        {/* Tab Buttons to quickly toggle prestige preview */}
-        <div className="flex justify-center gap-3.5 border-b border-slate-200/50 dark:border-slate-800/80 pb-4">
-          {['Silver Tier', 'Gold Elite', 'Diamond Prestige'].map((tierName) => {
-            const isSelected = previewMembershipTier === tierName;
+        {/* 3 Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch justify-center">
+          {tierList.map((tier) => {
+            const isActivePlan = currentNorm.includes(tier.name.split(' ')[0].toLowerCase());
+            const isFlipped = flippedCardKey === tier.key;
+
             return (
-              <button
-                key={tierName}
-                type="button"
-                onClick={() => {
-                  setPreviewMembershipTier(tierName);
-                  setIsCardFlipped(false);
-                }}
-                className={`px-4 py-2 text-xs font-black uppercase rounded-lg border tracking-wider transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#0b1e36] text-white border-[#0b1e36] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-md'
-                    : 'bg-slate-100 text-slate-550 border-slate-200 hover:bg-slate-200 hover:text-slate-800 dark:bg-slate-900/40 dark:border-slate-800 dark:text-slate-400'
-                }`}
+              <div 
+                key={tier.key}
+                className="bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all duration-300 group"
               >
-                {tierName}
-              </button>
-            );
-          })}
-        </div>
+                {/* 3D Flip Card Container */}
+                <div className="space-y-4">
+                  <div
+                    onClick={() => setFlippedCardKey(isFlipped ? null : tier.key)}
+                    className="relative w-full aspect-[1.58/1] rounded-2xl cursor-pointer select-none group-hover:scale-[1.02] transition-transform duration-300 shadow-2xl"
+                    style={{ perspective: '1000px' }}
+                  >
+                    <div
+                      className="absolute inset-0 w-full h-full rounded-2xl transition-transform duration-700"
+                      style={{
+                        transformStyle: 'preserve-3d',
+                        transform: isFlipped ? 'rotateY(180deg)' : 'none'
+                      }}
+                    >
+                      {/* FRONT FACE (Matching Reference Image) */}
+                      <div
+                        className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden bg-[#061328] text-white flex flex-col justify-between p-4 border border-white/10 shadow-2xl"
+                        style={{ backfaceVisibility: 'hidden' }}
+                      >
+                        {/* Metallic Curve Top Wave */}
+                        <div 
+                          className={`absolute top-0 right-0 w-[58%] h-[55%] bg-gradient-to-br ${tier.waveGradient} rounded-bl-[100px] shadow-lg flex flex-col justify-center items-end pr-4 pt-3 pointer-events-none z-10`}
+                        >
+                          <span className={`text-[9px] font-black uppercase tracking-widest leading-none ${tier.waveText}`}>
+                            MEMBERSHIP CARD
+                          </span>
+                          <span className={`text-[6px] font-bold uppercase tracking-wider mt-1 opacity-90 ${tier.waveText}`}>
+                            CONNECT MORE, SAVE MORE
+                          </span>
+                        </div>
 
-        {/* Side-by-side Layout */}
-        <div className="flex flex-col md:flex-row gap-8 justify-center items-center md:items-stretch py-2">
-          
-          {/* Left: Info Card */}
-          <div className="bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-3xl p-6 flex flex-col justify-between text-left shadow-md w-full md:w-[340px] shrink-0">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className={`text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-widest ${details.badgeColor}`}>
-                  {details.name}
-                </span>
-                <span className="text-base font-black text-slate-800 dark:text-slate-100">{details.price}</span>
-              </div>
-              <div className="border-b border-slate-150 dark:border-slate-800 pb-2">
-                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Membership Benefits</span>
-              </div>
-              <ul className="space-y-3">
-                {details.benefits.map((b, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-350">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="font-semibold leading-relaxed">{b}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                        {/* Top Brand Logo */}
+                        <div className="flex justify-between items-start z-20 relative">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-md">
+                              F
+                            </div>
+                            <div className="flex flex-col text-left leading-none">
+                              <span className="text-[11px] font-black uppercase tracking-widest text-amber-400 font-serif">
+                                FORGE INDIA
+                              </span>
+                              <span className="text-[8px] font-bold uppercase tracking-wider text-sky-400 mt-0.5">
+                                CONNECT
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-150 dark:border-slate-800/50">
-              {isActivePlan ? (
-                <button
-                  disabled
-                  type="button"
-                  className="w-full py-3 bg-slate-150 text-slate-450 dark:bg-slate-850 dark:text-slate-650 text-xs font-black uppercase tracking-wider rounded-xl cursor-not-allowed text-center border-none"
-                >
-                  Active Plan
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setCurrentMembershipTier(details.name);
-                    triggerNotification(`Congratulations! You have upgraded to ${details.name}!`);
-                  }}
-                  type="button"
-                  className={`w-full py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow cursor-pointer border-none text-center ${details.btnBg}`}
-                >
-                  Select {details.name.split(' ')[0]}
-                </button>
-              )}
-            </div>
-          </div>
+                        {/* Middle Row: EMV Chip + Wireless Icon & Circular Seal Badge */}
+                        <div className="flex justify-between items-center my-auto z-20 relative px-1">
+                          {/* EMV Chip & Wireless */}
+                          <div className="flex items-center gap-2">
+                            <div className={`w-9 h-7 rounded-md bg-gradient-to-br ${tier.chipBg} border border-white/40 shadow-inner flex items-center justify-center`}>
+                              <div className="w-5 h-4 border border-black/20 rounded-sm grid grid-cols-2 gap-0.5 opacity-60" />
+                            </div>
+                            <Wifi className="w-5 h-5 text-white/80 rotate-90" />
+                          </div>
 
-          {/* Right: Privilege Card container */}
-          <div className="flex flex-col items-center justify-center flex-grow gap-4 w-full">
-            <div
-              onClick={() => setIsCardFlipped(!isCardFlipped)}
-              className="relative w-full max-w-[340px] aspect-[1.58/1] rounded-2xl cursor-pointer select-none hover:scale-[1.02] transition-transform duration-300"
-              style={{
-                perspective: '1000px',
-                transformStyle: 'preserve-3d'
-              }}
-            >
-              <div
-                className="absolute inset-0 w-full h-full rounded-2xl transition-transform duration-700"
-                style={{
-                  transformStyle: 'preserve-3d',
-                  transform: isCardFlipped ? 'rotateY(180deg)' : 'none'
-                }}
-              >
-                {/* FRONT FACE */}
-                <div
-                  className={`absolute inset-0 w-full h-full rounded-2xl p-5 overflow-hidden border flex flex-col justify-between text-left shadow-xl ${details.cardBg} ${details.cardText} ${details.borderClass}`}
-                  style={{ backfaceVisibility: 'hidden' }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col leading-none">
-                      <span className={`text-[13px] font-black uppercase tracking-widest font-serif ${details.brandText}`}>Connect</span>
-                      <span className={`text-[7px] font-bold uppercase tracking-wider mt-0.5 ${details.subText}`}>Forge India Ecosystem</span>
+                          {/* Circular Seal Badge with Crown & Stars */}
+                          <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${tier.sealBg} border-2 flex flex-col items-center justify-center text-center shadow-2xl p-1`}>
+                            <Crown className="w-3.5 h-3.5 fill-current mb-0.5" />
+                            <span className="text-[6px] font-black uppercase tracking-tighter leading-none">
+                              {tier.sealText}
+                            </span>
+                            <div className="flex gap-0.5 mt-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <span key={i} className="text-[6px]">★</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Number, Name & Member Since */}
+                        <div className="z-20 relative text-left space-y-1">
+                          <div className="text-xs md:text-sm font-bold font-mono tracking-widest text-amber-300 drop-shadow-sm">
+                            FIC 2025 5687 4321 0001
+                          </div>
+                          <div className="flex justify-between items-end">
+                            <div className="flex flex-col leading-none">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-white">
+                                {profileName || 'DHANUSH TAMILARASAN'}
+                              </span>
+                              <span className="text-[7px] font-bold uppercase tracking-widest text-slate-300 mt-0.5">
+                                MEMBER SINCE 05/2025
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bottom Perk Icons Strip (Food, Travel, Stay, Shop, Support) */}
+                        <div className="z-20 relative mt-2 pt-1.5 border-t border-white/15 grid grid-cols-5 gap-1 text-center text-white/90">
+                          <div className="flex flex-col items-center">
+                            <Utensils className="w-2.5 h-2.5 mb-0.5 text-amber-400" />
+                            <span className="text-[5px] font-black uppercase leading-none">FOOD</span>
+                            <span className="text-[4px] text-white/60 leading-none scale-90">OFFERS</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <Plane className="w-2.5 h-2.5 mb-0.5 text-sky-400" />
+                            <span className="text-[5px] font-black uppercase leading-none">TRAVEL</span>
+                            <span className="text-[4px] text-white/60 leading-none scale-90">DISCOUNTS</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <BedDouble className="w-2.5 h-2.5 mb-0.5 text-indigo-400" />
+                            <span className="text-[5px] font-black uppercase leading-none">STAY</span>
+                            <span className="text-[4px] text-white/60 leading-none scale-90">DEALS</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <ShoppingBag className="w-2.5 h-2.5 mb-0.5 text-rose-400" />
+                            <span className="text-[5px] font-black uppercase leading-none">SHOP</span>
+                            <span className="text-[4px] text-white/60 leading-none scale-90">BENEFITS</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <Headphones className="w-2.5 h-2.5 mb-0.5 text-emerald-400" />
+                            <span className="text-[5px] font-black uppercase leading-none">SUPPORT</span>
+                            <span className="text-[4px] text-white/60 leading-none scale-90">24/7</span>
+                          </div>
+                        </div>
+
+                        {/* Background subtle mesh overlay */}
+                        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-10 pointer-events-none" />
+                      </div>
+
+                      {/* BACK FACE */}
+                      <div
+                        className="absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border bg-[#050d1a] text-slate-200 border-slate-800 flex flex-col justify-between text-left shadow-2xl"
+                        style={{
+                          backfaceVisibility: 'hidden',
+                          transform: 'rotateY(180deg)'
+                        }}
+                      >
+                        <div className="space-y-3">
+                          <div className="h-8 bg-slate-950 -mx-4 mt-1" />
+                          
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-500 opacity-70 flex items-center justify-center p-0.5">
+                              <div className="w-full h-full border border-white/30 rounded bg-white/10" />
+                            </div>
+                            
+                            <div className="flex-grow h-7 bg-white rounded flex items-center justify-end px-3">
+                              <span className="text-slate-900 font-mono text-xs font-black tracking-widest">CVV 789</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <p className="text-[7px] text-slate-400 leading-tight">
+                            Authorized signature card. Issued by Forge India Connect Ecosystem. Non-transferable. Tap again to return to front.
+                          </p>
+                          <div className="flex justify-between items-center border-t border-slate-800 pt-1 text-[8px] font-mono text-amber-400 font-bold">
+                            <span>ONLINE SECURE ✓</span>
+                            <span>FIC NODE v2.4</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className={`text-[8px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white/20 bg-white/10 ${details.cardText}`}>
-                        {details.name}
+                  </div>
+
+                  <div className="text-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>Tap card to flip</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tier Info & Benefits */}
+                <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col justify-between flex-grow space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border ${tier.badgeColor}`}>
+                        {tier.name}
+                      </span>
+                      <span className="text-lg font-black text-slate-900 dark:text-white">
+                        {tier.price}
                       </span>
                     </div>
+
+                    <ul className="space-y-2 pt-2">
+                      {tier.benefits.map((b, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
+                          <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="font-medium leading-relaxed">{b}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center flex-grow py-3">
-                    <div className="flex items-center gap-2">
-                      <Gem className={`w-8 h-8 fill-current ${details.cardText} animate-pulse`} />
-                      <span className={`text-xl font-black uppercase tracking-widest font-serif ${details.brandText}`}>CONNECT</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-end leading-none">
-                    <div className="flex flex-col gap-1 text-left">
-                      <span className={`text-[7px] font-bold uppercase tracking-wider ${details.subText}`}>CONN ID</span>
-                      <span className="text-xs font-bold font-mono tracking-wider">CONN-8812-0495-2038</span>
-                      <span className="text-[10px] font-bold uppercase mt-1.5">{profileName}</span>
-                    </div>
-                    <div className="flex flex-col gap-1 text-right">
-                      <span className={`text-[7px] font-bold uppercase tracking-wider ${details.subText}`}>EXP DATE</span>
-                      <span className="text-xs font-bold font-mono">12/2028</span>
-                    </div>
-                  </div>
-
-                  {/* Highlights and glares */}
-                  <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full ${details.glowColor} blur-xl pointer-events-none`} />
-                  <div className="absolute top-1/2 left-1/2 w-32 h-32 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-                </div>
-
-                {/* BACK FACE */}
-                <div
-                  className="absolute inset-0 w-full h-full rounded-2xl p-5 overflow-hidden border bg-[#0a1120] text-slate-200 border-slate-800 flex flex-col justify-between text-left shadow-xl"
-                  style={{
-                    backfaceVisibility: 'hidden',
-                    transform: 'rotateY(180deg)'
-                  }}
-                >
-                  <div className="space-y-4">
-                    {/* Magnetic stripe */}
-                    <div className="h-9 bg-slate-950 -mx-5 mt-1" />
-                    
-                    <div className="flex justify-between items-start gap-4">
-                      {/* Hologram */}
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-500 opacity-60 flex items-center justify-center p-0.5">
-                        <div className="w-full h-full border border-white/20 rounded bg-white/10" />
-                      </div>
-                      
-                      {/* Signature block */}
-                      <div className="flex-grow h-7 bg-white rounded-lg flex items-center justify-end px-3">
-                        <span className="text-slate-800 font-mono text-[10px] font-bold">123</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-[7px] text-slate-500 leading-normal">
-                      This card is non-transferable and remains the property of Connect App. Use is subject to network terms and conditions. If found, please return to any Forge India checkpoint.
-                    </p>
-                    <div className="flex justify-between items-center border-t border-slate-900/60 pt-2 text-[8px] font-mono text-slate-400">
-                      <span>WALLET COMPATIBLE ✓</span>
-                      <span className="text-amber-500 font-bold">FORGE INDIA NODE v1.2.6</span>
-                    </div>
+                  {/* Action Button */}
+                  <div className="pt-2">
+                    {isActivePlan ? (
+                      <button
+                        disabled
+                        type="button"
+                        className="w-full py-3 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 text-xs font-black uppercase tracking-wider rounded-xl cursor-not-allowed text-center border-none"
+                      >
+                        Active Plan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setCurrentMembershipTier(tier.name);
+                          triggerNotification(`Congratulations! You have upgraded to ${tier.name}!`);
+                        }}
+                        type="button"
+                        className={`w-full py-3 text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none text-center ${tier.btnBg}`}
+                      >
+                        Select {tier.name.split(' ')[0]}
+                      </button>
+                    )}
                   </div>
                 </div>
-
               </div>
-            </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 animate-pulse select-none">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Tap card to flip</span>
-            </span>
-          </div>
-
+            );
+          })}
         </div>
       </div>
     );
