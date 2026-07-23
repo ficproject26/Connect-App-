@@ -1,8 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, Check, Tag, Gift, Plane, ShieldCheck, Utensils } from 'lucide-react';
+import { getAdminBackendUrl } from '../../services/apiSetup';
 
 export default function Offers() {
   const [copiedCode, setCopiedCode] = useState(null);
+  const [liveOffers, setLiveOffers] = useState([]);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const res = await fetch(`${getAdminBackendUrl()}/api/public/exclusive-offers`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setLiveOffers(data);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch live admin exclusive offers:", err);
+      }
+    };
+    fetchOffers();
+  }, []);
 
   const handleCopyCode = (code) => {
     navigator.clipboard.writeText(code).then(() => {
@@ -14,7 +33,7 @@ export default function Offers() {
     });
   };
 
-  const offers = [
+  const defaultOffers = [
     { 
       title: 'Summer Festival Sale', 
       discount: 'Flat 20% OFF', 
@@ -82,6 +101,50 @@ export default function Offers() {
     }
   ];
 
+  const displayOffers = liveOffers.length > 0 ? liveOffers.map((off, idx) => {
+    const icons = [Tag, Utensils, Plane, ShieldCheck, Gift];
+    const lightBgs = [
+      'bg-[#fffbeb] dark:bg-[#1a1208]/40',
+      'bg-[#f5f3ff] dark:bg-[#110c22]/40',
+      'bg-[#ecfdf5] dark:bg-[#062015]/40',
+      'bg-[#eff6ff] dark:bg-[#0b172a]/40',
+      'bg-[#fff1f2] dark:bg-[#200a11]/40'
+    ];
+    const borderColors = [
+      'border-[#fde68a] dark:border-[#38260e]/50',
+      'border-[#ddd6fe] dark:border-[#22174d]/50',
+      'border-[#a7f3d0] dark:border-[#134e35]/50',
+      'border-[#bfdbfe] dark:border-[#1e3a8a]/50',
+      'border-[#fecdd3] dark:border-[#881337]/50'
+    ];
+    const tagBgs = [
+      'bg-gradient-to-r from-orange-500 to-orange-600',
+      'bg-gradient-to-r from-violet-500 to-indigo-600',
+      'bg-gradient-to-r from-emerald-500 to-teal-600',
+      'bg-gradient-to-r from-blue-500 to-cyan-600',
+      'bg-gradient-to-r from-rose-500 to-pink-600'
+    ];
+    const iconBgs = [
+      'bg-[#ffedd5] dark:bg-[#341a0b] text-[#f97316]',
+      'bg-[#e0e7ff] dark:bg-[#1a1738] text-[#6366f1]',
+      'bg-[#d1fae5] dark:bg-[#064e3b] text-[#10b981]',
+      'bg-[#dbeafe] dark:bg-[#1e3a8a] text-[#3b82f6]',
+      'bg-[#ffe4e6] dark:bg-[#881337] text-[#f43f5e]'
+    ];
+
+    return {
+      title: off.title,
+      discount: off.discount || 'Special Discount',
+      code: off.code || 'CONNECT',
+      desc: off.desc || 'Exclusive offer for active Connect members.',
+      icon: icons[idx % icons.length],
+      lightBg: lightBgs[idx % lightBgs.length],
+      borderColor: borderColors[idx % borderColors.length],
+      tagBg: tagBgs[idx % tagBgs.length],
+      iconBg: iconBgs[idx % iconBgs.length]
+    };
+  }) : defaultOffers;
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 text-left animate-fade-in text-slate-800 dark:text-slate-100">
       
@@ -121,7 +184,7 @@ export default function Offers() {
 
       {/* Offers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {offers.map((off, idx) => {
+        {displayOffers.map((off, idx) => {
           const Icon = off.icon;
           const isCopied = copiedCode === off.code;
           return (

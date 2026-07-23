@@ -297,6 +297,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     loadVendorProducts();
   }, []);
 
+  const [adminOffers, setAdminOffers] = useState([]);
+
+  useEffect(() => {
+    const fetchAdminOffers = async () => {
+      try {
+        const url = `${getAdminBackendUrl()}/api/public/exclusive-offers`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setAdminOffers(data);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch live admin offers:", err);
+      }
+    };
+    fetchAdminOffers();
+  }, []);
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -619,6 +639,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [guestList, setGuestList] = useState([{ name: '', aadhaar: '', phone: '' }]);
   const [stayMode, setStayMode] = useState('Day Option');
+  const [deletedProductIds, setDeletedProductIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('connect_deleted_product_ids');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const handleDeleteProduct = (productId) => {
+    setDeletedProductIds(prev => {
+      const updated = [...new Set([...prev, productId])];
+      try {
+        localStorage.setItem('connect_deleted_product_ids', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    triggerNotification('Product card deleted');
+  };
 
   // Delivery Tracking State Variables
   const [customerOrders, setCustomerOrders] = useState([]);
@@ -2728,8 +2768,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const activeProducts = useMemo(() => {
-    return products;
-  }, [products]);
+    return products.filter(p => !deletedProductIds.includes(p.id));
+  }, [products, deletedProductIds]);
 
   // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)
   const filteredProducts = useMemo(() => {
@@ -4281,7 +4321,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const renderExclusiveOffers = () => {
-    const offers = [
+    const defaultOffers = [
       { 
         id: 'o1', 
         brand: 'Food', 
@@ -4328,6 +4368,34 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       },
     ];
 
+    const displayOffers = adminOffers.length > 0 ? adminOffers.map((o, idx) => {
+      const bgs = [
+        'bg-amber-50/70 dark:bg-[#1e1707] border-amber-200 dark:border-amber-900/50',
+        'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50',
+        'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50',
+        'bg-emerald-50/70 dark:bg-[#041c12] border-emerald-100 dark:border-[#0e3a24]/50',
+        'bg-indigo-50/70 dark:bg-[#160824] border-indigo-100 dark:border-[#2f114d]/50'
+      ];
+      const tagColors = [
+        'bg-amber-500 text-white',
+        'bg-blue-500 text-white',
+        'bg-rose-500 text-white',
+        'bg-emerald-500 text-white',
+        'bg-indigo-500 text-white'
+      ];
+
+      return {
+        id: o._id || `ao_${idx}`,
+        brand: o.category || 'Exclusive',
+        discount: o.discount || 'SPECIAL OFFER',
+        desc: o.title || o.desc || 'Exclusive discount deal',
+        code: o.code || 'CONNECT',
+        bg: bgs[idx % bgs.length],
+        tagColor: tagColors[idx % tagColors.length],
+        image: o.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=250&auto=format&fit=crop&q=80'
+      };
+    }) : defaultOffers;
+
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
@@ -4347,7 +4415,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {offers.map(offer => (
+          {displayOffers.map(offer => (
             <div 
               key={offer.id} 
               className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-4 h-[150px] transition-all duration-300 hover:shadow-md ${offer.bg}`}
@@ -4449,7 +4517,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         image: skMockup,
         tag: 'Jobs'
       }
-    ];
+    ].filter(item => !deletedProductIds.includes(item.id));
 
     return (
       <div className="space-y-4 text-left w-full">
@@ -4520,15 +4588,32 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <span>{item.rating}</span>
                   </div>
 
-                  <button 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      toggleFavorite(item.id); 
-                    }} 
-                    className="absolute right-2.5 top-2.5 w-7 h-7 rounded-full bg-white/90 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105"
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
-                  </button>
+                  <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5 z-20">
+                    <button 
+                      type="button"
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        toggleFavorite(item.id); 
+                      }} 
+                      className="w-7 h-7 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 dark:border-slate-800 transition-all hover:scale-105"
+                      title="Favorite"
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
+                          handleDeleteProduct(item.id);
+                        }
+                      }} 
+                      className="w-7 h-7 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-600 dark:hover:text-red-400 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 dark:border-slate-800 transition-all hover:scale-105"
+                      title="Delete Card"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="p-3 flex-grow flex flex-col justify-between text-left">
@@ -6103,9 +6188,29 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             }`}>
                               {product.tag}
                             </span>
-                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white text-slate-400 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-100 transition-transform hover:scale-105">
-                              <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
-                            </button>
+                            <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5 z-20">
+                              <button 
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} 
+                                className="w-7.5 h-7.5 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-md cursor-pointer border border-slate-200 dark:border-slate-800 transition-all hover:scale-105"
+                                title="Favorite"
+                              >
+                                <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                                    handleDeleteProduct(product.id);
+                                  }
+                                }} 
+                                className="w-7.5 h-7.5 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-600 dark:hover:text-red-400 flex items-center justify-center shadow-md cursor-pointer border border-slate-200 dark:border-slate-800 transition-all hover:scale-105"
+                                title="Delete Card"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                           
                           <div className="p-4 flex-grow flex flex-col justify-between text-left">
