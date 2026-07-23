@@ -533,6 +533,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
     return 'FIC-CUST-750684';
   }, [currentUser]);
+  const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
   const [profilePhone, setProfilePhone] = useState(() => {
     return localStorage.getItem('connect_profile_phone') || '+91 98765 43210';
   });
@@ -543,29 +544,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [settingsSecurity, setSettingsSecurity] = useState(true);
 
   const [addresses, setAddresses] = useState(() => {
-    const saved = localStorage.getItem('connect_customer_addresses');
+    const emailKey = currentUser?.email ? `connect_addresses_${currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'connect_customer_addresses';
+    const saved = localStorage.getItem(emailKey);
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch (err) {
-        console.warn("Failed to parse connect_customer_addresses from localStorage:", err);
+        console.warn("Failed to parse addresses from localStorage:", err);
       }
     }
-    return [
-      {
-        id: 'addr1',
-        name: 'Dhanush Tamilarasan',
-        phone: '9876543210',
-        pincode: '560001',
-        locality: 'Indiranagar',
-        address: '123, 4th Cross, 10th Main Road',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        landmark: 'Near Metro Station',
-        altPhone: '',
-        type: 'Home'
-      }
-    ];
+    return [];
   });
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [addressForm, setAddressForm] = useState({
@@ -582,8 +570,32 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   });
 
   useEffect(() => {
-    localStorage.setItem('connect_customer_addresses', JSON.stringify(addresses));
-  }, [addresses]);
+    const emailKey = currentUser?.email ? `connect_addresses_${currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'connect_customer_addresses';
+    localStorage.setItem(emailKey, JSON.stringify(addresses));
+  }, [addresses, currentUser]);
+
+  useEffect(() => {
+    if (currentUser?.address) {
+      const newAddr = {
+        id: 'addr_reg_' + Date.now(),
+        name: currentUser.name || profileName || 'Customer',
+        phone: currentUser.phone || profilePhone || '+91 98765 43210',
+        pincode: currentUser.pincode || '560001',
+        locality: currentUser.city || 'Main Street',
+        address: currentUser.address,
+        city: currentUser.city || 'Bangalore',
+        state: 'Karnataka',
+        landmark: '',
+        altPhone: '',
+        type: 'Home',
+        isRegistrationAddress: true
+      };
+      setAddresses(prev => {
+        if (prev.some(a => a.address === currentUser.address)) return prev;
+        return [newAddr, ...prev];
+      });
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (currentUser) {
@@ -605,6 +617,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [guestList, setGuestList] = useState([{ name: '', aadhaar: '', phone: '' }]);
+  const [stayMode, setStayMode] = useState('Day Option');
 
   // Delivery Tracking State Variables
   const [customerOrders, setCustomerOrders] = useState([]);
@@ -619,7 +633,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSuccess, setRatingSuccess] = useState(false);
 
-  const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
+
+  const [selectedTimeWindow, setSelectedTimeWindow] = useState('All Time');
 
   const ordersForActiveTab = useMemo(() => {
     if (activeProfileTab === 'orders') {
@@ -2477,21 +2492,31 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     });
   };
 
+  const isBookingCartItem = (item) => {
+    if (!item) return false;
+    if (['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory)) return true;
+    if (['Services', 'Stay', 'Travel'].includes(item.tag)) return true;
+    if (['Services', 'Stay', 'Travel'].includes(item.category)) return true;
+    if (['Services', 'Stay', 'Travel'].includes(item.type)) return true;
+    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking) return true;
+    return false;
+  };
+
+  const isJobCartItem = (item) => {
+    if (!item) return false;
+    if (item.subNavbarCategory === 'Jobs' || item.tag === 'Jobs' || item.category === 'Jobs' || item.type === 'Job' || item.type === 'Jobs') return true;
+    return false;
+  };
+
   const getCartCheckoutButtonText = () => {
     if (cart.length === 0) return "Proceed to Place Order";
     
-    // Check if any item in cart is a job
-    const hasJob = cart.some(item => item.subNavbarCategory === 'Jobs' || item.tag === 'Jobs');
+    const hasJob = cart.some(isJobCartItem);
     if (hasJob) return "Apply Now";
     
-    // Check if any item is a booking item (Services, Stay, Travel)
-    const hasBooking = cart.some(item => 
-      ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
-      ['Services', 'Stay', 'Travel'].includes(item.tag)
-    );
+    const hasBooking = cart.some(isBookingCartItem);
     if (hasBooking) return "Book Now";
     
-    // Default/Products/Food/Daily Needs
     return "Buy Now";
   };
 
@@ -2504,64 +2529,83 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       return;
     }
 
-    const hasJob = cart.some(item => item.subNavbarCategory === 'Jobs' || item.tag === 'Jobs');
-    const hasBooking = cart.some(item => 
-      ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
-      ['Services', 'Stay', 'Travel'].includes(item.tag)
-    );
+    const hasJob = cart.some(isJobCartItem);
+    const hasBooking = cart.some(isBookingCartItem);
 
     setOrderSuccess(true);
-    const productDetails = cart.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
+
+    // Group cart items into separate orders for Products vs Bookings vs Jobs
+    const bookingItems = cart.filter(isBookingCartItem);
+    const jobItems = cart.filter(item => !isBookingCartItem(item) && isJobCartItem(item));
+    const productItems = cart.filter(item => !isBookingCartItem(item) && !isJobCartItem(item));
+
+    const orderGroups = [];
+    if (productItems.length > 0) orderGroups.push({ items: productItems, type: 'Order' });
+    if (bookingItems.length > 0) orderGroups.push({ items: bookingItems, type: 'Booking' });
+    if (jobItems.length > 0) orderGroups.push({ items: jobItems, type: 'Job' });
+
+    const totalProductDetails = cart.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
     
-    // Deduct order amount from wallet
+    // Deduct total order amount from wallet
     addTransaction(
-      `Order Payment - ${productDetails.substring(0, 30)}${productDetails.length > 30 ? '...' : ''}`,
+      `Order Payment - ${totalProductDetails.substring(0, 30)}${totalProductDetails.length > 30 ? '...' : ''}`,
       -totalAmount,
       'Purchase'
     );
 
     try {
-      const vendorId = cart[0]?.vendorId || 'v1';
-      const itemsList = cart.map(item => ({
-        productId: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity || 1
-      }));
+      for (const group of orderGroups) {
+        const groupVendorId = group.items[0]?.vendorId || 'v1';
+        const groupAmount = group.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+        const groupProductDetails = group.items.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
+        const itemsList = group.items.map(item => ({
+          productId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity || 1
+        }));
 
-      const res = await apiFetch('/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          vendor_id: vendorId,
-          customer_name: profileName || currentUser?.name || 'Dhanush Tamilarasan',
-          customer_phone: profilePhone || '+91 98765 43210',
-          customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
-          customer_latitude: 12.9498,
-          customer_longitude: 77.6289,
-          product_details: productDetails,
-          amount: totalAmount,
-          items: itemsList,
-          type: hasJob ? 'Job' : (hasBooking ? 'Booking' : 'Order')
-        })
-      });
+        const firstBookingItem = group.items.find(i => i.guestDetails || i.checkInTime);
+        const guestDetails = firstBookingItem?.guestDetails || [];
+        const bookingTime = firstBookingItem?.bookingTime || firstBookingItem?.checkInTime;
+        const bookingDate = firstBookingItem?.bookingDate || firstBookingItem?.checkInDate;
 
-      if (res.status === 'success') {
-        loadCustomerOrders();
+        await apiFetch('/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            vendor_id: groupVendorId,
+            customer_name: profileName || currentUser?.name || 'Dhanush Tamilarasan',
+            customer_phone: profilePhone || '+91 98765 43210',
+            customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
+            customer_latitude: 12.9498,
+            customer_longitude: 77.6289,
+            product_details: groupProductDetails,
+            amount: groupAmount,
+            items: itemsList,
+            type: group.type,
+            guestDetails: guestDetails,
+            bookingTime: bookingTime,
+            bookingDate: bookingDate
+          })
+        });
       }
+      loadCustomerOrders();
     } catch (e) {
-      console.error('Failed to place order:', e);
+      console.error('Failed to place order(s):', e);
     }
 
     setCart([]);
     setTimeout(() => {
       setOrderSuccess(false);
       setIsCartOpen(false);
-      if (hasJob) {
+      const hasJob = jobItems.length > 0;
+      const hasBooking = bookingItems.length > 0;
+      if (hasJob && !hasBooking && productItems.length === 0) {
         triggerNotification("Application submitted successfully!");
-      } else if (hasBooking) {
+      } else if (hasBooking && !hasJob && productItems.length === 0) {
         triggerNotification("Booking completed successfully!");
       } else {
-        triggerNotification("Order placed successfully! Thank you for shopping.");
+        triggerNotification("Orders & Bookings placed successfully with separate Order IDs!");
       }
     }, 3000);
   };
@@ -2717,7 +2761,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         (searchCategory === 'All' || normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(searchCategory));
 
       const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
-        normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(selectedSubNavbarCategory);
+        normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(selectedSubNavbarCategory) ||
+        (product.subcategory && product.subcategory.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
+        (product.subSubcategory && product.subSubcategory.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
+        (product.category && product.category.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
+        (product.tag && product.tag.toLowerCase() === selectedSubNavbarCategory.toLowerCase());
 
       // Services Filter Checks
       if (activeTab === 'Services') {
@@ -8568,8 +8616,34 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
               <div className="flex-grow">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
-                {['orders', 'bookings', 'myjobs'].includes(activeProfileTab) && (
-                  <div className="space-y-6 animate-fade-in text-left flex flex-col h-full justify-between">
+                {['orders', 'bookings', 'myjobs'].includes(activeProfileTab) && (() => {
+                  const ordersForActiveTab = customerOrders.filter(o => {
+                    if (activeProfileTab === 'myjobs') return o.type === 'Job' || o.type === 'Jobs';
+                    if (activeProfileTab === 'bookings') return o.type === 'Booking' || ['Stay', 'Travel', 'Services'].includes(o.type);
+                    return !o.type || o.type === 'Order';
+                  });
+
+                  const filteredCustomerOrders = ordersForActiveTab.filter(o => {
+                    // Time window filter
+                    if (selectedTimeWindow === 'Last 30 Days') {
+                      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                      if (o.created_at && new Date(o.created_at) < thirtyDaysAgo) return false;
+                    } else if (selectedTimeWindow === 'Last 6 Months') {
+                      const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+                      if (o.created_at && new Date(o.created_at) < sixMonthsAgo) return false;
+                    }
+
+                    if (['All Orders', 'All Bookings', 'All Applications'].includes(selectedOrdersTab)) return true;
+                    if (selectedOrdersTab === 'Processing' || selectedOrdersTab === 'Pending' || selectedOrdersTab === 'Under Review') return ['Preparing', 'Order Received', 'Under Review', 'Pending'].includes(o.status);
+                    if (selectedOrdersTab === 'In Transit' || selectedOrdersTab === 'Upcoming' || selectedOrdersTab === 'Confirmed' || selectedOrdersTab === 'Shortlisted') return ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted', 'Picked Up', 'Out For Delivery', 'Near Customer', 'Shortlisted', 'Interview Scheduled', 'Confirmed', 'Active', 'Scheduled'].includes(o.status);
+                    if (selectedOrdersTab === 'Delivered' || selectedOrdersTab === 'Completed' || selectedOrdersTab === 'Selected') return ['Delivered', 'Completed', 'Selected / Offered'].includes(o.status);
+                    if (selectedOrdersTab === 'Cancelled' || selectedOrdersTab === 'Rejected') return o.status === 'Cancelled' || o.status === 'Rejected';
+                    if (selectedOrdersTab === 'Returned') return o.status === 'Returned';
+                    return true;
+                  });
+
+                  return (
+                    <div className="space-y-6 animate-fade-in text-left flex flex-col h-full justify-between">
                     {trackingOrder ? (
                       trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs' ? (
                         /* Beautiful Job Application Status Tracking UI */
@@ -8723,6 +8797,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 <p className="text-slate-500 dark:text-slate-400">Booked On: <strong className="text-slate-800 dark:text-white">{new Date(trackingOrder.created_at || Date.now()).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></p>
                                 <p className="text-slate-500 dark:text-slate-400">Guest/Customer Name: <strong className="text-slate-800 dark:text-white">{trackingOrder.customer_name}</strong></p>
                                 <p className="text-slate-500 dark:text-slate-400">Amount Paid: <strong className="text-[#f43397] font-extrabold">₹{trackingOrder.amount}</strong></p>
+                                {Array.isArray(trackingOrder.guest_details) && trackingOrder.guest_details.length > 0 && (
+                                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
+                                    <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">Registered Guests ({trackingOrder.guest_details.length}):</p>
+                                    {trackingOrder.guest_details.map((g, idx) => (
+                                      <p key={idx} className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between gap-2">
+                                        <span>• {g.name || `Guest ${idx + 1}`}</span>
+                                        <span className="text-[9.5px] font-mono text-slate-400">
+                                          {g.aadhaar ? `Aadhaar: ${g.aadhaar}` : ''} {g.phone ? `| Ph: ${g.phone}` : ''}
+                                        </span>
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </div>
                             
@@ -9031,32 +9118,47 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           {/* Filter Options tab bar */}
                           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-2 shadow-xs mb-6">
                             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                              {['All Orders', 'Processing', 'In Transit', 'Delivered', 'Cancelled', 'Returned'].map((tabName) => {
-                                const isSelected = selectedOrdersTab === tabName;
+                              {(activeProfileTab === 'bookings'
+                                ? ['All Bookings', 'Upcoming', 'Completed', 'Cancelled']
+                                : activeProfileTab === 'myjobs'
+                                ? ['All Applications', 'Under Review', 'Shortlisted', 'Selected', 'Rejected']
+                                : ['All Orders', 'Processing', 'In Transit', 'Delivered', 'Cancelled', 'Returned']
+                              ).map((tabName) => {
+                                const isSelected = selectedOrdersTab === tabName || (selectedOrdersTab === 'All Orders' && (tabName === 'All Bookings' || tabName === 'All Applications'));
                                 return (
                                   <button
                                     key={tabName}
                                     onClick={() => setSelectedOrdersTab(tabName)}
                                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer border-none ${
                                       isSelected
-                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 font-extrabold'
+                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 font-extrabold shadow-xs'
                                         : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white bg-transparent'
                                     }`}
                                   >
-                                    {tabName === 'All Orders' ? (activeProfileTab === 'orders' ? 'All Orders' : activeProfileTab === 'bookings' ? 'All Bookings' : 'All Applications') : tabName}
+                                    {tabName}
                                   </button>
                                 );
                               })}
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <select className="bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none">
-                                <option>Last 30 Days</option>
-                                <option>Last 6 Months</option>
-                                <option>All Time</option>
+                              <select 
+                                value={selectedTimeWindow}
+                                onChange={(e) => setSelectedTimeWindow(e.target.value)}
+                                className="bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none"
+                              >
+                                <option value="All Time">All Time</option>
+                                <option value="Last 30 Days">Last 30 Days</option>
+                                <option value="Last 6 Months">Last 6 Months</option>
                               </select>
-                              <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors">
+                              <button 
+                                onClick={() => {
+                                  setSelectedOrdersTab('All Orders');
+                                  setSelectedTimeWindow('All Time');
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+                              >
                                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                                <span>Filter</span>
+                                <span>Reset Filter</span>
                               </button>
                             </div>
                           </div>
@@ -9318,19 +9420,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
                                   <IconComp className="w-4 h-4" />
                                 </div>
-                                <div className="leading-tight text-left">
-                                  <h5 className="text-[11px] font-bold text-slate-800 dark:text-white">{item.title}</h5>
-                                  <p className="text-[9px] text-slate-400 mt-0.5 font-medium">{item.desc}</p>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
                         </div>
                       </div>
                     )}
                   </div>
-
-                )}
+                );
+              })()}
 
 
                 {/* CONNECT WALLET TAB */}
@@ -9655,7 +9753,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         const basePrice = activeScheduleModalItem.price || 0;
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
-        const totalPrice = isStayItem ? basePrice * diffNights : basePrice;
+        const extraGuestFee = Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250;
+        const totalPrice = isStayItem ? (basePrice + extraGuestFee) * diffNights : (basePrice + extraGuestFee);
+        const isDaySlot = checkInTime?.includes('AM') || checkInTime === '09:00 AM' || checkInTime === '10:00 AM' || checkInTime === '11:00 AM';
+        const currentStayMode = stayMode || (isDaySlot ? 'Day Option' : 'Night Option');
+        const durationUnit = currentStayMode === 'Day Option' || isDaySlot ? (diffNights === 1 ? 'Day' : 'Days') : (diffNights === 1 ? 'Night' : 'Nights');
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveScheduleModalItem(null)} className="absolute inset-0" />
@@ -9747,6 +9849,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </span>
                     </div>
                     
+                    {/* Day / Night Stay Mode Selector */}
+                    {isStayItem && (
+                      <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-2.5 mb-4">
+                        <div className="flex items-center gap-2 text-left">
+                          <Sun className={`w-4 h-4 ${stayMode === 'Day Option' ? 'text-amber-500' : 'text-slate-400'}`} />
+                          <div>
+                            <span className="text-xs font-black text-slate-800 dark:text-white block leading-tight">Timing Mode: {stayMode}</span>
+                            <span className="text-[9.5px] font-semibold text-slate-500 block">
+                              {stayMode === 'Day Option' ? 'Day Stay (09:00 AM Slot / Daytime Use)' : 'Night Stay (Overnight / Night Slot)'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setStayMode('Day Option')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
+                              stayMode === 'Day Option' ? 'bg-amber-400 text-slate-950 shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}
+                          >
+                            Day Stay
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStayMode('Night Option')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
+                              stayMode === 'Night Option' ? 'bg-[#003B95] text-white shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}
+                          >
+                            Night Stay
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Toggle Button Types (Hidden for Travel) */}
                     {!isTravelItem && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
@@ -9859,7 +9996,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   key={`in-time-${slot.time}`}
                                   type="button"
                                   disabled={!isAvail}
-                                  onClick={() => setCheckInTime(slot.time)}
+                                  onClick={() => {
+                                    setCheckInTime(slot.time);
+                                    if (slot.time.includes('09:00 AM') || slot.time.includes('10:00 AM') || slot.time.includes('11:00 AM') || slot.time.includes('09.00 AM') || slot.time.includes('12:00 PM') || slot.time.includes('01:00 PM') || slot.time.includes('02:00 PM')) {
+                                      setStayMode('Day Option');
+                                    } else if (slot.time.includes('09:00 PM') || slot.time.includes('08:00 PM') || slot.time.includes('09.00 PM') || slot.time.includes('06:00 PM')) {
+                                      setStayMode('Night Option');
+                                    }
+                                  }}
                                   className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                                     isSelected
                                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
@@ -10046,18 +10190,76 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
 
-                        {/* Add Guest Details Name Inputs */}
-                        {adultCount + childCount > 1 && (
-                          <div className="bg-amber-500/5 dark:bg-amber-400/2 border border-amber-400/20 rounded-xl p-3 space-y-2.5">
-                            <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block">Add Guest Details</span>
-                            {Array.from({ length: adultCount + childCount - 1 }).map((_, idx) => (
-                              <div key={idx} className="flex flex-col gap-1">
-                                <span className="text-[9px] font-extrabold text-slate-450 dark:text-slate-500 uppercase">Guest {idx + 2} Full Name</span>
-                                <input 
-                                  type="text" 
-                                  placeholder={`Guest ${idx + 2} Name`}
-                                  className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
-                                />
+                        {/* Guest Details Inputs */}
+                        {(adultCount + childCount > 0) && (
+                          <div className="bg-amber-500/5 dark:bg-amber-400/2 border border-amber-400/20 rounded-xl p-3 space-y-3">
+                            <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block text-left">
+                              Guest Information Details ({adultCount + childCount} Guest{adultCount + childCount > 1 ? 's' : ''})
+                            </span>
+                            {Array.from({ length: adultCount + childCount }).map((_, idx) => (
+                              <div key={`modal1-guest-${idx}`} className="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-left">
+                                <span className="text-[9.5px] font-extrabold text-amber-600 dark:text-amber-400 uppercase flex items-center justify-between">
+                                  <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
+                                  {idx === 0 && <span className="text-[8px] bg-amber-400/20 text-amber-600 px-2 py-0.5 rounded font-extrabold">Main Contact</span>}
+                                </span>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Full Name</span>
+                                    <input 
+                                      type="text" 
+                                      required
+                                      value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setGuestList(prev => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...(updated[idx] || {}), name: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : `Guest ${idx + 1} Full Name`}
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Aadhaar Card Number</span>
+                                    <input 
+                                      type="text" 
+                                      required
+                                      maxLength={12}
+                                      value={guestList[idx]?.aadhaar || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                                        setGuestList(prev => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...(updated[idx] || {}), aadhaar: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="12-Digit Aadhaar No"
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Phone Number</span>
+                                    <input 
+                                      type="tel" 
+                                      required
+                                      maxLength={10}
+                                      value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : '')}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                        setGuestList(prev => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...(updated[idx] || {}), phone: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="10-Digit Phone No"
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                    />
+                                  </div>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -10074,7 +10276,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     return (
                       <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
                         <Clock className="w-4 h-4 text-blue-500 shrink-0" />
-                        <span>Stay Summary: {diff} {diff === 1 ? 'Night' : 'Nights'} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                        <span>Stay Summary: {diff} {durationUnit} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
                       </div>
                     );
                   })()}
@@ -10122,7 +10324,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             <Home className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
                             <div>
                               <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Duration</span>
-                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{diff} {diff === 1 ? 'Night' : 'Nights'}</span>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-200">{diff} {durationUnit}</span>
                             </div>
                           </div>
                         );
@@ -10166,7 +10368,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <CreditCard className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee</span>
-                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{(activeScheduleModalItem.price || 0).toLocaleString()}</span>
+                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -10178,6 +10380,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         ...activeScheduleModalItem,
                         price: totalPrice,
                         basePrice: basePrice,
+                        extraGuestFee: extraGuestFee,
                         nights: isStayItem ? diffNights : 1,
                         bookingDate: formatDateFromYYYYMMDD(stayCheckInDate),
                         checkInDate: stayCheckInDate,
@@ -10186,8 +10389,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         checkOutTime: isTravelItem ? undefined : checkOutTime,
                         bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
                         bookingType: selectedModalType,
+                        stayMode: stayMode,
                         adults: adultCount,
-                        children: childCount
+                        children: childCount,
+                        guestDetails: guestList.slice(0, adultCount + childCount)
                       };
                       addToCart(itemToCart);
                       setActiveScheduleModalItem(null);
@@ -10223,7 +10428,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         const basePrice = activeBookNowModalItem.price || 0;
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
-        const totalPrice = isStayItem ? basePrice * diffNights : basePrice;
+        const extraGuestFee = Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250;
+        const totalPrice = isStayItem ? (basePrice + extraGuestFee) * diffNights : (basePrice + extraGuestFee);
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveBookNowModalItem(null)} className="absolute inset-0" />
@@ -10251,6 +10457,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <LiveClock prefix="Live: " />
                       </span>
                     </div>
+
+                    {/* Day / Night Stay Mode Selector */}
+                    {isStayItem && (
+                      <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-2.5 mb-4">
+                        <div className="flex items-center gap-2 text-left">
+                          <Sun className={`w-4 h-4 ${stayMode === 'Day Option' ? 'text-amber-500' : 'text-slate-400'}`} />
+                          <div>
+                            <span className="text-xs font-black text-slate-800 dark:text-white block leading-tight">Timing Mode: {stayMode}</span>
+                            <span className="text-[9.5px] font-semibold text-slate-500 block">
+                              {stayMode === 'Day Option' ? 'Day Stay (09:00 AM Slot / Daytime Use)' : 'Night Stay (Overnight / Night Slot)'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setStayMode('Day Option')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
+                              stayMode === 'Day Option' ? 'bg-amber-400 text-slate-950 shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}
+                          >
+                            Day Stay
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStayMode('Night Option')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
+                              stayMode === 'Night Option' ? 'bg-[#003B95] text-white shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}
+                          >
+                            Night Stay
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Check-In & Check-Out Cards with Available / Not Available view */}
                     <div className="space-y-4 mb-4 select-none">
@@ -10336,7 +10577,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   key={`in-time-m2-${slot.time}`}
                                   type="button"
                                   disabled={!isAvail}
-                                  onClick={() => setCheckInTime(slot.time)}
+                                  onClick={() => {
+                                    setCheckInTime(slot.time);
+                                    if (slot.time.includes('09:00 AM') || slot.time.includes('10:00 AM') || slot.time.includes('11:00 AM') || slot.time.includes('09.00 AM') || slot.time.includes('12:00 PM') || slot.time.includes('01:00 PM') || slot.time.includes('02:00 PM')) {
+                                      setStayMode('Day Option');
+                                    } else if (slot.time.includes('09:00 PM') || slot.time.includes('08:00 PM') || slot.time.includes('09.00 PM') || slot.time.includes('06:00 PM')) {
+                                      setStayMode('Night Option');
+                                    }
+                                  }}
                                   className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                                     isSelected
                                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
@@ -10523,18 +10771,76 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
 
-                        {/* Add Guest Details Name Inputs */}
-                        {adultCount + childCount > 1 && (
-                          <div className="bg-amber-500/5 dark:bg-amber-400/2 border border-amber-400/20 rounded-xl p-3 space-y-2.5">
-                            <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block">Add Guest Details</span>
-                            {Array.from({ length: adultCount + childCount - 1 }).map((_, idx) => (
-                              <div key={idx} className="flex flex-col gap-1">
-                                <span className="text-[9px] font-extrabold text-slate-455 dark:text-slate-500 uppercase">Guest {idx + 2} Full Name</span>
-                                <input 
-                                  type="text" 
-                                  placeholder={`Guest ${idx + 2} Name`}
-                                  className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-750 dark:text-slate-200 focus:border-blue-500 focus:outline-none"
-                                />
+                        {/* Guest Details Inputs */}
+                        {(adultCount + childCount > 0) && (
+                          <div className="bg-amber-500/5 dark:bg-amber-400/2 border border-amber-400/20 rounded-xl p-3 space-y-3">
+                            <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block text-left">
+                              Guest Information Details ({adultCount + childCount} Guest{adultCount + childCount > 1 ? 's' : ''})
+                            </span>
+                            {Array.from({ length: adultCount + childCount }).map((_, idx) => (
+                              <div key={`modal2-guest-${idx}`} className="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-left">
+                                <span className="text-[9.5px] font-extrabold text-amber-600 dark:text-amber-400 uppercase flex items-center justify-between">
+                                  <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
+                                  {idx === 0 && <span className="text-[8px] bg-amber-400/20 text-amber-600 px-2 py-0.5 rounded font-extrabold">Main Contact</span>}
+                                </span>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Full Name</span>
+                                    <input 
+                                      type="text" 
+                                      required
+                                      value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setGuestList(prev => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...(updated[idx] || {}), name: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : `Guest ${idx + 1} Full Name`}
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Aadhaar Card Number</span>
+                                    <input 
+                                      type="text" 
+                                      required
+                                      maxLength={12}
+                                      value={guestList[idx]?.aadhaar || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                                        setGuestList(prev => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...(updated[idx] || {}), aadhaar: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="12-Digit Aadhaar No"
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Phone Number</span>
+                                    <input 
+                                      type="tel" 
+                                      required
+                                      maxLength={10}
+                                      value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : '')}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                        setGuestList(prev => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...(updated[idx] || {}), phone: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="10-Digit Phone No"
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                    />
+                                  </div>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -10659,6 +10965,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           ...activeBookNowModalItem,
                           price: totalPrice,
                           basePrice: basePrice,
+                          extraGuestFee: extraGuestFee,
                           nights: isStayItem ? diffNights : 1,
                           bookingDate: formatDateFromYYYYMMDD(stayCheckInDate),
                           checkInDate: stayCheckInDate,
@@ -10667,8 +10974,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           checkOutTime: isTravelItem ? undefined : checkOutTime,
                           bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
                           bookingType: selectedModalType,
+                          stayMode: stayMode,
                           adults: adultCount,
-                          children: childCount
+                          children: childCount,
+                          guestDetails: guestList.slice(0, adultCount + childCount)
                         };
                         addToCart(itemToCart);
                         setActiveBookNowModalItem(null);

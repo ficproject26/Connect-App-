@@ -112,9 +112,38 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
+// POST: /api/auth/register-customer
+router.post('/register-customer', async (req: Request, res: Response) => {
+  const { name, email, phone, address, city, pincode, aadhaarNumber, panNumber } = req.body;
+  try {
+    const createdUser = {
+      id: 'cust_' + Math.floor(1000 + Math.random() * 9000),
+      name: name || 'Connect Customer',
+      email: email,
+      phone: phone,
+      address: address,
+      city: city,
+      pincode: pincode,
+      aadhaar: aadhaarNumber,
+      pan: panNumber,
+      role: 'customer'
+    };
+    res.json({
+      status: 'success',
+      message: 'Customer registration successful',
+      data: createdUser
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error registering customer: ' + error.message
+    });
+  }
+});
+
 // POST: /api/auth/register
 router.post('/register', async (req: Request, res: Response) => {
-  const { name, email, role, businessName, phone, address } = req.body;
+  const { name, email, role, businessName, phone, address, city, pincode } = req.body;
   
   if (!email || !role || !name) {
     return res.status(400).json({
@@ -178,6 +207,10 @@ router.post('/register', async (req: Request, res: Response) => {
         id: 'cust_' + name.toLowerCase().replace(/\s+/g, '_'),
         name: name,
         email: email,
+        phone: phone,
+        address: address,
+        city: city,
+        pincode: pincode,
         role: 'customer'
       };
     }

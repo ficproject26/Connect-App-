@@ -195,8 +195,11 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const orderId = 'ORD' + Math.floor(1000 + Math.random() * 9000);
-    const orderNo = 'ORD' + Math.floor(100000 + Math.random() * 900000);
+    const isBookingType = ['Booking', 'Stay', 'Travel', 'Services'].includes(type);
+    const isJobType = ['Job', 'Jobs'].includes(type);
+    const prefix = isBookingType ? 'BKG' : isJobType ? 'JOB' : 'ORD';
+    const orderId = prefix + Math.floor(1000 + Math.random() * 9000);
+    const orderNo = prefix + Math.floor(100000 + Math.random() * 900000);
     
     const newOrder = await db.createOrder({
       id: orderId,
