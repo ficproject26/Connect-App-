@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
@@ -726,15 +727,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           }
         }
       } catch (err) {
-        try {
-          const res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data)) setDbCategories(data);
-          }
-        } catch (e) {
-          console.warn("Failed to fetch dynamic categories in customer dashboard", err);
-        }
+        console.warn("Failed to fetch dynamic categories in customer dashboard", err);
       }
     };
 
@@ -765,6 +758,22 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
     fetchDbCategories();
     fetchDbBanners();
+
+    // Socket.IO Real-time synchronization
+    let socket;
+    try {
+      socket = io(getAdminBackendUrl(), { transports: ['websocket', 'polling'] });
+      socket.on('categories:updated', () => {
+        console.log('⚡ Real-time category update received in Dashboard via Socket.IO');
+        fetchDbCategories();
+      });
+    } catch (err) {
+      console.warn('Socket connection error in Dashboard:', err);
+    }
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, []);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---

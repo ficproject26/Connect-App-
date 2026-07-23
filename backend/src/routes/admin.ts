@@ -8,8 +8,26 @@ router.get('/categories', async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {
-      const categories = await mongoDb.collection('categories').find().sort({ name: 1 }).toArray();
-      return res.json(categories);
+      const all = await mongoDb.collection('categories').find().sort({ sortOrder: 1, name: 1 }).toArray();
+      
+      // Build tree structure
+      const map: Record<string, any> = {};
+      const roots: any[] = [];
+
+      all.forEach((c: any) => {
+        c.children = [];
+        map[c._id.toString()] = c;
+      });
+
+      all.forEach((c: any) => {
+        if (c.parentId && map[c.parentId.toString()]) {
+          map[c.parentId.toString()].children.push(c);
+        } else if (!c.parentId) {
+          roots.push(c);
+        }
+      });
+
+      return res.json(roots.length > 0 ? roots : all);
     }
     return res.json([]);
   } catch (err: any) {

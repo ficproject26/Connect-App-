@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import logoImg from '../../assets/images/forge india logo.jpg';
 import {
   Shield, User, Briefcase, ShoppingBag, Globe,
@@ -350,11 +351,31 @@ export default function Navbar({
   const [dbCategories, setDbCategories] = useState([]);
 
   useEffect(() => {
-    fetchAdminCategories().then(data => {
-      if (Array.isArray(data) && data.length > 0) {
-        setDbCategories(data);
-      }
-    });
+    const loadCategories = () => {
+      fetchAdminCategories().then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDbCategories(data);
+        }
+      });
+    };
+
+    loadCategories();
+
+    // Socket.IO Real-time synchronization
+    let socket;
+    try {
+      socket = io(getAdminBackendUrl(), { transports: ['websocket', 'polling'] });
+      socket.on('categories:updated', () => {
+        console.log('⚡ Real-time category update received in Navbar via Socket.IO');
+        loadCategories();
+      });
+    } catch (err) {
+      console.warn('Socket connection error in Navbar:', err);
+    }
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, []);
 
   const dynamicMenuData = useMemo(() => getDynamicMenuData(dbCategories), [dbCategories]);
