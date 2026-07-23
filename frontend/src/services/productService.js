@@ -19,31 +19,46 @@ const sanitizeString = (str) => {
 
 const inferSubNavbarCategory = (p) => {
   if (p.subNavbarCategory) return p.subNavbarCategory;
-  const cat = (p.category || '').toLowerCase();
-  const name = (p.name || '').toLowerCase();
+  if (p.mainCategory) return p.mainCategory;
+  const cat = (p.category || '').toLowerCase().trim();
+  const subcat = (p.subcategory || '').toLowerCase().trim();
+  const name = (p.name || '').toLowerCase().trim();
 
-  if (['hospitals', 'physiotherapy', 'it services', 'non-it', 'job consulting', 'business consulting', 'healthcare', 'education', 'financial', 'insurance', 'home services', 'legal', 'digital', 'automobile services'].some(k => cat.includes(k) || name.includes(k))) {
+  const mainCatsMap = {
+    'services': 'Services',
+    'products': 'Products',
+    'daily needs': 'Daily Needs',
+    'food': 'Food',
+    'stay': 'Stay',
+    'travel': 'Travel',
+    'jobs': 'Jobs'
+  };
+
+  if (mainCatsMap[cat]) return mainCatsMap[cat];
+  if (mainCatsMap[subcat]) return mainCatsMap[subcat];
+
+  if (['hospitals', 'physiotherapy', 'it services', 'non-it', 'job consulting', 'business consulting', 'healthcare', 'education', 'financial', 'insurance', 'home services', 'legal', 'digital', 'automobile services', 'repair'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
     return 'Services';
   }
-  if (['smartphones', 'headphones', 'monitors', 'electronics', 'furniture', 'fashion', 'beauty', 'baby care', 'sports', 'books', 'gaming', 'kitchen', 'pet', 'stores', 'saree'].some(k => cat.includes(k) || name.includes(k))) {
+  if (['smartphones', 'headphones', 'monitors', 'electronics', 'furniture', 'fashion', 'beauty', 'baby care', 'sports', 'books', 'gaming', 'kitchen', 'pet', 'stores', 'saree', 'waterbottle', 'bottle', 'watch', 'jewellery', 'appliances'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
     return 'Products';
   }
-  if (['rice', 'eggs', 'grocery', 'fruits', 'vegetables', 'dairy', 'water', 'household', 'personal care', 'pharmacy'].some(k => cat.includes(k) || name.includes(k))) {
+  if (['rice', 'eggs', 'grocery', 'fruits', 'vegetables', 'dairy', 'mineral water', 'household', 'personal care', 'pharmacy', 'supermarket'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
     return 'Daily Needs';
   }
-  if (['fine dining', 'restaurants', 'fast food', 'cafes', 'south indian', 'north indian', 'biryani', 'healthy food', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'pizza'].some(k => cat.includes(k) || name.includes(k))) {
+  if (['fine dining', 'restaurants', 'fast food', 'cafes', 'south indian', 'north indian', 'biryani', 'healthy food', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'pizza', 'burger', 'dosa', 'idli'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
     return 'Food';
   }
-  if (['deluxe', 'hotels', 'resorts', 'homestays', 'service apartments', 'vacation', 'student accommodation', 'corporate stay', 'suite', 'stay'].some(k => cat.includes(k) || name.includes(k))) {
+  if (['deluxe', 'hotels', 'resorts', 'homestays', 'service apartments', 'vacation', 'student accommodation', 'corporate stay', 'suite', 'stay', 'room'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
     return 'Stay';
   }
-  if (['family packages', 'exclusive offers', 'flight', 'train', 'bus', 'cab', 'car rental', 'bike rental', 'tour', 'honeymoon', 'travel', 'pass'].some(k => cat.includes(k) || name.includes(k))) {
+  if (['family packages', 'exclusive offers', 'flight', 'train', 'bus', 'cab', 'car rental', 'bike rental', 'tour', 'honeymoon', 'travel', 'pass', 'taxi'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
     return 'Travel';
   }
-  if (['full stack developer', 'banking', 'it', 'non-it', 'bpo', 'sales', 'healthcare jobs', 'job'].some(k => cat.includes(k) || name.includes(k))) {
+  if (['full stack developer', 'banking', 'bpo', 'sales', 'healthcare jobs', 'job', 'developer', 'engineer', 'manager'].some(k => cat.includes(k) || subcat.includes(k) || name.includes(k))) {
     return 'Jobs';
   }
-  return 'Services';
+  return 'Products';
 };
 
 const sanitizeProduct = (p) => {
