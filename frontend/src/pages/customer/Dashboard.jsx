@@ -523,23 +523,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   });
 
   const activeCustomerId = useMemo(() => {
-    if (currentUser?.customerId) return currentUser.customerId;
+    if (currentUser?.customerId && currentUser.customerId !== 'FIC-CUST-849201') return currentUser.customerId;
     const savedUser = localStorage.getItem('connect_current_user');
     if (savedUser) {
       try {
         const u = JSON.parse(savedUser);
-        if (u.customerId) return u.customerId;
+        if (u.customerId && u.customerId !== 'FIC-CUST-849201') return u.customerId;
       } catch (e) {}
     }
-    const email = currentUser?.email || profileEmail || 'dhanush.kumar@gmail.com';
-    const key = `connect_customer_id_${email.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-    let existing = localStorage.getItem(key);
-    if (!existing) {
-      existing = 'FIC-CUST-849201';
-      try { localStorage.setItem(key, existing); } catch (e) {}
-    }
-    return existing;
-  }, [currentUser, profileEmail]);
+    return 'FIC-CUST-750684';
+  }, [currentUser]);
   const [profilePhone, setProfilePhone] = useState(() => {
     return localStorage.getItem('connect_profile_phone') || '+91 98765 43210';
   });

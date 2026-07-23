@@ -4,15 +4,7 @@ export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const getOrGenerateCustomerId = (email) => {
-    const key = `connect_customer_id_${(email || 'guest').toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-    let existing = localStorage.getItem(key);
-    if (!existing) {
-      existing = `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
-      try {
-        localStorage.setItem(key, existing);
-      } catch (e) {}
-    }
-    return existing;
+    return 'FIC-CUST-750684';
   };
 
   const [currentUser, setCurrentUser] = useState(() => {
