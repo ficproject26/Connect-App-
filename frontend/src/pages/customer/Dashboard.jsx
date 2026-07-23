@@ -2531,6 +2531,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     setSelectedJobDepts([]);
     setSelectedJobTypes([]);
     setSelectedJobSalaries([]);
+    setSortBy('default');
   };
 
   const handleDeleteAll = async () => {
@@ -4925,21 +4926,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   // 12. CATALOG SECTION
   const renderCatalogSection = () => {
     const filteredJobs = jobsList.filter(job => {
-      const matchesSearch = searchQuery === '' || 
-        (job.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
-        (job.desc || '').toLowerCase().includes((searchQuery || '').toLowerCase());
+      const q = (searchQuery || '').toLowerCase().trim();
+      const matchesSearch = q === '' || 
+        (job.title || '').toLowerCase().includes(q) || 
+        (job.desc || '').toLowerCase().includes(q) ||
+        (job.department || '').toLowerCase().includes(q) ||
+        (job.location || '').toLowerCase().includes(q);
 
       const matchesDept = selectedJobDepts.length === 0 || 
-        selectedJobDepts.includes(job.department);
+        selectedJobDepts.some(d => 
+          (job.department || '').toLowerCase() === d.toLowerCase() ||
+          (job.category || '').toLowerCase() === d.toLowerCase()
+        );
 
       const matchesType = selectedJobTypes.length === 0 || 
-        selectedJobTypes.includes(job.type) || 
-        (selectedJobTypes.includes('Hybrid') && job.location.includes('Hybrid')) ||
-        (selectedJobTypes.includes('Remote') && job.location.includes('Remote'));
+        selectedJobTypes.some(t => {
+          const typeLower = t.toLowerCase();
+          const jobTypeLower = (job.type || '').toLowerCase();
+          const jobLocLower = (job.location || '').toLowerCase();
+          return jobTypeLower.includes(typeLower) || jobLocLower.includes(typeLower);
+        });
 
       let matchesSalary = true;
       if (selectedJobSalaries.length > 0) {
-        const numericSalary = job.price || 0;
+        let numericSalary = job.price || 0;
+        if (numericSalary > 1000) {
+          numericSalary = numericSalary / 100000;
+        }
+        if (!numericSalary && job.salary) {
+          const matchedNum = job.salary.match(/[\d.]+/g);
+          if (matchedNum && matchedNum.length > 0) {
+            numericSalary = parseFloat(matchedNum[0].replace(/,/g, ''));
+            if (numericSalary > 1000) numericSalary = numericSalary / 100000;
+          }
+        }
+
         matchesSalary = selectedJobSalaries.some(sal => {
           if (sal === '0-5l') return numericSalary >= 0 && numericSalary <= 5;
           if (sal === '5l-10l') return numericSalary > 5 && numericSalary <= 10;
@@ -4951,6 +4972,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           return true;
         });
       }
+
       return matchesSearch && matchesDept && matchesType && matchesSalary;
     });
 
@@ -5244,9 +5266,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Departments</option>
-                    {['Operations', 'Business Development', 'Technology'].map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
+                    {(() => {
+                      const depts = [...new Set((jobsList || []).map(j => j.department || j.category).filter(Boolean))];
+                      const list = depts.length > 0 ? depts : ['Engineering', 'Operations', 'Business Development', 'Technology', 'HR', 'Sales'];
+                      return list.map(dept => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ));
+                    })()}
                   </select>
                   <select
                     value={selectedJobTypes[0] || ""}
@@ -5254,7 +5280,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
                     <option value="">All Job Types</option>
-                    {['Full-time', 'Remote', 'Hybrid'].map(type => (
+                    {['Full-time', 'Part-time', 'Remote', 'Hybrid', 'Internship'].map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
