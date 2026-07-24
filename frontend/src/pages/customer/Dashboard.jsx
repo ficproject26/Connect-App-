@@ -4132,19 +4132,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     >
                       <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                     </button>
-                    <button 
-                      type="button"
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
-                          handleDeleteProduct(item.id);
-                        }
-                      }} 
-                      className="w-7 h-7 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-600 dark:hover:text-red-400 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 dark:border-slate-800 transition-all hover:scale-105"
-                      title="Delete Card"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 </div>
                 
@@ -5743,19 +5730,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 title="Favorite"
                               >
                                 <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
-                              </button>
-                              <button 
-                                type="button"
-                                onClick={(e) => { 
-                                  e.stopPropagation(); 
-                                  if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-                                    handleDeleteProduct(product.id);
-                                  }
-                                }} 
-                                className="w-7.5 h-7.5 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-600 dark:hover:text-red-400 flex items-center justify-center shadow-md cursor-pointer border border-slate-200 dark:border-slate-800 transition-all hover:scale-105"
-                                title="Delete Card"
-                              >
-                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </div>
