@@ -9697,10 +9697,46 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               );
                             })}
                           </div>
+
+                          {/* Manual Departure Time Entry */}
+                          <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-blue-50/50 dark:bg-blue-950/20 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                              <div>
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Departure Time Entry</span>
+                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom departure time</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="time" 
+                                value={customTimeInput || ''} 
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  setCustomTimeInput(raw);
+                                  if (raw) {
+                                    const [h, m] = raw.split(':');
+                                    let hour = parseInt(h, 10);
+                                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                                    hour = hour % 12 || 12;
+                                    const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
+                                    setCheckInTime(formatted);
+                                  }
+                                }}
+                                className="bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
+                              />
+                              {checkInTime && (
+                                <span className="text-xs font-black text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900">
+                                  {checkInTime}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Check-Out / Arrival Details Card */}
+                      {/* Check-Out / Arrival Details Card (Removed for Travel) */}
+                      {!isTravelItem && (
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -9800,6 +9836,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
                       </div>
+                      )}
                     </div>
 
                     {/* Guest/Traveler Counter Block */}
@@ -9975,16 +10012,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                        <Calendar className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Arrival' : 'Check-Out'}</span>
-                          <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckOutDate)}</span>
-                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{checkOutTime}</span>
+                      {!isTravelItem && (
+                        <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
+                          <Calendar className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-Out</span>
+                            <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckOutDate)}</span>
+                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{checkOutTime}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {(() => {
+                      {!isTravelItem && (() => {
                         const s = new Date(stayCheckInDate + 'T00:00:00');
                         const e = new Date(stayCheckOutDate + 'T00:00:00');
                         const diff = Math.max(1, Math.ceil((e - s) / 86400000));
@@ -10276,10 +10315,46 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               );
                             })}
                           </div>
+
+                          {/* Manual Departure Time Entry */}
+                          <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-blue-50/50 dark:bg-blue-950/20 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                              <div>
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Departure Time Entry</span>
+                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom departure time</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="time" 
+                                value={customTimeInput || ''} 
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  setCustomTimeInput(raw);
+                                  if (raw) {
+                                    const [h, m] = raw.split(':');
+                                    let hour = parseInt(h, 10);
+                                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                                    hour = hour % 12 || 12;
+                                    const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
+                                    setCheckInTime(formatted);
+                                  }
+                                }}
+                                className="bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
+                              />
+                              {checkInTime && (
+                                <span className="text-xs font-black text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900">
+                                  {checkInTime}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Check-Out / Arrival Details Card */}
+                      {/* Check-Out / Arrival Details Card (Removed for Travel) */}
+                      {!isTravelItem && (
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -10568,15 +10643,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> {isTravelItem ? 'Arrival' : 'Check-Out'}</span>
-                        <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
-                          {formatDateFromYYYYMMDD(stayCheckOutDate)}
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">{checkOutTime}</span>
-                        </span>
-                      </div>
+                      {!isTravelItem && (
+                        <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
+                          <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> Check-Out</span>
+                          <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
+                            {formatDateFromYYYYMMDD(stayCheckOutDate)}
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">{checkOutTime}</span>
+                          </span>
+                        </div>
+                      )}
 
-                      {(() => {
+                      {!isTravelItem && (() => {
                         const s = new Date(stayCheckInDate + 'T00:00:00');
                         const e = new Date(stayCheckOutDate + 'T00:00:00');
                         const diff = Math.max(1, Math.ceil((e - s) / 86400000));
