@@ -2362,7 +2362,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       // Services Filter Checks
       if (activeTab === 'Services') {
         const matchesServiceType = selectedServiceTypes.length === 0 ||
-          selectedServiceTypes.includes(product.category);
+          selectedServiceTypes.some(st => 
+            (product.category || '').toLowerCase().includes(st.toLowerCase()) ||
+            (product.subcategory || '').toLowerCase().includes(st.toLowerCase()) ||
+            (product.subSubcategory || '').toLowerCase().includes(st.toLowerCase()) ||
+            (product.name || '').toLowerCase().includes(st.toLowerCase()) ||
+            (product.tag || '').toLowerCase().includes(st.toLowerCase())
+          );
 
         const matchesLocType = selectedLocTypes.length === 0 ||
           selectedLocTypes.some(loc => (product.city || product.vendorCity || product.locationType)?.toLowerCase() === loc.toLowerCase());
@@ -2376,7 +2382,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       // Food Filter Checks
       if (activeTab === 'Food') {
         const matchesCuisine = selectedCuisines.length === 0 ||
-          selectedCuisines.includes(product.category);
+          selectedCuisines.some(c => 
+            (product.category || '').toLowerCase().includes(c.toLowerCase()) ||
+            (product.subcategory || '').toLowerCase().includes(c.toLowerCase()) ||
+            (product.subSubcategory || '').toLowerCase().includes(c.toLowerCase()) ||
+            (product.name || '').toLowerCase().includes(c.toLowerCase()) ||
+            (product.tag || '').toLowerCase().includes(c.toLowerCase())
+          );
 
         let matchesDistance = true;
         if (selectedDistances.length > 0) {
@@ -2401,7 +2413,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           const pType = (product.foodType || '').toLowerCase();
           matchesFoodType = pType === 'non-veg' || pType === 'nonveg' || pType.includes('non');
         } else {
-          // 'All', 'All Food', or default shows all food items (both Veg and Non-Veg)
           matchesFoodType = true;
         }
 
@@ -2411,7 +2422,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       // Stay Filter Checks
       if (activeTab === 'Stay') {
         const matchesAccom = selectedAccomTypes.length === 0 ||
-          selectedAccomTypes.includes(product.category);
+          selectedAccomTypes.some(acc => 
+            (product.category || '').toLowerCase().includes(acc.toLowerCase()) ||
+            (product.subcategory || '').toLowerCase().includes(acc.toLowerCase()) ||
+            (product.subSubcategory || '').toLowerCase().includes(acc.toLowerCase()) ||
+            (product.name || '').toLowerCase().includes(acc.toLowerCase()) ||
+            (product.tag || '').toLowerCase().includes(acc.toLowerCase())
+          );
 
         let matchesPrice = true;
         if (selectedPrices.length > 0) {
@@ -2433,7 +2450,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       // Travel Filter Checks
       if (activeTab === 'Travel') {
         const matchesTravelType = selectedTravelTypes.length === 0 ||
-          selectedTravelTypes.includes(product.category);
+          selectedTravelTypes.some(tt => 
+            (product.category || '').toLowerCase().includes(tt.toLowerCase()) ||
+            (product.subcategory || '').toLowerCase().includes(tt.toLowerCase()) ||
+            (product.subSubcategory || '').toLowerCase().includes(tt.toLowerCase()) ||
+            (product.name || '').toLowerCase().includes(tt.toLowerCase()) ||
+            (product.tag || '').toLowerCase().includes(tt.toLowerCase())
+          );
 
         let matchesPrice = true;
         if (selectedPrices.length > 0) {
@@ -2466,7 +2489,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       // Daily Needs Filter Checks
       if (activeTab === 'Daily Needs') {
         const matchesDailyNeedsType = selectedDailyNeedsTypes.length === 0 ||
-          selectedDailyNeedsTypes.some(type => product.tag?.toLowerCase().includes(type.toLowerCase()) || product.category?.toLowerCase().includes(type.toLowerCase()));
+          selectedDailyNeedsTypes.some(type => 
+            (product.category || '').toLowerCase().includes(type.toLowerCase()) ||
+            (product.subcategory || '').toLowerCase().includes(type.toLowerCase()) ||
+            (product.subSubcategory || '').toLowerCase().includes(type.toLowerCase()) ||
+            (product.name || '').toLowerCase().includes(type.toLowerCase()) ||
+            (product.tag || '').toLowerCase().includes(type.toLowerCase())
+          );
 
         let matchesPrice = true;
         if (selectedPrices.length > 0) {
@@ -2492,7 +2521,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               (product.category || '').toLowerCase().includes(cat.toLowerCase()) ||
               (product.subSubcategory || '').toLowerCase().includes(cat.toLowerCase()) ||
               (product.subcategory || '').toLowerCase().includes(cat.toLowerCase()) ||
-              (product.name || '').toLowerCase().includes(cat.toLowerCase())
+              (product.name || '').toLowerCase().includes(cat.toLowerCase()) ||
+              (product.tag || '').toLowerCase().includes(cat.toLowerCase()) ||
+              (product.subNavbarCategory || '').toLowerCase().includes(cat.toLowerCase())
             ));
 
       const matchesBrandFilter = selectedBrands.length === 0 || 
@@ -2955,7 +2986,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     const tabForLink = hoveredLink || (validTabs.includes(activeTab) ? activeTab : 'Products');
                     setHoveredLink(null);
                     if (tabForLink === 'Jobs') {
-                      // Jobs handled separately via onItemClick
+                      setActiveTab('Jobs');
+                      setSelectedSubNavbarCategory('Jobs');
+                      if (subCat && subCat !== 'ALL') {
+                        setSelectedJobDepts([subCat]);
+                      } else {
+                        setSelectedJobDepts([]);
+                      }
                     } else {
                       setActiveTab(tabForLink);
                       setSelectedSubNavbarCategory(tabForLink);
@@ -3374,16 +3411,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 setActiveTab('Jobs');
                 setSelectedSubNavbarCategory('Jobs');
                 setSelectedCategories([]);
-                setHoveredLink(null);
-                const matchedJob = jobsList.find(j => 
-                  (j.title || '').toLowerCase().includes((subCat || '').toLowerCase()) || 
-                  (subCat || '').toLowerCase().includes((j.title || '').toLowerCase())
-                );
-                if (matchedJob) {
-                  setAppliedJobId(matchedJob.id);
+                if (subCat && subCat !== 'ALL') {
+                  setSelectedJobDepts([subCat]);
                 } else {
-                  setAppliedJobId(null);
+                  setSelectedJobDepts([]);
                 }
+                setHoveredLink(null);
               })
             ) : allMegaMenus[hoveredLink] ? (
               renderSidebarMegaMenu(activeMegaCategory, setActiveMegaCategory, allMegaMenus[hoveredLink])
@@ -8228,15 +8261,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
             {/* Modal Right Content Panel */}
             <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative">
-              <div className="absolute right-5 top-5 flex items-center gap-2.5 z-10">
-                <button 
-                  onClick={() => setIsProfileModalOpen(false)}
-                  className="p-1.5 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
-                  title="Close"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
               <div className="flex-grow">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
@@ -8249,12 +8273,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                   const filteredCustomerOrders = ordersForActiveTab.filter(o => {
                     // Time window filter
-                    if (selectedTimeWindow === 'Last 30 Days') {
+                    if (selectedTimeWindow === 'Today') {
+                      const startOfToday = new Date();
+                      startOfToday.setHours(0, 0, 0, 0);
+                      if (o.created_at && new Date(o.created_at) < startOfToday) return false;
+                    } else if (selectedTimeWindow === 'Last 7 Days') {
+                      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                      if (o.created_at && new Date(o.created_at) < sevenDaysAgo) return false;
+                    } else if (selectedTimeWindow === 'Last Month' || selectedTimeWindow === 'Last 30 Days') {
                       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
                       if (o.created_at && new Date(o.created_at) < thirtyDaysAgo) return false;
-                    } else if (selectedTimeWindow === 'Last 6 Months') {
-                      const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
-                      if (o.created_at && new Date(o.created_at) < sixMonthsAgo) return false;
+                    } else if (selectedTimeWindow === 'One Year' || selectedTimeWindow === '1 Year') {
+                      const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+                      if (o.created_at && new Date(o.created_at) < oneYearAgo) return false;
                     }
 
                     if (['All Orders', 'All Bookings', 'All Applications'].includes(selectedOrdersTab)) return true;
@@ -8676,9 +8707,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               </p>
                             </div>
                             <div className="flex items-center gap-4 text-slate-700 dark:text-slate-300">
-                              <button className="relative p-2 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer border-none bg-transparent">
+                              <button 
+                                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} 
+                                className="relative p-2 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer border-none bg-transparent"
+                                title="Notifications"
+                              >
                                 <Bell className="w-5 h-5" />
-                                <span className="absolute top-0 right-0 w-4 h-4 bg-[#FFC107] text-slate-950 text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">3</span>
+                                {unreadCount > 0 && (
+                                  <span className="absolute top-0 right-0 w-4 h-4 bg-[#FFC107] text-slate-950 text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">{unreadCount}</span>
+                                )}
                               </button>
                               <button className="flex items-center gap-1.5 text-xs font-bold hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent">
                                 <Phone className="w-4 h-4" />
@@ -8771,8 +8808,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 className="bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none"
                               >
                                 <option value="All Time">All Time</option>
-                                <option value="Last 30 Days">Last 30 Days</option>
-                                <option value="Last 6 Months">Last 6 Months</option>
+                                <option value="Today">Today</option>
+                                <option value="Last 7 Days">Last 7 Days</option>
+                                <option value="Last Month">Last Month</option>
+                                <option value="One Year">One Year</option>
                               </select>
                               <button 
                                 onClick={() => {
