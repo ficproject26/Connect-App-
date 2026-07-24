@@ -5235,9 +5235,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       const applicationTips = inferApplicationTips(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.applicationTips);
 
                       const formatJobPostedDate = (dateVal) => {
-                        if (!dateVal) return '20 May 2026';
-                        const d = new Date(dateVal);
-                        if (isNaN(d.getTime())) return String(dateVal);
+                        const d = dateVal ? new Date(dateVal) : new Date();
+                        if (isNaN(d.getTime())) return String(dateVal || '20 May 2026');
                         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
                       };
@@ -5462,7 +5461,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                               {resumeFile?.name || 'Dhanush_Tamilarasan_Resume.pdf'}
                                             </h4>
                                             <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                              {resumeFile?.size ? `PDF • ${resumeFile.size}` : 'PDF • 450 KB'} • <span className="text-blue-600 dark:text-blue-400 font-extrabold underline">Click to View Resume</span>
+                                              {resumeFile?.size ? `PDF • ${resumeFile.size}` : 'PDF • 450 KB'} • <button type="button" onClick={(e) => { e.stopPropagation(); setIsPreviewResumeOpen(true); }} className="text-blue-600 dark:text-blue-400 font-extrabold underline border-none bg-transparent cursor-pointer p-0">Click to View Resume</button>
                                             </span>
                                           </div>
                                         </div>
@@ -6643,16 +6642,28 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 )}
                 {travelDetailsTab === 'Boarding Points' && (
                   <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
-                    <div>• Kempegowda Bus Stand (Majestic) - 09:00 PM</div>
-                    <div>• Madiwala (Near police station) - 09:30 PM</div>
-                    <div>• Electronic City (Toll Gate) - 09:50 PM</div>
+                    {selectedProduct?.boardingPoint ? (
+                      <div>• {selectedProduct.boardingPoint} - {selectedProduct.boardingTime || selectedProduct.busTiming || '09:00 PM'}</div>
+                    ) : (
+                      <>
+                        <div>• Kempegowda Bus Stand (Majestic) - 09:00 PM</div>
+                        <div>• Madiwala (Near police station) - 09:30 PM</div>
+                        <div>• Electronic City (Toll Gate) - 09:50 PM</div>
+                      </>
+                    )}
                   </div>
                 )}
                 {travelDetailsTab === 'Dropping Points' && (
                   <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
-                    <div>• Koyambedu Bus Stand - 05:30 AM</div>
-                    <div>• Poonamallee Bypass - 05:00 AM</div>
-                    <div>• Guindy (Near metro) - 05:45 AM</div>
+                    {selectedProduct?.dropPoint ? (
+                      <div>• {selectedProduct.dropPoint} - {selectedProduct.arrivalTime || '05:30 AM'}</div>
+                    ) : (
+                      <>
+                        <div>• Koyambedu Bus Stand - 05:30 AM</div>
+                        <div>• Poonamallee Bypass - 05:00 AM</div>
+                        <div>• Guindy (Near metro) - 05:45 AM</div>
+                      </>
+                    )}
                   </div>
                 )}
                 {travelDetailsTab === 'Stops' && (
@@ -6661,41 +6672,58 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="relative">
                         <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                         <div>
-                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">Bengaluru Majestic (Source)</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Departure at 09:00 PM</div>
+                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">{selectedProduct?.boardingPoint || 'Bengaluru Majestic (Source)'}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Departure at {selectedProduct?.boardingTime || selectedProduct?.busTiming || '09:00 PM'}</div>
                         </div>
                       </div>
-                      <div className="relative">
-                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-350 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                        <div>
-                          <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Hosur Stop</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival 10:00 PM | 5 mins stop</div>
+                      
+                      {(selectedProduct?.stoppings || []).map((stop, idx) => (
+                        <div className="relative" key={idx}>
+                          <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-350 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                          <div>
+                            <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">{stop.stopName || `Stop ${idx + 1}`}</div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">Arrival {stop.time || '10:00 PM'} {stop.distance ? `| ${stop.distance} km` : ''}</div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="relative">
-                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                        <div>
-                          <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Krishnagiri Toll Plaza</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival 11:15 PM | 10 mins dinner break</div>
-                        </div>
-                      </div>
-                      <div className="relative">
-                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                        <div>
-                          <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Vellore Bypass</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival 02:00 AM | 5 mins stop</div>
-                        </div>
-                      </div>
+                      ))}
+                      
+                      {!(selectedProduct?.stoppings && selectedProduct.stoppings.length > 0) && (
+                        <>
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-350 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <div>
+                              <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Hosur Stop</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">Arrival 10:00 PM | 5 mins stop</div>
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <div>
+                              <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Krishnagiri Toll Plaza</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">Arrival 11:15 PM | 10 mins dinner break</div>
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <div>
+                              <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Vellore Bypass</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">Arrival 02:00 AM | 5 mins stop</div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
                       <div className="relative">
                         <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                         <div>
-                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">{selectedProduct.toCity || 'Chennai'} Koyambedu (Destination)</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival at 05:30 AM</div>
+                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">{selectedProduct?.dropPoint || 'Chennai Koyambedu (Destination)'}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival at {selectedProduct?.arrivalTime || '05:30 AM'}</div>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
+
                 {travelDetailsTab === 'Ratings & Reviews' && (
                   <div className="space-y-3 text-xs">
                     <div className="font-black text-slate-850 dark:text-white">Customer Feedback (★ 4.5/5 based on 12,520 reviews)</div>
@@ -10967,7 +10995,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       )}
       {/* Interactive Resume Preview Modal */}
       {isPreviewResumeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 text-left relative max-h-[90vh] overflow-y-auto scrollbar-thin">
             <button 
               type="button"
