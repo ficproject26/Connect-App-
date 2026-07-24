@@ -10505,6 +10505,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
                       )}
+                    </div>
 
                     {/* Guest/Traveler Counter Block */}
                     {(isStayItem || isTravelItem) && (
