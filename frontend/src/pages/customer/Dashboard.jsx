@@ -6016,16 +6016,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
               <div className="grid grid-cols-3 gap-3">
                 <div onClick={() => setActiveBookNowModalItem(selectedProduct)} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-blue-400 transition-colors">
-                  <span className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider block">Check-in</span>
+                  <span className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider block">
+                    {selectedProduct?.subNavbarCategory === 'Travel' || selectedProduct?.category === 'Travel Ticket' || selectedProduct?.tag === 'Travel' ? 'Depart' : 'Check-in'}
+                  </span>
                   <span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckInDate)}</span>
                 </div>
                 <div onClick={() => setActiveBookNowModalItem(selectedProduct)} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 cursor-pointer hover:border-emerald-400 transition-colors">
-                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider block">Check-out</span>
+                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider block">
+                    {selectedProduct?.subNavbarCategory === 'Travel' || selectedProduct?.category === 'Travel Ticket' || selectedProduct?.tag === 'Travel' ? 'Arrival' : 'Check-out'}
+                  </span>
                   <span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{formatDate(stayCheckOutDate)}</span>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Nights</span>
-                  <span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">{nights} {nights===1?'Night':'Nights'}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
+                    {selectedProduct?.subNavbarCategory === 'Travel' || selectedProduct?.category === 'Travel Ticket' || selectedProduct?.tag === 'Travel' ? 'Days' : 'Nights'}
+                  </span>
+                  <span className="text-[12px] font-black text-slate-800 dark:text-white mt-1 block">
+                    {nights} {selectedProduct?.subNavbarCategory === 'Travel' || selectedProduct?.category === 'Travel Ticket' || selectedProduct?.tag === 'Travel' ? (nights === 1 ? 'Day' : 'Days') : (nights === 1 ? 'Night' : 'Nights')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -6049,7 +6057,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           <div className="lg:col-span-3 flex flex-col gap-5">
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 sticky top-4 text-left">
               <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-850 pb-3">Booking Summary</h3>
-              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Hotel</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-in</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Check-out</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Nights</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {nights===1?'Night':'Nights'}</span></div></div>
+              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Vehicle' : 'Hotel'}</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Depart' : 'Check-in'}</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Arrival' : 'Check-out'}</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Duration' : 'Nights'}</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {selectedProduct?.subNavbarCategory === 'Travel' ? (nights === 1 ? 'Day' : 'Days') : (nights === 1 ? 'Night' : 'Nights')}</span></div></div>
               <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">₹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- ₹{memberDiscount.toLocaleString()}</span></div></div>
               <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><div><span className="text-sm font-black text-slate-900 dark:text-white block">Total Amount</span><span className="text-[9px] text-slate-400 font-bold">Incl. all taxes</span></div><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalPrice.toLocaleString()}</span></div>
               <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 24 hrs before check-in for full refund.</span></div></div>
@@ -9692,22 +9700,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      {/* Check-Out Details Card (Hidden for Travel) */}
-                      {!isTravelItem && (
+                      {/* Check-Out / Arrival Details Card */}
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Check-Out Details
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {isTravelItem ? 'Arrival Details' : 'Check-Out Details'}
                           </span>
                           <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
                             {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
                           </span>
                         </div>
 
-                        {/* Check-Out Date Strip */}
+                        {/* Check-Out / Arrival Date Strip */}
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Arrival Date' : 'Select Check-Out Date'}</span>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -9963,7 +9970,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                         <Calendar className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-In</span>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Depart' : 'Check-In'}</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckInDate)}</span>
                           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{checkInTime}</span>
                         </div>
@@ -9972,7 +9979,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                         <Calendar className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Check-Out</span>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Arrival' : 'Check-Out'}</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckOutDate)}</span>
                           <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{checkOutTime}</span>
                         </div>
@@ -10273,22 +10280,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      {/* Check-Out Details Card (Hidden for Travel) */}
-                      {!isTravelItem && (
+                      {/* Check-Out / Arrival Details Card */}
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Check-Out Details
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {isTravelItem ? 'Arrival Details' : 'Check-Out Details'}
                           </span>
                           <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
                             {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
                           </span>
                         </div>
 
-                        {/* Check-Out Date Strip */}
+                        {/* Check-Out / Arrival Date Strip */}
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Arrival Date' : 'Select Check-Out Date'}</span>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -10557,7 +10563,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     {/* Summary row matrix */}
                     <div className="space-y-3.5 text-xs text-left">
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> Check-In</span>
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> {isTravelItem ? 'Depart' : 'Check-In'}</span>
                         <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
                           {formatDateFromYYYYMMDD(stayCheckInDate)}
                           <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-bold">{checkInTime}</span>
@@ -10565,7 +10571,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> Check-Out</span>
+                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> {isTravelItem ? 'Arrival' : 'Check-Out'}</span>
                         <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
                           {formatDateFromYYYYMMDD(stayCheckOutDate)}
                           <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">{checkOutTime}</span>
