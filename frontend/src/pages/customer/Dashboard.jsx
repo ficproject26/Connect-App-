@@ -795,6 +795,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
   const [razorpayPayMethod, setRazorpayPayMethod] = useState('upi');
   const [razorpayProcessing, setRazorpayProcessing] = useState(false);
+  const [supportOrderModal, setSupportOrderModal] = useState(null);
+  const [reportReason, setReportReason] = useState('Order Defect / Damage');
+  const [reportNotes, setReportNotes] = useState('');
+  const [isReportSubmitted, setIsReportSubmitted] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [guestList, setGuestList] = useState([{ name: '', aadhaar: '', phone: '' }]);
@@ -9223,6 +9227,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                             )}
                                           </>
                                         )}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSupportOrderModal(ord);
+                                            setIsReportSubmitted(false);
+                                            setReportReason('Order Defect / Damage');
+                                            setReportNotes('');
+                                          }}
+                                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-slate-700 transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 text-[9px] font-black uppercase rounded-lg"
+                                          title="Contact Support / Report Issue"
+                                        >
+                                          <PhoneCall className="w-3 h-3" />
+                                          <span>Support</span>
+                                        </button>
                                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
                                           ord.status === 'Delivered'
                                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
@@ -11143,6 +11162,140 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 Cancel Payment
               </button>
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- 8. ORDER SUPPORT & REPORTING MODAL -------------------- */}
+      {supportOrderModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col">
+            
+            {/* Header */}
+            <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shrink-0">
+                  <PhoneCall className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-extrabold text-sm tracking-tight text-white">Order Support & Reporting</h3>
+                  <p className="text-[10px] text-blue-200 mt-0.5">24/7 Connect Resolution Desk</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSupportOrderModal(null)}
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/80 transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto text-left">
+              {isReportSubmitted ? (
+                <div className="py-8 text-center space-y-3">
+                  <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+                    <Check className="w-7 h-7" />
+                  </div>
+                  <h4 className="font-extrabold text-base text-slate-900 dark:text-white">Issue Report Submitted!</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                    Your report for <span className="font-bold text-slate-800 dark:text-slate-200">#{supportOrderModal.order_number}</span> (Amount: ₹{supportOrderModal.amount}) has been received. Our support team will call you back within 15 minutes.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Reporting Order Info Summary */}
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-4 rounded-2xl space-y-2">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Order Reference</span>
+                      <span className="text-xs font-mono font-extrabold text-blue-600 dark:text-blue-400">#{supportOrderModal.order_number}</span>
+                    </div>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-white line-clamp-1">{supportOrderModal.product_details}</h4>
+                    
+                    {/* Reporting Amount Badge */}
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Reporting Amount:</span>
+                      <span className="text-base font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">
+                        ₹{supportOrderModal.amount}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Reason Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-500 block">Select Issue / Reason</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {[
+                        'Order Defect / Damage',
+                        'Missing Item / Wrong Product',
+                        'Refund Request',
+                        'Delayed Delivery / Service'
+                      ].map(reason => (
+                        <button
+                          key={reason}
+                          type="button"
+                          onClick={() => setReportReason(reason)}
+                          className={`p-2.5 rounded-xl border text-left font-bold transition-all cursor-pointer ${
+                            reportReason === reason
+                              ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {reason}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Description Box */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-500 block">Additional Notes</label>
+                    <textarea
+                      rows={3}
+                      value={reportNotes}
+                      onChange={(e) => setReportNotes(e.target.value)}
+                      placeholder={`Explain the issue or refund details for this ₹${supportOrderModal.amount} order...`}
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Direct Phone Call Button */}
+                  <a
+                    href="tel:18001234567"
+                    onClick={() => triggerNotification("Calling Connect Helpline: +91 1800-123-4567...")}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 transition-all no-underline shadow-sm"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>Direct Call Helpline (+91 1800-123-4567)</span>
+                  </a>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            {!isReportSubmitted && (
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => setSupportOrderModal(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 bg-transparent border-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsReportSubmitted(true);
+                    triggerNotification(`Report submitted for order #${supportOrderModal.order_number}`);
+                  }}
+                  className="px-5 py-2.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none shadow-sm"
+                >
+                  Submit Report (₹{supportOrderModal.amount})
+                </button>
+              </div>
+            )}
 
           </div>
         </div>
