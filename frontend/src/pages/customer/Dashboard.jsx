@@ -4353,7 +4353,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                   )}
                   <img src={product.image} alt={product.name} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
-                  <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
+                  {!isVendorProductUnavailable(product) && product.tag && (
+                    <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
+                  )}
                   <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105 z-20">
                     <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                   </button>
@@ -5866,11 +5868,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 </div>
                               </div>
                             )}
-                            <span className={`absolute left-2.5 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm transition-all ${
-                              product.subNavbarCategory === 'Food' ? 'top-8.5' : 'top-2.5'
-                            }`}>
-                              {product.tag}
-                            </span>
+                            {!isVendorProductUnavailable(product) && product.tag && (
+                              <span className={`absolute left-2.5 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm transition-all ${
+                                product.subNavbarCategory === 'Food' ? 'top-8.5' : 'top-2.5'
+                              }`}>
+                                {product.tag}
+                              </span>
+                            )}
                             <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5 z-20">
                               <button 
                                 type="button"
