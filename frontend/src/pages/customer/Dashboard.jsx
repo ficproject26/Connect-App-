@@ -209,6 +209,93 @@ const getGuestsCount = (product) => {
   return val;
 };
 
+const inferExperience = (desc = '', title = '', pExp = '') => {
+  if (pExp) return pExp;
+  const text = `${title} ${desc}`.toLowerCase();
+  if (text.includes('fresher') || text.includes('0-1 year') || text.includes('entry level')) return 'Fresher / 0-1 Year';
+  if (text.includes('1-3 years') || text.includes('1 to 3 years') || text.includes('1-3 yrs')) return '1 - 3 Years';
+  if (text.includes('2-5 years') || text.includes('2 to 5 years') || text.includes('2-5 yrs')) return '2 - 5 Years';
+  if (text.includes('3-5 years') || text.includes('3+ years') || text.includes('3+ yrs') || text.includes('3 years')) return '3+ Years';
+  if (text.includes('5+ years') || text.includes('5+ yrs') || text.includes('senior')) return '5+ Years';
+  if (text.includes('full experience') || text.includes('need full experience') || text.includes('experienced')) return '3+ Years (Experienced)';
+  return '1 - 3 Years';
+};
+
+const inferSkills = (title = '', category = '', desc = '', pSkills) => {
+  if (Array.isArray(pSkills) && pSkills.length > 0) return pSkills;
+  if (typeof pSkills === 'string' && pSkills.trim()) {
+    return pSkills.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  const text = `${title} ${category} ${desc}`.toLowerCase();
+  if (text.includes('hr') || text.includes('recruiter') || text.includes('talent')) {
+    return ['Recruitment', 'Talent Acquisition', 'HR Policies', 'Communication', 'Onboarding', 'ATS'];
+  }
+  if (text.includes('developer') || text.includes('software') || text.includes('full stack') || text.includes('frontend') || text.includes('backend') || text.includes('code') || text.includes('web') || text.includes('react') || text.includes('node') || text.includes('tech')) {
+    return ['JavaScript', 'React.js', 'Node.js', 'Express.js', 'MongoDB', 'HTML5 & CSS3', 'Git & GitHub', 'REST APIs'];
+  }
+  if (text.includes('designer') || text.includes('ui') || text.includes('ux') || text.includes('graphic')) {
+    return ['UI/UX Design', 'Figma', 'User Research', 'Wireframing', 'Prototyping', 'Adobe XD', 'Visual Design'];
+  }
+  if (text.includes('manager') || text.includes('management') || text.includes('operations') || text.includes('lead')) {
+    return ['Operations Management', 'Team Leadership', 'Project Planning', 'Business Strategy', 'Stakeholder Management', 'Process Optimization'];
+  }
+  if (text.includes('sales') || text.includes('marketing') || text.includes('business development') || text.includes('growth')) {
+    return ['Business Development', 'Client Acquisition', 'Sales Strategy', 'Lead Generation', 'CRM', 'Negotiation'];
+  }
+  if (text.includes('accountant') || text.includes('finance') || text.includes('tax') || text.includes('audit') || text.includes('tally')) {
+    return ['Financial Accounting', 'GST & Taxation', 'Tally Prime', 'Balance Sheet', 'Financial Analysis', 'Excel'];
+  }
+  if (text.includes('travel') || text.includes('tourism') || text.includes('hospitality') || text.includes('hotel')) {
+    return ['Customer Experience', 'Hospitality Management', 'Client Communication', 'Itinerary Planning', 'Reservations'];
+  }
+  if (text.includes('doctor') || text.includes('healthcare') || text.includes('medical') || text.includes('nurse')) {
+    return ['Patient Care', 'Clinical Diagnosis', 'Medical Consultation', 'Treatment Planning', 'Healthcare Operations'];
+  }
+  return ['Professional Experience', 'Communication Skills', 'Problem Solving', 'Team Collaboration', 'Role-Specific Knowledge'];
+};
+
+const inferApplicationTips = (title = '', category = '', desc = '') => {
+  const text = `${title} ${category} ${desc}`.toLowerCase();
+  if (text.includes('developer') || text.includes('software') || text.includes('full stack') || text.includes('frontend') || text.includes('backend') || text.includes('code') || text.includes('web')) {
+    return [
+      "Highlight your key technical stack and frameworks",
+      "Include GitHub links or live project URLs in your resume",
+      "Detail your contributions to key features & backend systems",
+      "Ensure problem-solving & algorithmic experience is listed"
+    ];
+  }
+  if (text.includes('designer') || text.includes('ui') || text.includes('ux')) {
+    return [
+      "Provide a link to your Figma or Behance portfolio",
+      "Showcase user research and wireframing case studies",
+      "Highlight experience with design systems & tools",
+      "Include before/after design improvements"
+    ];
+  }
+  if (text.includes('manager') || text.includes('operations') || text.includes('lead')) {
+    return [
+      "Quantify your achievements (team size, efficiency gains, revenue)",
+      "Highlight project lifecycle & cross-functional leadership",
+      "Include certifications (PMP, Agile/Scrum) if applicable",
+      "Tailor your application summary for executive visibility"
+    ];
+  }
+  if (text.includes('sales') || text.includes('marketing') || text.includes('business development')) {
+    return [
+      "Detail sales targets met, deal sizes, or conversion rates",
+      "Highlight CRM tools proficiency (Salesforce, HubSpot)",
+      "Include key client retention & growth statistics",
+      "Add a short pitch in your application notes"
+    ];
+  }
+  return [
+    "Please ensure your resume is updated with recent experience",
+    "Tailor your application summary to match role requirements",
+    "Include relevant certifications and skill keywords",
+    "Double-check contact details and phone number before submitting"
+  ];
+};
+
 export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
   const [theme, setTheme] = useState(
@@ -4584,92 +4671,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     };
   };
 
-  const inferExperience = (desc = '', title = '', pExp = '') => {
-    if (pExp) return pExp;
-    const text = `${title} ${desc}`.toLowerCase();
-    if (text.includes('fresher') || text.includes('0-1 year') || text.includes('entry level')) return 'Fresher / 0-1 Year';
-    if (text.includes('1-3 years') || text.includes('1 to 3 years') || text.includes('1-3 yrs')) return '1 - 3 Years';
-    if (text.includes('2-5 years') || text.includes('2 to 5 years') || text.includes('2-5 yrs')) return '2 - 5 Years';
-    if (text.includes('3-5 years') || text.includes('3+ years') || text.includes('3+ yrs') || text.includes('3 years')) return '3+ Years';
-    if (text.includes('5+ years') || text.includes('5+ yrs') || text.includes('senior')) return '5+ Years';
-    if (text.includes('full experience') || text.includes('need full experience') || text.includes('experienced')) return '3+ Years (Experienced)';
-    return '1 - 3 Years';
-  };
 
-  const inferSkills = (title = '', category = '', desc = '', pSkills) => {
-    if (Array.isArray(pSkills) && pSkills.length > 0) return pSkills;
-    if (typeof pSkills === 'string' && pSkills.trim()) {
-      return pSkills.split(',').map(s => s.trim()).filter(Boolean);
-    }
-    const text = `${title} ${category} ${desc}`.toLowerCase();
-    if (text.includes('hr') || text.includes('recruiter') || text.includes('talent')) {
-      return ['Recruitment', 'Talent Acquisition', 'HR Policies', 'Communication', 'Onboarding', 'ATS'];
-    }
-    if (text.includes('developer') || text.includes('software') || text.includes('full stack') || text.includes('frontend') || text.includes('backend') || text.includes('code') || text.includes('web') || text.includes('react') || text.includes('node') || text.includes('tech')) {
-      return ['JavaScript', 'React.js', 'Node.js', 'Express.js', 'MongoDB', 'HTML5 & CSS3', 'Git & GitHub', 'REST APIs'];
-    }
-    if (text.includes('designer') || text.includes('ui') || text.includes('ux') || text.includes('graphic')) {
-      return ['UI/UX Design', 'Figma', 'User Research', 'Wireframing', 'Prototyping', 'Adobe XD', 'Visual Design'];
-    }
-    if (text.includes('manager') || text.includes('management') || text.includes('operations') || text.includes('lead')) {
-      return ['Operations Management', 'Team Leadership', 'Project Planning', 'Business Strategy', 'Stakeholder Management', 'Process Optimization'];
-    }
-    if (text.includes('sales') || text.includes('marketing') || text.includes('business development') || text.includes('growth')) {
-      return ['Business Development', 'Client Acquisition', 'Sales Strategy', 'Lead Generation', 'CRM', 'Negotiation'];
-    }
-    if (text.includes('accountant') || text.includes('finance') || text.includes('tax') || text.includes('audit') || text.includes('tally')) {
-      return ['Financial Accounting', 'GST & Taxation', 'Tally Prime', 'Balance Sheet', 'Financial Analysis', 'Excel'];
-    }
-    if (text.includes('travel') || text.includes('tourism') || text.includes('hospitality') || text.includes('hotel')) {
-      return ['Customer Experience', 'Hospitality Management', 'Client Communication', 'Itinerary Planning', 'Reservations'];
-    }
-    if (text.includes('doctor') || text.includes('healthcare') || text.includes('medical') || text.includes('nurse')) {
-      return ['Patient Care', 'Clinical Diagnosis', 'Medical Consultation', 'Treatment Planning', 'Healthcare Operations'];
-    }
-    return ['Professional Experience', 'Communication Skills', 'Problem Solving', 'Team Collaboration', 'Role-Specific Knowledge'];
-  };
-
-  const inferApplicationTips = (title = '', category = '', desc = '') => {
-    const text = `${title} ${category} ${desc}`.toLowerCase();
-    if (text.includes('developer') || text.includes('software') || text.includes('full stack') || text.includes('frontend') || text.includes('backend') || text.includes('code') || text.includes('web')) {
-      return [
-        "Highlight your key technical stack and frameworks",
-        "Include GitHub links or live project URLs in your resume",
-        "Detail your contributions to key features & backend systems",
-        "Ensure problem-solving & algorithmic experience is listed"
-      ];
-    }
-    if (text.includes('designer') || text.includes('ui') || text.includes('ux')) {
-      return [
-        "Provide a link to your Figma or Behance portfolio",
-        "Showcase user research and wireframing case studies",
-        "Highlight experience with design systems & tools",
-        "Include before/after design improvements"
-      ];
-    }
-    if (text.includes('manager') || text.includes('operations') || text.includes('lead')) {
-      return [
-        "Quantify your achievements (team size, efficiency gains, revenue)",
-        "Highlight project lifecycle & cross-functional leadership",
-        "Include certifications (PMP, Agile/Scrum) if applicable",
-        "Tailor your application summary for executive visibility"
-      ];
-    }
-    if (text.includes('sales') || text.includes('marketing') || text.includes('business development')) {
-      return [
-        "Detail sales targets met, deal sizes, or conversion rates",
-        "Highlight CRM tools proficiency (Salesforce, HubSpot)",
-        "Include key client retention & growth statistics",
-        "Add a short pitch in your application notes"
-      ];
-    }
-    return [
-      "Please ensure your resume is updated with recent experience",
-      "Tailor your application summary to match role requirements",
-      "Include relevant certifications and skill keywords",
-      "Double-check contact details and phone number before submitting"
-    ];
-  };
 
   const formatJobSalary = (job) => {
     if (!job) return '3LPA';
