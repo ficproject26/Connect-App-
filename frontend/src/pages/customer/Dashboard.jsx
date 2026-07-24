@@ -307,26 +307,27 @@ const inferApplicationTips = (title = '', category = '', desc = '', pTips) => {
     "Double-check contact info & phone number before submitting"
   ];
 };
-      "Quantify your achievements (team size, efficiency gains, revenue)",
-      "Highlight project lifecycle & cross-functional leadership",
-      "Include certifications (PMP, Agile/Scrum) if applicable",
-      "Tailor your application summary for executive visibility"
-    ];
+
+const sanitizeJobLocation = (loc, defaultLoc = 'Bangalore, Karnataka') => {
+  if (!loc || typeof loc !== 'string') return defaultLoc;
+  const trimmed = loc.trim();
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.includes('need full experience') || 
+    lower.includes('experience') || 
+    lower.includes('description') || 
+    trimmed.length > 35
+  ) {
+    return defaultLoc;
   }
-  if (text.includes('sales') || text.includes('marketing') || text.includes('business development')) {
-    return [
-      "Detail sales targets met, deal sizes, or conversion rates",
-      "Highlight CRM tools proficiency (Salesforce, HubSpot)",
-      "Include key client retention & growth statistics",
-      "Add a short pitch in your application notes"
-    ];
-  }
-  return [
-    "Please ensure your resume is updated with recent experience",
-    "Tailor your application summary to match role requirements",
-    "Include relevant certifications and skill keywords",
-    "Double-check contact details and phone number before submitting"
-  ];
+  return trimmed;
+};
+
+const sanitizeJobTitle = (t, defaultTitle = 'Full Stack Developer') => {
+  if (!t || typeof t !== 'string') return defaultTitle;
+  const trimmed = t.trim();
+  if (trimmed.toLowerCase() === 'full') return 'Full Stack Developer';
+  return trimmed;
 };
 
 export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
@@ -351,6 +352,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [flippedCardKey, setFlippedCardKey] = useState(null);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+  const [isPreviewResumeOpen, setIsPreviewResumeOpen] = useState(false);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
@@ -1293,9 +1295,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       id: p.id || p._id,
       vendorId: p.vendorId,
       vendorName: p.vendorName || p.brand || p.companyName || p.vendor_name || 'Partner Organization',
-      title: p.jobTitle || p.title || p.name || p.role || p.designation || 'Job Position',
+      title: sanitizeJobTitle(p.jobTitle || p.title || p.name || p.role || p.designation),
       department: p.department || p.category || p.jobCategory || 'General',
-      location: p.jobLocation || p.location || p.city || p.vendorCity || p.locationType || 'Bangalore / Remote',
+      location: sanitizeJobLocation(p.jobLocation || p.location || p.city || p.vendorCity || p.locationType),
       salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : (p.salary ? String(p.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
       type: inferJobType(p),
       experience: inferExperience(p.description, p.name, p.experience || p.exp || p.jobExperience || p.experience_required),
@@ -5196,14 +5198,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </button>
                     
                     {(() => {
-                      const selectedJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId)) ||
+                      const rawJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId)) ||
                         (selectedProduct ? {
                           id: selectedProduct.id || selectedProduct._id,
                           vendorId: selectedProduct.vendorId,
                           vendorName: selectedProduct.vendorName || selectedProduct.brand || 'Partner Organization',
                           title: selectedProduct.name,
                           department: selectedProduct.department || selectedProduct.category || 'General',
-                          location: selectedProduct.jobLocation || selectedProduct.location || selectedProduct.city || selectedProduct.vendorCity || selectedProduct.locationType || 'Bangalore / Remote',
+                          location: selectedProduct.jobLocation || selectedProduct.location || selectedProduct.city || selectedProduct.vendorCity || selectedProduct.locationType || 'Bangalore, Karnataka',
                           salary: selectedProduct.price ? `₹${(selectedProduct.price || 0).toLocaleString()} L.P.A` : (selectedProduct.salary ? String(selectedProduct.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
                           type: inferJobType(selectedProduct),
                           experience: inferExperience(selectedProduct.description, selectedProduct.name, selectedProduct.experience || selectedProduct.exp || selectedProduct.jobExperience || selectedProduct.experience_required),
@@ -5222,6 +5224,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           vendorName: 'Connect App Technologies',
                           desc: 'We are looking for a motivated Full Stack Developer who is passionate about building scalable web applications and has a strong problem-solving mindset.'
                         };
+                      
+                      const selectedJob = {
+                        ...rawJob,
+                        title: sanitizeJobTitle(rawJob.title),
+                        location: sanitizeJobLocation(rawJob.location)
+                      };
                       
                       const skillsList = inferSkills(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.skills);
                       const applicationTips = inferApplicationTips(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.applicationTips);
@@ -5441,28 +5449,35 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                                      {resumeFile ? (
-                                        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40">
-                                          <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-bold text-xs">
-                                              PDF
-                                            </div>
-                                            <div className="text-left">
-                                              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1">
-                                                {resumeFile.name}
-                                              </h4>
-                                              <span className="text-[10px] text-slate-400">PDF • {resumeFile.size}</span>
-                                            </div>
+                                      <div 
+                                        onClick={() => setIsPreviewResumeOpen(true)}
+                                        className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40 cursor-pointer hover:border-blue-400 hover:shadow-xs transition-all group"
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-bold text-xs group-hover:bg-rose-100 transition-colors">
+                                            PDF
                                           </div>
+                                          <div className="text-left">
+                                            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-blue-600">
+                                              {resumeFile?.name || 'Dhanush_Tamilarasan_Resume.pdf'}
+                                            </h4>
+                                            <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                              {resumeFile?.size ? `PDF • ${resumeFile.size}` : 'PDF • 450 KB'} • <span className="text-blue-600 dark:text-blue-400 font-extrabold underline">Click to View Resume</span>
+                                            </span>
+                                          </div>
+                                        </div>
+                                        {resumeFile && (
                                           <button
                                             type="button"
-                                            onClick={() => setResumeFile(null)}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setResumeFile(null);
+                                            }}
                                             className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                                            title="Delete Resume"
                                           >
                                             <Trash2 className="w-4 h-4" />
                                           </button>
-                                        </div>
-                                      ) : null}
 
                                       <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors bg-white dark:bg-slate-950">
                                         <input
@@ -10943,6 +10958,108 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <Info className="w-4.5 h-4.5 text-blue-500 shrink-0" />
                 <span className="font-medium">Notice: Membership fees are billed annually. Current members receive a pro-rated refund on their remaining time when choosing to upgrade.</span>
               </div>
+            </div>
+          </div>
+        </div>
+      {/* Interactive Resume Preview Modal */}
+      {isPreviewResumeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 text-left relative max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <button 
+              type="button"
+              onClick={() => setIsPreviewResumeOpen(false)}
+              className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-black text-sm">
+                PDF
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  {resumeFile?.name || 'Dhanush_Tamilarasan_Resume.pdf'}
+                </h3>
+                <span className="text-xs text-slate-400 font-semibold">
+                  {applicantName || profileName || 'Dhanush Tamilarasan'} • {applicantEmail || profileEmail || 'dhanush@connect.app'}
+                </span>
+              </div>
+            </div>
+
+            {/* Resume Document Body */}
+            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 space-y-4 text-xs font-sans text-slate-700 dark:text-slate-300">
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h4 className="text-sm font-black text-slate-900 dark:text-white">{applicantName || profileName || 'Dhanush Tamilarasan'}</h4>
+                <p className="text-[11px] text-slate-500 font-bold mt-0.5">Senior Full Stack Web Developer</p>
+                <p className="text-[10px] text-slate-400 mt-1">📧 {applicantEmail || profileEmail || 'dhanush@connect.app'} • 📞 +91 98765 43210 • 📍 Bangalore, India</p>
+              </div>
+
+              <div>
+                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Executive Summary</h5>
+                <p className="leading-relaxed text-slate-600 dark:text-slate-400">
+                  Passionate Full Stack Developer with 4+ years of hands-on experience building high-performance web applications using React.js, Node.js, Express, MongoDB, and modern CSS frameworks. Proven track record in developing scalable e-commerce systems, API integrations, and intuitive customer interfaces.
+                </p>
+              </div>
+
+              <div>
+                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Core Skills</h5>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['JavaScript (ES6+)', 'React.js', 'Node.js', 'Express.js', 'MongoDB', 'HTML5/CSS3', 'Tailwind CSS', 'REST APIs', 'Git & GitHub', 'Redux'].map(s => (
+                    <span key={s} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Professional Experience</h5>
+                <div className="space-y-2">
+                  <div>
+                    <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200">
+                      <span>Senior Full Stack Engineer — Tech Connect Solutions</span>
+                      <span className="text-slate-400 text-[10px]">2024 - Present</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">• Engineered real-time customer and vendor dashboard interfaces serving 50k+ monthly active users.</p>
+                  </div>
+                  <div>
+                    <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200">
+                      <span>Frontend Developer — WebCraft Labs</span>
+                      <span className="text-slate-400 text-[10px]">2022 - 2024</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">• Developed responsive UI components, reduced bundle size by 30%, and optimized page load speed.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Education</h5>
+                <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200">
+                  <span>B.Tech in Computer Science & Engineering — VTU</span>
+                  <span className="text-slate-400 text-[10px]">Graduated 2022</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerNotification("Downloading Resume PDF...");
+                  setIsPreviewResumeOpen(false);
+                }}
+                className="px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none"
+              >
+                Download PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPreviewResumeOpen(false)}
+                className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer border-none"
+              >
+                Close Preview
+              </button>
             </div>
           </div>
         </div>
