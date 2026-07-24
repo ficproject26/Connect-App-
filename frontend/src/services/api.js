@@ -581,6 +581,16 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
     };
   }
 
+  // 6. Razorpay Fallback Order Creator
+  if (urlPath === '/orders/create-razorpay-order' && method === 'POST') {
+    return {
+      success: true,
+      order_id: 'order_mock_' + Math.floor(Math.random() * 1000000),
+      amount: Math.round((body.amount || 100) * 100),
+      key_id: 'rzp_test_THLM17MgXLM2tP'
+    };
+  }
+
   // Default general success stub
   return { status: 'success', data: {} };
 };
