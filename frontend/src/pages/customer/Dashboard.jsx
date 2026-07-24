@@ -209,15 +209,39 @@ const getGuestsCount = (product) => {
   return val;
 };
 
+const inferJobType = (p) => {
+  if (!p) return 'Full-time';
+  if (typeof p === 'string') return p;
+  const direct = p.jobType || p.type || p.job_type || p.employmentType || p.workType;
+  if (direct && String(direct).trim() && !['Job', 'Jobs', 'IT Jobs'].includes(String(direct).trim())) {
+    return String(direct).trim();
+  }
+  const text = `${p.name || ''} ${p.category || ''} ${p.subcategory || ''} ${p.description || ''}`.toLowerCase();
+  if (text.includes('part-time') || text.includes('part time')) return 'Part-time';
+  if (text.includes('contract')) return 'Contract';
+  if (text.includes('freelance')) return 'Freelance';
+  if (text.includes('internship') || text.includes('intern')) return 'Internship';
+  if (text.includes('work from home') || text.includes('remote') || text.includes('wfh')) return 'Remote / Work From Home';
+  if (text.includes('full-time') || text.includes('full time')) return 'Full-time';
+  return 'Full-time';
+};
+
 const inferExperience = (desc = '', title = '', pExp = '') => {
-  if (pExp) return pExp;
-  const text = `${title} ${desc}`.toLowerCase();
-  if (text.includes('fresher') || text.includes('0-1 year') || text.includes('entry level')) return 'Fresher / 0-1 Year';
-  if (text.includes('1-3 years') || text.includes('1 to 3 years') || text.includes('1-3 yrs')) return '1 - 3 Years';
-  if (text.includes('2-5 years') || text.includes('2 to 5 years') || text.includes('2-5 yrs')) return '2 - 5 Years';
-  if (text.includes('3-5 years') || text.includes('3+ years') || text.includes('3+ yrs') || text.includes('3 years')) return '3+ Years';
-  if (text.includes('5+ years') || text.includes('5+ yrs') || text.includes('senior')) return '5+ Years';
-  if (text.includes('full experience') || text.includes('need full experience') || text.includes('experienced')) return '3+ Years (Experienced)';
+  if (pExp && String(pExp).trim()) {
+    return String(pExp).trim();
+  }
+  const text = `${title} \n ${desc}`;
+  const expMatch = text.match(/\b(\d+\s*(?:-|to|–)\s*\d+\s*(?:years?|yrs?)||\d+\+\s*(?:years?|yrs?)|freshers?|experienced)\b/i);
+  if (expMatch && expMatch[0]) {
+    return expMatch[0].replace(/yrs?/i, 'Years').trim();
+  }
+  const textLower = text.toLowerCase();
+  if (textLower.includes('fresher') || textLower.includes('0-1 year') || textLower.includes('entry level')) return 'Fresher / 0-1 Year';
+  if (textLower.includes('1-3 years') || textLower.includes('1 to 3 years') || textLower.includes('1-3 yrs')) return '1 - 3 Years';
+  if (textLower.includes('2-5 years') || textLower.includes('2 to 5 years') || textLower.includes('2-5 yrs')) return '2 - 5 Years';
+  if (textLower.includes('3-5 years') || textLower.includes('3+ years') || textLower.includes('3+ yrs')) return '3+ Years';
+  if (textLower.includes('5+ years') || textLower.includes('5+ yrs') || textLower.includes('senior')) return '5+ Years';
+  if (textLower.includes('full experience') || textLower.includes('need full experience') || textLower.includes('experienced')) return '3+ Years (Experienced)';
   return '1 - 3 Years';
 };
 
@@ -1255,16 +1279,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const jobsList = [
     ...staticJobsList,
-    ...products.filter(p => p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs').map(p => ({
-      id: p.id,
+    ...products.filter(p => p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs' || p.category === 'Jobs' || p.category === 'IT Jobs' || p.category === 'Full Time').map(p => ({
+      id: p.id || p._id,
       vendorId: p.vendorId,
-      vendorName: p.vendorName,
+      vendorName: p.vendorName || p.brand || 'Partner Organization',
       title: p.name,
-      department: p.category || 'General',
-      location: p.location || p.description?.split('\n')[0] || 'Remote (India)',
+      department: p.department || p.category || 'General',
+      location: p.jobLocation || p.location || p.city || p.description?.split('\n')[0] || 'Remote (India)',
       salary: p.price ? `${(p.price || 0).toLocaleString()} L.P.A` : (p.salary ? String(p.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
-      type: p.jobType || p.type || 'Full-time',
-      experience: p.experience || p.exp || inferExperience(p.description, p.name),
+      type: inferJobType(p),
+      experience: inferExperience(p.description, p.name, p.experience || p.exp || p.jobExperience || p.experience_required),
       skills: p.skills || p.requiredSkills,
       desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`,
       price: p.price,
@@ -5140,16 +5164,30 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </button>
                     
                     {(() => {
-                      const selectedJob = jobsList.find(j => j.id === appliedJobId) || {
-                        title: 'Full Stack Developer',
-                        department: 'Engineering',
-                        location: 'Bangalore, Karnataka (On-site)',
-                        salary: '3,00,000 L.P.A',
-                        type: 'Full-time',
-                        id: 'CAT-FSD-2026-1024',
-                        vendorName: 'Connect App Technologies',
-                        desc: 'We are looking for a motivated Full Stack Developer who is passionate about building scalable web applications and has a strong problem-solving mindset.'
-                      };
+                      const selectedJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId)) ||
+                        (selectedProduct ? {
+                          id: selectedProduct.id || selectedProduct._id,
+                          vendorId: selectedProduct.vendorId,
+                          vendorName: selectedProduct.vendorName || selectedProduct.brand || 'Partner Organization',
+                          title: selectedProduct.name,
+                          department: selectedProduct.department || selectedProduct.category || 'General',
+                          location: selectedProduct.jobLocation || selectedProduct.location || selectedProduct.city || selectedProduct.description?.split('\n')[0] || 'Remote (India)',
+                          salary: selectedProduct.price ? `${(selectedProduct.price || 0).toLocaleString()} L.P.A` : (selectedProduct.salary ? String(selectedProduct.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
+                          type: inferJobType(selectedProduct),
+                          experience: inferExperience(selectedProduct.description, selectedProduct.name, selectedProduct.experience || selectedProduct.exp || selectedProduct.jobExperience || selectedProduct.experience_required),
+                          skills: selectedProduct.skills || selectedProduct.requiredSkills,
+                          desc: selectedProduct.description || `${selectedProduct.name} position.`
+                        } : null) || {
+                          title: 'Full Stack Developer',
+                          department: 'Engineering',
+                          location: 'Bangalore, Karnataka (On-site)',
+                          salary: '3,00,000 L.P.A',
+                          type: 'Full-time',
+                          experience: '1 - 3 Years',
+                          id: 'CAT-FSD-2026-1024',
+                          vendorName: 'Connect App Technologies',
+                          desc: 'We are looking for a motivated Full Stack Developer who is passionate about building scalable web applications and has a strong problem-solving mindset.'
+                        };
                       
                       const skillsList = inferSkills(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.skills);
                       const applicationTips = inferApplicationTips(selectedJob.title, selectedJob.department, selectedJob.desc);
