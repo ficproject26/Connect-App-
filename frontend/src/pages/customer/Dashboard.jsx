@@ -10790,7 +10790,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     
                     <div className="flex items-center justify-center gap-1 text-[10px] text-slate-455 dark:text-slate-500 font-bold select-none leading-none">
                       <ShieldCheck className="w-4 h-4 text-blue-500" />
-                      <span>You won't be charged yet</span>
+                      <span>You won&apos;t be charged yet</span>
                     </div>
                   </div>
                 </div>
