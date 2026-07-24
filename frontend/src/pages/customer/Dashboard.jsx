@@ -762,8 +762,35 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
   }, [currentUser]);
 
-  const [cart, setCart] = useState([]);
-  const [selectedCartItems, setSelectedCartItems] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem('connect_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [selectedCartItems, setSelectedCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('connect_selected_cart_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('connect_cart', JSON.stringify(cart));
+    } catch (e) {}
+  }, [cart]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('connect_selected_cart_items', JSON.stringify(selectedCartItems));
+    } catch (e) {}
+  }, [selectedCartItems]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -2138,91 +2165,140 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     }
 
     const totalAmount = selectedItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-    if (walletBalance < totalAmount) {
-      triggerNotification("Insufficient wallet balance!");
+
+    // Step 1: Create Razorpay order on backend
+    let razorpayData;
+    try {
+      razorpayData = await apiFetch('/orders/create-razorpay-order', {
+        method: 'POST',
+        body: JSON.stringify({ amount: totalAmount })
+      });
+    } catch (err) {
+      console.error('Razorpay order creation failed:', err);
+      triggerNotification("Payment gateway error. Please try again.");
       return;
     }
 
-    const hasJob = selectedItems.some(isJobCartItem);
-    const hasBooking = selectedItems.some(isBookingCartItem);
-
-    setOrderSuccess(true);
-
-    // Group cart items into separate orders for Products vs Bookings vs Jobs
-    const bookingItems = selectedItems.filter(isBookingCartItem);
-    const jobItems = selectedItems.filter(item => !isBookingCartItem(item) && isJobCartItem(item));
-    const productItems = selectedItems.filter(item => !isBookingCartItem(item) && !isJobCartItem(item));
-
-    const orderGroups = [];
-    if (productItems.length > 0) orderGroups.push({ items: productItems, type: 'Order' });
-    if (bookingItems.length > 0) orderGroups.push({ items: bookingItems, type: 'Booking' });
-    if (jobItems.length > 0) orderGroups.push({ items: jobItems, type: 'Job' });
-
-    const totalProductDetails = selectedItems.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
-    
-    // Deduct total order amount from wallet
-    addTransaction(
-      `Order Payment - ${totalProductDetails.substring(0, 30)}${totalProductDetails.length > 30 ? '...' : ''}`,
-      -totalAmount,
-      'Purchase'
-    );
-
-    try {
-      for (const group of orderGroups) {
-        const groupVendorId = group.items[0]?.vendorId || 'v1';
-        const groupAmount = group.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-        const groupProductDetails = group.items.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
-        const itemsList = group.items.map(item => ({
-          productId: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity || 1
-        }));
-
-        const firstBookingItem = group.items.find(i => i.guestDetails || i.checkInTime);
-        const guestDetails = firstBookingItem?.guestDetails || [];
-        const bookingTime = firstBookingItem?.bookingTime || firstBookingItem?.checkInTime;
-        const bookingDate = firstBookingItem?.bookingDate || firstBookingItem?.checkInDate;
-
-        await apiFetch('/orders', {
-          method: 'POST',
-          body: JSON.stringify({
-            vendor_id: groupVendorId,
-            customer_name: profileName || currentUser?.name || 'Dhanush Tamilarasan',
-            customer_phone: profilePhone || '+91 98765 43210',
-            customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
-            customer_latitude: 12.9498,
-            customer_longitude: 77.6289,
-            product_details: groupProductDetails,
-            amount: groupAmount,
-            items: itemsList,
-            type: group.type,
-            guestDetails: guestDetails,
-            bookingTime: bookingTime,
-            bookingDate: bookingDate
-          })
-        });
-      }
-      loadCustomerOrders();
-    } catch (e) {
-      console.error('Failed to place order(s):', e);
+    if (!razorpayData || !razorpayData.order_id) {
+      triggerNotification("Payment gateway error. Please try again.");
+      return;
     }
 
-    setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
-    setSelectedCartItems([]);
-    setTimeout(() => {
-      setOrderSuccess(false);
-      setIsCartOpen(false);
-      const hasJob = jobItems.length > 0;
-      const hasBooking = bookingItems.length > 0;
-      if (hasJob && !hasBooking && productItems.length === 0) {
-        triggerNotification("Application submitted successfully!");
-      } else if (hasBooking && !hasJob && productItems.length === 0) {
-        triggerNotification("Booking completed successfully!");
-      } else {
-        triggerNotification("Orders & Bookings placed successfully with separate Order IDs!");
+    // Step 2: Open Razorpay Checkout Popup
+    const options = {
+      key: razorpayData.key_id,
+      amount: razorpayData.amount,
+      currency: "INR",
+      name: "Connect App",
+      description: `Payment for ${selectedItems.length} item(s)`,
+      order_id: razorpayData.order_id,
+      handler: async function (response) {
+        // Step 3: Payment successful — place orders
+        triggerNotification("Payment successful! Placing your order...");
+
+        const hasJob = selectedItems.some(isJobCartItem);
+        const hasBooking = selectedItems.some(isBookingCartItem);
+
+        setOrderSuccess(true);
+
+        const bookingItems = selectedItems.filter(isBookingCartItem);
+        const jobItems = selectedItems.filter(item => !isBookingCartItem(item) && isJobCartItem(item));
+        const productItems = selectedItems.filter(item => !isBookingCartItem(item) && !isJobCartItem(item));
+
+        const orderGroups = [];
+        if (productItems.length > 0) orderGroups.push({ items: productItems, type: 'Order' });
+        if (bookingItems.length > 0) orderGroups.push({ items: bookingItems, type: 'Booking' });
+        if (jobItems.length > 0) orderGroups.push({ items: jobItems, type: 'Job' });
+
+        const totalProductDetails = selectedItems.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
+
+        // Deduct total order amount from wallet
+        addTransaction(
+          `Order Payment - ${totalProductDetails.substring(0, 30)}${totalProductDetails.length > 30 ? '...' : ''}`,
+          -totalAmount,
+          'Purchase'
+        );
+
+        try {
+          for (const group of orderGroups) {
+            const groupVendorId = group.items[0]?.vendorId || 'v1';
+            const groupAmount = group.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+            const groupProductDetails = group.items.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
+            const itemsList = group.items.map(item => ({
+              productId: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity || 1
+            }));
+
+            const firstBookingItem = group.items.find(i => i.guestDetails || i.checkInTime);
+            const guestDetails = firstBookingItem?.guestDetails || [];
+            const bookingTime = firstBookingItem?.bookingTime || firstBookingItem?.checkInTime;
+            const bookingDate = firstBookingItem?.bookingDate || firstBookingItem?.checkInDate;
+
+            await apiFetch('/orders', {
+              method: 'POST',
+              body: JSON.stringify({
+                vendor_id: groupVendorId,
+                customer_name: profileName || currentUser?.name || 'Dhanush Tamilarasan',
+                customer_phone: profilePhone || '+91 98765 43210',
+                customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
+                customer_latitude: 12.9498,
+                customer_longitude: 77.6289,
+                product_details: groupProductDetails,
+                amount: groupAmount,
+                items: itemsList,
+                type: group.type,
+                guestDetails: guestDetails,
+                bookingTime: bookingTime,
+                bookingDate: bookingDate,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+          }
+          loadCustomerOrders();
+        } catch (e) {
+          console.error('Failed to place order(s):', e);
+        }
+
+        setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
+        setSelectedCartItems([]);
+        setTimeout(() => {
+          setOrderSuccess(false);
+          setIsCartOpen(false);
+          const hasJobFinal = jobItems.length > 0;
+          const hasBookingFinal = bookingItems.length > 0;
+          if (hasJobFinal && !hasBookingFinal && productItems.length === 0) {
+            triggerNotification("Application submitted successfully!");
+          } else if (hasBookingFinal && !hasJobFinal && productItems.length === 0) {
+            triggerNotification("Booking completed successfully!");
+          } else {
+            triggerNotification("Orders & Bookings placed successfully with separate Order IDs!");
+          }
+        }, 3000);
+      },
+      prefill: {
+        name: profileName || currentUser?.name || 'Customer',
+        email: profileEmail || currentUser?.email || '',
+        contact: profilePhone || '+919876543210'
+      },
+      theme: {
+        color: "#0b1e36"
+      },
+      modal: {
+        ondismiss: function () {
+          triggerNotification("Payment cancelled.");
+        }
       }
-    }, 3000);
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on('payment.failed', function (response) {
+      triggerNotification(`Payment failed: ${response.error.description}`);
+    });
+    rzp.open();
   };
 
 
@@ -8061,30 +8137,32 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Add / Decrease Item Quantity Buttons */}
-                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
-                      <button 
-                        type="button"
-                        onClick={() => updateCartQuantity(item.id, -1)}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black text-xs cursor-pointer border-none transition-all"
-                        title="Decrease quantity"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
+                    {/* Add / Decrease Item Quantity Buttons - Only for physical order items */}
+                    {!isBookingCartItem(item) && !isJobCartItem(item) && (
+                      <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
+                        <button 
+                          type="button"
+                          onClick={() => updateCartQuantity(item.id, -1)}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black text-xs cursor-pointer border-none transition-all"
+                          title="Decrease quantity"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
 
-                      <span className="w-5 text-center text-xs font-black text-slate-900 dark:text-white">
-                        {item.quantity || 1}
-                      </span>
+                        <span className="w-5 text-center text-xs font-black text-slate-900 dark:text-white">
+                          {item.quantity || 1}
+                        </span>
 
-                      <button 
-                        type="button"
-                        onClick={() => updateCartQuantity(item.id, 1)}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs cursor-pointer border-none transition-all shadow-3xs"
-                        title="Increase quantity"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
+                        <button 
+                          type="button"
+                          onClick={() => updateCartQuantity(item.id, 1)}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs cursor-pointer border-none transition-all shadow-3xs"
+                          title="Increase quantity"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
 
                     <button 
                       onClick={() => removeFromCart(item.id)}

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db, Order, DeliveryPartner, DeliveryAssignment } from '../db';
 import { socketManager } from '../socket';
-
+import Razorpay from 'razorpay';
 const router = Router();
 
 // Distance utility function (Haversine formula in km)
@@ -174,6 +174,34 @@ router.get('/:id', async (req: Request, res: Response) => {
       status: 'error',
       message: 'Failed to retrieve order details: ' + error.message
     });
+  }
+});
+
+// Razorpay Order Creation Endpoint
+router.post('/create-razorpay-order', async (req: Request, res: Response) => {
+  try {
+    const { amount } = req.body;
+    
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({ error: 'Razorpay keys not configured' });
+    }
+
+    const instance = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+
+    const options = {
+      amount: Math.round(amount * 100), // convert to paise
+      currency: "INR",
+      receipt: "receipt_order_" + Math.floor(Math.random() * 1000000),
+    };
+
+    const order = await instance.orders.create(options);
+    res.json({ success: true, order_id: order.id, amount: options.amount, key_id: process.env.RAZORPAY_KEY_ID });
+  } catch (error) {
+    console.error('Error creating Razorpay order:', error);
+    res.status(500).json({ error: 'Failed to create Razorpay order' });
   }
 });
 
