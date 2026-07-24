@@ -2090,8 +2090,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     triggerNotification("Updated your wishlist!");
   };
 
+  const isVendorProductUnavailable = (product) => {
+    if (!product) return false;
+    if (product.status === 'Unavailable' || product.status === 'Out of Stock' || product.status === 'Out of stock' || product.status === 'Inactive') return true;
+    if (product.availability === false || product.isAvailable === false) return true;
+    if (product.stock !== undefined && product.stock !== null && (parseInt(product.stock) === 0 || String(product.stock).startsWith('0'))) return true;
+    return false;
+  };
+
   const addToCart = (product) => {
     if (!product) return;
+    if (isVendorProductUnavailable(product)) {
+      triggerNotification("Vendor is currently unavailable for this item.");
+      return;
+    }
     const prodId = product.id || `prod-${Date.now()}`;
     const prodName = product.name || 'Selected Item';
     const prodPrice = product.price || product.fee || 0;
@@ -4333,9 +4345,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             return (
               <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-350 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-0.5">
                 <div className="relative aspect-[0.95/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                  {isVendorProductUnavailable(product) && (
+                    <div className="absolute top-0 left-0 z-20 w-24 h-24 overflow-hidden pointer-events-none">
+                      <div className="absolute top-4 -left-7 w-28 py-0.5 text-[8px] font-black text-center uppercase tracking-widest rotate-[-45deg] text-white bg-red-600 shadow-md">
+                        OUT OF STOCK
+                      </div>
+                    </div>
+                  )}
+                  <img src={product.image} alt={product.name} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                   <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
-                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105">
+                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }} className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-xs cursor-pointer border border-slate-200/60 transition-transform hover:scale-105 z-20">
                     <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                   </button>
                 </div>
@@ -4359,26 +4378,38 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
                     </div>
                     <div className="flex items-center gap-1.5 w-full">
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          addToCart(product); 
-                        }} 
-                        className="flex-1 inline-flex items-center justify-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add</span>
-                      </button>
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          addToCart(product);
-                          setIsCartOpen(true);
-                        }} 
-                        className="flex-1 inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
-                      >
-                        <span>Order Now</span>
-                      </button>
+                      {isVendorProductUnavailable(product) ? (
+                        <button 
+                          disabled
+                          onClick={(e) => e.stopPropagation()} 
+                          className="w-full py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[10px] font-black rounded-lg cursor-not-allowed uppercase border-none opacity-70"
+                        >
+                          <span>Vendor Unavailable</span>
+                        </button>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              addToCart(product); 
+                            }} 
+                            className="flex-1 inline-flex items-center justify-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add</span>
+                          </button>
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              addToCart(product);
+                              setIsCartOpen(true);
+                            }} 
+                            className="flex-1 inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
+                          >
+                            <span>Order Now</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -5809,13 +5840,20 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       return (
                         <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
                           <div className="relative aspect-[1.4/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
+                            {isVendorProductUnavailable(product) && (
+                              <div className="absolute top-0 left-0 z-20 w-24 h-24 overflow-hidden pointer-events-none">
+                                <div className="absolute top-4 -left-7 w-28 py-0.5 text-[8px] font-black text-center uppercase tracking-widest rotate-[-45deg] text-white bg-red-600 shadow-md">
+                                  OUT OF STOCK
+                                </div>
+                              </div>
+                            )}
                             {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs') ? (
                               <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                                 <Briefcase className="w-8 h-8 text-amber-500" />
                                 <span className="text-[9px] text-slate-450 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                               </div>
                             ) : (
-                              <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                              <img src={product.image} alt={product.name} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                             )}
                             {product.subNavbarCategory === 'Food' && (
                               <div className="absolute top-0 left-0 z-10 w-16 h-16 overflow-hidden pointer-events-none">
@@ -5922,6 +5960,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               {/* Action Buttons based on category type */}
                             <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-850/60 w-full flex items-center gap-2">
                               {(() => {
+                                const isUnavail = isVendorProductUnavailable(product);
+                                if (isUnavail) {
+                                  return (
+                                    <button 
+                                      disabled
+                                      onClick={(e) => e.stopPropagation()} 
+                                      className="w-full py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs rounded-xl cursor-not-allowed border-none leading-none h-9 flex items-center justify-center gap-1 opacity-70"
+                                    >
+                                      <span>Vendor Unavailable</span>
+                                    </button>
+                                  );
+                                }
                                 const category = activeTab === 'Home' ? product.subNavbarCategory : activeTab;
                                 if (category === 'Products' || category === 'Daily Needs' || category === 'Food') {
                                   return (
@@ -7482,7 +7532,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <span>{getActionButtons(selectedProduct).chatText}</span>
                 </button>
                 
-                {getActionButtons(selectedProduct).showBooking ? (
+                {isVendorProductUnavailable(selectedProduct) ? (
+                  <div className="flex-1 py-3.5 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 h-12 select-none">
+                    <span>Vendor Currently Unavailable (Out of Stock)</span>
+                  </div>
+                ) : getActionButtons(selectedProduct).showBooking ? (
                   <>
                     <button
                       onClick={() => {
