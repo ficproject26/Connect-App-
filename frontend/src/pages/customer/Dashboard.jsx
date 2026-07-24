@@ -763,6 +763,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   }, [currentUser]);
 
   const [cart, setCart] = useState([]);
+  const [selectedCartItems, setSelectedCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -2077,11 +2078,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       }
       return [...prev, { ...product, id: prodId, name: prodName, price: prodPrice, image: prodImg, quantity: product.quantity || 1 }];
     });
+    setSelectedCartItems(prev => prev.includes(prodId) ? prev : [...prev, prodId]);
     triggerNotification(`Added "${prodName}" to cart!`);
   };
 
   const removeFromCart = (id) => {
     setCart(prev => prev.filter(item => item.id !== id));
+    setSelectedCartItems(prev => prev.filter(itemId => itemId !== id));
   };
 
   const updateCartQuantity = (id, delta) => {
@@ -2115,42 +2118,47 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const getCartCheckoutButtonText = () => {
-    if (cart.length === 0) return "Proceed to Place Order";
+    const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
+    if (selectedItems.length === 0) return "Select items to checkout";
     
-    const hasJob = cart.some(isJobCartItem);
+    const hasJob = selectedItems.some(isJobCartItem);
     if (hasJob) return "Apply Now";
     
-    const hasBooking = cart.some(isBookingCartItem);
+    const hasBooking = selectedItems.some(isBookingCartItem);
     if (hasBooking) return "Book Now";
     
     return "Buy Now";
   };
 
   const handleCheckout = async () => {
-    if (cart.length === 0) return;
+    const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
+    if (selectedItems.length === 0) {
+      triggerNotification("Please select items to checkout");
+      return;
+    }
 
-    const totalAmount = cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+    const totalAmount = selectedItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
     if (walletBalance < totalAmount) {
       triggerNotification("Insufficient wallet balance!");
       return;
     }
 
-    const hasJob = cart.some(isJobCartItem);
-    const hasBooking = cart.some(isBookingCartItem);
+    const hasJob = selectedItems.some(isJobCartItem);
+    const hasBooking = selectedItems.some(isBookingCartItem);
 
     setOrderSuccess(true);
 
     // Group cart items into separate orders for Products vs Bookings vs Jobs
-    const bookingItems = cart.filter(isBookingCartItem);
-    const jobItems = cart.filter(item => !isBookingCartItem(item) && isJobCartItem(item));
-    const productItems = cart.filter(item => !isBookingCartItem(item) && !isJobCartItem(item));
+    const bookingItems = selectedItems.filter(isBookingCartItem);
+    const jobItems = selectedItems.filter(item => !isBookingCartItem(item) && isJobCartItem(item));
+    const productItems = selectedItems.filter(item => !isBookingCartItem(item) && !isJobCartItem(item));
 
     const orderGroups = [];
     if (productItems.length > 0) orderGroups.push({ items: productItems, type: 'Order' });
     if (bookingItems.length > 0) orderGroups.push({ items: bookingItems, type: 'Booking' });
     if (jobItems.length > 0) orderGroups.push({ items: jobItems, type: 'Job' });
 
-    const totalProductDetails = cart.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
+    const totalProductDetails = selectedItems.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
     
     // Deduct total order amount from wallet
     addTransaction(
@@ -2200,7 +2208,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       console.error('Failed to place order(s):', e);
     }
 
-    setCart([]);
+    setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
+    setSelectedCartItems([]);
     setTimeout(() => {
       setOrderSuccess(false);
       setIsCartOpen(false);
@@ -8029,6 +8038,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 relative animate-fade-in text-slate-800 dark:text-slate-200 gap-3"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
+                    <input 
+                      type="checkbox"
+                      checked={selectedCartItems.includes(item.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCartItems(prev => [...prev, item.id]);
+                        } else {
+                          setSelectedCartItems(prev => prev.filter(id => id !== item.id));
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-[#f43397] focus:ring-[#f43397] cursor-pointer shrink-0"
+                    />
                     <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" />
                     <div className="text-left overflow-hidden">
                       <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
@@ -8083,9 +8104,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="space-y-2.5 mb-4 text-xs font-semibold">
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Subtotal:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white">₹{cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}</span>
                 </div>
-                {!cart.some(item => 
+                {!cart.filter(item => selectedCartItems.includes(item.id)).some(item => 
                   ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
                   ['Services', 'Stay', 'Travel'].includes(item.tag)
                 ) && (
@@ -8097,7 +8118,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline">
                   <span className="text-sm font-black text-slate-900 dark:text-white">Estimated Total:</span>
                   <span className="text-xl font-extrabold text-[#f43397]">
-                    ₹{cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
+                    ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -9813,108 +9834,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      {/* Check-Out / Arrival Details Card (Removed for Travel) */}
-                      {!isTravelItem && (
-                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {isTravelItem ? 'Arrival Details' : 'Check-Out Details'}
-                          </span>
-                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
-                            {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
-                          </span>
-                        </div>
 
-                        {/* Check-Out / Arrival Date Strip */}
-                        <div>
-                          <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Arrival Date' : 'Select Check-Out Date'}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                const container = e.currentTarget.parentElement?.nextElementSibling;
-                                if (container) {
-                                  container.scrollBy({ left: 150, behavior: 'smooth' });
-                                }
-                              }}
-                              className="text-[9px] font-extrabold text-emerald-600 hover:text-emerald-700 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
-                            >
-                              Scroll for dates →
-                            </button>
-                          </div>
-                          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                            {generateUpcomingDates(stayCheckInDate, 14).slice(1).map((d) => {
-                              const isSelected = stayCheckOutDate === d.dateStr;
-                              return (
-                                <button
-                                  key={`out-date-${d.dateStr}`}
-                                  type="button"
-                                  disabled={!d.isAvailable}
-                                  onClick={() => setStayCheckOutDate(d.dateStr)}
-                                  className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
-                                    isSelected
-                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                      : !d.isAvailable
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                  }`}
-                                >
-                                  <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
-                                  <span className="text-sm font-black">{d.dayNumber}</span>
-                                  <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
-                                  <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
-                                    isSelected 
-                                      ? 'bg-emerald-700 text-white' 
-                                      : !d.isAvailable 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Check-Out Time Slots */}
-                        <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-Out Time Slot</span>
-                          <div className="grid grid-cols-4 gap-2">
-                            {checkOutTimeSlots.map((slot) => {
-                              const isSelected = checkOutTime === slot.time;
-                              const isAvail = slot.status === 'Available';
-                              return (
-                                <button
-                                  key={`out-time-${slot.time}`}
-                                  type="button"
-                                  disabled={!isAvail}
-                                  onClick={() => setCheckOutTime(slot.time)}
-                                  className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                      : !isAvail
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                  }`}
-                                >
-                                  <span className="text-[11px] font-extrabold">{slot.time}</span>
-                                  <span className={`text-[7.5px] font-black uppercase ${
-                                    isSelected 
-                                      ? 'text-white' 
-                                      : !isAvail 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : slot.status}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                      )}
                     </div>
 
                     {/* Guest/Traveler Counter Block */}
@@ -10431,108 +10351,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
-                      {/* Check-Out / Arrival Details Card (Removed for Travel) */}
-                      {!isTravelItem && (
-                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {isTravelItem ? 'Arrival Details' : 'Check-Out Details'}
-                          </span>
-                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
-                            {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
-                          </span>
-                        </div>
 
-                        {/* Check-Out / Arrival Date Strip */}
-                        <div>
-                          <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Arrival Date' : 'Select Check-Out Date'}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                const container = e.currentTarget.parentElement?.nextElementSibling;
-                                if (container) {
-                                  container.scrollBy({ left: 150, behavior: 'smooth' });
-                                }
-                              }}
-                              className="text-[9px] font-extrabold text-emerald-600 hover:text-emerald-700 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
-                            >
-                              Scroll for dates →
-                            </button>
-                          </div>
-                          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                            {generateUpcomingDates(stayCheckInDate, 14).slice(1).map((d) => {
-                              const isSelected = stayCheckOutDate === d.dateStr;
-                              return (
-                                <button
-                                  key={`out-date-m2-${d.dateStr}`}
-                                  type="button"
-                                  disabled={!d.isAvailable}
-                                  onClick={() => setStayCheckOutDate(d.dateStr)}
-                                  className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
-                                    isSelected
-                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                      : !d.isAvailable
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                  }`}
-                                >
-                                  <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
-                                  <span className="text-sm font-black">{d.dayNumber}</span>
-                                  <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
-                                  <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
-                                    isSelected 
-                                      ? 'bg-emerald-700 text-white' 
-                                      : !d.isAvailable 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Check-Out Time Slots */}
-                        <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-Out Time Slot</span>
-                          <div className="grid grid-cols-4 gap-2">
-                            {checkOutTimeSlots.map((slot) => {
-                              const isSelected = checkOutTime === slot.time;
-                              const isAvail = slot.status === 'Available';
-                              return (
-                                <button
-                                  key={`out-time-m2-${slot.time}`}
-                                  type="button"
-                                  disabled={!isAvail}
-                                  onClick={() => setCheckOutTime(slot.time)}
-                                  className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                      : !isAvail
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                  }`}
-                                >
-                                  <span className="text-[11px] font-extrabold">{slot.time}</span>
-                                  <span className={`text-[7.5px] font-black uppercase ${
-                                    isSelected 
-                                      ? 'text-white' 
-                                      : !isAvail 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : slot.status}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                      )}
                     </div>
 
                     {/* Guest/Traveler Counter Block */}
