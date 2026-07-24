@@ -347,10 +347,10 @@ export const productService = {
   getProducts: async () => {
     const mergeWithBaseline = (fetchedList) => {
       const sanitizedFetched = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
-      const fetchedNames = new Set(sanitizedFetched.map(p => (p.name || '').toLowerCase().trim()));
-      
-      const baselineToAdd = DEFAULT_BASELINE_PRODUCTS.filter(bp => !fetchedNames.has((bp.name || '').toLowerCase().trim()));
-      return [...sanitizedFetched, ...baselineToAdd];
+      if (sanitizedFetched.length > 0) {
+        return sanitizedFetched;
+      }
+      return DEFAULT_BASELINE_PRODUCTS.map(sanitizeProduct);
     };
 
     const getLocalCache = () => {

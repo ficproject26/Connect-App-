@@ -255,11 +255,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               }
             }
             // Assign foodType (Veg / Non-Veg) for Food items
-            if (p.subNavbarCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani') {
+            if (p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani' || p.tag === 'Food') {
               const nameLower = (p.name || '').toLowerCase();
               const descLower = (p.description || '').toLowerCase();
               const catLower = (p.category || '').toLowerCase();
               if (
+                p.foodType === 'Non-Veg' ||
                 nameLower.includes('chicken') || 
                 nameLower.includes('mutton') || 
                 nameLower.includes('egg') || 
@@ -273,6 +274,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 descLower.includes('mutton')
               ) {
                 updated.foodType = 'Non-Veg';
+              } else if (p.foodType === 'Veg') {
+                updated.foodType = 'Veg';
               } else {
                 // If it's a biryani but not explicitly veg, let's make it Non-Veg to have variety
                 if (nameLower.includes('biryani') && !nameLower.includes('veg')) {
@@ -1165,14 +1168,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const jobsList = [
     ...staticJobsList,
-    ...products.filter(p => p.subNavbarCategory === 'Jobs').map(p => ({
+    ...products.filter(p => p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs').map(p => ({
       id: p.id,
       vendorId: p.vendorId,
+      vendorName: p.vendorName,
       title: p.name,
       department: p.category || 'General',
-      location: p.description?.split('\n')[0] || 'Remote (India)',
-      salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
-      type: 'Full-time',
+      location: p.location || p.description?.split('\n')[0] || 'Remote (India)',
+      salary: p.price ? `${(p.price || 0).toLocaleString()} L.P.A` : (p.salary ? String(p.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
+      type: p.jobType || p.type || 'Full-time',
+      experience: p.experience || p.exp || inferExperience(p.description, p.name),
+      skills: p.skills || p.requiredSkills,
       desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`,
       price: p.price,
       rating: p.rating
@@ -2275,8 +2281,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         const matchesRatingFilter = selectedRating === null || 
           product.rating >= selectedRating;
 
-        const matchesFoodType = selectedFoodType === 'All' ||
-          product.foodType === selectedFoodType;
+        const selType = (selectedFoodType || 'All').toLowerCase();
+        let matchesFoodType = true;
+        if (selType === 'veg') {
+          const pType = (product.foodType || '').toLowerCase();
+          matchesFoodType = pType === 'veg' || (!pType.includes('non') && pType.includes('veg'));
+        } else if (selType === 'non-veg' || selType === 'nonveg') {
+          const pType = (product.foodType || '').toLowerCase();
+          matchesFoodType = pType === 'non-veg' || pType === 'nonveg' || pType.includes('non');
+        } else {
+          // 'All', 'All Food', or default shows all food items (both Veg and Non-Veg)
+          matchesFoodType = true;
+        }
 
         return matchesSearch && matchesSubNavbar && matchesLocation && matchesCuisine && matchesDistance && matchesRatingFilter && matchesFoodType;
       }
@@ -3918,75 +3934,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   };
 
   const renderRecommendedForYou = () => {
-    if (products.length === 0) return null;
-    const recommendedItems = [
-      {
-        id: 'rec-1',
-        name: 'iPhone 15 (128GB)',
-        category: 'Mobiles',
-        price: 79900,
-        originalPrice: 90800,
-        discount: '12% OFF',
-        rating: 4.6,
-        image: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=300&auto=format&fit=crop&q=80',
-        tag: 'Products'
-      },
-      {
-        id: 'rec-2',
-        name: 'AC Repair Service',
-        category: 'Home Services',
-        price: 499,
-        originalPrice: 899,
-        discount: '44% OFF',
-        rating: 4.7,
-        image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=80',
-        tag: 'Services'
-      },
-      {
-        id: 'rec-3',
-        name: "Domino's Pizza",
-        category: 'Food',
-        price: 249,
-        originalPrice: 310,
-        discount: '20% OFF',
-        rating: 4.5,
-        image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&auto=format&fit=crop&q=80',
-        tag: 'Food'
-      },
-      {
-        id: 'rec-4',
-        name: 'Radisson Blu Hotel',
-        category: 'Hotels',
-        price: 4999,
-        originalPrice: 7500,
-        discount: '33% OFF',
-        rating: 4.6,
-        image: hotelActual,
-        tag: 'Stay'
-      },
-      {
-        id: 'rec-5',
-        name: 'Goa Trip Package',
-        category: 'Travel',
-        price: 8999,
-        originalPrice: 12500,
-        discount: '28% OFF',
-        rating: 4.8,
-        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&auto=format&fit=crop&q=80',
-        tag: 'Travel'
-      },
-      {
-        id: 'rec-6',
-        name: 'UI/UX Designer',
-        category: 'Full Time',
-        price: 35000,
-        originalPrice: 45000,
-        discount: 'Salary',
-        rating: 4.4,
-        image: skMockup,
-        tag: 'Jobs'
-      }
-    ].filter(item => !deletedProductIds.includes(item.id));
+    if (!activeProducts || activeProducts.length === 0) return null;
+    const recommendedItems = activeProducts.slice(0, 6).map(item => ({
+      ...item,
+      tag: item.subNavbarCategory || item.tag || 'Products'
+    }));
 
     return (
       <div className="space-y-4 text-left w-full">
@@ -4632,6 +4584,93 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     };
   };
 
+  const inferExperience = (desc = '', title = '', pExp = '') => {
+    if (pExp) return pExp;
+    const text = `${title} ${desc}`.toLowerCase();
+    if (text.includes('fresher') || text.includes('0-1 year') || text.includes('entry level')) return 'Fresher / 0-1 Year';
+    if (text.includes('1-3 years') || text.includes('1 to 3 years') || text.includes('1-3 yrs')) return '1 - 3 Years';
+    if (text.includes('2-5 years') || text.includes('2 to 5 years') || text.includes('2-5 yrs')) return '2 - 5 Years';
+    if (text.includes('3-5 years') || text.includes('3+ years') || text.includes('3+ yrs') || text.includes('3 years')) return '3+ Years';
+    if (text.includes('5+ years') || text.includes('5+ yrs') || text.includes('senior')) return '5+ Years';
+    if (text.includes('full experience') || text.includes('need full experience') || text.includes('experienced')) return '3+ Years (Experienced)';
+    return '1 - 3 Years';
+  };
+
+  const inferSkills = (title = '', category = '', desc = '', pSkills) => {
+    if (Array.isArray(pSkills) && pSkills.length > 0) return pSkills;
+    if (typeof pSkills === 'string' && pSkills.trim()) {
+      return pSkills.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    const text = `${title} ${category} ${desc}`.toLowerCase();
+    if (text.includes('hr') || text.includes('recruiter') || text.includes('talent')) {
+      return ['Recruitment', 'Talent Acquisition', 'HR Policies', 'Communication', 'Onboarding', 'ATS'];
+    }
+    if (text.includes('developer') || text.includes('software') || text.includes('full stack') || text.includes('frontend') || text.includes('backend') || text.includes('code') || text.includes('web') || text.includes('react') || text.includes('node') || text.includes('tech')) {
+      return ['JavaScript', 'React.js', 'Node.js', 'Express.js', 'MongoDB', 'HTML5 & CSS3', 'Git & GitHub', 'REST APIs'];
+    }
+    if (text.includes('designer') || text.includes('ui') || text.includes('ux') || text.includes('graphic')) {
+      return ['UI/UX Design', 'Figma', 'User Research', 'Wireframing', 'Prototyping', 'Adobe XD', 'Visual Design'];
+    }
+    if (text.includes('manager') || text.includes('management') || text.includes('operations') || text.includes('lead')) {
+      return ['Operations Management', 'Team Leadership', 'Project Planning', 'Business Strategy', 'Stakeholder Management', 'Process Optimization'];
+    }
+    if (text.includes('sales') || text.includes('marketing') || text.includes('business development') || text.includes('growth')) {
+      return ['Business Development', 'Client Acquisition', 'Sales Strategy', 'Lead Generation', 'CRM', 'Negotiation'];
+    }
+    if (text.includes('accountant') || text.includes('finance') || text.includes('tax') || text.includes('audit') || text.includes('tally')) {
+      return ['Financial Accounting', 'GST & Taxation', 'Tally Prime', 'Balance Sheet', 'Financial Analysis', 'Excel'];
+    }
+    if (text.includes('travel') || text.includes('tourism') || text.includes('hospitality') || text.includes('hotel')) {
+      return ['Customer Experience', 'Hospitality Management', 'Client Communication', 'Itinerary Planning', 'Reservations'];
+    }
+    if (text.includes('doctor') || text.includes('healthcare') || text.includes('medical') || text.includes('nurse')) {
+      return ['Patient Care', 'Clinical Diagnosis', 'Medical Consultation', 'Treatment Planning', 'Healthcare Operations'];
+    }
+    return ['Professional Experience', 'Communication Skills', 'Problem Solving', 'Team Collaboration', 'Role-Specific Knowledge'];
+  };
+
+  const inferApplicationTips = (title = '', category = '', desc = '') => {
+    const text = `${title} ${category} ${desc}`.toLowerCase();
+    if (text.includes('developer') || text.includes('software') || text.includes('full stack') || text.includes('frontend') || text.includes('backend') || text.includes('code') || text.includes('web')) {
+      return [
+        "Highlight your key technical stack and frameworks",
+        "Include GitHub links or live project URLs in your resume",
+        "Detail your contributions to key features & backend systems",
+        "Ensure problem-solving & algorithmic experience is listed"
+      ];
+    }
+    if (text.includes('designer') || text.includes('ui') || text.includes('ux')) {
+      return [
+        "Provide a link to your Figma or Behance portfolio",
+        "Showcase user research and wireframing case studies",
+        "Highlight experience with design systems & tools",
+        "Include before/after design improvements"
+      ];
+    }
+    if (text.includes('manager') || text.includes('operations') || text.includes('lead')) {
+      return [
+        "Quantify your achievements (team size, efficiency gains, revenue)",
+        "Highlight project lifecycle & cross-functional leadership",
+        "Include certifications (PMP, Agile/Scrum) if applicable",
+        "Tailor your application summary for executive visibility"
+      ];
+    }
+    if (text.includes('sales') || text.includes('marketing') || text.includes('business development')) {
+      return [
+        "Detail sales targets met, deal sizes, or conversion rates",
+        "Highlight CRM tools proficiency (Salesforce, HubSpot)",
+        "Include key client retention & growth statistics",
+        "Add a short pitch in your application notes"
+      ];
+    }
+    return [
+      "Please ensure your resume is updated with recent experience",
+      "Tailor your application summary to match role requirements",
+      "Include relevant certifications and skill keywords",
+      "Double-check contact details and phone number before submitting"
+    ];
+  };
+
   const formatJobSalary = (job) => {
     if (!job) return '3LPA';
     let raw = '';
@@ -4959,7 +4998,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     onChange={(e) => setSelectedBusType(e.target.value)}
                     className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
                   >
-                    <option value="">All Bus Types</option>
+                    <option value="">Type of Vehicle</option>
                     <option value="AC">AC</option>
                     <option value="Non-AC">Non-AC</option>
                   </select>
@@ -5103,18 +5142,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         title: 'Full Stack Developer',
                         department: 'Engineering',
                         location: 'Bangalore, Karnataka (On-site)',
-                        salary: '₹3,00,000 LPA',
+                        salary: '3,00,000 L.P.A',
                         type: 'Full-time',
                         id: 'CAT-FSD-2026-1024',
                         vendorName: 'Connect App Technologies',
                         desc: 'We are looking for a motivated Full Stack Developer who is passionate about building scalable web applications and has a strong problem-solving mindset.'
                       };
                       
-                      const skillsList = (selectedJob.title || '').toLowerCase().includes('hr') 
-                        ? ['Recruitment', 'Communication', 'HR Policies', 'Negotiation', 'Onboarding', 'ATS']
-                        : (selectedJob.title || '').toLowerCase().includes('travel')
-                        ? ['Customer Experience', 'Hospitality', 'Communication', 'Itinerary Planning', 'VIP Care']
-                        : ['JavaScript', 'React.js', 'Node.js', 'Express.js', 'MongoDB', 'HTML', 'CSS', 'Git'];
+                      const skillsList = inferSkills(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.skills);
+                      const applicationTips = inferApplicationTips(selectedJob.title, selectedJob.department, selectedJob.desc);
 
                       return (
                         <>
@@ -5449,7 +5485,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <Clock className="w-3.5 h-3.5 text-slate-400" />
                                       Experience
                                     </span>
-                                    <span className="font-bold text-slate-800 dark:text-white">0 - 2 Years</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">{selectedJob.experience || inferExperience(selectedJob.desc, selectedJob.title)}</span>
                                   </div>
 
                                   <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
@@ -5457,7 +5493,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <Tag className="w-3.5 h-3.5 text-slate-400" />
                                       Salary
                                     </span>
-                                    <span className="font-extrabold text-slate-900 dark:text-white">{selectedJob.salary}</span>
+                                    <span className="font-extrabold text-slate-900 dark:text-white">{(selectedJob.salary || '').replace(/₹/g, '').trim()}</span>
                                   </div>
 
                                   <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
@@ -5517,10 +5553,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     <span>Application Tips</span>
                                   </h5>
                                   <ul className="space-y-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-500 shrink-0" /> Please ensure your resume is updated</li>
-                                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-500 shrink-0" /> Include relevant skills and experience</li>
-                                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-500 shrink-0" /> A cover letter increases your chances</li>
-                                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-500 shrink-0" /> Applications with portfolio get more views</li>
+                                    {applicationTips.map((tip, idx) => (
+                                      <li key={idx} className="flex items-center gap-1.5">
+                                        <Check className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        <span>{tip}</span>
+                                      </li>
+                                    ))}
                                   </ul>
                                 </div>
                               </div>
@@ -5767,7 +5805,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
                                           addToCart(product); 
-                                          triggerNotification(`${product.name} added to cart!`); 
                                         }} 
                                         className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-0.5 border border-slate-200/40 dark:border-slate-750/30 leading-none h-9"
                                       >
@@ -7288,7 +7325,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <button
                       onClick={() => {
                         addToCart(selectedProduct);
-                        triggerNotification(`${selectedProduct.name} added to cart!`);
                       }}
                       className="flex-1 py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-12"
                     >
