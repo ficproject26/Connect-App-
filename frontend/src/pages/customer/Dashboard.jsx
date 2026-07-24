@@ -5478,6 +5478,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                           >
                                             <Trash2 className="w-4 h-4" />
                                           </button>
+                                        )}
+                                      </div>
 
                                       <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors bg-white dark:bg-slate-950">
                                         <input
@@ -10502,7 +10504,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
                       </div>
-                    </div>
+                      )}
 
                     {/* Guest/Traveler Counter Block */}
                     {(isStayItem || isTravelItem) && (
@@ -10961,6 +10963,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </div>
           </div>
         </div>
+      )}
       {/* Interactive Resume Preview Modal */}
       {isPreviewResumeOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
