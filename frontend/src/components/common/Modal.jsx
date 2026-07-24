@@ -44,14 +44,18 @@ export default function JobsModal({ isOpen, onClose }) {
   }, [isOpen]);
 
   const jobsList = vendorJobs.map(j => ({
-    id: j.id,
+    id: j.id || j._id,
     vendorId: j.vendorId,
-    title: j.name,
-    department: j.category || 'General',
-    location: j.description?.split('\n')[0] || 'Remote (India)',
-    salary: j.price ? `₹${(j.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary',
-    type: 'Full-time',
-    desc: j.description || `${j.name} position at ${j.vendorName || 'our partner organization'}.`
+    vendorName: j.vendorName || j.brand || 'Partner Organization',
+    title: j.jobTitle || j.title || j.name || 'Job Position',
+    department: j.department || j.category || 'General',
+    location: j.jobLocation || j.location || j.city || j.vendorCity || j.locationType || 'Bangalore / Remote',
+    salary: j.price ? `₹${(j.price || 0).toLocaleString()} L.P.A` : (j.salary ? String(j.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
+    type: j.jobType || j.type || 'Full-time',
+    experience: j.experience || j.exp || j.jobExperience || '1 - 3 Years',
+    skills: j.skills || j.skillsRequired || j.requiredSkills || j.tags,
+    desc: j.description || j.jobDescription || j.desc || `${j.name} position.`,
+    createdAt: j.createdAt || j.created_at || j.postedOn || j.postedDate
   }));
 
   if (!isOpen) return null;

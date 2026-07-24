@@ -278,26 +278,35 @@ const inferSkills = (title = '', category = '', desc = '', pSkills) => {
   return ['Professional Experience', 'Communication Skills', 'Problem Solving', 'Team Collaboration', 'Role-Specific Knowledge'];
 };
 
-const inferApplicationTips = (title = '', category = '', desc = '') => {
+const inferApplicationTips = (title = '', category = '', desc = '', pTips) => {
+  if (Array.isArray(pTips) && pTips.length > 0) return pTips;
+  if (typeof pTips === 'string' && pTips.trim()) {
+    return pTips.split(/[,|\n]/).map(t => t.trim()).filter(Boolean);
+  }
   const text = `${title} ${category} ${desc}`.toLowerCase();
   if (text.includes('developer') || text.includes('software') || text.includes('full stack') || text.includes('frontend') || text.includes('backend') || text.includes('code') || text.includes('web')) {
     return [
-      "Highlight your key technical stack and frameworks",
-      "Include GitHub links or live project URLs in your resume",
-      "Detail your contributions to key features & backend systems",
-      "Ensure problem-solving & algorithmic experience is listed"
+      "Please ensure your resume is updated with recent technical experience",
+      "Tailor your project summary to highlight full stack & framework skills",
+      "Include GitHub profile or live application links in your submission",
+      "Double-check contact details before submitting your application"
     ];
   }
   if (text.includes('designer') || text.includes('ui') || text.includes('ux')) {
     return [
       "Provide a link to your Figma or Behance portfolio",
       "Showcase user research and wireframing case studies",
-      "Highlight experience with design systems & tools",
-      "Include before/after design improvements"
+      "Highlight experience with modern design systems & UI tools",
+      "Double-check portfolio links before submitting"
     ];
   }
-  if (text.includes('manager') || text.includes('operations') || text.includes('lead')) {
-    return [
+  return [
+    "Please ensure your resume is updated with recent experience",
+    "Tailor your application summary to match role requirements",
+    "Include relevant certifications and skill keywords",
+    "Double-check contact info & phone number before submitting"
+  ];
+};
       "Quantify your achievements (team size, efficiency gains, revenue)",
       "Highlight project lifecycle & cross-functional leadership",
       "Include certifications (PMP, Agile/Scrum) if applicable",
@@ -341,6 +350,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [childCount, setChildCount] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [flippedCardKey, setFlippedCardKey] = useState(null);
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   useEffect(() => {
     const loadVendorProducts = async () => {
@@ -1282,17 +1292,19 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     ...products.filter(p => p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs' || p.category === 'Jobs' || p.category === 'IT Jobs' || p.category === 'Full Time').map(p => ({
       id: p.id || p._id,
       vendorId: p.vendorId,
-      vendorName: p.vendorName || p.brand || 'Partner Organization',
-      title: p.name,
-      department: p.department || p.category || 'General',
-      location: p.jobLocation || p.location || p.city || p.description?.split('\n')[0] || 'Remote (India)',
-      salary: p.price ? `${(p.price || 0).toLocaleString()} L.P.A` : (p.salary ? String(p.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
+      vendorName: p.vendorName || p.brand || p.companyName || p.vendor_name || 'Partner Organization',
+      title: p.jobTitle || p.title || p.name || p.role || p.designation || 'Job Position',
+      department: p.department || p.category || p.jobCategory || 'General',
+      location: p.jobLocation || p.location || p.city || p.vendorCity || p.locationType || 'Bangalore / Remote',
+      salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : (p.salary ? String(p.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
       type: inferJobType(p),
       experience: inferExperience(p.description, p.name, p.experience || p.exp || p.jobExperience || p.experience_required),
-      skills: p.skills || p.requiredSkills,
-      desc: p.description || `${p.name} position at ${p.vendorName || 'our partner organization'}.`,
+      skills: p.skills || p.skillsRequired || p.requiredSkills || p.tags,
+      desc: p.description || p.jobDescription || p.desc || p.details || `${p.name || 'Job'} position.`,
       price: p.price,
-      rating: p.rating
+      rating: p.rating,
+      createdAt: p.createdAt || p.created_at || p.postedOn || p.postedDate || p.date,
+      applicationTips: p.applicationTips || p.tips || p.instructions || p.howToApply
     }))
   ];
 
@@ -5191,16 +5203,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           vendorName: selectedProduct.vendorName || selectedProduct.brand || 'Partner Organization',
                           title: selectedProduct.name,
                           department: selectedProduct.department || selectedProduct.category || 'General',
-                          location: selectedProduct.jobLocation || selectedProduct.location || selectedProduct.city || selectedProduct.description?.split('\n')[0] || 'Remote (India)',
-                          salary: selectedProduct.price ? `${(selectedProduct.price || 0).toLocaleString()} L.P.A` : (selectedProduct.salary ? String(selectedProduct.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
+                          location: selectedProduct.jobLocation || selectedProduct.location || selectedProduct.city || selectedProduct.vendorCity || selectedProduct.locationType || 'Bangalore / Remote',
+                          salary: selectedProduct.price ? `₹${(selectedProduct.price || 0).toLocaleString()} L.P.A` : (selectedProduct.salary ? String(selectedProduct.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
                           type: inferJobType(selectedProduct),
                           experience: inferExperience(selectedProduct.description, selectedProduct.name, selectedProduct.experience || selectedProduct.exp || selectedProduct.jobExperience || selectedProduct.experience_required),
-                          skills: selectedProduct.skills || selectedProduct.requiredSkills,
-                          desc: selectedProduct.description || `${selectedProduct.name} position.`
+                          skills: selectedProduct.skills || selectedProduct.skillsRequired || selectedProduct.requiredSkills || selectedProduct.tags,
+                          desc: selectedProduct.description || `${selectedProduct.name} position.`,
+                          createdAt: selectedProduct.createdAt || selectedProduct.created_at || selectedProduct.postedOn || selectedProduct.postedDate,
+                          applicationTips: selectedProduct.applicationTips || selectedProduct.tips
                         } : null) || {
                           title: 'Full Stack Developer',
                           department: 'Engineering',
-                          location: 'Bangalore, Karnataka (On-site)',
+                          location: 'Bangalore, Karnataka',
                           salary: '3,00,000 L.P.A',
                           type: 'Full-time',
                           experience: '1 - 3 Years',
@@ -5210,7 +5224,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         };
                       
                       const skillsList = inferSkills(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.skills);
-                      const applicationTips = inferApplicationTips(selectedJob.title, selectedJob.department, selectedJob.desc);
+                      const applicationTips = inferApplicationTips(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.applicationTips);
+
+                      const formatJobPostedDate = (dateVal) => {
+                        if (!dateVal) return '20 May 2026';
+                        const d = new Date(dateVal);
+                        if (isNaN(d.getTime())) return String(dateVal);
+                        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                      };
 
                       return (
                         <>
@@ -5577,7 +5599,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
                                       Posted On
                                     </span>
-                                    <span className="font-bold text-slate-800 dark:text-white">20 May 2026</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">
+                                      {formatJobPostedDate(selectedJob.createdAt || selectedJob.postedOn || selectedJob.created_at)}
+                                    </span>
                                   </div>
                                 </div>
 
@@ -5586,12 +5610,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     Job Description
                                   </h4>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                                    {selectedJob.desc}
+                                    {isDescExpanded 
+                                      ? (selectedJob.desc || selectedJob.description) 
+                                      : (selectedJob.desc || selectedJob.description || '').slice(0, 150) + (((selectedJob.desc || selectedJob.description || '').length > 150) ? '...' : '')
+                                    }
                                   </p>
-                                  <button type="button" className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1 border-none bg-transparent cursor-pointer p-0">
-                                    <span>View Full Description</span>
-                                    <ChevronRight className="w-3.5 h-3.5" />
-                                  </button>
+                                  {((selectedJob.desc || selectedJob.description || '').length > 150) && (
+                                    <button 
+                                      type="button" 
+                                      onClick={() => setIsDescExpanded(!isDescExpanded)}
+                                      className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1 border-none bg-transparent cursor-pointer p-0"
+                                    >
+                                      <span>{isDescExpanded ? 'Hide Description' : 'View Full Description'}</span>
+                                      <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isDescExpanded ? 'rotate-90' : ''}`} />
+                                    </button>
+                                  )}
                                 </div>
 
                                 <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2">
