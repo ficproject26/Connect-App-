@@ -9800,7 +9800,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
                       </div>
-                      )}
                     </div>
 
                     {/* Guest/Traveler Counter Block */}
@@ -10380,7 +10379,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           </div>
                         </div>
                       </div>
-                      )}
                     </div>
 
                     {/* Guest/Traveler Counter Block */}
