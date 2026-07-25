@@ -36,7 +36,7 @@ import {
   LifeBuoy, LogOut, MapPin, Phone, PhoneCall, Package, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
   Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar,
-  Wifi, Crown, Headphones
+  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
