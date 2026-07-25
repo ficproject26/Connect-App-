@@ -9706,7 +9706,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       {/* ==================== 1. SCHEDULE MODAL (Screenshot 1 style) ==================== */}
       {activeScheduleModalItem && (() => {
         const terms = getModalTerms(activeScheduleModalItem);
-        const isStayItem = terms.summaryLabel === 'Hotel Stay';
+        const isStayItem = terms.summaryLabel === 'Hotel Stay' || 
+          activeScheduleModalItem?.subNavbarCategory === 'Stay' || 
+          activeScheduleModalItem?.mainCategory === 'Stay' || 
+          activeScheduleModalItem?.tag === 'Stay' || 
+          (activeScheduleModalItem?.category || '').toLowerCase().includes('stay') || 
+          (activeScheduleModalItem?.category || '').toLowerCase().includes('hotel');
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         const basePrice = activeScheduleModalItem.price || 0;
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
@@ -10021,6 +10026,99 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
+                      {/* Check-Out Details Card (Stay Category Only) */}
+                      {isStayItem && (
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3 mt-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" /> Check-Out Details
+                            </span>
+                            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
+                              {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
+                            </span>
+                          </div>
+
+                          {/* Check-Out Date Strip */}
+                          <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  const container = e.currentTarget.parentElement?.nextElementSibling;
+                                  if (container) {
+                                    container.scrollBy({ left: 150, behavior: 'smooth' });
+                                  }
+                                }}
+                                className="text-[9px] font-extrabold text-emerald-500 hover:text-emerald-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
+                              >
+                                Scroll for dates →
+                              </button>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14).map((d) => {
+                                const isSelected = stayCheckOutDate === d.dateStr;
+                                const isAfterIn = d.dateStr > stayCheckInDate;
+                                return (
+                                  <button
+                                    key={`out-date-${d.dateStr}`}
+                                    type="button"
+                                    disabled={!d.isAvailable || !isAfterIn}
+                                    onClick={() => setStayCheckOutDate(d.dateStr)}
+                                    className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
+                                      isSelected
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
+                                        : (!d.isAvailable || !isAfterIn)
+                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
+                                          : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                    }`}
+                                  >
+                                    <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
+                                    <span className="text-sm font-black">{d.dayNumber}</span>
+                                    <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
+                                    <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
+                                      isSelected 
+                                        ? 'bg-emerald-700 text-white' 
+                                        : (!d.isAvailable || !isAfterIn)
+                                          ? 'text-red-500' 
+                                          : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                                    }`}>
+                                      {isSelected ? 'SELECTED' : (!d.isAvailable || !isAfterIn) ? 'INVALID' : 'AVAILABLE'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Check-Out Time Slots */}
+                          <div>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-Out Time Slot</span>
+                            <div className="grid grid-cols-5 gap-2">
+                              {['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '06:00 PM'].map((tSlot) => {
+                                const isSelected = checkOutTime === tSlot;
+                                return (
+                                  <button
+                                    key={`out-time-${tSlot}`}
+                                    type="button"
+                                    onClick={() => setCheckOutTime(tSlot)}
+                                    className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
+                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                    }`}
+                                  >
+                                    <span className="text-[11px] font-extrabold">{tSlot}</span>
+                                    <span className={`text-[7.5px] font-black uppercase ${isSelected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                      {isSelected ? 'SELECTED' : 'AVAILABLE'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
 
@@ -10338,7 +10436,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       {/* ==================== 2. BOOK NOW MODAL (Screenshot 2 style) ==================== */}
       {activeBookNowModalItem && (() => {
         const terms = getModalTerms(activeBookNowModalItem);
-        const isStayItem = terms.summaryLabel === 'Hotel Stay';
+        const isStayItem = terms.summaryLabel === 'Hotel Stay' || 
+          activeBookNowModalItem?.subNavbarCategory === 'Stay' || 
+          activeBookNowModalItem?.mainCategory === 'Stay' || 
+          activeBookNowModalItem?.tag === 'Stay' || 
+          (activeBookNowModalItem?.category || '').toLowerCase().includes('stay') || 
+          (activeBookNowModalItem?.category || '').toLowerCase().includes('hotel');
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         const basePrice = activeBookNowModalItem.price || 0;
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
@@ -10559,6 +10662,99 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       </div>
 
+                      {/* Check-Out Details Card (Stay Category Only) */}
+                      {isStayItem && (
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3 mt-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" /> Check-Out Details
+                            </span>
+                            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
+                              {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
+                            </span>
+                          </div>
+
+                          {/* Check-Out Date Strip */}
+                          <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  const container = e.currentTarget.parentElement?.nextElementSibling;
+                                  if (container) {
+                                    container.scrollBy({ left: 150, behavior: 'smooth' });
+                                  }
+                                }}
+                                className="text-[9px] font-extrabold text-emerald-500 hover:text-emerald-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
+                              >
+                                Scroll for dates →
+                              </button>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14).map((d) => {
+                                const isSelected = stayCheckOutDate === d.dateStr;
+                                const isAfterIn = d.dateStr > stayCheckInDate;
+                                return (
+                                  <button
+                                    key={`out-date-m2-${d.dateStr}`}
+                                    type="button"
+                                    disabled={!d.isAvailable || !isAfterIn}
+                                    onClick={() => setStayCheckOutDate(d.dateStr)}
+                                    className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
+                                      isSelected
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
+                                        : (!d.isAvailable || !isAfterIn)
+                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
+                                          : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                    }`}
+                                  >
+                                    <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
+                                    <span className="text-sm font-black">{d.dayNumber}</span>
+                                    <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
+                                    <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
+                                      isSelected 
+                                        ? 'bg-emerald-700 text-white' 
+                                        : (!d.isAvailable || !isAfterIn)
+                                          ? 'text-red-500' 
+                                          : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                                    }`}>
+                                      {isSelected ? 'SELECTED' : (!d.isAvailable || !isAfterIn) ? 'INVALID' : 'AVAILABLE'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Check-Out Time Slots */}
+                          <div>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-Out Time Slot</span>
+                            <div className="grid grid-cols-5 gap-2">
+                              {['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '06:00 PM'].map((tSlot) => {
+                                const isSelected = checkOutTime === tSlot;
+                                return (
+                                  <button
+                                    key={`out-time-m2-${tSlot}`}
+                                    type="button"
+                                    onClick={() => setCheckOutTime(tSlot)}
+                                    className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
+                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                    }`}
+                                  >
+                                    <span className="text-[11px] font-extrabold">{tSlot}</span>
+                                    <span className={`text-[7.5px] font-black uppercase ${isSelected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                      {isSelected ? 'SELECTED' : 'AVAILABLE'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
 
