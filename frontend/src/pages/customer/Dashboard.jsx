@@ -5901,7 +5901,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             <div>
                               <h4 className="text-[14px] sm:text-[15px] font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-blue-600 transition-colors">{product.name}</h4>
                               <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1 font-medium">
-                                {product.description || `All types of ${(product.category || '').toLowerCase()} services`}
+                                {(() => {
+                                  if (product.subNavbarCategory === 'Stay' || product.tag === 'Stay') {
+                                    const desc = (product.description || '').trim();
+                                    if (!desc || /^\d+$/.test(desc) || desc.length < 4) {
+                                      return product.roomType || product.subcategory || product.category || 'Luxury Room';
+                                    }
+                                  }
+                                  return product.description || `All types of ${(product.category || '').toLowerCase()} services`;
+                                })()}
                               </p>
                               
                               {/* Rating & Duration Row */}
@@ -10019,7 +10027,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     {/* Guest/Traveler Counter Block */}
                     {(isStayItem || isTravelItem) && (
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
-                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Travelers / Guests</span>
+                          {isStayItem && (
+                            <span className="text-[9.5px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-900/30">
+                              Max {Number(activeScheduleModalItem?.guests || activeScheduleModalItem?.maxGuests || activeScheduleModalItem?.capacity || getGuestsCount(activeScheduleModalItem) || 4)} Guests / Room
+                            </span>
+                          )}
+                        </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
                           {/* Adults Selector */}
@@ -10039,7 +10054,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
                               <button 
                                 type="button"
-                                onClick={() => setAdultCount(prev => prev + 1)}
+                                onClick={() => {
+                                  const maxAllowed = Number(activeScheduleModalItem?.guests || activeScheduleModalItem?.maxGuests || activeScheduleModalItem?.capacity || getGuestsCount(activeScheduleModalItem) || 4);
+                                  if (adultCount + childCount >= maxAllowed) {
+                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    return;
+                                  }
+                                  setAdultCount(prev => prev + 1);
+                                }}
                                 className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
@@ -10064,7 +10086,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
                               <button 
                                 type="button"
-                                onClick={() => setChildCount(prev => prev + 1)}
+                                onClick={() => {
+                                  const maxAllowed = Number(activeScheduleModalItem?.guests || activeScheduleModalItem?.maxGuests || activeScheduleModalItem?.capacity || getGuestsCount(activeScheduleModalItem) || 4);
+                                  if (adultCount + childCount >= maxAllowed) {
+                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    return;
+                                  }
+                                  setChildCount(prev => prev + 1);
+                                }}
                                 className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
@@ -10536,7 +10565,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     {/* Guest/Traveler Counter Block */}
                     {(isStayItem || isTravelItem) && (
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-left select-none space-y-3">
-                        <span className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-wider block">Travelers / Guests</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Travelers / Guests</span>
+                          {isStayItem && (
+                            <span className="text-[9.5px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-900/30">
+                              Max {Number(activeBookNowModalItem?.guests || activeBookNowModalItem?.maxGuests || activeBookNowModalItem?.capacity || getGuestsCount(activeBookNowModalItem) || 4)} Guests / Room
+                            </span>
+                          )}
+                        </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
                           {/* Adults Selector */}
@@ -10556,7 +10592,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{adultCount}</span>
                               <button 
                                 type="button"
-                                onClick={() => setAdultCount(prev => prev + 1)}
+                                onClick={() => {
+                                  const maxAllowed = Number(activeBookNowModalItem?.guests || activeBookNowModalItem?.maxGuests || activeBookNowModalItem?.capacity || getGuestsCount(activeBookNowModalItem) || 4);
+                                  if (adultCount + childCount >= maxAllowed) {
+                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    return;
+                                  }
+                                  setAdultCount(prev => prev + 1);
+                                }}
                                 className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
@@ -10581,7 +10624,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               <span className="font-black text-xs w-4 text-center text-slate-800 dark:text-white">{childCount}</span>
                               <button 
                                 type="button"
-                                onClick={() => setChildCount(prev => prev + 1)}
+                                onClick={() => {
+                                  const maxAllowed = Number(activeBookNowModalItem?.guests || activeBookNowModalItem?.maxGuests || activeBookNowModalItem?.capacity || getGuestsCount(activeBookNowModalItem) || 4);
+                                  if (adultCount + childCount >= maxAllowed) {
+                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    return;
+                                  }
+                                  setChildCount(prev => prev + 1);
+                                }}
                                 className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-black text-slate-700 dark:text-slate-200 cursor-pointer border-none text-xs active:scale-95"
                               >
                                 +
