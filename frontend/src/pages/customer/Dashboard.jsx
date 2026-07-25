@@ -6892,22 +6892,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </div>
 
             {/* Price and Book Ticket actions panel */}
-            <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-row items-center justify-between gap-4 mt-2">
-              <div className="text-left w-full md:w-auto">
-                <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Ticket Price</span>
-                <div className="flex items-baseline gap-2 mt-1.5">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white">₹{(selectedProduct.price || 1200).toLocaleString()}</span>
-                  <span className="text-xs text-slate-400 line-through">₹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
+            <div className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 sm:gap-4 mt-2">
+              <div className="text-left w-full sm:w-auto flex flex-row sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2 border-b sm:border-b-0 pb-2 sm:pb-0 border-slate-200/60 dark:border-slate-800/60">
+                <div>
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block leading-none">Ticket Price</span>
+                  <div className="flex items-baseline gap-2 mt-1.5">
+                    <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">₹{(selectedProduct.price || 1200).toLocaleString()}</span>
+                    <span className="text-xs text-slate-400 line-through">₹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
+                  </div>
                 </div>
-                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 mt-1 block leading-none">
+                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 block leading-none">
                   {selectedProduct.discount || '20% OFF Member Special'}
                 </span>
               </div>
 
-              <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => triggerNotification("Initiating chat with travel desk agent...")}
-                  className="px-5 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-black uppercase transition-all bg-transparent h-12 cursor-pointer"
+                  className="flex-1 sm:flex-none px-3.5 sm:px-5 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-black uppercase transition-all bg-transparent h-11 sm:h-12 cursor-pointer whitespace-nowrap"
                 >
                   Chat Agent
                 </button>
@@ -6919,7 +6921,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     setSelectedModalType('AC Sleeper (2+1)');
                     setSelectedTimeOfDayTab('Evening');
                   }}
-                  className="flex-1 md:flex-none px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 border-none h-12 cursor-pointer"
+                  className="flex-1 sm:flex-none px-4 sm:px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 border-none h-11 sm:h-12 cursor-pointer whitespace-nowrap"
                 >
                   Book Ticket
                 </button>
@@ -7690,26 +7692,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Description & Action buttons */}
             <div className="space-y-4 mt-6">
               {/* Action Buttons Row */}
-              <div className="flex items-center gap-4 pt-2 w-full">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-4 pt-2 w-full">
                 <button
                   onClick={() => triggerNotification("Initiating chat session...")}
-                  className="px-5 py-3.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent h-12"
+                  className="w-full sm:w-auto px-4 py-3 sm:py-3.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent h-11 sm:h-12 shrink-0"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                   <span>{getActionButtons(selectedProduct).chatText}</span>
                 </button>
                 
                 {isVendorProductUnavailable(selectedProduct) ? (
-                  <div className="flex-1 py-3.5 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 h-12 select-none">
+                  <div className="flex-1 py-3.5 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 h-11 sm:h-12 select-none">
                     <span>Vendor Currently Unavailable (Out of Stock)</span>
                   </div>
                 ) : getActionButtons(selectedProduct).showBooking ? (
-                  <>
+                  <div className="flex items-center gap-2 w-full sm:flex-1">
                     <button
                       onClick={() => {
                         addToCart(selectedProduct);
                       }}
-                      className="flex-1 py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-12"
+                      className="flex-1 py-3 sm:py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-11 sm:h-12"
                     >
                       <ShoppingCart className="w-4 h-4" />
                       <span>{getActionButtons(selectedProduct).actionText}</span>
@@ -7729,7 +7731,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                           triggerNotification(`Proceeding to checkout...`);
                         }
                       }}
-                      className="flex-1 py-3.5 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
+                      className="flex-1 py-3 sm:py-3.5 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-11 sm:h-12"
                     >
                       {selectedProduct.subNavbarCategory === 'Services' ? (
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -7738,7 +7740,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       )}
                       <span>{getActionButtons(selectedProduct).bookingText}</span>
                     </button>
-                  </>
+                  </div>
                 ) : (
                   <button
                     onClick={() => {
@@ -7747,7 +7749,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       setAppliedJobId(selectedProduct.id);
                       triggerNotification(`Applying for ${selectedProduct.name}...`);
                     }}
-                    className="flex-1 py-3.5 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-12"
+                    className="w-full sm:flex-1 py-3 sm:py-3.5 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-11 sm:h-12"
                   >
                     <span>{getActionButtons(selectedProduct).actionText}</span>
                   </button>
