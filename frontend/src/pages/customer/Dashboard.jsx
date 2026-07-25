@@ -160,16 +160,31 @@ const getModalTerms = (item) => {
       summaryLabel: "Travel Ticket"
     };
   }
-  // Default: Services/Hospitals
+  const isMedical = catLower.includes('hospital') || catLower.includes('doctor') || catLower.includes('clinic') || catLower.includes('medical') || catLower.includes('health') || nameLower.includes('doctor') || nameLower.includes('consultation') || tagLower.includes('hospital') || tagLower.includes('doctor');
+
+  if (isMedical) {
+    return {
+      title: 'Schedule Doctor Appointment',
+      label: "Doctor",
+      category: item.category || "Specialist",
+      type1: "Video Consultation",
+      type2: "In-clinic Visit",
+      feeLabel: "Consultation Fee",
+      durationText: "Consultation duration: 30 mins | Please arrive 10 mins early",
+      summaryLabel: "Doctor"
+    };
+  }
+
+  // General Services (AC Repairs, Appliance, Cleaning, Electrician, Plumbing, Maintenance, Repair)
   return {
-    title: 'Schedule Appointment',
-    label: "Doctor",
-    category: item.category || "Specialist",
-    type1: "Video Consultation",
-    type2: "In-clinic Visit",
-    feeLabel: "Consultation Fee",
-    durationText: "Consultation duration: 30 mins | Please arrive 10 mins early",
-    summaryLabel: "Doctor"
+    title: 'Book Service Appointment',
+    label: "Technician",
+    category: item.category || "Home Service",
+    type1: "Doorstep Service",
+    type2: "Center / Store Visit",
+    feeLabel: "Service Fee",
+    durationText: "Service duration: 45-60 mins | Technician will arrive at scheduled time",
+    summaryLabel: "Service"
   };
 };
 
@@ -7056,18 +7071,39 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       ? selectedProduct.images
       : [selectedProduct.image];
 
+    // Helper to check if a service is medical/hospital vs general service (AC repairs, etc.)
+    const isMedicalService = (product) => {
+      if (!product) return false;
+      const cat = (product.category || '').toLowerCase();
+      const name = (product.name || '').toLowerCase();
+      const tag = (product.tag || '').toLowerCase();
+      const subNav = (product.subNavbarCategory || '').toLowerCase();
+      return cat.includes('hospital') || cat.includes('doctor') || cat.includes('clinic') || cat.includes('medical') || cat.includes('health') || name.includes('doctor') || name.includes('consultation') || tag.includes('hospital') || tag.includes('doctor');
+    };
+
     // Helper to get stats badges dynamically
     const getStatsBadges = (product) => {
       const subCat = product.subNavbarCategory;
       const cat = product.category;
+      const isMedical = isMedicalService(product);
       
-      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital') {
-        return [
-          { value: "12+", label: "Years Exp.", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>, color: "text-blue-500" },
-          { value: "2500+", label: "Patients", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, color: "text-indigo-500" },
-          { value: "98%", label: "Positive Rate", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>, color: "text-emerald-500" },
-          { value: String(product.rating || '4.5'), label: "Rating", isStar: true, color: "text-amber-500" }
-        ];
+      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital' || isMedical) {
+        if (isMedical) {
+          return [
+            { value: "12+", label: "Years Exp.", icon: (className) => <Stethoscope className={className} />, color: "text-blue-500" },
+            { value: "2500+", label: "Patients", icon: (className) => <Users className={className} />, color: "text-indigo-500" },
+            { value: "98%", label: "Positive Rate", icon: (className) => <ThumbsUp className={className} />, color: "text-emerald-500" },
+            { value: String(product.rating || '4.5'), label: "Rating", isStar: true, color: "text-amber-500" }
+          ];
+        } else {
+          // General Home / Repair / Technical Services (like AC repairs)
+          return [
+            { value: "10+", label: "Years Exp.", icon: (className) => <Award className={className} />, color: "text-blue-500" },
+            { value: "5000+", label: "Jobs Done", icon: (className) => <Wrench className={className} />, color: "text-indigo-500" },
+            { value: "99%", label: "Satisfaction", icon: (className) => <CheckCircle2 className={className} />, color: "text-emerald-500" },
+            { value: String(product.rating || '4.5'), label: "Rating", isStar: true, color: "text-amber-500" }
+          ];
+        }
       } else if (subCat === 'Stay' || subCat === 'Travel') {
         return [
           { value: "Elite", label: "Tier Verified", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>, color: "text-blue-500" },
@@ -7098,14 +7134,25 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const getKeyDetails = (product) => {
       const subCat = product.subNavbarCategory;
       const cat = product.category;
+      const isMedical = isMedicalService(product);
       
-      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital') {
-        return [
-          { title: 'Video Consultation', val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
-          { title: 'In-clinic Visit', val: "Available", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
-          { title: 'Response Time', val: "30 mins", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: 'Languages', val: "English, Hindi", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c-.313 1.565-.953 3.051-1.894 4.387" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
-        ];
+      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital' || isMedical) {
+        if (isMedical) {
+          return [
+            { title: 'Video Consultation', val: "Available", icon: (className) => <Video className={className} />, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+            { title: 'In-clinic Visit', val: "Available", icon: (className) => <Building className={className} />, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+            { title: 'Response Time', val: "30 mins", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+            { title: 'Languages', val: "English, Hindi", icon: (className) => <Globe className={className} />, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          ];
+        } else {
+          // General Services (AC repairs, Appliance, Cleaning, Electrician, Plumbing)
+          return [
+            { title: 'Service Location', val: "Doorstep / On-Site", icon: (className) => <Home className={className} />, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
+            { title: 'Service Warranty', val: "30 Days Warranty", icon: (className) => <ShieldCheck className={className} />, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+            { title: 'Response Time', val: "Within 60 Mins", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+            { title: 'Technician', val: "Verified Experts", icon: (className) => <Award className={className} />, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          ];
+        }
       } else if (subCat === 'Stay') {
         return [
           { title: 'Wi-Fi Access', val: "High Speed", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
@@ -7177,10 +7224,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const getActionButtons = (product) => {
       const subCat = product.subNavbarCategory;
       const cat = product.category;
+      const isMedical = isMedicalService(product);
       
-      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital') {
+      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital' || isMedical) {
         return {
-          chatText: "Chat with Doctor",
+          chatText: isMedical ? "Chat with Doctor" : "Chat with Service Expert",
           actionText: "ADD TO CART",
           bookingText: "BOOK APPOINTMENT",
           showBooking: true
@@ -7260,9 +7308,32 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       
       const cat = (product.category || '').toLowerCase();
       const subCat = (product.subNavbarCategory || '').toLowerCase();
+      const isMedical = isMedicalService(product);
       const unitOrWeight = (product.description && /^\d+\s*(kg|g|gm|ml|l|pcs|piece|pack|unit)s?$/i.test(product.description.trim())) 
         ? product.description.trim() 
         : null;
+
+      if (subCat.includes('service') || isMedical) {
+        if (isMedical) {
+          return [
+            "Verified & Experienced Specialist Medical Practitioner",
+            "State-of-the-Art Clinical & Diagnostic Infrastructure",
+            "Comprehensive Patient Health Record Management",
+            "24/7 Emergency & Critical Care Helpline Support",
+            "Tele-consultation & E-Prescription Support Available",
+            "Strict Hygiene & Infection Control Standards Followed"
+          ];
+        } else {
+          return [
+            "100% Background Checked & Certified Technicians",
+            "Fixed Upfront Pricing with No Hidden Charges",
+            "30-Day Service Guarantee & Satisfaction Warranty",
+            "Only Genuine Spare Parts & Quality Materials Used",
+            "Punctual & Express Same-Day Doorstep Service",
+            "Hygienic Work Process with Post-Service Cleanup"
+          ];
+        }
+      }
 
       if (subCat.includes('daily') || cat.includes('veg') || cat.includes('fruit') || cat.includes('groc') || subCat.includes('food')) {
         return [
@@ -7621,7 +7692,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <span className="text-[12px] font-black uppercase tracking-wider leading-none">
-                    {selectedProduct.subNavbarCategory === 'Services' ? 'About Doctor' : 
+                    {isMedicalService(selectedProduct) ? 'About Doctor' : 
+                     selectedProduct.subNavbarCategory === 'Services' ? 'About Service' :
                      selectedProduct.subNavbarCategory === 'Stay' ? 'About Stay' :
                      selectedProduct.subNavbarCategory === 'Travel' ? 'About Travel' :
                      selectedProduct.subNavbarCategory === 'Jobs' ? 'About Job' :
