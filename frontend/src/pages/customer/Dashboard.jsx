@@ -1325,23 +1325,30 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const jobsList = [
     ...staticJobsList,
-    ...products.filter(p => p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs' || p.category === 'Jobs' || p.category === 'IT Jobs' || p.category === 'Full Time').map(p => ({
-      id: p.id || p._id,
-      vendorId: p.vendorId,
-      vendorName: p.vendorName || p.brand || p.companyName || p.vendor_name || 'Partner Organization',
-      title: sanitizeJobTitle(p.jobTitle || p.title || p.name || p.role || p.designation),
-      department: p.department || p.category || p.jobCategory || 'General',
-      location: sanitizeJobLocation(p.jobLocation || p.location || p.city || p.vendorCity || p.locationType),
-      salary: p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : (p.salary ? String(p.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
-      type: inferJobType(p),
-      experience: inferExperience(p.description, p.name, p.experience || p.exp || p.jobExperience || p.experience_required),
-      skills: p.skills || p.skillsRequired || p.requiredSkills || p.tags,
-      desc: p.description || p.jobDescription || p.desc || p.details || `${p.name || 'Job'} position.`,
-      price: p.price,
-      rating: p.rating,
-      createdAt: p.createdAt || p.created_at || p.postedOn || p.postedDate || p.date,
-      applicationTips: p.applicationTips || p.tips || p.instructions || p.howToApply
-    }))
+    ...products.filter(p => p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs' || p.category === 'Jobs' || p.category === 'IT Jobs' || p.category === 'Full Time').map(p => {
+      const vendorJobType = p.jobType || p.type || p.job_type || p.employmentType || p.workType;
+      const vendorExp = p.experience || p.exp || p.jobExperience || p.experience_required || p.experienceRequired || p.minExperience;
+      const vendorDept = p.department || p.category || p.jobCategory || p.specialization || p.subCategory;
+      const vendorSalary = p.salary ? String(p.salary).trim() : (p.price ? `₹${(p.price || 0).toLocaleString()} L.P.A` : null);
+
+      return {
+        id: p.id || p._id,
+        vendorId: p.vendorId,
+        vendorName: p.vendorName || p.brand || p.companyName || p.vendor_name || 'Partner Organization',
+        title: sanitizeJobTitle(p.jobTitle || p.title || p.name || p.role || p.designation),
+        department: vendorDept || 'General',
+        location: sanitizeJobLocation(p.jobLocation || p.location || p.city || p.vendorCity || p.locationType),
+        salary: vendorSalary || 'Competitive Salary',
+        type: vendorJobType || inferJobType(p),
+        experience: vendorExp || inferExperience(p.description, p.name, vendorExp),
+        skills: p.skills || p.skillsRequired || p.requiredSkills || p.qualification || p.tags,
+        desc: p.description || p.jobDescription || p.desc || p.details || `${p.name || 'Job'} position.`,
+        price: p.price,
+        rating: p.rating,
+        createdAt: p.createdAt || p.created_at || p.postedOn || p.postedDate || p.date,
+        applicationTips: p.applicationTips || p.tips || p.instructions || p.howToApply
+      };
+    })
   ];
 
   const handleJobSubmit = async (e) => {
@@ -5267,15 +5274,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         (selectedProduct ? {
                           id: selectedProduct.id || selectedProduct._id,
                           vendorId: selectedProduct.vendorId,
-                          vendorName: selectedProduct.vendorName || selectedProduct.brand || 'Partner Organization',
-                          title: selectedProduct.name,
-                          department: selectedProduct.department || selectedProduct.category || 'General',
+                          vendorName: selectedProduct.vendorName || selectedProduct.brand || selectedProduct.companyName || selectedProduct.vendor_name || 'Partner Organization',
+                          title: selectedProduct.name || selectedProduct.title || selectedProduct.jobTitle,
+                          department: selectedProduct.department || selectedProduct.category || selectedProduct.subCategory || selectedProduct.specialization || 'General',
                           location: selectedProduct.jobLocation || selectedProduct.location || selectedProduct.city || selectedProduct.vendorCity || selectedProduct.locationType || 'Bangalore, Karnataka',
-                          salary: selectedProduct.price ? `₹${(selectedProduct.price || 0).toLocaleString()} L.P.A` : (selectedProduct.salary ? String(selectedProduct.salary).replace(/₹/g, '').trim() : 'Competitive Salary'),
-                          type: inferJobType(selectedProduct),
-                          experience: inferExperience(selectedProduct.description, selectedProduct.name, selectedProduct.experience || selectedProduct.exp || selectedProduct.jobExperience || selectedProduct.experience_required),
-                          skills: selectedProduct.skills || selectedProduct.skillsRequired || selectedProduct.requiredSkills || selectedProduct.tags,
-                          desc: selectedProduct.description || `${selectedProduct.name} position.`,
+                          salary: selectedProduct.salary ? String(selectedProduct.salary).trim() : (selectedProduct.price ? `₹${(selectedProduct.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary'),
+                          type: selectedProduct.jobType || selectedProduct.type || selectedProduct.job_type || selectedProduct.employmentType || selectedProduct.workType || inferJobType(selectedProduct),
+                          experience: selectedProduct.experience || selectedProduct.exp || selectedProduct.jobExperience || selectedProduct.experience_required || selectedProduct.experienceRequired || inferExperience(selectedProduct.description, selectedProduct.name),
+                          skills: selectedProduct.skills || selectedProduct.skillsRequired || selectedProduct.requiredSkills || selectedProduct.qualification || selectedProduct.tags,
+                          desc: selectedProduct.description || selectedProduct.jobDescription || selectedProduct.desc || `${selectedProduct.name} position.`,
                           createdAt: selectedProduct.createdAt || selectedProduct.created_at || selectedProduct.postedOn || selectedProduct.postedDate,
                           applicationTips: selectedProduct.applicationTips || selectedProduct.tips
                         } : null) || {
@@ -5648,7 +5655,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <Clock className="w-3.5 h-3.5 text-slate-400" />
                                       Experience
                                     </span>
-                                    <span className="font-bold text-slate-800 dark:text-white">{selectedJob.experience || inferExperience(selectedJob.desc, selectedJob.title)}</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">{selectedJob.experience || inferExperience(selectedJob.desc, selectedJob.title, selectedJob.experience)}</span>
                                   </div>
 
                                   <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
@@ -5656,7 +5663,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <Tag className="w-3.5 h-3.5 text-slate-400" />
                                       Salary
                                     </span>
-                                    <span className="font-extrabold text-slate-900 dark:text-white">{(selectedJob.salary || '').replace(/₹/g, '').trim()}</span>
+                                    <span className="font-extrabold text-slate-900 dark:text-white">{(selectedJob.salary || '').replace(/₹/g, '').trim() || 'Competitive Salary'}</span>
                                   </div>
 
                                   <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
@@ -5664,7 +5671,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <Building2 className="w-3.5 h-3.5 text-slate-400" />
                                       Department
                                     </span>
-                                    <span className="font-bold text-slate-800 dark:text-white">{selectedJob.department || 'Engineering'}</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">{selectedJob.department || 'General'}</span>
                                   </div>
 
                                   <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
