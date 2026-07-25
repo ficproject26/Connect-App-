@@ -345,6 +345,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
   const [customTimeInput, setCustomTimeInput] = useState('');
+  const [customCheckOutTimeInput, setCustomCheckOutTimeInput] = useState('');
   const [checkInTime, setCheckInTime] = useState('12:00 PM');
   const [checkOutTime, setCheckOutTime] = useState('11:00 AM');
   const [adultCount, setAdultCount] = useState(1);
@@ -10116,6 +10117,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 );
                               })}
                             </div>
+
+                            {/* Manual Check-Out Time Entry */}
+                            <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <div>
+                                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Check-Out Time Entry</span>
+                                  <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom check-out time</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="time" 
+                                  value={customCheckOutTimeInput || ''} 
+                                  onChange={(e) => {
+                                    const raw = e.target.value;
+                                    setCustomCheckOutTimeInput(raw);
+                                    if (raw) {
+                                      const [h, m] = raw.split(':');
+                                      let hour = parseInt(h, 10);
+                                      const ampm = hour >= 12 ? 'PM' : 'AM';
+                                      hour = hour % 12 || 12;
+                                      const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
+                                      setCheckOutTime(formatted);
+                                    }
+                                  }}
+                                  className="bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
+                                />
+                                {checkOutTime && (
+                                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900">
+                                    {checkOutTime}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -10751,6 +10787,41 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   </button>
                                 );
                               })}
+                            </div>
+
+                            {/* Manual Check-Out Time Entry */}
+                            <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <div>
+                                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Check-Out Time Entry</span>
+                                  <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom check-out time</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="time" 
+                                  value={customCheckOutTimeInput || ''} 
+                                  onChange={(e) => {
+                                    const raw = e.target.value;
+                                    setCustomCheckOutTimeInput(raw);
+                                    if (raw) {
+                                      const [h, m] = raw.split(':');
+                                      let hour = parseInt(h, 10);
+                                      const ampm = hour >= 12 ? 'PM' : 'AM';
+                                      hour = hour % 12 || 12;
+                                      const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
+                                      setCheckOutTime(formatted);
+                                    }
+                                  }}
+                                  className="bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
+                                />
+                                {checkOutTime && (
+                                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900">
+                                    {checkOutTime}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
