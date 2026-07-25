@@ -3103,7 +3103,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         key: 'Silver Tier',
         name: 'Silver Tier',
         titleBadge: 'SILVER MEMBER',
-        price: '₹4,000/year',
+        price: '₹8,000/month',
         discount: '10% OFF',
         badgeColor: 'bg-slate-300 text-slate-900 border-slate-400',
         waveGradient: 'from-slate-200 via-slate-300 to-slate-400',
@@ -3123,7 +3123,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         key: 'Gold Elite',
         name: 'Gold Elite',
         titleBadge: 'PREMIUM MEMBER',
-        price: '₹8,000/year',
+        price: '₹15,000/month',
         discount: '20% OFF',
         badgeColor: 'bg-amber-400 text-[#0b1e36] border-amber-300',
         waveGradient: 'from-[#fef08a] via-[#eab308] to-[#ca8a04]',
@@ -3144,7 +3144,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         key: 'Diamond Prestige',
         name: 'Diamond Prestige',
         titleBadge: 'DIAMOND MEMBER',
-        price: '₹20,000/year',
+        price: '₹35,000/month',
         discount: '30% OFF',
         badgeColor: 'bg-cyan-400 text-cyan-950 border-cyan-300',
         waveGradient: 'from-cyan-200 via-cyan-400 to-sky-600',
@@ -10822,7 +10822,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Silver Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹4,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹8,000<span className="text-[10px] font-bold text-slate-400">/month</span></span>
                       </div>
                       <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                         <li>5% off on products</li>
@@ -10856,7 +10856,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Gold Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹8,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹15,000<span className="text-[10px] font-bold text-slate-400">/month</span></span>
                       </div>
                       <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                         <li>15% off Stays & 10% off Dining</li>
@@ -10903,7 +10903,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-slate-900 dark:text-white">Diamond Membership</h4>
-                      <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹20,000<span className="text-[10px] font-bold text-slate-400">/year</span></span>
+                      <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹35,000<span className="text-[10px] font-bold text-slate-400">/month</span></span>
                     </div>
                     <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
                       <li>Complimentary global airport VIP lounges</li>
