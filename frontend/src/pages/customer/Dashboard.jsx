@@ -2802,24 +2802,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return (
       <header className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-4 sm:px-6 py-2.5 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
         {/* Row 1 for Mobile / Left Section for Desktop */}
-        <div className="flex items-center justify-between md:justify-start gap-4 w-full md:w-auto">
+        <div className="flex items-center justify-between md:justify-start gap-1.5 sm:gap-4 w-full md:w-auto">
           {/* Logo */}
-          <div className="flex items-center gap-2 select-none cursor-pointer" onClick={clearAllFilters}>
-            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60">
+          <div className="flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer" onClick={clearAllFilters}>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60 shrink-0">
               <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
             </div>
-            <span className="text-sm font-black tracking-wide text-slate-900 dark:text-white font-sans whitespace-nowrap">Connect App</span>
+            <span className="text-xs sm:text-sm font-black tracking-wide text-slate-900 dark:text-white font-sans whitespace-nowrap">Connect App</span>
           </div>
 
           {/* Location Selector (now fully responsive!) */}
           <div className="relative shrink-0">
             <button 
               onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800/60 rounded-full bg-slate-50/20 dark:bg-[#0b1329]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-[10px] font-bold text-slate-700 dark:text-slate-200 transition-colors"
+              className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 border border-slate-200 dark:border-slate-800/60 rounded-full bg-slate-50/20 dark:bg-[#0b1329]/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-[9.5px] sm:text-[10px] font-bold text-slate-700 dark:text-slate-200 transition-colors"
             >
-              <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-              <span className="truncate max-w-[80px]">{selectedLocation.city}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0" />
+              <span className="truncate max-w-[60px] sm:max-w-[90px]">{selectedLocation.city}</span>
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
 
             {isLocationDropdownOpen && (
@@ -3582,38 +3582,38 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     };
 
     return (
-      <div className="w-full bg-gradient-to-r from-rose-100 via-indigo-100 to-sky-100 text-slate-900 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8 relative shadow-xs overflow-hidden text-left select-none min-h-[300px] border border-slate-200/40">
+      <div className="w-full bg-gradient-to-r from-rose-100 via-indigo-100 to-sky-100 text-slate-900 rounded-3xl p-5 sm:p-8 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8 relative shadow-xs overflow-hidden text-left select-none border border-slate-200/40">
         {/* Background Decorative Blobs */}
         <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] bg-indigo-200/30 rounded-full blur-[80px] pointer-events-none" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[250px] h-[250px] bg-rose-200/30 rounded-full blur-[70px] pointer-events-none" />
 
         {/* Left Side text content */}
-        <div className="space-y-5 z-10 flex-grow max-w-xl">
+        <div className="space-y-3 sm:space-y-5 z-10 flex-grow max-w-xl w-full">
           <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#AA7C11] block">
             Everything You Need,
           </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#0b132b] leading-tight font-sans">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#0b132b] leading-tight font-sans">
             All in <span className="text-indigo-600">One Place.</span>
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-slate-600 font-semibold leading-relaxed max-w-md">
             Shop, Book, Eat, Stay, Travel and much more.
           </p>
 
-          <div className="flex flex-wrap gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full sm:w-auto">
             <button 
               onClick={() => {
                 setActiveTab('Services');
                 setSelectedSubNavbarCategory('Services');
                 triggerNotification("Explore our premium services catalog!");
               }}
-              className="inline-flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-955 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none"
+              className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-955 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none w-full sm:w-auto"
             >
               <span>Explore Services</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setShowUpgradeModal(true)}
-              className="inline-flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-755 bg-white hover:bg-slate-50 px-6 py-3.5 rounded-full transition-all border border-slate-350 shadow-2xs hover:scale-[1.02] duration-300 cursor-pointer"
+              className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-755 bg-white hover:bg-slate-50 px-6 py-3.5 rounded-full transition-all border border-slate-350 shadow-2xs hover:scale-[1.02] duration-300 cursor-pointer w-full sm:w-auto"
             >
               <span>Become a Member</span>
               <Award className="w-4 h-4 text-amber-500 fill-current ml-1" />
@@ -3625,68 +3625,68 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         <div 
           onMouseEnter={() => setIsHeroBannerHovered(true)}
           onMouseLeave={() => setIsHeroBannerHovered(false)}
-          className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] h-[340px] shrink-0 mt-6 md:mt-0 select-none group/slider"
+          className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] min-h-[250px] sm:h-[340px] shrink-0 mt-4 md:mt-0 select-none group/slider"
         >
           {/* Previous Slide Button */}
           <button 
             type="button"
             onClick={prevSlide}
-            className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+            className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
             aria-label="Previous Slide"
           >
-            <ChevronLeft className="w-5 h-5 text-white" />
+            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-white" />
           </button>
 
           {/* Next Slide Button */}
           <button 
             type="button"
             onClick={nextSlide}
-            className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+            className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
             aria-label="Next Slide"
           >
-            <ChevronRight className="w-5 h-5 text-white" />
+            <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-white" />
           </button>
 
           {/* Card Frame Wrapper */}
           <div 
             onClick={() => handleBannerAction(activeSlideObj)}
-            className="w-full max-w-[480px] aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
+            className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
           >
             {/* Dynamic DB Banners */}
             {activeSlideObj?.isDb && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-3 h-3 shrink-0" />
+                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
+                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
-                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                      <Sparkles className="w-4.5 h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
-                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Special Promotion</span>
+                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
+                      <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
+                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Special Promotion</span>
                     </div>
 
-                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
+                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
                       ★ Connect Deal
                     </div>
 
-                    <div className="pt-2 leading-tight">
-                      <h3 className="text-base sm:text-lg font-black text-white leading-tight">
+                    <div className="pt-1 sm:pt-2 leading-tight">
+                      <h3 className="text-sm sm:text-lg font-black text-white leading-tight truncate">
                         {activeSlideObj.title}
                       </h3>
-                      <p className="text-xs font-bold text-slate-300 mt-1.5">{activeSlideObj.description}</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">{activeSlideObj.description}</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Exclusive member privileges</span>
+                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Exclusive member privileges</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Verified products & services</span>
+                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Verified products & services</span>
                     </div>
                   </div>
 
@@ -3695,14 +3695,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       e.stopPropagation();
                       handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Explore Now</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
+                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
                   <img 
                     src={activeSlideObj.imageUrl} 
                     alt={activeSlideObj.title} 
@@ -3715,46 +3715,46 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 0: Domino's Pizza Offer */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 0 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-3 h-3 shrink-0" />
+                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
+                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
-                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold tracking-tight text-white font-sans text-xs">
+                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold tracking-tight text-white font-sans text-[11px] sm:text-xs">
                       <div className="flex gap-[1px] rotate-[-20deg] scale-90 origin-center shrink-0">
-                        <div className="w-4 h-4 bg-red-600 rounded-sm relative flex items-center justify-center shadow-xs">
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-red-600 rounded-sm relative flex items-center justify-center shadow-xs">
                           <div className="w-1 h-1 bg-white rounded-full absolute top-1 left-1" />
                           <div className="w-1 h-1 bg-white rounded-full absolute bottom-1 right-1" />
                         </div>
-                        <div className="w-4 h-4 bg-blue-600 rounded-sm relative flex items-center justify-center shadow-xs">
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-blue-600 rounded-sm relative flex items-center justify-center shadow-xs">
                           <div className="w-1 h-1 bg-white rounded-full" />
                         </div>
                       </div>
-                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Domino's</span>
+                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Domino's</span>
                     </div>
 
-                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
+                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
                       ★ Exclusive Offer
                     </div>
 
-                    <div className="pt-2 leading-tight">
-                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
+                    <div className="pt-1 sm:pt-2 leading-tight">
+                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
                         Flat <span className="text-[#FFC107]">50% OFF</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-300 mt-1.5">On all Pizza Orders</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On all Pizza Orders</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Free Delivery</span>
+                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Free Delivery</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <ShoppingBag className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>No Minimum Order</span>
+                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
+                      <ShoppingBag className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">No Minimum Order</span>
                     </div>
                   </div>
 
@@ -3763,14 +3763,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       e.stopPropagation();
                       handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Order Now</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0e0e]">
+                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0e0e]">
                   <img 
                     src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" 
                     alt="Pizza Special Offer" 
@@ -3783,38 +3783,38 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 1: Radisson Blu Hotel Stay */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 1 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-3 h-3 shrink-0" />
+                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
+                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
-                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                      <BedDouble className="w-4.5 h-4.5 text-[#FFC107] shrink-0" />
-                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Radisson Blu</span>
+                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
+                      <BedDouble className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />
+                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Radisson Blu</span>
                     </div>
 
-                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
+                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
                       ★ Member Privilege
                     </div>
 
-                    <div className="pt-2 leading-tight">
-                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
+                    <div className="pt-1 sm:pt-2 leading-tight">
+                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
                         Extra <span className="text-[#FFC107]">30% OFF</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-300 mt-1.5">On Luxury Suites & Stays</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On Luxury Suites & Stays</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Free Welcome Drinks</span>
+                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Free Welcome Drinks</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Complimentary Breakfast</span>
+                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Complimentary Breakfast</span>
                     </div>
                   </div>
 
@@ -3823,14 +3823,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       e.stopPropagation();
                       handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Book Now</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#07111e]">
+                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#07111e]">
                   <img 
                     src={hotelActual} 
                     alt="Radisson Suite Stay" 
@@ -3843,33 +3843,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 2: Air India Travels */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 2 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                      <Plane className="w-4.5 h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
-                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Air India</span>
+                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
+                      <Plane className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
+                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Air India</span>
                     </div>
 
-                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
+                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
                       ★ Flight Special
                     </div>
 
-                    <div className="pt-2 leading-tight">
-                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
+                    <div className="pt-1 sm:pt-2 leading-tight">
+                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
                         Save <span className="text-[#FFC107]">₹2,000</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-300 mt-1.5">On International Bookings</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On International Bookings</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Extra Baggage Allowance</span>
+                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Extra Baggage Allowance</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Free Preferred Seat Select</span>
+                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Free Preferred Seat Select</span>
                     </div>
                   </div>
 
@@ -3878,14 +3878,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       e.stopPropagation();
                       handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Claim Now</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#160608]">
+                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#160608]">
                   <img 
                     src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80" 
                     alt="Flight Travel Offer" 
@@ -3898,38 +3898,38 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             {/* Slide 3: Urban Connect Services */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 3 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-3 right-3 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-3 h-3 shrink-0" />
+                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
+                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                   <span>Limited Time</span>
                 </div>
 
-                <div className="w-[58%] p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                      <Settings className="w-4.5 h-4.5 text-[#FFC107] shrink-0" />
-                      <span className="font-extrabold text-[14px] tracking-wide text-white uppercase font-sans">Urban Connect</span>
+                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
+                      <Settings className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />
+                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Urban Connect</span>
                     </div>
 
-                    <div className="inline-block text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md mt-2">
+                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
                       ★ Partner Deal
                     </div>
 
-                    <div className="pt-2 leading-tight">
-                      <h3 className="text-base sm:text-lg font-black text-white leading-none">
+                    <div className="pt-1 sm:pt-2 leading-tight">
+                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
                         Flat <span className="text-[#FFC107]">25% OFF</span>
                       </h3>
-                      <p className="text-xs font-bold text-slate-300 mt-1.5">On all Home Services</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On all Home Services</p>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>Verified Industry Experts</span>
+                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">Verified Industry Experts</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Check className="w-4 h-4 text-[#FFC107] shrink-0" />
-                      <span>100% Insured Deliveries</span>
+                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
+                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                      <span className="truncate">100% Insured Deliveries</span>
                     </div>
                   </div>
 
@@ -3938,14 +3938,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       e.stopPropagation();
                       handleBannerAction(activeSlideObj);
                     }}
-                    className="flex items-center gap-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[10px] tracking-wider px-4.5 py-2 rounded-full transition-all border-none mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
+                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
                     <span>Book Now</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
 
-                <div className="w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
+                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
                   <img 
                     src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80" 
                     alt="Home Services Special" 
