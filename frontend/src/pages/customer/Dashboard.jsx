@@ -7522,11 +7522,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  {selectedProduct.description || (
-                    (selectedProduct.subNavbarCategory === 'Food' || selectedProduct.mainCategory === 'Food' || selectedProduct.tag === 'Food')
-                      ? `Freshly prepared ${(selectedProduct.name || selectedProduct.category || 'food item').toLowerCase()} crafted with high quality ingredients, authentic spices, and hygienic packaging.`
-                      : `Experienced specialist offering comprehensive premium ${(selectedProduct.category || '').toLowerCase()} consultations and personalized treatment plans.`
-                  )}
+                  {selectedProduct.description || `${selectedProduct.name || selectedProduct.category || 'Item'} prepared fresh for your order.`}
                 </p>
               </div>
 
