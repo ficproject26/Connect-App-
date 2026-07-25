@@ -3607,7 +3607,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         className="relative"
         onMouseLeave={handleMouseLeave}
       >
-        <nav className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-8 py-2.5 flex items-center justify-start md:justify-center gap-10 sm:gap-12 overflow-x-auto no-scrollbar shadow-xs transition-colors w-full">
+        <nav className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-2 sm:px-8 py-2 sm:py-2.5 grid grid-cols-4 md:flex md:items-center md:justify-center gap-1 sm:gap-6 md:gap-10 transition-colors w-full">
           {subNavbarCategories.map((cat) => {
             const isActive = activeTab === cat;
             const Icon = icons[cat] || ShoppingBag;
@@ -3625,14 +3625,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   setSearchQuery('');
                   setHoveredLink(null);
                 }}
-                className={`relative group text-xs font-bold uppercase tracking-wider px-2 py-3 transition-all shrink-0 cursor-pointer flex items-center gap-2 border-b-2 ${
+                className={`relative group text-[10px] sm:text-xs font-black uppercase tracking-tight sm:tracking-wider px-1.5 sm:px-2 py-2 sm:py-3 transition-all cursor-pointer flex flex-col md:flex-row items-center justify-center gap-1 sm:gap-2 rounded-xl md:rounded-none ${
                   isActive 
-                    ? 'text-amber-500 dark:text-amber-400 border-amber-500 dark:border-amber-400' 
-                    : 'text-slate-600 dark:text-slate-400 border-transparent hover:text-amber-500 dark:hover:text-amber-400'
+                    ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/15 md:bg-transparent md:dark:bg-transparent border border-amber-500/30 md:border-t-0 md:border-x-0 md:border-b-2 md:border-amber-500 dark:md:border-amber-400' 
+                    : 'text-slate-600 dark:text-slate-400 border border-transparent hover:text-amber-500 dark:hover:text-amber-400'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400 group-hover:text-amber-500'}`} />
-                <span>{cat}</span>
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400 group-hover:text-amber-500'}`} />
+                <span className="truncate max-w-full">{cat}</span>
               </button>
             );
           })}
