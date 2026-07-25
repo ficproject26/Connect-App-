@@ -7127,15 +7127,34 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           { title: 'Min. Qualification', val: "Graduate / Equivalent", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
           { title: 'Job Location', val: "Bengaluru, IN", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
-      } else if (subCat === 'Food' || cat === 'Fine Dining' || cat === 'Biryani' || cat === 'Biriyani' || product.tag === 'Food') {
+      } else if (
+        subCat === 'Daily Needs' || 
+        subCat === 'Food' || 
+        product.mainCategory === 'Daily Needs' || 
+        product.mainCategory === 'Food' || 
+        product.tag === 'Daily Needs' || 
+        product.tag === 'Food' || 
+        cat === 'Vegetables' || 
+        cat === 'Fruits' || 
+        cat === 'Groceries' || 
+        cat === 'Dairy' || 
+        cat === 'Bakery' || 
+        cat === 'Fresh Produce' || 
+        cat === 'Meat & Fish' || 
+        (cat || '').toLowerCase().includes('veg') || 
+        (cat || '').toLowerCase().includes('fruit') || 
+        (cat || '').toLowerCase().includes('groc') || 
+        (cat || '').toLowerCase().includes('daily') || 
+        (cat || '').toLowerCase().includes('fresh')
+      ) {
         return [
-          { title: 'Food Type', val: product.foodType || "Veg / Non-Veg", icon: (className) => <Utensils className={className} />, bg: "bg-rose-50 dark:bg-rose-950/35", color: "text-rose-500" },
-          { title: 'Preparation Time', val: "20-30 mins", icon: (className) => <Clock className={className} />, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
-          { title: 'Hygiene Rating', val: "FSSAI Verified", icon: (className) => <CheckCircle2 className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: 'Packaging', val: "Fresh & Sealed", icon: (className) => <Package className={className} />, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
+          { title: 'Freshness', val: "100% Farm Fresh", icon: (className) => <CheckCircle2 className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
+          { title: 'Return Policy', val: "Same Day Return", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Delivery Speed', val: "Express Delivery", icon: (className) => <Clock className={className} />, bg: "bg-amber-50 dark:bg-amber-950/35", color: "text-amber-500" },
+          { title: 'Packaging', val: "Hygienically Packed", icon: (className) => <Package className={className} />, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
       } else {
-        // Products / Daily Needs / Food
+        // General Products (Electronics, Appliances, Gadgets, Sarees)
         return [
           { title: 'Brand Warranty', val: "1 Year Covered", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
           { title: 'Return Policy', val: "7 Days Replacement", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
@@ -7198,6 +7217,35 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       }
     };
 
+    // Dynamic description generator
+    const getProductDescription = (p) => {
+      if (!p) return '';
+      const desc = (p.description || '').trim();
+      if (desc.length > 25 && !/^\d+\s*(kg|g|gm|ml|l|pcs|piece|pack|unit)s?$/i.test(desc)) {
+        return desc;
+      }
+      const cat = (p.category || '').toLowerCase();
+      const subCat = (p.subNavbarCategory || '').toLowerCase();
+      const name = p.name || 'Product';
+
+      if (subCat.includes('daily') || cat.includes('veg') || cat.includes('fruit') || cat.includes('groc') || subCat.includes('food')) {
+        return `Farm-fresh, premium quality ${name}. Handpicked, hygienically cleaned, and packed to ensure maximum nutrition and delicious taste for your home culinary needs.`;
+      }
+      if (subCat.includes('stay') || cat.includes('hotel')) {
+        return `Comfortable and luxury stay at ${name}. Complete with modern room amenities, high-speed Wi-Fi, and 24/7 dedicated guest support.`;
+      }
+      if (subCat.includes('travel')) {
+        return `Punctual and comfortable travel option with ${name}. Reliable service, clean vehicles, and complete journey assistance.`;
+      }
+      if (subCat.includes('job')) {
+        return `Exciting career opportunity for ${name}. Excellent work environment, competitive compensation, and strong career growth prospects.`;
+      }
+      if (subCat.includes('service')) {
+        return `Professional ${name} provided by verified experts. Quick appointment scheduling, transparent pricing, and quality assurance.`;
+      }
+      return `High quality ${name} designed with premium standards to deliver reliable performance, exceptional quality, and great value.`;
+    };
+
     // Dynamic highlights based on category
     const getProductHighlights = (product) => {
       if (product.description) {
@@ -7205,9 +7253,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           .split('\n')
           .map(line => line.trim().replace(/^[\s\-\*\u2022\u25E6\u2023\u2043\u25CB\u25C9\u25A0\u25A1\u2714\u2713]+/g, '').trim())
           .filter(Boolean);
-        if (lines.length > 0) {
+        if (lines.length > 1 || (lines.length === 1 && lines[0].length > 20 && !/^\d+\s*(kg|g|gm|ml|l|pcs|piece|pack|unit)s?$/i.test(lines[0]))) {
           return lines;
         }
+      }
+      
+      const cat = (product.category || '').toLowerCase();
+      const subCat = (product.subNavbarCategory || '').toLowerCase();
+      const unitOrWeight = (product.description && /^\d+\s*(kg|g|gm|ml|l|pcs|piece|pack|unit)s?$/i.test(product.description.trim())) 
+        ? product.description.trim() 
+        : null;
+
+      if (subCat.includes('daily') || cat.includes('veg') || cat.includes('fruit') || cat.includes('groc') || subCat.includes('food')) {
+        return [
+          "100% Farm Fresh & Organically Grown",
+          unitOrWeight ? `Pack Size / Quantity: ${unitOrWeight}` : "Hygienically Cleaned & Carefully Packed",
+          "Rich in Natural Vitamins, Minerals & Fiber",
+          "Directly Sourced from Certified Farmers",
+          "No Artificial Preservatives or Harmful Sprays",
+          "Ideal for Fresh Salads, Cooking & Daily Meals"
+        ];
       }
       if (product.category === 'Smartphones') {
         return [
@@ -7216,8 +7281,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           "48MP Main camera with 2x Telephoto",
           "12MP TrueDepth front camera with autofocus",
           "USB-C connector with USB 2 support",
-          "Up to 20 hours video playback for long days",
-          "iOS 17 - More expressive and personal styling"
+          "Up to 20 hours video playback for long days"
         ];
       }
       if (product.category === 'Sarees') {
@@ -7226,57 +7290,14 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           "Exquisite Zari embroidered border detailing",
           "Length: 5.5 meters including running blouse",
           "Dry clean only to preserve texture and luster",
-          "Handcrafted by local weaver cooperative societies",
-          "Ideal for wedding events and ethnic festivals"
-        ];
-      }
-      if (product.category === 'Television') {
-        return [
-          "4K Ultra HD resolution with active HDR10+",
-          "Smart TV platform with pre-installed apps",
-          "20W Dolby Atmos high fidelity sound output",
-          "3 HDMI ports, 2 USB ports for multi-device hookup",
-          "Ultra-slim bezel-less premium aesthetic design",
-          "Voice Assistant enabled smart remote controller"
-        ];
-      }
-      if (product.category === 'Headphones') {
-        return [
-          "Industry-leading active noise cancellation (ANC)",
-          "Up to 30 hours battery life with quick charge support",
-          "Smart touch control pads for volume and track skipping",
-          "Dual beamforming microphones for clear voice calls",
-          "Multipoint bluetooth connection support",
-          "Foldable design with protective hard carry case"
-        ];
-      }
-      if (product.category === 'Laptops') {
-        return [
-          "Latest Intel Core i5 processor for fast processing",
-          "14-inch Full HD anti-glare display panel",
-          "8GB RAM paired with 512GB SSD storage space",
-          "Pre-installed Windows 11 with lifetime license",
-          "Backlit keyboard for low-light work sessions",
-          "Lightweight design weighing only 1.4 kg"
-        ];
-      }
-      if (product.subNavbarCategory === 'Food' || product.mainCategory === 'Food' || product.category === 'Biryani' || product.category === 'Biriyani' || product.tag === 'Food') {
-        return [
-          `Freshly prepared ${product.foodType || 'delicious'} food item`,
-          "Cooked in a 100% clean & hygienic kitchen environment",
-          "Served hot in tamper-proof sealed packaging",
-          "Express delivery within 30-45 minutes",
-          "Made with fresh ingredients and authentic spices",
-          "Qualifies for extra 5% member cashback rewards"
+          "Handcrafted by local weaver cooperative societies"
         ];
       }
       return [
-        "Exclusive deal verified by Connect App inspectors",
-        "Qualifies for extra 5% member cashback rewards",
-        "Secure tamper-proof sealed package transit",
-        "7-Day hassle-free customer return policy active",
-        "Backed by official brand manufacturer warranty",
-        "Delivered with priority express shipping privileges"
+        "100% Quality Checked & Genuine Product",
+        unitOrWeight ? `Package Spec: ${unitOrWeight}` : "Durable Build & Premium Finish",
+        "Fast & Secure Express Delivery Available",
+        "Satisfaction Guaranteed with Easy Returns"
       ];
     };
 
@@ -7577,9 +7598,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" />
                       </svg>
                       <div>
-                        <span className="font-extrabold text-slate-800 dark:text-white block text-[11px] leading-tight">Return Policy</span>
+                        <span className="font-extrabold text-slate-800 dark:text-white block text-[11px] leading-tight">
+                          {(selectedProduct.subNavbarCategory === 'Daily Needs' || selectedProduct.subNavbarCategory === 'Food' || (selectedProduct.category || '').toLowerCase().includes('veg') || (selectedProduct.category || '').toLowerCase().includes('fruit'))
+                            ? 'Freshness & Quality Guarantee'
+                            : 'Return Policy'}
+                        </span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5 leading-normal">
-                          7-Day Hassle-Free Replacement / Refund. Product must be in its original, unworn condition with tags intact.
+                          {(selectedProduct.subNavbarCategory === 'Daily Needs' || selectedProduct.subNavbarCategory === 'Food' || (selectedProduct.category || '').toLowerCase().includes('veg') || (selectedProduct.category || '').toLowerCase().includes('fruit'))
+                            ? '100% Quality checked fresh produce. Same-day hassle-free replacement or refund at delivery.'
+                            : '7-Day Hassle-Free Replacement / Refund. Product must be in its original condition with tags intact.'}
                         </span>
                       </div>
                     </div>
@@ -7602,7 +7629,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  {selectedProduct.description || `${selectedProduct.name || selectedProduct.category || 'Item'} prepared fresh for your order.`}
+                  {getProductDescription(selectedProduct)}
                 </p>
               </div>
 
