@@ -6172,7 +6172,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="flex items-center justify-between flex-wrap gap-2"><span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Property</span><span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 border border-blue-100 dark:border-blue-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider">Best Price Guaranteed</span></div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white">{selectedProduct.name}</h1>
               <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Luxury Hotels'}</span>
-              <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Purchase</span></div>
+              <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span></div>
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
               <div className="grid grid-cols-3 gap-3">
@@ -7443,11 +7443,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-extrabold">
                     {selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)
-                  </span>
-                  <span className="text-slate-300 dark:text-slate-700">|</span>
-                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    Verified Purchase
                   </span>
                 </div>
               </div>
