@@ -9716,8 +9716,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         const basePrice = activeScheduleModalItem.price || 0;
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
-        const extraGuestFee = Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250;
-        const totalPrice = isStayItem ? (basePrice + extraGuestFee) * diffNights : (basePrice + extraGuestFee);
+        const extraGuestFee = isStayItem ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
+        const totalPrice = isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
         const isDaySlot = checkInTime?.includes('AM') || checkInTime === '09:00 AM' || checkInTime === '10:00 AM' || checkInTime === '11:00 AM';
         const currentStayMode = stayMode || (isDaySlot ? 'Day Option' : 'Night Option');
         const durationUnit = currentStayMode === 'Day Option' || isDaySlot ? (diffNights === 1 ? 'Day' : 'Days') : (diffNights === 1 ? 'Night' : 'Nights');
@@ -9812,40 +9812,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </span>
                     </div>
                     
-                    {/* Day / Night Stay Mode Selector */}
-                    {isStayItem && (
-                      <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-2.5 mb-4">
-                        <div className="flex items-center gap-2 text-left">
-                          <Sun className={`w-4 h-4 ${stayMode === 'Day Option' ? 'text-amber-500' : 'text-slate-400'}`} />
-                          <div>
-                            <span className="text-xs font-black text-slate-800 dark:text-white block leading-tight">Timing Mode: {stayMode}</span>
-                            <span className="text-[9.5px] font-semibold text-slate-500 block">
-                              {stayMode === 'Day Option' ? 'Day Stay (09:00 AM Slot / Daytime Use)' : 'Night Stay (Overnight / Night Slot)'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setStayMode('Day Option')}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
-                              stayMode === 'Day Option' ? 'bg-amber-400 text-slate-950 shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            Day Stay
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setStayMode('Night Option')}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
-                              stayMode === 'Night Option' ? 'bg-[#003B95] text-white shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            Night Stay
-                          </button>
-                        </div>
-                      </div>
-                    )}
+
 
                     {/* Toggle Button Types (Hidden for Travel) */}
                     {!isTravelItem && (
@@ -9995,8 +9962,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                               <div>
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Departure Time Entry</span>
-                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom departure time</span>
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : 'Manual Check-In Time Entry'}</span>
+                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : 'Select or type custom check-in time'}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -10408,7 +10375,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <svg className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Type</span>
-                          <span className="font-extrabold text-slate-800 dark:text-slate-200">{selectedModalType}</span>
+                          <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                            {isStayItem ? (activeScheduleModalItem?.roomType || activeScheduleModalItem?.subcategory || activeScheduleModalItem?.subCategory || activeScheduleModalItem?.name || selectedModalType || 'Luxury Room') : selectedModalType}
+                          </span>
                         </div>
                       </div>
 
@@ -10481,8 +10450,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         const isTravelItem = terms.summaryLabel === 'Travel Ticket';
         const basePrice = activeBookNowModalItem.price || 0;
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
-        const extraGuestFee = Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250;
-        const totalPrice = isStayItem ? (basePrice + extraGuestFee) * diffNights : (basePrice + extraGuestFee);
+        const extraGuestFee = isStayItem ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
+        const totalPrice = isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveBookNowModalItem(null)} className="absolute inset-0" />
@@ -10511,40 +10480,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       </span>
                     </div>
 
-                    {/* Day / Night Stay Mode Selector */}
-                    {isStayItem && (
-                      <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-2.5 mb-4">
-                        <div className="flex items-center gap-2 text-left">
-                          <Sun className={`w-4 h-4 ${stayMode === 'Day Option' ? 'text-amber-500' : 'text-slate-400'}`} />
-                          <div>
-                            <span className="text-xs font-black text-slate-800 dark:text-white block leading-tight">Timing Mode: {stayMode}</span>
-                            <span className="text-[9.5px] font-semibold text-slate-500 block">
-                              {stayMode === 'Day Option' ? 'Day Stay (09:00 AM Slot / Daytime Use)' : 'Night Stay (Overnight / Night Slot)'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setStayMode('Day Option')}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
-                              stayMode === 'Day Option' ? 'bg-amber-400 text-slate-950 shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            Day Stay
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setStayMode('Night Option')}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all border-none cursor-pointer ${
-                              stayMode === 'Night Option' ? 'bg-[#003B95] text-white shadow-xs font-extrabold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            Night Stay
-                          </button>
-                        </div>
-                      </div>
-                    )}
+
 
                     {/* Check-In & Check-Out Cards with Available / Not Available view */}
                     <div className="space-y-4 mb-4 select-none">
@@ -10666,8 +10602,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                               <div>
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Departure Time Entry</span>
-                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom departure time</span>
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : 'Manual Check-In Time Entry'}</span>
+                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : 'Select or type custom check-in time'}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -11089,7 +11025,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
                         <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Type</span>
-                        <span className="font-extrabold text-slate-850 dark:text-slate-200">{selectedModalType}</span>
+                        <span className="font-extrabold text-slate-850 dark:text-slate-200">
+                          {isStayItem ? (activeBookNowModalItem?.roomType || activeBookNowModalItem?.subcategory || activeBookNowModalItem?.subCategory || activeBookNowModalItem?.name || selectedModalType || 'Luxury Room') : selectedModalType}
+                        </span>
                       </div>
 
                       <div className="flex items-center justify-between">
