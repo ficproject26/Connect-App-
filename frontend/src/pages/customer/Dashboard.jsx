@@ -6194,18 +6194,62 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </div>
               </div>
             </div>
-            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4">Amenities</h3>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                {(selectedProduct.amenities && selectedProduct.amenities.length > 0 
-                  ? selectedProduct.amenities 
-                  : ['Wi-Fi','Room Service','AC','Gym','Spa','Laundry','24/7 Security','Restaurant','Parking','Power Backup']
-                ).map((a, ai) => (
-                  <div key={ai} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 dark:text-slate-400">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                    <span>{a}</span>
-                  </div>
-                ))}
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 shadow-xs text-left">
+              <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">AMENITIES</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {(() => {
+                  const stayAmenitiesList = (selectedProduct.amenities && selectedProduct.amenities.length > 0)
+                    ? selectedProduct.amenities
+                    : ['Blanket & Pillow', 'Water Bottle', 'GPS Tracking', '24/7 Security', 'Sleeper Berth', 'Charging Point', 'CCTV', 'AC', 'Free Wi-Fi', 'Restaurant'];
+
+                  const getStayAmenityIcon = (amenity) => {
+                    const norm = (amenity || '').toLowerCase();
+                    if (norm.includes('wi-fi') || norm.includes('wifi')) {
+                      return (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a9.9 9.9 0 0114.142 0M2.05 9.05a15.6 15.6 0 0122.25 0" /></svg>;
+                    }
+                    if (norm.includes('blanket') || norm.includes('pillow')) {
+                      return (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" /></svg>;
+                    }
+                    if (norm.includes('water') || norm.includes('bottle')) {
+                      return (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1H9L8 4z" /></svg>;
+                    }
+                    if (norm.includes('gps') || norm.includes('track')) {
+                      return (cn) => <MapPin className={cn} />;
+                    }
+                    if (norm.includes('security') || norm.includes('24/7')) {
+                      return (cn) => <ShieldCheck className={cn} />;
+                    }
+                    if (norm.includes('sleeper') || norm.includes('berth') || norm.includes('bed')) {
+                      return (cn) => <BedDouble className={cn} />;
+                    }
+                    if (norm.includes('charge') || norm.includes('charging') || norm.includes('power')) {
+                      return (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
+                    }
+                    if (norm.includes('cctv')) {
+                      return (cn) => <svg className={cn} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
+                    }
+                    if (norm.includes('ac') || norm.includes('air conditioning')) {
+                      return (cn) => <Wind className={cn} />;
+                    }
+                    if (norm.includes('restaurant') || norm.includes('dining')) {
+                      return (cn) => <Utensils className={cn} />;
+                    }
+                    if (norm.includes('parking')) {
+                      return (cn) => <MapPin className={cn} />;
+                    }
+                    return (cn) => <CheckCircle2 className={cn} />;
+                  };
+
+                  return stayAmenitiesList.map((amenity, idx) => {
+                    const getIconComponent = getStayAmenityIcon(amenity);
+                    return (
+                      <div key={idx} className="bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center gap-2 hover:border-blue-400/50 transition-all">
+                        {getIconComponent("w-5 h-5 text-slate-700 dark:text-slate-300")}
+                        <span className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">{amenity}</span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -6520,15 +6564,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="grid grid-cols-3 gap-2 text-center mt-1">
                 <div>
                   <span className="text-xs font-black text-slate-800 dark:text-white block">25+</span>
-                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 uppercase block mt-0.5 leading-none">Years Service</span>
+                  <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-300 uppercase block mt-0.5 leading-none">Years Service</span>
                 </div>
-                <div className="border-x border-slate-100 dark:border-slate-850">
+                <div className="border-x border-slate-200 dark:border-slate-800">
                   <span className="text-xs font-black text-slate-800 dark:text-white block">850+</span>
-                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 uppercase block mt-0.5 leading-none">Buses</span>
+                  <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-300 uppercase block mt-0.5 leading-none">Buses</span>
                 </div>
                 <div>
                   <span className="text-xs font-black text-slate-800 dark:text-white block">10M+</span>
-                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 uppercase block mt-0.5 leading-none">Happy Customers</span>
+                  <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-300 uppercase block mt-0.5 leading-none">Happy Customers</span>
                 </div>
               </div>
             </div>
@@ -6682,29 +6726,29 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             </div>
             {/* Seat Availability Section */}
             <div className="bg-slate-50/20 dark:bg-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
-              <h4 className="text-[10.5px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-4 text-left">
+              <h4 className="text-[10.5px] font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest leading-none mb-4 text-left">
                 Seat Availability
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Seats Left</span>
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Seats Left</span>
                   <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">12</span>
-                  <span className="text-[8.5px] text-slate-450 font-bold block mt-1 leading-none">Total Seats: 36</span>
+                  <span className="text-[8.5px] text-slate-500 dark:text-slate-400 font-bold block mt-1 leading-none">Total Seats: 36</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Window Seats</span>
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Window Seats</span>
                   <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">5</span>
-                  <span className="text-[8.5px] text-emerald-600 font-bold block mt-1 leading-none">Available</span>
+                  <span className="text-[8.5px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1 leading-none">Available</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Lower Berths</span>
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Lower Berths</span>
                   <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">3</span>
-                  <span className="text-[8.5px] text-emerald-600 font-bold block mt-1 leading-none">Available</span>
+                  <span className="text-[8.5px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1 leading-none">Available</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Female Seats</span>
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Female Seats</span>
                   <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">2</span>
-                  <span className="text-[8.5px] text-emerald-650 font-bold block mt-1 leading-none">Available</span>
+                  <span className="text-[8.5px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1 leading-none">Available</span>
                 </div>
               </div>
             </div>
@@ -6730,7 +6774,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               <div className="p-5 text-left text-xs sm:text-sm leading-relaxed font-medium">
                 {travelDetailsTab === 'Overview' && (
                   <div className="space-y-4">
-                    <p className="text-slate-605 dark:text-slate-355 font-medium leading-relaxed">
+                    <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
                       {selectedProduct.name} is one of the most trusted operators in the region. Enjoy a comfortable journey with premium service, clean layouts, and top class amenities.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
@@ -6740,8 +6784,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         'Experienced & professional staff',
                         'Safe & reliable travel'
                       ].map((item, iIdx) => (
-                        <div key={iIdx} className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-355">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-555 fill-emerald-555/10 shrink-0" />
+                        <div key={iIdx} className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                           <span>{item}</span>
                         </div>
                       ))}
@@ -10639,10 +10683,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       );
                     }
+                    if (isStayItem) {
+                      return (
+                        <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
+                          <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                          <span>Stay Summary: {diffNights} {diffNights === 1 ? 'Night' : 'Nights'} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                        </div>
+                      );
+                    }
                     return (
                       <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
                         <Clock className="w-4 h-4 text-blue-500 shrink-0" />
-                        <span>Stay Summary: {diffNights} {diffNights === 1 ? 'Night' : 'Nights'} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                        <span>Booking Summary: Date: {formatDateFromYYYYMMDD(stayCheckInDate)} at {checkInTime}</span>
                       </div>
                     );
                   })()}
@@ -10654,7 +10706,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Your Appointment</h3>
                     
                     {/* Mini Profile card */}
-                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#030712] border border-slate-100 dark:border-slate-850/40 rounded-xl p-3 select-none">
+                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#030712] border border-slate-100 dark:border-slate-800 rounded-xl p-3 select-none">
                       <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-slate-200 p-0.5">
                         <img src={activeBookNowModalItem.image} alt={activeBookNowModalItem.name} className="w-full h-full object-cover rounded-full" />
                       </div>
@@ -10666,24 +10718,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         <span className="text-[9px] text-slate-400 block leading-none mt-1">{terms.category}</span>
                         <div className="flex items-center gap-0.5 mt-1.5 text-[9px] font-black text-slate-650 dark:text-amber-400">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400 animate-pulse" />
-                          <span>{activeBookNowModalItem.rating || 4.5} <span className="font-bold text-slate-450 dark:text-slate-500">({activeBookNowModalItem.reviews || 120} Reviews)</span></span>
+                          <span>{activeBookNowModalItem.rating || 4.5} <span className="font-bold text-slate-400 dark:text-slate-400">({activeBookNowModalItem.reviews || 120} Reviews)</span></span>
                         </div>
                       </div>
                     </div>
 
                     {/* Summary row matrix */}
                     <div className="space-y-3.5 text-xs text-left">
-                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> {isTravelItem ? 'Depart' : 'Check-In'}</span>
+                      <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> {isTravelItem ? 'Depart' : 'Check-In'}</span>
                         <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
                           {formatDateFromYYYYMMDD(stayCheckInDate)}
                           <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-bold">{checkInTime}</span>
                         </span>
                       </div>
 
-                      {!isTravelItem && (
-                        <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                          <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> Check-Out</span>
+                      {isStayItem && (
+                        <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                          <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> Check-Out</span>
                           <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
                             {formatDateFromYYYYMMDD(stayCheckOutDate)}
                             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">{checkOutTime}</span>
@@ -10691,13 +10743,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         </div>
                       )}
 
-                      {!isTravelItem && (() => {
+                      {isStayItem && (() => {
                         const s = new Date(stayCheckInDate + 'T00:00:00');
                         const e = new Date(stayCheckOutDate + 'T00:00:00');
                         const diff = Math.max(1, Math.ceil((e - s) / 86400000));
                         return (
-                          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                            <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-450" /> Duration</span>
+                          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                            <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-400" /> Duration</span>
                             <span className="font-extrabold text-slate-850 dark:text-slate-200">{diff} {diff === 1 ? 'Night' : 'Nights'}</span>
                           </div>
                         );
