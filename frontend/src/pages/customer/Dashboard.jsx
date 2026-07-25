@@ -4124,30 +4124,30 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {displayOffers.map(offer => (
             <div 
               key={offer.id} 
-              className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-4 h-[150px] transition-all duration-300 hover:shadow-md ${offer.bg}`}
+              className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-4 sm:p-4.5 min-h-[145px] sm:h-[155px] transition-all duration-300 hover:shadow-md ${offer.bg}`}
             >
-              <div className="flex flex-col justify-between items-start text-left max-w-[60%] h-full">
+              <div className="flex flex-col justify-between items-start text-left max-w-[62%] sm:max-w-[60%] h-full">
                 <div className="space-y-1.5">
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${offer.tagColor}`}>
+                  <span className={`text-[10px] sm:text-[11px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${offer.tagColor}`}>
                     {offer.discount}
                   </span>
-                  <p className="text-xs font-black text-slate-850 dark:text-white leading-tight mt-1">
+                  <p className="text-xs sm:text-sm font-black text-slate-850 dark:text-white leading-snug mt-1">
                     {offer.desc}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase dark:text-slate-500">Code:</span>
-                  <span className="text-[10px] font-black font-mono border-dashed border border-slate-350 dark:border-slate-700 px-2 py-0.5 rounded bg-white/60 dark:bg-slate-900/60 text-slate-800 dark:text-slate-200">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase dark:text-slate-500">Code:</span>
+                  <span className="text-[10px] sm:text-[11px] font-black font-mono border-dashed border border-slate-350 dark:border-slate-700 px-2.5 py-0.5 rounded bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-200">
                     {offer.code}
                   </span>
                 </div>
               </div>
 
-              <div className="w-[100px] h-full rounded-2xl overflow-hidden relative shadow-3xs shrink-0 bg-slate-100 flex items-center justify-center">
+              <div className="w-[110px] sm:w-[125px] h-full rounded-2xl overflow-hidden relative shadow-3xs shrink-0 bg-slate-100 flex items-center justify-center">
                 <img src={offer.image} alt={offer.brand} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/5" />
               </div>
@@ -4183,7 +4183,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-5">
           {recommendedItems.map(item => {
             const isFavorited = favorites.includes(item.id);
             return (
@@ -4218,7 +4218,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 }}
                 className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
               >
-                <div className="relative aspect-[1.1/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
+                <div className="relative aspect-[1.25/1] sm:aspect-[1.1/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
                   {(item.tag === 'Jobs' || item.subNavbarCategory === 'Jobs') ? (
                     <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                       <Briefcase className="w-8 h-8 text-amber-500" />
@@ -4229,42 +4229,42 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   )}
                   
                   {/* Rating star on left top */}
-                  <div className="absolute left-2.5 top-2.5 bg-white/90 backdrop-blur-xs text-slate-900 text-[11px] font-black px-2.5 py-1 rounded-full flex items-center gap-0.5 shadow-3xs">
+                  <div className="absolute left-2 top-2 sm:left-2.5 sm:top-2.5 bg-white/90 backdrop-blur-xs text-slate-900 text-[10px] sm:text-[11px] font-black px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-0.5 shadow-3xs">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span>{item.rating}</span>
                   </div>
 
-                  <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5 z-20">
+                  <div className="absolute right-2 top-2 sm:right-2.5 sm:top-2.5 flex items-center gap-1.5 z-20">
                     <button 
                       type="button"
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         toggleFavorite(item.id); 
                       }} 
-                      className="w-7 h-7 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 dark:border-slate-800 transition-all hover:scale-105"
+                      className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60 dark:border-slate-800 transition-all hover:scale-105"
                       title="Favorite"
                     >
-                      <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
+                      <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                     </button>
                   </div>
                 </div>
                 
-                <div className="p-3 flex-grow flex flex-col justify-between text-left">
+                <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between text-left">
                   <div>
-                    <h4 className="text-[11px] font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-indigo-500 transition-colors">{item.name}</h4>
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold block mt-1 leading-none">{item.category}</span>
+                    <h4 className="text-xs sm:text-sm font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-indigo-500 transition-colors">{item.name}</h4>
+                    <span className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1 leading-none">{item.category}</span>
                   </div>
                   
                   <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 w-full">
                     <div className="flex flex-col">
-                      <span className="text-[13px] font-black text-slate-850 dark:text-white">
+                      <span className="text-xs sm:text-sm font-black text-slate-850 dark:text-white">
                         ₹{(item.price || 0).toLocaleString()}
                         {item.tag === 'Stay' && <span className="text-[9.5px] font-bold text-slate-400">/night</span>}
                         {item.tag === 'Jobs' && <span className="text-[9.5px] font-bold text-slate-400">/year</span>}
                       </span>
                     </div>
                     {item.discount && item.tag !== 'Jobs' && item.subNavbarCategory !== 'Jobs' && item.category !== 'Jobs' && (
-                      <span className="text-[9px] text-emerald-600 font-black tracking-wide shrink-0">
+                      <span className="text-[9px] sm:text-[10px] text-emerald-600 font-black tracking-wide shrink-0">
                         {item.discount}
                       </span>
                     )}
@@ -4941,21 +4941,32 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return (
       <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-6 text-slate-800 dark:text-slate-200">
         <div className="flex flex-col gap-6 w-full items-stretch">
-          {/* Horizontal Filters Bar */}
-          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3.5">
-              <div className="flex items-center gap-1.5 text-slate-850 dark:text-white font-black text-xs mr-1">
+          {/* Horizontal Filters Bar (Clean 2-Column Grid on Mobile, Flex Row on Desktop) */}
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
+            {/* Header Row on Mobile / Left Label on Desktop */}
+            <div className="flex items-center justify-between md:justify-start gap-2 border-b md:border-b-0 pb-2.5 md:pb-0 border-slate-100 dark:border-slate-800/60">
+              <div className="flex items-center gap-1.5 text-slate-850 dark:text-white font-black text-xs">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
                 <span>FILTERS</span>
               </div>
+              <button 
+                onClick={clearAllFilters} 
+                className="md:hidden text-[11px] font-black text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 rounded-xl cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            </div>
 
+            {/* Select Inputs Grid on Mobile / Flex Row on Desktop */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3.5 w-full md:w-auto">
               {/* Home Tab Filters */}
               {activeTab === 'Home' && (
                 <>
                   <select
                     value={selectedCategories[0] || ""}
                     onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Categories</option>
                     {['Products', 'Services'].map(cat => (
@@ -4965,7 +4976,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedPrices[0] || ""}
                     onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Prices</option>
                     <option value="under-199">Under ₹199</option>
@@ -4982,7 +4993,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedCategories[0] || ""}
                     onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Categories</option>
                     {getCategoriesForTab('Products').map(cat => (
@@ -4992,7 +5003,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedBrands[0] || ""}
                     onChange={(e) => setSelectedBrands(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Brands</option>
                     {[...new Set(products.filter(p => p.subNavbarCategory === 'Products').map(p => p.vendorName).filter(Boolean))].map(brand => (
@@ -5002,13 +5013,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedPrices[0] || ""}
                     onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Prices</option>
                     <option value="under-199">Under ₹199</option>
                     <option value="199-399">₹199 - ₹399</option>
                     <option value="399-599">₹399 - ₹599</option>
-                    <option value="above-599">Above ₹599</option>
                   </select>
                 </>
               )}
@@ -5019,52 +5029,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedServiceTypes[0] || ""}
                     onChange={(e) => setSelectedServiceTypes(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
-                    <option value="">All Service Types</option>
-                    {getCategoriesForTab('Services').map(type => (
-                      <option key={type} value={type}>{type}</option>
+                    <option value="">All Services</option>
+                    {getCategoriesForTab('Services').map(st => (
+                      <option key={st} value={st}>{st}</option>
                     ))}
                   </select>
                   <select
                     value={selectedLocTypes[0] || ""}
                     onChange={(e) => setSelectedLocTypes(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Locations</option>
-                    {(() => {
-                      const dbCities = products.filter(p => p.subNavbarCategory === 'Services').map(p => p.city || p.vendorCity).filter(Boolean);
-                      const cities = [...new Set([...dbCities, 'Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'])];
-                      return cities.map(city => (
-                        <option key={city} value={city}>{city}</option>
-                      ));
-                    })()}
-                  </select>
-                </>
-              )}
-
-              {/* Daily Needs Tab Filters */}
-              {activeTab === 'Daily Needs' && (
-                <>
-                  <select
-                    value={selectedDailyNeedsTypes[0] || ""}
-                    onChange={(e) => setSelectedDailyNeedsTypes(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                  >
-                    <option value="">All Categories</option>
-                    {getCategoriesForTab('Daily Needs').map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedPrices[0] || ""}
-                    onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                  >
-                    <option value="">All Prices</option>
-                    <option value="under-100">Under ₹100</option>
-                    <option value="100-200">₹100 - ₹200</option>
-                    <option value="above-200">Above ₹200</option>
+                    <option value="Bangalore">Bangalore</option>
+                    <option value="Online">Online / Remote</option>
                   </select>
                 </>
               )}
@@ -5075,7 +5054,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedCuisines[0] || ""}
                     onChange={(e) => setSelectedCuisines(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Cuisines</option>
                     {[...new Set(products.filter(p => p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.tag === 'Food').flatMap(p => [p.category, p.subcategory, p.name]).filter(Boolean))].map(c => (
@@ -5085,7 +5064,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedDistances[0] || ""}
                     onChange={(e) => setSelectedDistances(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Distances</option>
                     <option value="under-2km">Under 2 km</option>
@@ -5095,7 +5074,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedFoodType}
                     onChange={(e) => setSelectedFoodType(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="All">All Food Types</option>
                     <option value="Veg">Veg Only</option>
@@ -5110,7 +5089,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedAccomTypes[0] || ""}
                     onChange={(e) => setSelectedAccomTypes(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Accommodations</option>
                     {getCategoriesForTab('Stay').map(type => (
@@ -5120,7 +5099,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedPrices[0] || ""}
                     onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Prices</option>
                     <option value="under-1000">Under ₹1,000</option>
@@ -5134,64 +5113,32 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               {/* Travel Tab Filters */}
               {activeTab === 'Travel' && (
                 <>
-                  {/* From Location */}
                   <select
                     value={fromLocation}
                     onChange={(e) => setFromLocation(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
-                    <option value="">From (Select City)</option>
-                    <option value="Bangalore">Bangalore</option>
-                    <option value="Chennai">Chennai</option>
-                    <option value="Mumbai">Mumbai</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Hyderabad">Hyderabad</option>
-                    <option value="Pune">Pune</option>
-                    <option value="Kochi">Kochi</option>
+                    <option value="Bangalore">From: Bangalore</option>
+                    <option value="Chennai">From: Chennai</option>
+                    <option value="Hyderabad">From: Hyderabad</option>
+                    <option value="Mumbai">From: Mumbai</option>
+                    <option value="Delhi">From: Delhi</option>
                   </select>
-
-                  {/* To Location */}
                   <select
                     value={toLocation}
                     onChange={(e) => setToLocation(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
-                    <option value="">To (Select City)</option>
-                    <option value="Chennai">Chennai</option>
-                    <option value="Bangalore">Bangalore</option>
-                    <option value="Mumbai">Mumbai</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Hyderabad">Hyderabad</option>
-                    <option value="Pune">Pune</option>
-                    <option value="Kochi">Kochi</option>
+                    <option value="Goa">To: Goa</option>
+                    <option value="Coorg">To: Coorg</option>
+                    <option value="Ooty">To: Ooty</option>
+                    <option value="Mysore">To: Mysore</option>
+                    <option value="Kochi">To: Kochi</option>
                   </select>
-
-                  {/* Bus Type */}
                   <select
-                    value={selectedBusType}
-                    onChange={(e) => setSelectedBusType(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                  >
-                    <option value="">Type of Vehicle</option>
-                    <option value="AC">AC</option>
-                    <option value="Non-AC">Non-AC</option>
-                  </select>
-
-                  {/* Seating Class */}
-                  <select
-                    value={selectedBusClass}
-                    onChange={(e) => setSelectedBusClass(e.target.value)}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                  >
-                    <option value="">All Seating Classes</option>
-                    <option value="Sleeper">Sleeper</option>
-                    <option value="Seater">Seater</option>
-                  </select>
-
-                  <select
-                    value={selectedTravelTypes[0] || ""}
-                    onChange={(e) => setSelectedTravelTypes(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    value={selectedCategories[0] || ""}
+                    onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Categories</option>
                     {getCategoriesForTab('Travel').map(type => (
@@ -5201,7 +5148,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedPrices[0] || ""}
                     onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Prices</option>
                     <option value="under-500">Under ₹500</option>
@@ -5217,7 +5164,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedJobDepts[0] || ""}
                     onChange={(e) => setSelectedJobDepts(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Departments</option>
                     {(() => {
@@ -5231,7 +5178,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedJobTypes[0] || ""}
                     onChange={(e) => setSelectedJobTypes(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Job Types</option>
                     {['Full-time', 'Part-time', 'Remote', 'Hybrid', 'Internship'].map(type => (
@@ -5241,16 +5188,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <select
                     value={selectedJobSalaries[0] || ""}
                     onChange={(e) => setSelectedJobSalaries(e.target.value ? [e.target.value] : [])}
-                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Salaries</option>
                     <option value="0-5l">₹0 - ₹5L L.P.A</option>
                     <option value="5l-10l">₹5L - ₹10L L.P.A</option>
                     <option value="10l-15l">₹10L - ₹15L L.P.A</option>
-                    <option value="15l-20l">₹15L - ₹20L L.P.A</option>
-                    <option value="20l-30l">₹20L - ₹30L L.P.A</option>
-                    <option value="30l-50l">₹30L - ₹50L L.P.A</option>
-                    <option value="above-50l">Above ₹50L L.P.A</option>
                   </select>
                 </>
               )}
@@ -5260,7 +5203,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 <select
                   value={selectedRating === null ? "" : selectedRating}
                   onChange={(e) => setSelectedRating(e.target.value ? parseFloat(e.target.value) : null)}
-                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                  className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                 >
                   <option value="">All Ratings</option>
                   <option value="4.0">4.0 ★ & Above</option>
@@ -5269,29 +5212,26 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 </select>
               )}
 
-              {/* Reset Filters button */}
+              {/* Sort By Select */}
+              <select 
+                value={sortBy} 
+                onChange={(e) => setSortBy(e.target.value)} 
+                className="w-full sm:w-auto col-span-2 sm:col-span-1 bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 focus:outline-none focus:border-amber-500 text-slate-750 cursor-pointer font-extrabold text-xs truncate"
+              >
+                <option value="popularity">Sort: Relevance / Popularity</option>
+                <option value="price-asc">{activeTab === 'Jobs' ? 'Salary: Low to High' : 'Price: Low to High'}</option>
+                <option value="price-desc">{activeTab === 'Jobs' ? 'Salary: High to Low' : 'Price: High to Low'}</option>
+                <option value="rating-desc">Sort: Highest Rated</option>
+              </select>
+
+              {/* Reset Filters button (Desktop only, mobile version is top right) */}
               <button 
                 onClick={clearAllFilters} 
-                className="text-xs font-black text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer"
+                className="hidden md:flex text-xs font-black text-amber-500 hover:text-amber-600 transition-colors items-center gap-1.5 px-3 py-2 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 rounded-xl cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Reset</span>
               </button>
-            </div>
-            
-            {/* Right Part: Sorting */}
-            <div className="flex items-center gap-2.5 text-xs">
-              <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Sort By:</span>
-              <select 
-                value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value)} 
-                className="bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500 text-slate-750 cursor-pointer font-extrabold"
-              >
-                <option value="default">Relevance / Popularity</option>
-                <option value="price-asc">{activeTab === 'Jobs' ? 'Salary: Low to High' : 'Price: Low to High'}</option>
-                <option value="price-desc">{activeTab === 'Jobs' ? 'Salary: High to Low' : 'Price: High to Low'}</option>
-                <option value="rating-desc">Top Rated</option>
-              </select>
             </div>
           </div>
 
@@ -6023,8 +5963,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                 </>
                               )}
                             </div>
-                              {/* Action Buttons based on category type */}
-                            <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-850/60 w-full flex items-center gap-2">
+                            
+                            {/* Action Buttons based on category type */}
+                            <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-850/60 w-full flex flex-col xs:flex-row items-center gap-1.5 sm:gap-2">
                               {(() => {
                                 const isUnavail = isVendorProductUnavailable(product);
                                 if (isUnavail) {
@@ -6038,6 +5979,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     </button>
                                   );
                                 }
+
                                 const category = activeTab === 'Home' ? product.subNavbarCategory : activeTab;
                                 if (category === 'Products' || category === 'Daily Needs' || category === 'Food') {
                                   return (
@@ -6047,10 +5989,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                           e.stopPropagation(); 
                                           addToCart(product); 
                                         }} 
-                                        className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-0.5 border border-slate-200/40 dark:border-slate-750/30 leading-none h-9"
+                                        className="w-full xs:flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 border border-slate-200/40 dark:border-slate-750/30 leading-none h-8.5 sm:h-9"
                                       >
-                                        <Plus className="w-3.5 h-3.5" />
-                                        <span>Add Cart</span>
+                                        <Plus className="w-3.5 h-3.5 shrink-0" />
+                                        <span>Add to Cart</span>
                                       </button>
                                       <button 
                                         onClick={(e) => { 
@@ -6058,7 +6000,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                           addToCart(product);
                                           setIsCartOpen(true);
                                         }} 
-                                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
+                                        className="w-full xs:flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9"
                                       >
                                         <span>Order Now</span>
                                       </button>
