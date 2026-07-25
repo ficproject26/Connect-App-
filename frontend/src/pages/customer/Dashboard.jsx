@@ -4248,7 +4248,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         {item.tag === 'Jobs' && <span className="text-[9.5px] font-bold text-slate-400">/year</span>}
                       </span>
                     </div>
-                    {item.discount && (
+                    {item.discount && item.tag !== 'Jobs' && item.subNavbarCategory !== 'Jobs' && item.category !== 'Jobs' && (
                       <span className="text-[9px] text-emerald-600 font-black tracking-wide shrink-0">
                         {item.discount}
                       </span>
@@ -4376,9 +4376,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   <div>
                     <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                     <div className="flex items-baseline gap-1.5 mt-2">
-                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(product.price || 0).toLocaleString()}</span>
-                      <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(product.originalPrice || product.price || 0).toLocaleString()}</span>
-                      <span className="text-[9.5px] text-emerald-600 font-bold">{product.discount}</span>
+                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">
+                        {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs' || product.category === 'Jobs' || (product.category || '').toLowerCase().includes('job'))
+                          ? formatJobSalary(product)
+                          : `₹${(product.price || 0).toLocaleString()}`}
+                      </span>
+                      {!(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs' || product.category === 'Jobs' || (product.category || '').toLowerCase().includes('job')) && product.originalPrice && product.originalPrice > product.price && (
+                        <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                      )}
+                      {!(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs' || product.category === 'Jobs' || (product.category || '').toLowerCase().includes('job')) && product.discount && (
+                        <span className="text-[9.5px] text-emerald-600 font-bold">{product.discount}</span>
+                      )}
                     </div>
                   </div>
                   
@@ -4770,6 +4778,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const getProductPrices = (product) => {
     let price = Number(product?.price || 0);
     let originalPrice = Number(product?.originalPrice || 0);
+
+    const isJob = product?.subNavbarCategory === 'Jobs' || 
+      product?.mainCategory === 'Jobs' || 
+      product?.category === 'Jobs' || 
+      product?.tag === 'Jobs' || 
+      product?.type === 'Job' ||
+      product?.type === 'Jobs' ||
+      (product?.category || '').toLowerCase().includes('job') ||
+      (product?.subNavbarCategory || '').toLowerCase().includes('job');
+
+    if (isJob) {
+      return {
+        price,
+        originalPrice: null,
+        discountPercent: 0,
+        discountText: ''
+      };
+    }
 
     let discountVal = product?.discountPercent || product?.discountPercentage;
     if (!discountVal && typeof product?.discount === 'string') {
@@ -5940,7 +5966,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               </div>
 
                               {/* Price or Salary Section */}
-                              {product.subNavbarCategory === 'Jobs' || product.tag === 'Jobs' || product.category === 'Jobs' ? (
+                              {product.subNavbarCategory === 'Jobs' || product.tag === 'Jobs' || product.category === 'Jobs' || product.mainCategory === 'Jobs' || (product.category || '').toLowerCase().includes('job') ? (
                                 <div className="mt-3.5 space-y-1 text-left">
                                   <span className="text-[9px] sm:text-[10px] text-amber-500 uppercase tracking-wider block font-black leading-none">Offered Salary</span>
                                   <div className="flex items-center gap-2 mt-1">
@@ -5948,7 +5974,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       {formatJobSalary(product)}
                                     </span>
                                     <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-900/30 px-2 py-0.5 rounded-full">
-                                      Full-time
+                                      {product.type || 'Full-time'}
                                     </span>
                                   </div>
                                 </div>
@@ -5961,10 +5987,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                         <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
                                         <div className="flex items-baseline gap-1.5 flex-wrap">
                                           <span className="text-[15px] sm:text-[16px] font-black text-slate-900 dark:text-white">₹{cardPrice.toLocaleString()}</span>
-                                          {cardOrigPrice > cardPrice && (
+                                          {cardOrigPrice && cardOrigPrice > cardPrice && (
                                             <span className="text-[11px] sm:text-[12px] text-slate-400 dark:text-slate-500 line-through">₹{cardOrigPrice.toLocaleString()}</span>
                                           )}
-                                          <span className="text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-extrabold">{cardDiscountText}</span>
+                                          {cardDiscountText && (
+                                            <span className="text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-extrabold">{cardDiscountText}</span>
+                                          )}
                                         </div>
                                       </div>
                                     );
@@ -7448,7 +7476,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               </div>
 
               {/* Clean Price Display / Salary Display for Jobs */}
-              {selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.tag === 'Jobs' || selectedProduct.category === 'Jobs' ? (
+              {selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.tag === 'Jobs' || selectedProduct.category === 'Jobs' || selectedProduct.mainCategory === 'Jobs' || (selectedProduct.category || '').toLowerCase().includes('job') ? (
                 <div className="mb-5 mt-1 text-left">
                   <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block mb-1">Offered Salary</span>
                   <div className="flex items-center gap-3">
@@ -7468,14 +7496,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <span className="text-2xl font-black text-slate-900 dark:text-white">
                         ₹{modalPrice.toLocaleString()}
                       </span>
-                      {modalOrigPrice > modalPrice && (
+                      {modalOrigPrice && modalOrigPrice > modalPrice && (
                         <>
                           <span className="text-xs text-slate-400 dark:text-slate-500 line-through">
                             ₹{modalOrigPrice.toLocaleString()}
                           </span>
-                          <span className="text-xs font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-md">
-                            {modalDiscountText}
-                          </span>
+                          {modalDiscountText && (
+                            <span className="text-xs font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-md">
+                              {modalDiscountText}
+                            </span>
+                          )}
                         </>
                       )}
                     </div>
@@ -7889,9 +7919,17 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <div>
                         <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{prod.name}</h4>
                         <div className="flex items-baseline gap-1.5 mt-2">
-                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">₹{(prod.price || 0).toLocaleString()}</span>
-                          <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{(prod.originalPrice || prod.price || 0).toLocaleString()}</span>
-                          <span className="text-[9.5px] text-[#f43397] font-black">{prod.discount}</span>
+                          <span className="text-[12.5px] font-black text-slate-800 dark:text-white">
+                            {(prod.tag === 'Jobs' || prod.subNavbarCategory === 'Jobs' || prod.category === 'Jobs' || (prod.category || '').toLowerCase().includes('job'))
+                              ? formatJobSalary(prod)
+                              : `₹${(prod.price || 0).toLocaleString()}`}
+                          </span>
+                          {!(prod.tag === 'Jobs' || prod.subNavbarCategory === 'Jobs' || prod.category === 'Jobs' || (prod.category || '').toLowerCase().includes('job')) && prod.originalPrice && prod.originalPrice > prod.price && (
+                            <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{prod.originalPrice.toLocaleString()}</span>
+                          )}
+                          {!(prod.tag === 'Jobs' || prod.subNavbarCategory === 'Jobs' || prod.category === 'Jobs' || (prod.category || '').toLowerCase().includes('job')) && prod.discount && (
+                            <span className="text-[9.5px] text-[#f43397] font-black">{prod.discount}</span>
+                          )}
                         </div>
                       </div>
                       <div className="border-t border-slate-100 dark:border-slate-800/60 mt-3 pt-2.5 flex items-center justify-between gap-1 w-full">
