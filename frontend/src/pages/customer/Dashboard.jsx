@@ -29,7 +29,7 @@ L.Icon.Default.mergeOptions({
 });
 
 import { 
-  Search, Star, SlidersHorizontal, ShoppingBag, Check, Minus, Plus, X, Zap,
+  Search, Star, SlidersHorizontal, ShoppingBag, Check, Minus, Plus, X, Zap, Menu,
   ChevronLeft, ChevronRight, Sparkles, Percent, Heart, ShieldCheck, 
   ShoppingCart, Truck, User, Info, RefreshCw, ChevronDown, ChevronUp,
   LayoutDashboard, CreditCard, Gift, BedDouble, Plane, Wallet, Receipt, Award, 
@@ -661,9 +661,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [selectedJobTypes, setSelectedJobTypes] = useState([]);
   const [selectedJobSalaries, setSelectedJobSalaries] = useState([]);
 
-  // Profile Modal State
+  // Profile Modal & Mobile Menu State
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState('orders'); // 'orders' | 'settings' | 'card' | 'edit'
   const [profileName, setProfileName] = useState(() => {
     const savedUser = localStorage.getItem('connect_current_user');
@@ -2921,21 +2922,174 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
             )}
           </div>
 
-          {/* Icons & Mini Profile shown inline on mobile */}
-          <div className="flex md:hidden items-center gap-1 sm:gap-2 shrink-0">
-            {renderHeaderIcons(true)}
+          {/* Mobile Right Action Group: Clean Menu Button & Profile Avatar */}
+          <div className="flex md:hidden items-center gap-2 shrink-0">
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="relative p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:text-amber-500 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/60 shadow-3xs flex items-center justify-center"
+              title="Open Menu"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-amber-500" /> : <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />}
+              {(cart.length > 0 || unreadCount > 0 || favorites.length > 0) && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
+              )}
+            </button>
+
             <div 
-              onClick={() => setIsProfileModalOpen(true)} 
-              className="cursor-pointer shrink-0 ml-0.5 group relative"
+              onClick={() => {
+                setIsProfileModalOpen(true);
+                setIsMobileMenuOpen(false);
+              }} 
+              className="cursor-pointer shrink-0 group relative"
               title="Open Profile"
             >
               <img 
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
                 alt="Profile" 
-                className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 rounded-full object-cover border-2 border-amber-400/90 shadow-3xs group-hover:scale-105 transition-transform"
+                className="w-7.5 h-7.5 rounded-full object-cover border-2 border-amber-400 shadow-3xs group-hover:scale-105 transition-transform"
               />
             </div>
           </div>
+
+          {/* Mobile Menu Dropdown Panel */}
+          {isMobileMenuOpen && (
+            <>
+              <div 
+                className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <div className="fixed top-14 left-3 right-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-50 p-4 space-y-3 md:hidden animate-scale-up text-left">
+                {/* Profile Header Card */}
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <div 
+                    onClick={() => {
+                      setIsProfileModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 cursor-pointer"
+                  >
+                    <img 
+                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
+                      alt="User Profile" 
+                      className="w-9 h-9 rounded-full object-cover border-2 border-amber-400 shadow-xs"
+                    />
+                    <div className="flex flex-col text-left">
+                      <span className="text-xs font-black text-slate-850 dark:text-white">
+                        Hi, {(currentUser?.name || profileName).split(' ')[0]}
+                      </span>
+                      <span className="text-[9.5px] font-black text-amber-500 uppercase tracking-wider">
+                        Connect Member
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 cursor-pointer border-none bg-transparent"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Quick Actions Grid */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {/* Theme Mode */}
+                  <button 
+                    onClick={() => {
+                      toggleTheme();
+                    }}
+                    className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-amber-500/10 rounded-2xl border border-slate-100 dark:border-slate-800/80 transition-colors text-left cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                      {theme === 'dark' ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5 text-slate-700" />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">Theme</span>
+                      <span className="text-[9px] font-extrabold text-slate-400 capitalize">{theme} Mode</span>
+                    </div>
+                  </button>
+
+                  {/* Offers */}
+                  <button 
+                    onClick={() => {
+                      setSelectedProduct(null);
+                      setActiveTab('Offers');
+                      setSelectedSubNavbarCategory('Offers');
+                      setSelectedCategories([]);
+                      setHoveredLink(null);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-blue-500/10 rounded-2xl border border-slate-100 dark:border-slate-800/80 transition-colors text-left cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                      <Tag className="w-4.5 h-4.5 text-red-500" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">Offers</span>
+                      <span className="text-[9px] font-extrabold text-red-500">3 Active Deals</span>
+                    </div>
+                  </button>
+
+                  {/* Wishlist */}
+                  <button 
+                    onClick={() => {
+                      setIsWishlistOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-rose-500/10 rounded-2xl border border-slate-100 dark:border-slate-800/80 transition-colors text-left cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
+                      <Heart className={`w-4.5 h-4.5 ${favorites.length > 0 ? 'fill-rose-500 text-rose-500' : 'text-rose-500'}`} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">Wishlist</span>
+                      <span className="text-[9px] font-extrabold text-slate-400">{favorites.length} Saved</span>
+                    </div>
+                  </button>
+
+                  {/* Cart */}
+                  <button 
+                    onClick={() => {
+                      setIsCartOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-emerald-500/10 rounded-2xl border border-slate-100 dark:border-slate-800/80 transition-colors text-left cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-4.5 h-4.5 text-emerald-500" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">My Cart</span>
+                      <span className="text-[9px] font-extrabold text-emerald-600">{cart.length} Items</span>
+                    </div>
+                  </button>
+
+                  {/* Notifications */}
+                  <button 
+                    onClick={() => {
+                      setIsNotificationsOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-amber-500/10 rounded-2xl border border-slate-100 dark:border-slate-800/80 transition-colors text-left cursor-pointer col-span-2"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                      <Bell className="w-4.5 h-4.5 text-amber-500" />
+                    </div>
+                    <div className="flex items-center justify-between w-full pr-1">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-slate-850 dark:text-slate-100">Notifications</span>
+                        <span className="text-[9px] font-extrabold text-slate-400">{unreadCount} Unread Alerts</span>
+                      </div>
+                      {unreadCount > 0 && (
+                        <span className="text-[9px] font-extrabold bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full">
+                          {unreadCount} New
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Row 2 for Mobile / Middle Section for Desktop (Search) */}
