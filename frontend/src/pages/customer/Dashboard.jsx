@@ -2226,6 +2226,38 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     return false;
   };
 
+  const isProductOrderCartItem = (item) => {
+    if (!item) return false;
+    const subCat = String(item.subNavbarCategory || '').toLowerCase();
+    const tag = String(item.tag || '').toLowerCase();
+    const cat = String(item.category || '').toLowerCase();
+    const mainCat = String(item.mainCategory || '').toLowerCase();
+    const subSubCat = String(item.subCategory || '').toLowerCase();
+
+    // 1. Explicitly exclude Bookings (Services, Stay, Travel, Hospitals) and Job applications
+    const isBookingOrJob = ['services', 'stay', 'travel', 'jobs', 'job', 'hospitals', 'hospital', 'doctor', 'appointment', 'booking'].some(
+      c => subCat.includes(c) || tag.includes(c) || cat.includes(c) || mainCat.includes(c) || subSubCat.includes(c)
+    ) || Boolean(item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking);
+
+    if (isBookingOrJob) return false;
+
+    // 2. Explicitly include Products, Daily Needs, and Food
+    const allowedCategories = [
+      'products', 'product', 'daily needs', 'dailyneed', 'dailyneeds', 'daily_needs', 
+      'food', 'foods', 'restaurant', 'groceries', 'grocery', 'vegetables', 'fruits', 
+      'electronics', 'appliances', 'clothing', 'fashion', 'bakery', 'meat', 'fresh', 'item'
+    ];
+
+    const matchesAllowed = allowedCategories.some(
+      c => subCat.includes(c) || tag.includes(c) || cat.includes(c) || mainCat.includes(c) || subSubCat.includes(c)
+    );
+
+    if (matchesAllowed) return true;
+    if (item.foodType || item.price !== undefined || item.originalPrice !== undefined) return true;
+
+    return false;
+  };
+
   const getCartCheckoutButtonText = () => {
     const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
     if (selectedItems.length === 0) return "Select items to checkout";
@@ -8560,8 +8592,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Add / Decrease Item Quantity Buttons - Only for product order items (hidden for bookings & jobs) */}
-                    {!isBookingCartItem(item) && !isJobCartItem(item) && (
+                    {/* Add / Decrease Item Quantity Buttons - Only for Products, Daily Needs, and Food orders */}
+                    {isProductOrderCartItem(item) && (
                       <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
                         <button 
                           type="button"
