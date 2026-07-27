@@ -8549,8 +8549,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Add / Decrease Item Quantity Buttons - Only for physical order items */}
-                    {!isBookingCartItem(item) && !isJobCartItem(item) && (
+                    {/* Add / Decrease Item Quantity Buttons - Render for all items except job applications */}
+                    {!isJobCartItem(item) && (
                       <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
                         <button 
                           type="button"
