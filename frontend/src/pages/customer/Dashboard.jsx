@@ -2491,6 +2491,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         (searchCategory === 'All' || normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(searchCategory));
 
       const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
+        activeTab === 'Home' ||
         normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(selectedSubNavbarCategory) ||
         (product.subcategory && product.subcategory.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
         (product.subSubcategory && product.subSubcategory.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
@@ -2711,7 +2712,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     );
   }, [activeProducts, activeTab]);
 
-  const displayProducts = filteredProducts;
+  const displayProducts = useMemo(() => {
+    if (filteredProducts && filteredProducts.length > 0) return filteredProducts;
+    if (activeTab === 'Home' && (!searchQuery || searchQuery.trim() === '')) {
+      return activeProducts;
+    }
+    return fallbackTabProducts.length > 0 ? fallbackTabProducts : activeProducts;
+  }, [filteredProducts, activeTab, searchQuery, activeProducts, fallbackTabProducts]);
 
   const wishlistProducts = useMemo(() => {
     const allItems = Array.isArray(products) ? products : [];
