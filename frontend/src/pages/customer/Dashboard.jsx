@@ -4297,18 +4297,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
           <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Exclusive Offers for You</h3>
-          <button 
-            onClick={() => {
-              setSelectedProduct(null);
-              setActiveTab('Offers');
-              setSelectedSubNavbarCategory('Offers');
-              setSelectedCategories([]);
-              setHoveredLink(null);
-            }} 
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
-          >
-            View All Offers &gt;
-          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -4356,18 +4344,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
           <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Recommended for You</h3>
-          <button 
-            onClick={() => {
-              setSelectedProduct(null);
-              setActiveTab('Products');
-              setSelectedSubNavbarCategory('Products');
-              setSelectedCategories([]);
-              setHoveredLink(null);
-            }} 
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer bg-transparent border-none"
-          >
-            View All &gt;
-          </button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-5">
