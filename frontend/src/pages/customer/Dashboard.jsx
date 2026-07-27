@@ -872,14 +872,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [selectedTimeWindow, setSelectedTimeWindow] = useState('All Time');
 
   const ordersForActiveTab = useMemo(() => {
+    const isPhysicalOrder = (o) => {
+      const typeLower = (o.type || '').toLowerCase();
+      if (['booking', 'stay', 'travel', 'services', 'service', 'job', 'jobs', 'appointment', 'doctor', 'hospital'].includes(typeLower)) {
+        return false;
+      }
+      const details = (o.product_details || o.name || '').toLowerCase();
+      const bookingKeywords = ['hotel', 'stay', 'flight', 'bus', 'doctor', 'hospital', 'consultation', 'cleaning', 'plumbing', 'repair', 'job opening', 'full time'];
+      if (bookingKeywords.some(k => details.includes(k))) return false;
+      return true;
+    };
+
     if (activeProfileTab === 'orders') {
-      return customerOrders.filter(o => o.type !== 'Job' && o.type !== 'Jobs' && o.type !== 'Booking' && o.type !== 'Stay' && o.type !== 'Travel' && o.type !== 'Appointment');
+      return customerOrders.filter(o => isPhysicalOrder(o));
     }
     if (activeProfileTab === 'bookings') {
-      return customerOrders.filter(o => o.type === 'Booking' || o.type === 'Stay' || o.type === 'Travel' || o.type === 'Appointment');
+      return customerOrders.filter(o => {
+        const typeLower = (o.type || '').toLowerCase();
+        if (typeLower === 'job' || typeLower === 'jobs') return false;
+        if (typeLower === 'booking' || ['stay', 'travel', 'services', 'service', 'appointment', 'hospital', 'doctor'].includes(typeLower)) return !isPhysicalOrder(o);
+        return !isPhysicalOrder(o);
+      });
     }
     if (activeProfileTab === 'myjobs') {
-      return customerOrders.filter(o => o.type === 'Job' || o.type === 'Jobs');
+      return customerOrders.filter(o => {
+        const typeLower = (o.type || '').toLowerCase();
+        return typeLower === 'job' || typeLower === 'jobs';
+      });
     }
     return customerOrders;
   }, [customerOrders, activeProfileTab]);
@@ -2268,9 +2287,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
     const totalAmount = selectedItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
 
-    const bookingItems = selectedItems.filter(isBookingCartItem);
-    const jobItems = selectedItems.filter(item => !isBookingCartItem(item) && isJobCartItem(item));
-    const productItems = selectedItems.filter(item => !isBookingCartItem(item) && !isJobCartItem(item));
+    const productItems = selectedItems.filter(isProductOrderCartItem);
+    const jobItems = selectedItems.filter(item => !isProductOrderCartItem(item) && isJobCartItem(item));
+    const bookingItems = selectedItems.filter(item => !isProductOrderCartItem(item) && isBookingCartItem(item));
 
     const orderGroups = [];
     if (productItems.length > 0) orderGroups.push({ items: productItems, type: 'Order' });
@@ -5937,32 +5956,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                   </ul>
                                 </div>
 
-                                {/* Action Button on Job Summary Card */}
-                                <div className="pt-2">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const formEl = document.querySelector('form');
-                                      if (formEl) {
-                                        formEl.requestSubmit();
-                                      } else {
-                                        setAppliedJobId(selectedJob.id || selectedJob._id);
-                                      }
-                                    }}
-                                    disabled={isJobSubmitting}
-                                    className="w-full py-3.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 border-none"
-                                  >
-                                    {isJobSubmitting ? (
-                                      <span>Submitting Application...</span>
-                                    ) : (
-                                      <>
-                                        <span>Apply Now for {selectedJob.title}</span>
-                                        <ChevronRight className="w-4 h-4" />
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
                               </div>
                             </div>
 
@@ -8894,9 +8887,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
                 {['orders', 'bookings', 'myjobs'].includes(activeProfileTab) && (() => {
                   const ordersForActiveTab = customerOrders.filter(o => {
-                    if (activeProfileTab === 'myjobs') return o.type === 'Job' || o.type === 'Jobs';
-                    if (activeProfileTab === 'bookings') return o.type === 'Booking' || ['Stay', 'Travel', 'Services'].includes(o.type);
-                    return !o.type || o.type === 'Order';
+                    const typeLower = (o.type || '').toLowerCase();
+                    if (activeProfileTab === 'myjobs') return typeLower === 'job' || typeLower === 'jobs';
+                    if (activeProfileTab === 'bookings') {
+                      if (typeLower === 'job' || typeLower === 'jobs') return false;
+                      return typeLower === 'booking' || ['stay', 'travel', 'services', 'service', 'appointment', 'hospital', 'doctor'].includes(typeLower);
+                    }
+                    // orders tab: exclude bookings and jobs
+                    if (['booking', 'stay', 'travel', 'services', 'service', 'job', 'jobs', 'appointment', 'doctor', 'hospital'].includes(typeLower)) return false;
+                    return true;
                   });
 
                   const filteredCustomerOrders = ordersForActiveTab.filter(o => {
