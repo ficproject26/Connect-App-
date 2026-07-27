@@ -5051,8 +5051,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       raw = String(job.salary);
     } else if (job.price) {
       const priceNum = Number(job.price || 0);
-      if (priceNum > 1000) {
-        return `${Math.round(priceNum / 100000)}LPA`;
+      if (priceNum >= 10000) {
+        const lakhs = priceNum / 100000;
+        return Number.isInteger(lakhs) ? `${lakhs}LPA` : `${lakhs.toFixed(1)}LPA`;
       } else if (priceNum > 0) {
         return `${priceNum}LPA`;
       }
@@ -5064,10 +5065,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
     const numMatch = raw.match(/[\d.]+/);
     if (numMatch) {
       const parsed = parseFloat(numMatch[0]);
-      if (parsed > 1000) {
-        return `${Math.round(parsed / 100000)}LPA`;
+      if (parsed >= 10000) {
+        const lakhs = parsed / 100000;
+        return Number.isInteger(lakhs) ? `${lakhs}LPA` : `${lakhs.toFixed(1)}LPA`;
       } else if (parsed > 0) {
-        return `${parsed}LPA`;
+        return Number.isInteger(parsed) ? `${parsed}LPA` : `${parsed}LPA`;
       }
     }
     const clean = raw.replace(/l\.?p\.?a\.?/gi, '').replace(/\s+/g, '');
@@ -5501,8 +5503,9 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       const applicationTips = inferApplicationTips(selectedJob.title, selectedJob.department, selectedJob.desc, selectedJob.applicationTips);
 
                       const formatJobPostedDate = (dateVal) => {
-                        const d = dateVal ? new Date(dateVal) : new Date();
-                        if (isNaN(d.getTime())) return String(dateVal || '20 May 2026');
+                        if (!dateVal) return '15 May 2026';
+                        const d = new Date(dateVal);
+                        if (isNaN(d.getTime())) return String(dateVal);
                         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
                       };
@@ -5713,62 +5716,56 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                                      <div 
-                                        onClick={() => setIsPreviewResumeOpen(true)}
-                                        className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40 cursor-pointer hover:border-blue-400 hover:shadow-xs transition-all group"
-                                      >
-                                        <div className="flex items-center gap-3">
-                                          <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-bold text-xs group-hover:bg-rose-100 transition-colors">
-                                            PDF
+                                    <div>
+                                      {resumeFile ? (
+                                        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40 hover:border-blue-400 hover:shadow-xs transition-all group">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-bold text-xs">
+                                              PDF
+                                            </div>
+                                            <div className="text-left">
+                                              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1">
+                                                {resumeFile.name}
+                                              </h4>
+                                              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                                PDF • {resumeFile.size || '450 KB'} • <button type="button" onClick={() => setIsPreviewResumeOpen(true)} className="text-blue-600 dark:text-blue-400 font-extrabold underline border-none bg-transparent cursor-pointer p-0">Click to View Resume</button>
+                                              </span>
+                                            </div>
                                           </div>
-                                          <div className="text-left">
-                                            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-blue-600">
-                                              {resumeFile?.name || 'Dhanush_Tamilarasan_Resume.pdf'}
-                                            </h4>
-                                            <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                              {resumeFile?.size ? `PDF • ${resumeFile.size}` : 'PDF • 450 KB'} • <button type="button" onClick={(e) => { e.stopPropagation(); setIsPreviewResumeOpen(true); }} className="text-blue-600 dark:text-blue-400 font-extrabold underline border-none bg-transparent cursor-pointer p-0">Click to View Resume</button>
-                                            </span>
-                                          </div>
-                                        </div>
-                                        {resumeFile && (
                                           <button
                                             type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setResumeFile(null);
-                                            }}
+                                            onClick={() => setResumeFile(null)}
                                             className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
                                             title="Delete Resume"
                                           >
                                             <Trash2 className="w-4 h-4" />
                                           </button>
-                                        )}
-                                      </div>
-
-                                      <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors bg-white dark:bg-slate-950">
-                                        <input
-                                          type="file"
-                                          accept=".pdf,.doc,.docx"
-                                          className="hidden"
-                                          onChange={(e) => {
-                                            if (e.target.files && e.target.files[0]) {
-                                              const file = e.target.files[0];
-                                              setResumeFile({
-                                                name: file.name,
-                                                size: `${(file.size / 1024).toFixed(0)} KB`
-                                              });
-                                            }
-                                          }}
-                                        />
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
-                                          <Plus className="w-5 h-5" />
                                         </div>
-                                        <div className="text-left">
-                                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Upload New Resume</span>
-                                          <span className="text-[10px] text-slate-400 block">PDF, DOC, DOCX (Max 5MB)</span>
-                                        </div>
-                                      </label>
+                                      ) : (
+                                        <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl p-6 flex items-center justify-center gap-3 cursor-pointer transition-colors bg-white dark:bg-slate-950 w-full text-center">
+                                          <input
+                                            type="file"
+                                            accept=".pdf,.doc,.docx"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                              if (e.target.files && e.target.files[0]) {
+                                                const file = e.target.files[0];
+                                                setResumeFile({
+                                                  name: file.name,
+                                                  size: `${(file.size / 1024).toFixed(0)} KB`
+                                                });
+                                              }
+                                            }}
+                                          />
+                                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                                            <Plus className="w-5 h-5" />
+                                          </div>
+                                          <div className="text-left">
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Upload Resume</span>
+                                            <span className="text-[10px] text-slate-400 block">PDF, DOC, DOCX (Max 5MB)</span>
+                                          </div>
+                                        </label>
+                                      )}
                                     </div>
                                   </div>
 
@@ -5860,7 +5857,7 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <Tag className="w-3.5 h-3.5 text-slate-400" />
                                       Salary
                                     </span>
-                                    <span className="font-extrabold text-slate-900 dark:text-white">{(selectedJob.salary || '').replace(/₹/g, '').trim() || 'Competitive Salary'}</span>
+                                    <span className="font-extrabold text-slate-900 dark:text-white">{formatJobSalary(selectedJob)}</span>
                                   </div>
 
                                   <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
