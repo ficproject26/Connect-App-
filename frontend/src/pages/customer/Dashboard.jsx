@@ -2201,17 +2201,28 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const isBookingCartItem = (item) => {
     if (!item) return false;
-    if (['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory)) return true;
-    if (['Services', 'Stay', 'Travel'].includes(item.tag)) return true;
-    if (['Services', 'Stay', 'Travel'].includes(item.category)) return true;
-    if (['Services', 'Stay', 'Travel'].includes(item.type)) return true;
+    const subCat = String(item.subNavbarCategory || '');
+    const tag = String(item.tag || '');
+    const cat = String(item.category || '');
+    const mainCat = String(item.mainCategory || '');
+    const type = String(item.type || '');
+
+    const bookingCategories = ['Services', 'Stay', 'Travel', 'Hospitals', 'Hospital', 'Doctors', 'Doctor', 'Appointments', 'Appointment'];
+    if (bookingCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
     if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking) return true;
     return false;
   };
 
   const isJobCartItem = (item) => {
     if (!item) return false;
-    if (item.subNavbarCategory === 'Jobs' || item.tag === 'Jobs' || item.category === 'Jobs' || item.type === 'Job' || item.type === 'Jobs') return true;
+    const subCat = String(item.subNavbarCategory || '');
+    const tag = String(item.tag || '');
+    const cat = String(item.category || '');
+    const mainCat = String(item.mainCategory || '');
+    const type = String(item.type || '');
+
+    const jobCategories = ['Jobs', 'Job', 'Careers', 'Career'];
+    if (jobCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
     return false;
   };
 
@@ -8549,8 +8560,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Add / Decrease Item Quantity Buttons - Render for all items except job applications */}
-                    {!isJobCartItem(item) && (
+                    {/* Add / Decrease Item Quantity Buttons - Only for product order items (hidden for bookings & jobs) */}
+                    {!isBookingCartItem(item) && !isJobCartItem(item) && (
                       <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
                         <button 
                           type="button"
