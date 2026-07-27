@@ -371,10 +371,11 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   const [isPreviewResumeOpen, setIsPreviewResumeOpen] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const loadVendorProducts = async () => {
       try {
-        const res = await productService.getProducts();
-        if (res && res.success && Array.isArray(res.products)) {
+        const res = await productService.getProducts(true);
+        if (isMounted && res && res.success && Array.isArray(res.products)) {
           const patched = res.products.map(p => {
             const updated = { ...p };
             // Correct Eggs category
@@ -438,7 +439,21 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         console.warn("Failed to load vendor products dynamically:", err);
       }
     };
+
     loadVendorProducts();
+
+    // Poll every 10 seconds for real-time vendor updates
+    const intervalId = setInterval(loadVendorProducts, 10000);
+
+    // Refetch immediately when customer switches back to window/tab
+    const handleFocus = () => loadVendorProducts();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const [adminOffers, setAdminOffers] = useState([]);
@@ -1369,24 +1384,35 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
   ];
 
   const handleJobSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setIsJobSubmitting(true);
     try {
-      const selectedJob = jobsList.find(j => j.id === appliedJobId);
+      const selectedJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId) || j._id === appliedJobId || String(j._id) === String(appliedJobId)) ||
+        products.find(p => p.id === appliedJobId || String(p.id) === String(appliedJobId) || p._id === appliedJobId || String(p._id) === String(appliedJobId)) ||
+        (selectedProduct && (selectedProduct.id === appliedJobId || String(selectedProduct.id) === String(appliedJobId)) ? selectedProduct : null) || {
+          title: 'Full Stack Developer',
+          id: appliedJobId || 'CAT-FSD-2026-1024',
+          vendorId: '3w8hhon38mqg7ni0u'
+        };
+
+      const jobTitle = selectedJob?.title || selectedJob?.name || selectedJob?.jobTitle || 'Job Application';
+      const jobId = selectedJob?.id || selectedJob?._id || appliedJobId || 'CAT-FSD-2026-1024';
+      const vendorId = selectedJob?.vendorId || selectedJob?.vendor_id || '3w8hhon38mqg7ni0u';
+
       const res = await apiFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
-          vendor_id: selectedJob?.vendorId || '3w8hhon38mqg7ni0u',
-          customer_name: applicantName,
+          vendor_id: vendorId,
+          customer_name: applicantName || currentUser?.name || 'Applicant',
           customer_phone: profilePhone || currentUser?.phone || '+91 98765 43210',
-          customer_address: selectedLocation.area || 'Koramangala, Bangalore',
+          customer_address: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
           customer_latitude: 12.9498,
           customer_longitude: 77.6289,
-          product_details: selectedJob?.title || 'Job Application',
+          product_details: jobTitle,
           amount: 0,
           items: [{
-            productId: selectedJob?.id,
-            name: selectedJob?.title,
+            productId: jobId,
+            name: jobTitle,
             price: 0,
             quantity: 1
           }],
@@ -1398,13 +1424,16 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         })
       });
 
-      if (res.status === 'success') {
+      if (res && (res.status === 'success' || res.id || res.order_number)) {
         setJobSubmitSuccess(true);
+        triggerNotification(`Application for ${jobTitle} submitted successfully!`);
       } else {
         console.error('Failed to submit job application:', res);
+        triggerNotification(res?.message || 'Failed to submit job application. Please try again.');
       }
     } catch (err) {
       console.error('Error placing job application:', err);
+      triggerNotification('An error occurred while submitting your application.');
     } finally {
       setIsJobSubmitting(false);
     }
@@ -5408,9 +5437,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                       <ChevronLeft className="w-4 h-4" />
                       <span>Back to Jobs</span>
                     </button>
-                    
                     {(() => {
-                      const rawJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId)) ||
+                      const foundProduct = products.find(p => p.id === appliedJobId || String(p.id) === String(appliedJobId) || p._id === appliedJobId || String(p._id) === String(appliedJobId));
+                      const rawJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId) || j._id === appliedJobId || String(j._id) === String(appliedJobId)) ||
+                        (foundProduct ? {
+                          id: foundProduct.id || foundProduct._id,
+                          vendorId: foundProduct.vendorId,
+                          vendorName: foundProduct.vendorName || foundProduct.brand || foundProduct.companyName || foundProduct.vendor_name || 'Partner Organization',
+                          title: foundProduct.name || foundProduct.title || foundProduct.jobTitle,
+                          department: foundProduct.department || foundProduct.category || foundProduct.subCategory || foundProduct.specialization || 'General',
+                          location: foundProduct.jobLocation || foundProduct.location || foundProduct.city || foundProduct.vendorCity || foundProduct.locationType || 'Bangalore, Karnataka',
+                          salary: foundProduct.salary ? String(foundProduct.salary).trim() : (foundProduct.price ? `₹${(foundProduct.price || 0).toLocaleString()} L.P.A` : 'Competitive Salary'),
+                          type: foundProduct.jobType || foundProduct.type || foundProduct.job_type || foundProduct.employmentType || foundProduct.workType || inferJobType(foundProduct),
+                          experience: foundProduct.experience || foundProduct.exp || foundProduct.jobExperience || foundProduct.experience_required || foundProduct.experienceRequired || inferExperience(foundProduct.description, foundProduct.name),
+                          skills: foundProduct.skills || foundProduct.skillsRequired || foundProduct.requiredSkills || foundProduct.qualification || foundProduct.tags,
+                          desc: foundProduct.description || foundProduct.jobDescription || foundProduct.desc || `${foundProduct.name} position.`,
+                          createdAt: foundProduct.createdAt || foundProduct.created_at || foundProduct.postedOn || foundProduct.postedDate,
+                          applicationTips: foundProduct.applicationTips || foundProduct.tips
+                        } : null) ||
                         (selectedProduct ? {
                           id: selectedProduct.id || selectedProduct._id,
                           vendorId: selectedProduct.vendorId,
@@ -5733,7 +5777,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     <div className="flex items-center gap-3 shrink-0 justify-end">
                                       <button
                                         type="button"
-                                        onClick={handleBackToOpenings}
+                                        onClick={() => {
+                                          triggerNotification("Job application saved as draft.");
+                                          handleBackToOpenings();
+                                        }}
                                         className="px-5 py-3 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all"
                                       >
                                         Save as Draft
@@ -5882,6 +5929,33 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     ))}
                                   </ul>
                                 </div>
+
+                                {/* Action Button on Job Summary Card */}
+                                <div className="pt-2">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const formEl = document.querySelector('form');
+                                      if (formEl) {
+                                        formEl.requestSubmit();
+                                      } else {
+                                        setAppliedJobId(selectedJob.id || selectedJob._id);
+                                      }
+                                    }}
+                                    disabled={isJobSubmitting}
+                                    className="w-full py-3.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 border-none"
+                                  >
+                                    {isJobSubmitting ? (
+                                      <span>Submitting Application...</span>
+                                    ) : (
+                                      <>
+                                        <span>Apply Now for {selectedJob.title}</span>
+                                        <ChevronRight className="w-4 h-4" />
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
                               </div>
                             </div>
 
@@ -5917,7 +5991,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                         return (
                           <div 
                             key={job.id} 
-                            className="p-5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200"
+                            onClick={() => setAppliedJobId(job.id)}
+                            className="p-5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200 cursor-pointer"
                           >
                             <div className="space-y-3">
                               <div className="flex items-start justify-between gap-2.5 flex-wrap">
@@ -5954,7 +6029,8 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                             
                             {appliedOrder ? (
                               <button 
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setIsProfileModalOpen(true);
                                   setActiveProfileTab('myjobs');
                                   setTrackingOrder(appliedOrder);
@@ -5966,7 +6042,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                               </button>
                             ) : (
                               <button 
-                                onClick={() => setAppliedJobId(job.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAppliedJobId(job.id);
+                                }}
                                 className="w-full text-center bg-[#0b1e36] dark:bg-amber-400 hover:bg-amber-500 dark:hover:bg-amber-500 text-white dark:text-[#0b1e36] font-black text-xs uppercase tracking-widest py-3 rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-1"
                               >
                                 <span>Apply Now</span>
@@ -7315,20 +7394,55 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
     // Helper to get partner badge text dynamically
     const getPartnerBadgeText = (product) => {
+      if (!product) return 'VERIFIED SELLER';
       const subCat = product.subNavbarCategory;
-      if (subCat === 'Services' || product.category === 'Hospitals') return 'VERIFIED PARTNER';
+      const cat = product.category;
+      const mainCat = product.mainCategory;
+      const pTag = product.tag;
+      const pType = product.type;
+
+      const isJob = subCat === 'Jobs' || 
+        cat === 'Jobs' || 
+        mainCat === 'Jobs' || 
+        pTag === 'Jobs' || 
+        pType === 'Job' ||
+        pType === 'Jobs' ||
+        (cat || '').toLowerCase().includes('job') ||
+        (subCat || '').toLowerCase().includes('job');
+
+      if (isJob) return 'VERIFIED EMPLOYER';
+      if (subCat === 'Services' || cat === 'Hospitals') return 'VERIFIED PARTNER';
       if (subCat === 'Stay' || subCat === 'Travel') return 'VERIFIED HOST';
-      if (subCat === 'Jobs') return 'VERIFIED EMPLOYER';
       return 'VERIFIED SELLER';
     };
 
     // Helper to get action buttons dynamically
     const getActionButtons = (product) => {
+      if (!product) return { chatText: "Chat", actionText: "ACTION", bookingText: "", showBooking: false };
       const subCat = product.subNavbarCategory;
       const cat = product.category;
+      const mainCat = product.mainCategory;
+      const pTag = product.tag;
+      const pType = product.type;
       const isMedical = isMedicalService(product);
+
+      const isJob = subCat === 'Jobs' || 
+        cat === 'Jobs' || 
+        mainCat === 'Jobs' || 
+        pTag === 'Jobs' || 
+        pType === 'Job' ||
+        pType === 'Jobs' ||
+        (cat || '').toLowerCase().includes('job') ||
+        (subCat || '').toLowerCase().includes('job');
       
-      if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital' || isMedical) {
+      if (isJob) {
+        return {
+          chatText: "Chat with HR",
+          actionText: "APPLY NOW",
+          bookingText: "",
+          showBooking: false
+        };
+      } else if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital' || isMedical) {
         return {
           chatText: isMedical ? "Chat with Doctor" : "Chat with Service Expert",
           actionText: "ADD TO CART",
@@ -7348,13 +7462,6 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           actionText: "ADD TO CART",
           bookingText: "BOOK TICKET",
           showBooking: true
-        };
-      } else if (subCat === 'Jobs') {
-        return {
-          chatText: "Chat with HR",
-          actionText: "APPLY NOW",
-          bookingText: "",
-          showBooking: false
         };
       } else {
         // Products / Daily Needs / Food

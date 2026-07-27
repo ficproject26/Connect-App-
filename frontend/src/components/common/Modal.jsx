@@ -69,7 +69,7 @@ export default function JobsModal({ isOpen, onClose }) {
     onClose();
   };
 
-  const selectedJob = jobsList.find(j => j.id === appliedJobId);
+  const selectedJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId) || j._id === appliedJobId || String(j._id) === String(appliedJobId));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,7 +82,7 @@ export default function JobsModal({ isOpen, onClose }) {
         },
         body: JSON.stringify({
           vendor_id: selectedJob?.vendorId || '3w8hhon38mqg7ni0u',
-          customer_name: applicantName,
+          customer_name: applicantName || 'Applicant',
           customer_phone: '+91 98765 43210',
           customer_address: 'Koramangala, Bangalore',
           customer_latitude: 12.9498,
@@ -90,13 +90,14 @@ export default function JobsModal({ isOpen, onClose }) {
           product_details: selectedJob?.title || 'Job Application',
           amount: 0,
           items: [{
-            productId: selectedJob?.id,
-            name: selectedJob?.title,
+            productId: selectedJob?.id || appliedJobId,
+            name: selectedJob?.title || 'Job Application',
             price: 0,
             quantity: 1
           }],
           candidateEmail: applicantEmail,
-          candidateResume: applicantResume
+          candidateResume: applicantResume || 'Resume_Document.pdf',
+          type: 'Job'
         })
       });
       if (res.ok) {

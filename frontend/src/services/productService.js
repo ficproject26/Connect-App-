@@ -344,7 +344,13 @@ const sanitizeProduct = (p) => {
 };
 
 export const productService = {
-  getProducts: async () => {
+  clearCache: () => {
+    try {
+      localStorage.removeItem('connect_cached_products');
+    } catch (e) {}
+  },
+
+  getProducts: async (forceLive = true) => {
     const mergeWithBaseline = (fetchedList) => {
       const sanitizedFetched = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
       if (sanitizedFetched.length > 0) {
@@ -380,7 +386,7 @@ export const productService = {
           try {
             localStorage.setItem('connect_cached_products', JSON.stringify(merged));
           } catch(e) {}
-          return { success: true, products: merged };
+          return { success: true, products: merged, source: 'live' };
         }
       }
     } catch (err) {
@@ -389,10 +395,10 @@ export const productService = {
 
     const localCached = getLocalCache();
     if (localCached) {
-      return { success: true, products: localCached };
+      return { success: true, products: localCached, source: 'cache' };
     }
 
-    return { success: true, products: mergeWithBaseline([]) };
+    return { success: true, products: mergeWithBaseline([]), source: 'baseline' };
   },
 
   deleteAllProducts: async () => {
