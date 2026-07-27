@@ -2228,34 +2228,18 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
   const isProductOrderCartItem = (item) => {
     if (!item) return false;
-    const subCat = String(item.subNavbarCategory || '').toLowerCase();
-    const tag = String(item.tag || '').toLowerCase();
-    const cat = String(item.category || '').toLowerCase();
-    const mainCat = String(item.mainCategory || '').toLowerCase();
-    const subSubCat = String(item.subCategory || '').toLowerCase();
+    const subCat = String(item.subNavbarCategory || item.mainCategory || item.tag || item.category || '').toLowerCase().trim();
 
-    // 1. Explicitly exclude Bookings (Services, Stay, Travel, Hospitals) and Job applications
-    const isBookingOrJob = ['services', 'stay', 'travel', 'jobs', 'job', 'hospitals', 'hospital', 'doctor', 'appointment', 'booking'].some(
-      c => subCat.includes(c) || tag.includes(c) || cat.includes(c) || mainCat.includes(c) || subSubCat.includes(c)
-    ) || Boolean(item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking);
+    // Explicitly exclude Services, Stay, Travel, Hospitals, and Jobs
+    const noQtyCategories = ['services', 'service', 'stay', 'stays', 'travel', 'travels', 'jobs', 'job', 'hospitals', 'hospital', 'doctors', 'doctor', 'appointment'];
+    const isExcluded = noQtyCategories.some(c => subCat === c || subCat.startsWith(c + ' ') || subCat.endsWith(' ' + c) || subCat.includes(c + ' booking'));
+    if (isExcluded) return false;
 
-    if (isBookingOrJob) return false;
+    // Explicitly check for booking specific flags
+    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.isBooking) return false;
 
-    // 2. Explicitly include Products, Daily Needs, and Food
-    const allowedCategories = [
-      'products', 'product', 'daily needs', 'dailyneed', 'dailyneeds', 'daily_needs', 
-      'food', 'foods', 'restaurant', 'groceries', 'grocery', 'vegetables', 'fruits', 
-      'electronics', 'appliances', 'clothing', 'fashion', 'bakery', 'meat', 'fresh', 'item'
-    ];
-
-    const matchesAllowed = allowedCategories.some(
-      c => subCat.includes(c) || tag.includes(c) || cat.includes(c) || mainCat.includes(c) || subSubCat.includes(c)
-    );
-
-    if (matchesAllowed) return true;
-    if (item.foodType || item.price !== undefined || item.originalPrice !== undefined) return true;
-
-    return false;
+    // Default to true for physical order items (Products, Daily Needs, Food, Electronics, Accessories, Meals, etc.)
+    return true;
   };
 
   const getCartCheckoutButtonText = () => {
