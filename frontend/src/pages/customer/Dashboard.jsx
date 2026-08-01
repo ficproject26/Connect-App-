@@ -521,7 +521,21 @@ export default function CustomerDashboard({
   const [isArModalOpen, setIsArModalOpen] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
-  const [selectedSubNavbarCategory, setSelectedSubNavbarCategory] = useState('All');
+  const [selectedSubNavbarCategory, setSelectedSubNavbarCategory] = useState(() => {
+    try {
+      return localStorage.getItem('connect_selected_sub_category') || 'All';
+    } catch (e) {
+      return 'All';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (selectedSubNavbarCategory) {
+        localStorage.setItem('connect_selected_sub_category', selectedSubNavbarCategory);
+      }
+    } catch (e) {}
+  }, [selectedSubNavbarCategory]);
   const [sortBy, setSortBy] = useState('default');
   const [activeScheduleModalItem, setActiveScheduleModalItem] = useState(null);
   const [activeBookNowModalItem, setActiveBookNowModalItem] = useState(null);
@@ -629,7 +643,22 @@ export default function CustomerDashboard({
   const [stayGuestsCount, setStayGuestsCount] = useState(2);
   const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
   const [favorites, setFavorites] = useState([]);
-  const [activeTab, setActiveTab] = useState('Home'); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const savedTab = localStorage.getItem('connect_active_tab');
+      return savedTab || 'Home';
+    } catch (e) {
+      return 'Home';
+    }
+  }); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
+
+  useEffect(() => {
+    try {
+      if (activeTab) {
+        localStorage.setItem('connect_active_tab', activeTab);
+      }
+    } catch (e) {}
+  }, [activeTab]);
   const [dbCategories, setDbCategories] = useState([]);
 
   const normalizeMainCatName = (rawName) => {

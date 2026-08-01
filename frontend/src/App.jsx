@@ -43,9 +43,11 @@ function AppContent() {
 
   const [currentPage, setCurrentPage] = useState(() => {
     try {
+      const savedPage = localStorage.getItem('connect_current_page');
+      if (savedPage) return savedPage;
       const user = localStorage.getItem('connect_current_user');
       if (user) return 'dashboard';
-      return localStorage.getItem('connect_current_page') || 'home';
+      return 'home';
     } catch (e) {
       return 'home';
     }
