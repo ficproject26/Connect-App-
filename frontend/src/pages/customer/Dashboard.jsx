@@ -2835,63 +2835,65 @@ export default function CustomerDashboard({
         </button>
 
         {/* Notifications */}
-        <div className="relative">
-          <button 
-            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className="relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
-            title="Notifications"
-          >
-            <div className="relative">
-              <Bell className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
-                  {unreadCount}
-                </span>
-              )}
-            </div>
-            {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Notifications</span>}
-          </button>
-
-          {isNotificationsOpen && (
-            <>
-              <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
-              <div className={`${isMobile ? 'fixed top-16 left-4 right-4' : 'absolute right-0 mt-2 w-80'} bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
-                <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
-                  <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
-                  {unreadCount > 0 && (
-                    <button 
-                      onClick={() => {
-                        setUnreadCount(0);
-                        triggerNotification("All notifications marked as read");
-                      }}
-                      className="text-[10px] text-amber-500 hover:text-amber-600 font-bold hover:underline cursor-pointer border-none bg-transparent"
-                    >
-                      Mark all as read
-                    </button>
-                  )}
-                </div>
-                
-                <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
-                  {unreadCount > 0 ? (
-                    notificationsList.map((notif, idx) => (
-                      <div key={idx} className="flex gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors text-left border-b border-slate-50 dark:border-slate-900 last:border-b-0">
-                        <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5" />
-                        <div className="leading-tight">
-                          <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{notif.text}</p>
-                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{notif.time}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
-                      No unread notifications
-                    </div>
-                  )}
-                </div>
+        {!hideProfile && currentUser && (
+          <div className="relative">
+            <button 
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className="relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+              title="Notifications"
+            >
+              <div className="relative">
+                <Bell className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
               </div>
-            </>
-          )}
-        </div>
+              {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Notifications</span>}
+            </button>
+
+            {isNotificationsOpen && (
+              <>
+                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
+                <div className={`${isMobile ? 'fixed top-16 left-4 right-4' : 'absolute right-0 mt-2 w-80'} bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
+                    <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={() => {
+                          setUnreadCount(0);
+                          triggerNotification("All notifications marked as read");
+                        }}
+                        className="text-[10px] text-amber-500 hover:text-amber-600 font-bold hover:underline cursor-pointer border-none bg-transparent"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
+                    {unreadCount > 0 ? (
+                      notificationsList.map((notif, idx) => (
+                        <div key={idx} className="flex gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors text-left border-b border-slate-50 dark:border-slate-900 last:border-b-0">
+                          <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5" />
+                          <div className="leading-tight">
+                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{notif.text}</p>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{notif.time}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
+                        No unread notifications
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -3027,7 +3029,7 @@ export default function CustomerDashboard({
               title="Open Menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5 text-amber-500" /> : <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />}
-              {(cart.length > 0 || unreadCount > 0 || favorites.length > 0) && (
+              {(cart.length > 0 || (currentUser && !hideProfile && unreadCount > 0) || favorites.length > 0) && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
               )}
             </button>
