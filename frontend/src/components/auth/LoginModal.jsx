@@ -101,33 +101,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
               </p>
             </div>
 
-            {/* Role Switcher Tabs */}
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-4 border border-slate-200/60 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setRole('customer')}
-                className={`py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none ${
-                  role === 'customer'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>Customer</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('vendor')}
-                className={`py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none ${
-                  role === 'vendor'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span>Vendor</span>
-              </button>
-            </div>
+
 
             {/* Main Form */}
             <form onSubmit={handleLoginSubmit} className="space-y-3.5">
