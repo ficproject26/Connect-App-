@@ -29,6 +29,18 @@ function AppContent() {
     }
   }, [loading]);
 
+  // Clean up ?reload= query parameter from address bar automatically
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location.search.includes('reload=')) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('reload');
+        const cleanSearch = url.searchParams.toString() ? `?${url.searchParams.toString()}` : '';
+        window.history.replaceState({}, '', url.pathname + cleanSearch + url.hash);
+      }
+    } catch (e) {}
+  }, []);
+
   const [currentPage, setCurrentPage] = useState(() => {
     try {
       const user = localStorage.getItem('connect_current_user');
