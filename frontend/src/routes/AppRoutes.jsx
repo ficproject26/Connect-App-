@@ -82,38 +82,52 @@ export default function AppRoutes({
     );
   }
 
-  // Else, we are in Landing Layout (Home / Landing details)
+  // Details or Sub-details views
+  if (currentPage === 'details' || currentPage === 'sub-details') {
+    return (
+      <LandingLayout
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onHomeClick={handleHomeNavigate} 
+        onCategoryClick={handleCategoryClick}
+        isJobsOpen={isJobsOpen}
+        setIsJobsOpen={setIsJobsOpen}
+        currentUser={currentUser}
+        onLogOut={handleLogout}
+        onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+        onDashboardClick={() => setCurrentPage('dashboard')}
+      >
+        {currentPage === 'details' ? (
+          <CategoryDetails
+            category={activeCategory}
+            onBack={handleHomeNavigate}
+            onSubCategoryClick={(subTitle) => handleCategoryClick(subTitle, true)}
+          />
+        ) : (
+          <SubServiceDetails
+            title={activeSubService}
+            onBack={handleHomeNavigate}
+          />
+        )}
+      </LandingLayout>
+    );
+  }
+
+  // Home / Landing Page: renders full Customer Dashboard experience (hiding profile when guest)
   return (
-    <LandingLayout
-      theme={theme}
-      toggleTheme={toggleTheme}
-      onHomeClick={handleHomeNavigate} 
-      onCategoryClick={handleCategoryClick}
-      isJobsOpen={isJobsOpen}
-      setIsJobsOpen={setIsJobsOpen}
-      currentUser={currentUser}
-      onLogOut={handleLogout}
-      onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
-      onDashboardClick={() => setCurrentPage('dashboard')}
-    >
-      {currentPage === 'details' ? (
-        <CategoryDetails
-          category={activeCategory}
-          onBack={handleHomeNavigate}
-          onSubCategoryClick={(subTitle) => handleCategoryClick(subTitle, true)}
-        />
-      ) : currentPage === 'sub-details' ? (
-        <SubServiceDetails
-          title={activeSubService}
-          onBack={handleHomeNavigate}
-        />
-      ) : (
-        <LandingPage
-          onJoinClick={() => setCurrentPage('join-now')}
+    <CustomerLayout>
+      <ErrorBoundary>
+        <CustomerDashboard 
+          currentUser={currentUser} 
+          onLogOut={handleLogout} 
+          onJobsClick={() => setIsJobsOpen(true)}
           onCategoryClick={handleCategoryClick}
-          theme={theme}
+          isLandingPage={true}
+          hideProfile={!currentUser}
+          onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+          onNavigateToJoinNow={() => setCurrentPage('join-now')}
         />
-      )}
-    </LandingLayout>
+      </ErrorBoundary>
+    </CustomerLayout>
   );
 }

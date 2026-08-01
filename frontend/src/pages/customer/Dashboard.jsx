@@ -10,6 +10,7 @@ import { getActiveMainCategories } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
 import WalletPage from './Wallet';
 import Offers from './Offers';
+import LoginModal from '../../components/auth/LoginModal';
 
 const LiveClock = React.memo(({ prefix = '' }) => {
   const [time, setTime] = useState(() => new Date());
@@ -345,8 +346,18 @@ const sanitizeJobTitle = (t, defaultTitle = 'Full Stack Developer') => {
   return trimmed;
 };
 
-export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, onCategoryClick }) {
+export default function CustomerDashboard({ 
+  currentUser, 
+  onLogOut, 
+  onJobsClick, 
+  onCategoryClick,
+  isLandingPage = false,
+  hideProfile = false,
+  onAuthClick,
+  onNavigateToJoinNow
+}) {
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [theme, setTheme] = useState(
     () => localStorage.getItem('theme') || 'light'
   );
@@ -2280,6 +2291,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
       triggerNotification("Please select items to checkout");
       return;
     }
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
     setIsRazorpayModalOpen(true);
   };
 
@@ -3017,20 +3032,30 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
               )}
             </button>
 
-            <div 
-              onClick={() => {
-                setIsProfileModalOpen(true);
-                setIsMobileMenuOpen(false);
-              }} 
-              className="cursor-pointer shrink-0 group relative"
-              title="Open Profile"
-            >
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
-                alt="Profile" 
-                className="w-7.5 h-7.5 rounded-full object-cover border-2 border-amber-400 shadow-3xs group-hover:scale-105 transition-transform"
-              />
-            </div>
+            {!currentUser || hideProfile ? (
+              <button
+                type="button"
+                onClick={() => setIsLoginModalOpen(true)}
+                className="px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none"
+              >
+                Login
+              </button>
+            ) : (
+              <div 
+                onClick={() => {
+                  setIsProfileModalOpen(true);
+                  setIsMobileMenuOpen(false);
+                }} 
+                className="cursor-pointer shrink-0 group relative"
+                title="Open Profile"
+              >
+                <img 
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
+                  alt="Profile" 
+                  className="w-7.5 h-7.5 rounded-full object-cover border-2 border-amber-400 shadow-3xs group-hover:scale-105 transition-transform"
+                />
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Dropdown Panel */}
@@ -3041,36 +3066,60 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                 onClick={() => setIsMobileMenuOpen(false)}
               />
               <div className="fixed top-14 left-3 right-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-50 p-4 space-y-3 md:hidden animate-scale-up text-left">
-                {/* Profile Header Card */}
-                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <div 
-                    onClick={() => {
-                      setIsProfileModalOpen(true);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex items-center gap-3 cursor-pointer"
-                  >
-                    <img 
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
-                      alt="User Profile" 
-                      className="w-9 h-9 rounded-full object-cover border-2 border-amber-400 shadow-xs"
-                    />
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs font-black text-slate-850 dark:text-white">
-                        Hi, {(currentUser?.name || profileName).split(' ')[0]}
-                      </span>
-                      <span className="text-[9.5px] font-black text-amber-500 uppercase tracking-wider">
-                        Connect Member
-                      </span>
+                {/* Profile Header Card / Login Banner */}
+                {!currentUser || hideProfile ? (
+                  <div className="flex items-center justify-between p-3 bg-[#FFC107]/10 dark:bg-amber-500/10 rounded-2xl border border-[#FFC107]/30">
+                    <div className="flex items-center gap-2.5 text-left">
+                      <div className="w-8 h-8 rounded-full bg-[#FFC107] flex items-center justify-center font-black text-slate-950 text-xs shrink-0">
+                        <User className="w-4 h-4 text-slate-950" />
+                      </div>
+                      <div className="flex flex-col text-left leading-tight">
+                        <span className="text-xs font-black text-slate-850 dark:text-white">Guest Visitor</span>
+                        <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400">Login for full access</span>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLoginModalOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase rounded-xl transition-colors cursor-pointer border-none"
+                    >
+                      Login
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 cursor-pointer border-none bg-transparent"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div 
+                      onClick={() => {
+                        setIsProfileModalOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-3 cursor-pointer"
+                    >
+                      <img 
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
+                        alt="User Profile" 
+                        className="w-9 h-9 rounded-full object-cover border-2 border-amber-400 shadow-xs"
+                      />
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-black text-slate-850 dark:text-white">
+                          Hi, {(currentUser?.name || profileName).split(' ')[0]}
+                        </span>
+                        <span className="text-[9.5px] font-black text-amber-500 uppercase tracking-wider">
+                          Connect Member
+                        </span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 cursor-pointer border-none bg-transparent"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Quick Actions Grid */}
                 <div className="grid grid-cols-2 gap-2 pt-1">
@@ -3191,24 +3240,35 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
         {/* Desktop Only Right Section (Icons & Profile) */}
         <div className="hidden md:flex items-center gap-4 shrink-0">
           {renderHeaderIcons(false)}
-          <div 
-            onClick={() => setIsProfileModalOpen(true)}
-            className="flex items-center gap-2.5 cursor-pointer select-none pl-4 border-l border-slate-200 dark:border-slate-800/60"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
-              alt="User Profile" 
-              className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800/60 shadow-xs"
-            />
-            <div className="flex flex-col text-left leading-tight">
-              <span className="text-xs font-black text-slate-800 dark:text-white">
-                Hi, {(currentUser?.name || profileName).split(' ')[0]}
-              </span>
-              <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider">
-                Welcome
-              </span>
+          {!currentUser || hideProfile ? (
+            <button
+              type="button"
+              onClick={() => setIsLoginModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-full transition-all shadow-xs cursor-pointer border-none"
+            >
+              <User className="w-4 h-4 text-slate-950" />
+              <span>Login</span>
+            </button>
+          ) : (
+            <div 
+              onClick={() => setIsProfileModalOpen(true)}
+              className="flex items-center gap-2.5 cursor-pointer select-none pl-4 border-l border-slate-200 dark:border-slate-800/60"
+            >
+              <img 
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
+                alt="User Profile" 
+                className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800/60 shadow-xs"
+              />
+              <div className="flex flex-col text-left leading-tight">
+                <span className="text-xs font-black text-slate-800 dark:text-white">
+                  Hi, {(currentUser?.name || profileName).split(' ')[0]}
+                </span>
+                <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider">
+                  Welcome
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </header>
     );
@@ -3781,6 +3841,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
 
     const handleBannerAction = (slide) => {
       if (!slide) return;
+      if (!currentUser) {
+        setIsLoginModalOpen(true);
+        return;
+      }
       if (slide.isDb) {
         const link = (slide.redirectLink || '').toLowerCase();
         if (link.includes('food')) {
@@ -6234,8 +6298,12 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          addToCart(product);
-                                          setIsCartOpen(true);
+                                          if (!currentUser) {
+                                            setIsLoginModalOpen(true);
+                                          } else {
+                                            addToCart(product);
+                                            setIsCartOpen(true);
+                                          }
                                         }} 
                                         className="w-full xs:flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9"
                                       >
@@ -6249,11 +6317,15 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          setActiveBookNowModalItem(product);
-                                          setSelectedModalDate('Wednesday, 21 May 2025');
-                                          setSelectedModalTime('11:00 AM');
-                                          setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
-                                          setSelectedTimeOfDayTab('Morning');
+                                          if (!currentUser) {
+                                            setIsLoginModalOpen(true);
+                                          } else {
+                                            setActiveBookNowModalItem(product);
+                                            setSelectedModalDate('Wednesday, 21 May 2025');
+                                            setSelectedModalTime('11:00 AM');
+                                            setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                                            setSelectedTimeOfDayTab('Morning');
+                                          }
                                         }} 
                                         className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
                                       >
@@ -6285,9 +6357,13 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                                     <button 
                                       onClick={(e) => { 
                                         e.stopPropagation(); 
-                                        setActiveTab('Jobs');
-                                        setAppliedJobId(product.id);
-                                        triggerNotification(`Applying for ${product.name}...`);
+                                        if (!currentUser) {
+                                          setIsLoginModalOpen(true);
+                                        } else {
+                                          setActiveTab('Jobs');
+                                          setAppliedJobId(product.id);
+                                          triggerNotification(`Applying for ${product.name}...`);
+                                        }
                                       }} 
                                       className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
                                     >
@@ -7979,6 +8055,10 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
                     </button>
                     <button
                       onClick={() => {
+                        if (!currentUser) {
+                          setIsLoginModalOpen(true);
+                          return;
+                        }
                         const isBooking = ['Services', 'Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Services', 'Stay', 'Travel'].includes(selectedProduct.tag);
                         if (isBooking) {
                           setActiveBookNowModalItem(selectedProduct);
@@ -11990,6 +12070,24 @@ export default function CustomerDashboard({ currentUser, onLogOut, onJobsClick, 
           </div>
         </div>
       )}
+
+      {/* -------------------- GUEST LOGIN POPUP MODAL -------------------- */}
+      <LoginModal 
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={(user) => {
+          setIsLoginModalOpen(false);
+          triggerNotification(`Welcome ${user?.name || 'Member'}! Logged in successfully.`);
+        }}
+        onNavigateToJoinNow={() => {
+          setIsLoginModalOpen(false);
+          if (onNavigateToJoinNow) {
+            onNavigateToJoinNow();
+          } else if (onAuthClick) {
+            onAuthClick('join-now');
+          }
+        }}
+      />
     </div>
   );
 }
