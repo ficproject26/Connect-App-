@@ -4401,7 +4401,8 @@ export default function CustomerDashboard({
       },
     ];
 
-    const displayOffers = (adminExclusiveOffers && adminExclusiveOffers.length > 0) ? adminExclusiveOffers.map((o, idx) => {
+    const liveOffers = typeof adminExclusiveOffers !== 'undefined' && Array.isArray(adminExclusiveOffers) ? adminExclusiveOffers : [];
+    const displayOffers = liveOffers.length > 0 ? liveOffers.map((o, idx) => {
       const bgs = [
         'bg-gradient-to-br from-amber-50/90 via-amber-50/40 to-white dark:from-[#1e1707] dark:to-slate-900 border-amber-200/80 dark:border-amber-900/50',
         'bg-gradient-to-br from-blue-50/90 via-blue-50/40 to-white dark:from-[#06122c] dark:to-slate-900 border-blue-200/80 dark:border-[#11244d]/50',
