@@ -4334,6 +4334,23 @@ export default function CustomerDashboard({
     );
   };
 
+  const handleOfferClick = (offer) => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(offer.code);
+    }
+    const cat = offer.brand;
+    const validTabs = ['Food', 'Services', 'Stay', 'Travel', 'Products', 'Daily Needs', 'Jobs'];
+    if (validTabs.includes(cat)) {
+      setActiveTab(cat);
+      setSelectedSubNavbarCategory(cat);
+    }
+    triggerNotification(`Coupon code "${offer.code}" claimed! ${cat ? `Exploring ${cat} deals.` : ''}`);
+  };
+
   const renderExclusiveOffers = () => {
     const defaultOffers = [
       { 
@@ -4382,20 +4399,24 @@ export default function CustomerDashboard({
       },
     ];
 
-    const displayOffers = adminOffers.length > 0 ? adminOffers.map((o, idx) => {
+    const displayOffers = (adminExclusiveOffers && adminExclusiveOffers.length > 0) ? adminExclusiveOffers.map((o, idx) => {
       const bgs = [
-        'bg-amber-50/70 dark:bg-[#1e1707] border-amber-200 dark:border-amber-900/50',
-        'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50',
-        'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50',
-        'bg-emerald-50/70 dark:bg-[#041c12] border-emerald-100 dark:border-[#0e3a24]/50',
-        'bg-indigo-50/70 dark:bg-[#160824] border-indigo-100 dark:border-[#2f114d]/50'
+        'bg-gradient-to-br from-amber-50/90 via-amber-50/40 to-white dark:from-[#1e1707] dark:to-slate-900 border-amber-200/80 dark:border-amber-900/50',
+        'bg-gradient-to-br from-blue-50/90 via-blue-50/40 to-white dark:from-[#06122c] dark:to-slate-900 border-blue-200/80 dark:border-[#11244d]/50',
+        'bg-gradient-to-br from-rose-50/90 via-rose-50/40 to-white dark:from-[#1a0914] dark:to-slate-900 border-rose-200/80 dark:border-[#3e1422]/50',
+        'bg-gradient-to-br from-emerald-50/90 via-emerald-50/40 to-white dark:from-[#041c12] dark:to-slate-900 border-emerald-200/80 dark:border-[#0e3a24]/50'
       ];
       const tagColors = [
-        'bg-amber-500 text-white',
-        'bg-blue-500 text-white',
-        'bg-rose-500 text-white',
-        'bg-emerald-500 text-white',
-        'bg-indigo-500 text-white'
+        'bg-amber-500 text-slate-950 font-black',
+        'bg-blue-500 text-white font-black',
+        'bg-rose-500 text-white font-black',
+        'bg-emerald-500 text-white font-black'
+      ];
+      const btnColors = [
+        'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black',
+        'bg-blue-600 hover:bg-blue-700 text-white font-black',
+        'bg-rose-600 hover:bg-rose-700 text-white font-black',
+        'bg-emerald-600 hover:bg-emerald-700 text-white font-black'
       ];
 
       return {
@@ -4406,6 +4427,7 @@ export default function CustomerDashboard({
         code: o.code || 'CONNECT',
         bg: bgs[idx % bgs.length],
         tagColor: tagColors[idx % tagColors.length],
+        btnColor: btnColors[idx % btnColors.length],
         image: o.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=250&auto=format&fit=crop&q=80'
       };
     }) : defaultOffers;
@@ -4420,22 +4442,38 @@ export default function CustomerDashboard({
           {displayOffers.map(offer => (
             <div 
               key={offer.id} 
-              className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-4 sm:p-4.5 min-h-[145px] sm:h-[155px] transition-all duration-300 hover:shadow-md ${offer.bg}`}
+              onClick={() => handleOfferClick(offer)}
+              className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-4 sm:p-4.5 min-h-[155px] sm:h-[165px] transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer ${offer.bg}`}
             >
               <div className="flex flex-col justify-between items-start text-left max-w-[62%] sm:max-w-[60%] h-full">
                 <div className="space-y-1.5">
                   <span className={`text-[10px] sm:text-[11px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${offer.tagColor}`}>
                     {offer.discount}
                   </span>
-                  <p className="text-xs sm:text-sm font-black text-slate-850 dark:text-white leading-snug mt-1">
+                  <p className="text-xs sm:text-sm font-black text-slate-850 dark:text-white leading-snug mt-1 line-clamp-2">
                     {offer.desc}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase dark:text-slate-500">Code:</span>
-                  <span className="text-[10px] sm:text-[11px] font-black font-mono border-dashed border border-slate-350 dark:border-slate-700 px-2.5 py-0.5 rounded bg-white/70 dark:bg-slate-900/70 text-slate-800 dark:text-slate-200">
-                    {offer.code}
-                  </span>
+
+                <div className="space-y-2 w-full mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase dark:text-slate-500">Code:</span>
+                    <span className="text-[10px] font-black font-mono border-dashed border border-slate-350 dark:border-slate-700 px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-slate-200">
+                      {offer.code}
+                    </span>
+                  </div>
+
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOfferClick(offer);
+                    }}
+                    className={`w-full py-1.5 px-3 text-[10.5px] font-black uppercase rounded-xl transition-all cursor-pointer shadow-2xs border-none flex items-center justify-center gap-1.5 ${offer.btnColor || 'bg-amber-500 text-slate-950'}`}
+                  >
+                    <Gift className="w-3.5 h-3.5" />
+                    <span>Claim Offer</span>
+                  </button>
                 </div>
               </div>
 
