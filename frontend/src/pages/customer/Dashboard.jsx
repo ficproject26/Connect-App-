@@ -659,6 +659,33 @@ export default function CustomerDashboard({
       }
     } catch (e) {}
   }, [activeTab]);
+
+  // Browser History Sync for Back (←) and Next (→) Navigation Buttons on Dashboard Tabs
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const currentState = window.history.state || {};
+        if (!currentState.tab) {
+          window.history.replaceState({ ...currentState, tab: activeTab, subCategory: selectedSubNavbarCategory }, '');
+        } else if (currentState.tab !== activeTab || currentState.subCategory !== selectedSubNavbarCategory) {
+          window.history.pushState({ ...currentState, tab: activeTab, subCategory: selectedSubNavbarCategory }, '');
+        }
+      }
+    } catch (e) {}
+  }, [activeTab, selectedSubNavbarCategory]);
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state && e.state.tab) {
+        setActiveTab(e.state.tab);
+        if (e.state.subCategory) {
+          setSelectedSubNavbarCategory(e.state.subCategory);
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const [dbCategories, setDbCategories] = useState([]);
 
   const normalizeMainCatName = (rawName) => {

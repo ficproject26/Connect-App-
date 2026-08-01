@@ -99,6 +99,32 @@ function AppContent() {
     } catch (e) {}
   }, [activeSubService]);
 
+  // Browser History Sync for Back (←) and Next (→) Navigation Buttons
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const currentState = window.history.state || {};
+        if (!currentState.page) {
+          window.history.replaceState({ page: currentPage, category: activeCategory, subService: activeSubService }, '');
+        } else if (currentState.page !== currentPage || currentState.category !== activeCategory || currentState.subService !== activeSubService) {
+          window.history.pushState({ ...currentState, page: currentPage, category: activeCategory, subService: activeSubService }, '');
+        }
+      }
+    } catch (e) {}
+  }, [currentPage, activeCategory, activeSubService]);
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state) {
+        if (e.state.page) setCurrentPage(e.state.page);
+        if (e.state.category !== undefined) setActiveCategory(e.state.category);
+        if (e.state.subService !== undefined) setActiveSubService(e.state.subService);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
