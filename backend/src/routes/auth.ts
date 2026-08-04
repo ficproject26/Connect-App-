@@ -3,6 +3,67 @@ import { db } from '../db';
 
 const router = Router();
 
+// Backend Validation Helper Functions
+const validateServerInput = (body: any) => {
+  const errors: string[] = [];
+
+  const { name, email, phone, aadhaarNumber, panNumber, pincode } = body;
+
+  // Name Validation
+  if (name) {
+    const cleanName = String(name).trim();
+    if (cleanName.length < 3 || cleanName.length > 50) {
+      errors.push('Name must be between 3 and 50 characters.');
+    }
+    if (!/^[a-zA-Z\s]+$/.test(cleanName)) {
+      errors.push('Name can contain letters and spaces only.');
+    }
+  }
+
+  // Mobile Validation (10 digits, cannot start with 0)
+  if (phone) {
+    const cleanPhone = String(phone).trim();
+    if (!/^[1-9]\d{9}$/.test(cleanPhone)) {
+      errors.push('Enter a valid 10-digit mobile number.');
+    }
+  }
+
+  // Email Validation
+  if (email) {
+    const cleanEmail = String(email).trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(cleanEmail)) {
+      errors.push('Enter a valid email address.');
+    }
+  }
+
+  // Aadhaar Validation (12 digits)
+  if (aadhaarNumber) {
+    const cleanAadhaar = String(aadhaarNumber).trim().replace(/\s+/g, '');
+    if (!/^\d{12}$/.test(cleanAadhaar)) {
+      errors.push('Enter a valid 12-digit Aadhaar number.');
+    }
+  }
+
+  // PAN Validation (ABCDE1234F)
+  if (panNumber) {
+    const cleanPan = String(panNumber).trim().toUpperCase();
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
+      errors.push('Enter a valid PAN number.');
+    }
+  }
+
+  // Pincode Validation (6 digits)
+  if (pincode) {
+    const cleanPin = String(pincode).trim();
+    if (!/^\d{6}$/.test(cleanPin)) {
+      errors.push('Enter a valid 6-digit Pincode.');
+    }
+  }
+
+  return errors;
+};
+
 // POST: /api/auth/login
 router.post('/login', async (req: Request, res: Response) => {
   const { email, password, role } = req.body;
@@ -18,7 +79,6 @@ router.post('/login', async (req: Request, res: Response) => {
     let userDetails: any = null;
 
     if (role === 'vendor') {
-      // Find or create mock vendor
       let vendor = await db.getVendor('v1');
       if (!vendor) {
         vendor = await db.createVendor({
@@ -38,7 +98,6 @@ router.post('/login', async (req: Request, res: Response) => {
         role: 'vendor'
       };
     } else if (role === 'delivery') {
-      // Check if delivery partner email exists. For mock purposes, find by name derived from email.
       const partners = await db.getDeliveryPartners();
       let displayName = email.split('@')[0];
       displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
@@ -46,7 +105,6 @@ router.post('/login', async (req: Request, res: Response) => {
       let partner = partners.find(p => p.mobile === email || p.id === email || p.name.toLowerCase().includes(displayName.toLowerCase()));
       
       if (!partner) {
-        // Create a new delivery partner on the fly for testing convenience
         const randId = 'dp_' + Math.floor(1000 + Math.random() * 9000);
         partner = await db.createDeliveryPartner({
           id: randId,
@@ -87,7 +145,6 @@ router.post('/login', async (req: Request, res: Response) => {
         role: 'admin'
       };
     } else {
-      // Default: Customer
       let displayName = email.split('@')[0];
       displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
       
@@ -112,20 +169,31 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-// POST: /api/auth/register-customer
+// POST: /api/auth/register-customer (Strict Server-Side Validation)
 router.post('/register-customer', async (req: Request, res: Response) => {
   const { name, email, phone, address, city, pincode, aadhaarNumber, panNumber } = req.body;
+
+  // Run Server-Side Validation
+  const valErrors = validateServerInput(req.body);
+  if (valErrors.length > 0) {
+    return res.status(400).json({
+      status: 'error',
+      message: valErrors.join(' '),
+      errors: valErrors
+    });
+  }
+
   try {
     const createdUser = {
       id: 'cust_' + Math.floor(1000 + Math.random() * 9000),
-      name: name || 'Connect Customer',
-      email: email,
-      phone: phone,
-      address: address,
-      city: city,
-      pincode: pincode,
-      aadhaar: aadhaarNumber,
-      pan: panNumber,
+      name: name ? String(name).trim() : 'Connect Customer',
+      email: String(email).trim(),
+      phone: String(phone).trim(),
+      address: address ? String(address).trim() : '',
+      city: city ? String(city).trim() : '',
+      pincode: pincode ? String(pincode).trim() : '',
+      aadhaar: aadhaarNumber ? String(aadhaarNumber).trim() : '',
+      pan: panNumber ? String(panNumber).trim().toUpperCase() : '',
       role: 'customer'
     };
     res.json({
@@ -149,6 +217,16 @@ router.post('/register', async (req: Request, res: Response) => {
     return res.status(400).json({
       status: 'error',
       message: 'Name, email, and role are required fields.'
+    });
+  }
+
+  // Run Server Validation
+  const valErrors = validateServerInput(req.body);
+  if (valErrors.length > 0) {
+    return res.status(400).json({
+      status: 'error',
+      message: valErrors.join(' '),
+      errors: valErrors
     });
   }
 
@@ -202,7 +280,6 @@ router.post('/register', async (req: Request, res: Response) => {
         role: 'delivery'
       };
     } else {
-      // Customer
       createdUser = {
         id: 'cust_' + name.toLowerCase().replace(/\s+/g, '_'),
         name: name,

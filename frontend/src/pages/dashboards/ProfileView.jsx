@@ -1,98 +1,215 @@
-import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Shield, Key, Sparkles, CheckCircle2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { 
+  User, Mail, Phone, MapPin, CheckCircle2, AlertCircle, 
+  Upload, FileText, Image as ImageIcon, X 
+} from 'lucide-react';
+import { 
+  validateName, 
+  validateMobile, 
+  validateEmail, 
+  validateFileUpload, 
+  sanitizeInput 
+} from '../../utils/validation';
 
 export default function ProfileView({ currentUser, onSave }) {
   const [name, setName] = useState(currentUser?.name || 'Dhanush Tamilarasan');
   const [email, setEmail] = useState(currentUser?.email || 'customer@connect.app');
-  const [phone, setPhone] = useState(currentUser?.phone || '+91 98765 43210');
+  const [phone, setPhone] = useState(currentUser?.phone || '9876543210');
   const [city, setCity] = useState(currentUser?.city || 'Bangalore, Karnataka');
+  
+  // File Upload State with Preview
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [docFile, setDocFile] = useState(null);
+  const [docError, setDocError] = useState('');
+  const [avatarError, setAvatarError] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+
+  // Field validation
+  const nameVal = useMemo(() => validateName(name), [name]);
+  const phoneVal = useMemo(() => validateMobile(phone), [phone]);
+  const emailVal = useMemo(() => validateEmail(email), [email]);
+
+  const isFormValid = useMemo(() => {
+    return nameVal.isValid && phoneVal.isValid && emailVal.isValid && !docError && !avatarError;
+  }, [nameVal, phoneVal, emailVal, docError, avatarError]);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const res = validateFileUpload(file, ['jpg', 'jpeg', 'png'], 5);
+    if (!res.isValid) {
+      setAvatarError(res.error);
+      return;
+    }
+    setAvatarError('');
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleDocChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const res = validateFileUpload(file, ['jpg', 'jpeg', 'png', 'pdf'], 5);
+    if (!res.isValid) {
+      setDocError(res.error);
+      return;
+    }
+    setDocError('');
+    setDocFile(file);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!isFormValid) return;
+
+    const cleanName = sanitizeInput(name);
+    const cleanCity = sanitizeInput(city);
+
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
-    if (onSave) onSave({ name, email, phone, city });
+
+    if (onSave) {
+      onSave({ 
+        name: cleanName, 
+        email: email.trim(), 
+        phone: phone.trim(), 
+        city: cleanCity,
+        avatar: avatarPreview,
+        docName: docFile?.name 
+      });
+    }
   };
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in max-w-4xl mx-auto">
       
-      {/* Profile Header */}
+      {/* Profile Header Banner */}
       <div className="p-6 sm:p-8 bg-gradient-to-r from-[#0b132b] via-[#1c2541] to-[#0b132b] rounded-3xl border border-slate-800 text-white flex flex-col sm:flex-row items-center gap-6 shadow-2xl">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 font-black text-2xl flex items-center justify-center border-4 border-amber-400/40 shadow-xl shrink-0">
-          {name.charAt(0)}
+        <div className="relative group">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 font-black text-2xl flex items-center justify-center border-4 border-amber-400/40 shadow-xl overflow-hidden shrink-0">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              name.charAt(0).toUpperCase()
+            )}
+          </div>
+          <label 
+            htmlFor="avatar-upload"
+            className="absolute bottom-0 right-0 p-1.5 bg-amber-400 text-slate-950 rounded-full cursor-pointer shadow-md hover:scale-110 transition-transform"
+            title="Upload Profile Photo (JPG, PNG <= 5MB)"
+          >
+            <Upload size={14} />
+          </label>
+          <input 
+            id="avatar-upload" 
+            type="file" 
+            accept="image/jpeg,image/png,image/jpg"
+            onChange={handleAvatarChange}
+            className="hidden" 
+          />
         </div>
+
         <div className="text-center sm:text-left space-y-1">
           <div className="flex items-center justify-center sm:justify-start gap-2">
             <h1 className="text-xl sm:text-2xl font-black font-sans">{name}</h1>
             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
-              VIP Member
+              Verified Member
             </span>
           </div>
-          <p className="text-xs text-slate-300">{email} • {phone}</p>
-          <span className="inline-block text-[10.5px] text-amber-400 font-bold uppercase tracking-wider">
-            Verified Enterprise Account
-          </span>
+          <p className="text-xs text-slate-300">{email} • +91 {phone}</p>
+          {avatarError && <p className="text-[10px] text-rose-400 font-bold">{avatarError}</p>}
         </div>
       </div>
 
-      {/* Profile Form (2-Col Desktop/Tablet, Single Col Mobile) */}
+      {/* Profile Form */}
       <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-6">
         <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-4">
           <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider font-sans">
-            Personal Information & Settings
+            Bank-Grade Verified Settings
           </h2>
           {isSaved && (
             <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-              <CheckCircle2 size={16} /> Saved!
+              <CheckCircle2 size={16} /> Profile Saved!
             </span>
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Full Name */}
             <div>
-              <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Full Name</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-bold uppercase text-slate-400">Full Name</label>
+                {nameVal.isValid && (
+                  <span className="text-emerald-500 text-[10px] font-bold flex items-center gap-0.5"><CheckCircle2 size={12} /> Valid</span>
+                )}
+              </div>
               <div className="relative flex items-center">
                 <User className="absolute left-3.5 text-slate-400" size={16} />
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200"
+                  onChange={(e) => setName(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
+                  className={`w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 ${
+                    !nameVal.isValid ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  }`}
                 />
               </div>
+              {!nameVal.isValid && <p className="text-[10px] text-rose-500 font-bold mt-1">{nameVal.error}</p>}
             </div>
 
+            {/* Email */}
             <div>
-              <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Email Address</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-bold uppercase text-slate-400">Email Address</label>
+                {emailVal.isValid && (
+                  <span className="text-emerald-500 text-[10px] font-bold flex items-center gap-0.5"><CheckCircle2 size={12} /> Valid</span>
+                )}
+              </div>
               <div className="relative flex items-center">
                 <Mail className="absolute left-3.5 text-slate-400" size={16} />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200"
+                  className={`w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 ${
+                    !emailVal.isValid ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  }`}
                 />
               </div>
+              {!emailVal.isValid && <p className="text-[10px] text-rose-500 font-bold mt-1">{emailVal.error}</p>}
             </div>
 
+            {/* Phone */}
             <div>
-              <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Phone Number</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-bold uppercase text-slate-400">Mobile Number (10 Digits)</label>
+                {phoneVal.isValid && (
+                  <span className="text-emerald-500 text-[10px] font-bold flex items-center gap-0.5"><CheckCircle2 size={12} /> Valid</span>
+                )}
+              </div>
               <div className="relative flex items-center">
                 <Phone className="absolute left-3.5 text-slate-400" size={16} />
                 <input
-                  type="text"
+                  type="tel"
+                  maxLength={10}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200"
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  className={`w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 ${
+                    !phoneVal.isValid ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  }`}
                 />
               </div>
+              {!phoneVal.isValid && <p className="text-[10px] text-rose-500 font-bold mt-1">{phoneVal.error}</p>}
             </div>
 
+            {/* City */}
             <div>
-              <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Default Location / City</label>
+              <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">City / Location</label>
               <div className="relative flex items-center">
                 <MapPin className="absolute left-3.5 text-slate-400" size={16} />
                 <input
@@ -105,12 +222,52 @@ export default function ProfileView({ currentUser, onSave }) {
             </div>
           </div>
 
+          {/* Document Verification Upload Section */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Identity Verification Document (JPG, PNG, PDF &lt;= 5MB)
+            </h3>
+            
+            <div className="flex items-center gap-4">
+              <label 
+                htmlFor="doc-upload"
+                className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2 transition-all shadow-xs"
+              >
+                <Upload size={14} className="text-amber-500" />
+                <span>Upload ID Document</span>
+              </label>
+              <input 
+                id="doc-upload" 
+                type="file" 
+                accept=".jpg,.jpeg,.png,.pdf"
+                onChange={handleDocChange}
+                className="hidden" 
+              />
+
+              {docFile && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <FileText size={14} />
+                  <span>{docFile.name}</span>
+                  <button type="button" onClick={() => setDocFile(null)} className="hover:text-rose-500 border-none bg-transparent cursor-pointer">
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+            </div>
+            {docError && <p className="text-[10px] font-bold text-rose-500">{docError}</p>}
+          </div>
+
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
             <button
               type="submit"
-              className="w-full sm:w-auto px-8 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none shadow-md"
+              disabled={!isFormValid}
+              className={`w-full sm:w-auto px-8 py-3 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all border-none ${
+                isFormValid
+                  ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 cursor-pointer shadow-md'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-60'
+              }`}
             >
-              Update Profile
+              Save Profile Changes
             </button>
           </div>
         </form>
