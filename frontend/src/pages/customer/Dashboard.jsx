@@ -11,6 +11,12 @@ import useCustomer from '../../hooks/useCustomer';
 import WalletPage from './Wallet';
 import Offers from './Offers';
 import LoginModal from '../../components/auth/LoginModal';
+import ResponsiveSidebar from '../../components/common/ResponsiveSidebar';
+import CustomerDashboardView from '../dashboards/CustomerDashboardView';
+import VendorDashboardView from '../dashboards/VendorDashboardView';
+import AdminDashboardView from '../dashboards/AdminDashboardView';
+import OrdersBookingsView from '../dashboards/OrdersBookingsView';
+import ProfileView from '../dashboards/ProfileView';
 
 const LiveClock = React.memo(({ prefix = '' }) => {
   const [time, setTime] = useState(() => new Date());
@@ -362,6 +368,12 @@ export default function CustomerDashboard({
     () => localStorage.getItem('theme') || 'light'
   );
   
+  // Enterprise Responsive Layout States
+  const [activeView, setActiveView] = useState('dashboard'); // dashboard | vendor-dashboard | admin-dashboard | orders | profile | categories
+  const [sidebarRole, setSidebarRole] = useState(() => currentUser?.role || 'customer');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   const [products, setProducts] = useState([]);
   const [selectedColor, setSelectedColor] = useState('Red');
   const [selectedSize, setSelectedSize] = useState('8');
