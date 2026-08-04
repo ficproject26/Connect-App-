@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, Mail, Lock, Eye, EyeOff, LogIn, Check, 
   Phone, ShieldCheck, AlertCircle, RefreshCw, KeyRound, CheckCircle2 
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
+import { sanitizeMobileInput, validateMobile } from '../../utils/validation';
 import logoImg from '../../assets/images/forge india logo.jpg';
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigateToJoinNow }) {
@@ -365,28 +366,56 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
               /* 2. OTP INSTANT LOGIN FORM */
               <div className="space-y-3.5">
                 {!isOtpSent ? (
+                  (() => {
+                    const isDigitsOnly = /^\d*$/.test(otpTarget);
+                    const mobileVal = isDigitsOnly && otpTarget.length > 0 ? validateMobile(otpTarget) : null;
+                    const otpButtonDisabled = isSubmitting || !otpTarget.trim() || (isDigitsOnly && otpTarget.length > 0 && !mobileVal?.isValid);
+                    return (
                   <>
                     <div>
-                      <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                        Mobile Number or Email
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                          Mobile Number (10 Digits)
+                        </label>
+                        {mobileVal?.isValid && (
+                          <span className="text-emerald-500 text-[10px] font-bold flex items-center gap-0.5"><CheckCircle2 size={12} /> Valid</span>
+                        )}
+                      </div>
                       <div className="relative">
                         <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
-                          type="text"
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={10}
                           value={otpTarget}
-                          onChange={(e) => setOtpTarget(e.target.value)}
-                          placeholder="Enter 10-digit mobile or email"
-                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#FFC107]"
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            if (/^\d*$/.test(raw) || raw === '') {
+                              setOtpTarget(sanitizeMobileInput(raw));
+                            } else {
+                              setOtpTarget(raw);
+                            }
+                          }}
+                          placeholder="Enter mobile number starting with 6, 7, 8 or 9"
+                          className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-2xl py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#FFC107] ${
+                            mobileVal && !mobileVal.isValid ? 'border-rose-400' : 'border-slate-200 dark:border-slate-800'
+                          }`}
                         />
                       </div>
+                      {mobileVal && !mobileVal.isValid && (
+                        <p className="text-[10px] text-rose-500 font-bold mt-1">{mobileVal.error}</p>
+                      )}
                     </div>
 
                     <button
                       type="button"
                       onClick={handleSendOtp}
-                      disabled={isSubmitting}
-                      className="w-full py-3 px-6 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none mt-2"
+                      disabled={otpButtonDisabled}
+                      className={`w-full py-3 px-6 font-black text-xs uppercase tracking-widest rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 border-none mt-2 ${
+                        otpButtonDisabled
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-60'
+                          : 'bg-[#FFC107] hover:bg-amber-500 text-slate-950 cursor-pointer'
+                      }`}
                     >
                       {isSubmitting ? (
                         <span>Generating OTP...</span>
@@ -398,6 +427,8 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
                       )}
                     </button>
                   </>
+                  );
+                  })()
                 ) : (
                   <form onSubmit={handleVerifyOtp} className="space-y-3.5">
                     <div>

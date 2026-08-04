@@ -5,6 +5,26 @@ import { authRateLimiter, authenticateToken, AuthenticatedRequest } from '../sec
 
 const router = Router();
 
+// Strict Indian Mobile Number Regex: ^[6-9][0-9]{9}$
+const INDIAN_MOBILE_REGEX = /^[6-9][0-9]{9}$/;
+
+const validateIndianMobile = (phone: string): { valid: boolean; message: string } => {
+  if (!phone || !phone.trim()) {
+    return { valid: false, message: 'Mobile number is required.' };
+  }
+  const cleaned = phone.trim().replace(/\D/g, '');
+  if (cleaned.length > 0 && !/^[6-9]/.test(cleaned)) {
+    return { valid: false, message: 'Mobile number must start with 6, 7, 8, or 9.' };
+  }
+  if (cleaned.length < 10) {
+    return { valid: false, message: 'Enter a valid 10-digit mobile number.' };
+  }
+  if (!INDIAN_MOBILE_REGEX.test(cleaned)) {
+    return { valid: false, message: 'Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' };
+  }
+  return { valid: true, message: '' };
+};
+
 // Helper to parse User-Agent for Device Recognition
 const parseDevice = (userAgent: string = '') => {
   let browser = 'Unknown Browser';
@@ -37,6 +57,19 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
       status: 'error',
       message: 'Email or Mobile number is required.'
     });
+  }
+
+  // Server-side Indian Mobile Validation (bypass protection)
+  const isNumericInput = /^\d+$/.test(identifier);
+  if (isNumericInput) {
+    const mobileCheck = validateIndianMobile(identifier);
+    if (!mobileCheck.valid) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'INVALID_MOBILE',
+        message: mobileCheck.message
+      });
+    }
   }
 
   // Check Account Lock Status
@@ -205,7 +238,21 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
   const ip = req.ip || '127.0.0.1';
 
   if (!mobileOrEmail) {
-    return res.status(400).json({ status: 'error', message: 'Mobile or Email is required.' });
+    return res.status(400).json({ status: 'error', message: 'Mobile number is required.' });
+  }
+
+  // Server-side Indian Mobile Validation (bypass protection)
+  const cleaned = mobileOrEmail.trim().replace(/\D/g, '');
+  const isNumericInput = /^\d+$/.test(mobileOrEmail.trim());
+  if (isNumericInput) {
+    const mobileCheck = validateIndianMobile(cleaned);
+    if (!mobileCheck.valid) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'INVALID_MOBILE',
+        message: mobileCheck.message
+      });
+    }
   }
 
   try {
@@ -377,6 +424,19 @@ router.post('/logout-all-devices', authenticateToken, (req: AuthenticatedRequest
 // Customer Registration
 router.post('/register-customer', async (req: Request, res: Response) => {
   const { name, email, phone, address, city, pincode, aadhaarNumber, panNumber } = req.body;
+
+  // Server-side Indian Mobile Number Validation (bypass protection)
+  if (phone) {
+    const mobileCheck = validateIndianMobile(phone);
+    if (!mobileCheck.valid) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'INVALID_MOBILE',
+        message: mobileCheck.message
+      });
+    }
+  }
+
   try {
     const createdUser = {
       id: 'cust_' + Math.floor(1000 + Math.random() * 9000),

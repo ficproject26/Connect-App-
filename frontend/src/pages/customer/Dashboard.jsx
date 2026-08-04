@@ -17,6 +17,7 @@ import VendorDashboardView from '../dashboards/VendorDashboardView';
 import AdminDashboardView from '../dashboards/AdminDashboardView';
 import OrdersBookingsView from '../dashboards/OrdersBookingsView';
 import ProfileView from '../dashboards/ProfileView';
+import { sanitizeMobileInput } from '../../utils/validation';
 
 const LiveClock = React.memo(({ prefix = '' }) => {
   const [time, setTime] = useState(() => new Date());
@@ -1988,7 +1989,7 @@ export default function CustomerDashboard({
                   type="text"
                   placeholder="Mobile Number"
                   value={addressForm.phone}
-                  onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  onChange={(e) => setAddressForm({ ...addressForm, phone: sanitizeMobileInput(e.target.value) })}
                   className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
                 />
               </div>
@@ -2068,7 +2069,7 @@ export default function CustomerDashboard({
                   type="text"
                   placeholder="Alternate Contact Number"
                   value={addressForm.altPhone}
-                  onChange={(e) => setAddressForm({ ...addressForm, altPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  onChange={(e) => setAddressForm({ ...addressForm, altPhone: sanitizeMobileInput(e.target.value) })}
                   className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
                 />
               </div>
@@ -10802,7 +10803,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       maxLength={10}
                                       value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : '')}
                                       onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                        const val = sanitizeMobileInput(e.target.value);
                                         setGuestList(prev => {
                                           const updated = [...prev];
                                           updated[idx] = { ...(updated[idx] || {}), phone: val };

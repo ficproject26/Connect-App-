@@ -6,6 +6,7 @@ import {
 import { 
   validateName, 
   validateMobile, 
+  sanitizeMobileInput,
   validateEmail, 
   validateFileUpload, 
   sanitizeInput 
@@ -198,7 +199,7 @@ export default function ProfileView({ currentUser, onSave }) {
                   type="tel"
                   maxLength={10}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  onChange={(e) => setPhone(sanitizeMobileInput(e.target.value))}
                   className={`w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 ${
                     !phoneVal.isValid ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
                   }`}

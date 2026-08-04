@@ -7,6 +7,7 @@ import logoImg from '../../assets/images/forge india logo.jpg';
 import { 
   validateName, 
   validateMobile, 
+  sanitizeMobileInput,
   validateEmail, 
   validateAadhaar, 
   validatePan, 
@@ -83,9 +84,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
   // Field Input Sanitizers and Formatters
   const handlePhoneChange = (e) => {
-    let val = e.target.value.replace(/\D/g, '');
-    if (val.startsWith('0')) val = val.substring(1);
-    if (val.length > 10) val = val.slice(0, 10);
+    const val = sanitizeMobileInput(e.target.value);
     setPhoneNumber(val);
   };
 
@@ -111,11 +110,11 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
   // Backend API URL
   const getApiBase = () => {
-    if (typeof window === 'undefined') return 'http://localhost:8001/api';
+    if (typeof window === 'undefined') return 'http://localhost:8000/api';
     const hostname = window.location.hostname;
     if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' ||
         hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
-      return `http://${hostname || 'localhost'}:8001/api`;
+      return `http://${hostname || 'localhost'}:8000/api`;
     }
     return 'https://connect-admin-96pc.onrender.com/api';
   };
