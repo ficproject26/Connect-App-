@@ -8963,7 +8963,7 @@ export default function CustomerDashboard({
             <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 space-y-2">
               <button 
                 onClick={() => {
-                  wishlistProducts.forEach(item => addToCart(item));
+wishlistProducts.forEach(item => addToCart(item));
                   setIsWishlistOpen(false);
                   setIsCartOpen(true);
                   triggerNotification("Added all wishlist items to cart!");
@@ -8981,46 +8981,57 @@ export default function CustomerDashboard({
       {/* -------------------- 7. PROFILE DETAILS MODAL POP-UP -------------------- */}
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-50 bg-white dark:bg-[#0b1329] w-screen h-screen flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-800 dark:text-slate-200">
-            {/* Modal Left Navigation Sidebar */}
-            <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
-              <div className="space-y-6 text-left">
+            {/* Modal Navigation Sidebar (Responsive: Header Bar on Mobile, Vertical Panel on Desktop) */}
+            <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 p-4 md:p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200 max-h-[35vh] md:max-h-full overflow-y-auto custom-scrollbar">
+              <div className="space-y-4 md:space-y-6 text-left w-full">
 
-                {/* Back Button */}
-                <button
-                  onClick={() => {
-                    setIsProfileModalOpen(false);
-                    setActiveTab('Home');
-                  }}
-                  className="w-10 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs shrink-0"
-                  aria-label="Back"
-                  title="Back"
-                >
-                  <ArrowLeft className="w-4.5 h-4.5 text-slate-700 dark:text-slate-200" />
-                </button>
-
-                {/* Profile Details */}
-                <div className="flex flex-col items-center text-center gap-2 pb-5 border-b border-slate-100 dark:border-slate-800/60 w-full">
-                  <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0">
-                    {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-                  </div>
-                  <div className="w-full overflow-hidden mt-1 flex flex-col items-center">
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-all leading-tight">
-                      {currentUser?.name || profileName}
-                    </h4>
-                    <span className="inline-block px-3 py-0.5 text-[9px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 rounded-full mt-1.5 uppercase tracking-wider">
-                      Customer Member
-                    </span>
-                    <div className="mt-2 flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/20 dark:bg-amber-950/30 dark:border-amber-900/40 px-3 py-1 rounded-xl shadow-2xs">
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer ID:</span>
-                      <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 font-mono tracking-wider">
-                        {activeCustomerId}
-                      </span>
+                {/* Top Profile Header Bar */}
+                <div className="flex items-center justify-between gap-3 pb-3 md:pb-5 border-b border-slate-100 dark:border-slate-800/60 w-full">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setIsProfileModalOpen(false);
+                        setActiveTab('Home');
+                      }}
+                      className="w-9 h-9 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs shrink-0"
+                      aria-label="Back"
+                      title="Back"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+                    </button>
+                    <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-lg md:text-2xl border border-amber-300 shadow-sm shrink-0">
+                      {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
+                    </div>
+                    <div className="flex flex-col text-left truncate">
+                      <h4 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
+                        {currentUser?.name || profileName}
+                      </h4>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="inline-block px-2 py-0.2 text-[8px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 rounded-full uppercase tracking-wider">
+                          Customer
+                        </span>
+                        <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold truncate">
+                          ID: {activeCustomerId}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  <button 
+                    onClick={() => {
+                      setIsProfileModalOpen(false);
+                      onLogOut();
+                    }}
+                    className="p-2 md:w-full md:py-3 bg-white hover:bg-red-50 text-red-600 border border-red-200 dark:bg-slate-900 dark:hover:bg-red-950/20 dark:border-red-900/50 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                    title="Logout"
+                  >
+                    <LogOut className="w-4 h-4 text-red-600" />
+                    <span className="hidden md:inline">Logout</span>
+                  </button>
                 </div>
 
                 {/* Navigation Menu */}
-                <div className="flex flex-row md:flex-col gap-1 overflow-x-auto no-scrollbar py-2">
+                <div className="flex flex-row md:flex-col gap-1.5 overflow-x-auto no-scrollbar py-1 w-full shrink-0">
                   {[
                     { id: 'orders', label: 'My Orders', icon: ShoppingBag },
                     { id: 'bookings', label: 'My Bookings', icon: Calendar },
@@ -9042,37 +9053,25 @@ export default function CustomerDashboard({
                             setTrackingOrder(null);
                           }
                         }}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all w-full text-left whitespace-nowrap cursor-pointer border-none ${
+                        className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl text-xs font-bold transition-all shrink-0 md:shrink md:w-full text-left whitespace-nowrap cursor-pointer border-none ${
                           isActive 
                             ? 'bg-[#FFB300] text-slate-950 shadow-sm font-extrabold'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white bg-transparent'
                         }`}
                       >
-                        <TabIcon className={`w-4.5 h-4.5 ${isActive ? 'text-slate-950' : 'text-slate-500'}`} />
+                        <TabIcon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-slate-500'}`} />
                         <span>{tab.label}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-
-              {/* Logout Button */}
-              <button 
-                onClick={() => {
-                  setIsProfileModalOpen(false);
-                  onLogOut();
-                }}
-                className="mt-6 w-full py-3 bg-white hover:bg-red-50 text-red-600 border border-red-200 dark:bg-slate-900 dark:hover:bg-red-950/20 dark:border-red-900/50 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-              >
-                <LogOut className="w-4 h-4 text-red-600" />
-                <span>Logout</span>
-              </button>
             </div>
 
             {/* Modal Right Content Panel */}
-            <div className="flex-grow p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative">
+            <div className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full">
 
-              <div className="flex-grow">
+              <div className="flex-grow max-w-full">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
                 {['orders', 'bookings', 'myjobs'].includes(activeProfileTab) && (() => {
                   const ordersForActiveTab = customerOrders.filter(o => {
@@ -9082,13 +9081,11 @@ export default function CustomerDashboard({
                       if (typeLower === 'job' || typeLower === 'jobs') return false;
                       return typeLower === 'booking' || ['stay', 'travel', 'services', 'service', 'appointment', 'hospital', 'doctor'].includes(typeLower);
                     }
-                    // orders tab: exclude bookings and jobs
                     if (['booking', 'stay', 'travel', 'services', 'service', 'job', 'jobs', 'appointment', 'doctor', 'hospital'].includes(typeLower)) return false;
                     return true;
                   });
 
                   const filteredCustomerOrders = ordersForActiveTab.filter(o => {
-                    // Time window filter
                     if (selectedTimeWindow === 'Today') {
                       const startOfToday = new Date();
                       startOfToday.setHours(0, 0, 0, 0);
@@ -9114,7 +9111,7 @@ export default function CustomerDashboard({
                   });
 
                   return (
-                    <div className="space-y-6 animate-fade-in text-left flex flex-col h-full justify-between">
+                    <div className="space-y-6 animate-fade-in text-left flex flex-col h-full justify-between max-w-full">
                     {trackingOrder ? (
                       trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs' ? (
                         /* Beautiful Job Application Status Tracking UI */
@@ -9137,107 +9134,6 @@ export default function CustomerDashboard({
                               Application Status
                             </span>
                           </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2.5 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
-                              <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">{trackingOrder.product_details}</h4>
-                              <div className="space-y-1">
-                                <p className="text-slate-500 dark:text-slate-400">Application Number: <strong className="text-slate-800 dark:text-white">#{trackingOrder.order_number}</strong></p>
-                                <p className="text-slate-500 dark:text-slate-400">Applied On: <strong className="text-slate-800 dark:text-white">{new Date(trackingOrder.created_at || Date.now()).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></p>
-                                <p className="text-slate-500 dark:text-slate-400">Candidate Name: <strong className="text-slate-800 dark:text-white">{trackingOrder.customer_name}</strong></p>
-                                <p className="text-slate-500 dark:text-slate-400">Candidate Email: <strong className="text-slate-800 dark:text-white">{trackingOrder.candidateEmail || 'N/A'}</strong></p>
-                              </div>
-                            </div>
-                            
-                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1.5 shadow-xs">
-                              <span className="text-[10px] uppercase font-bold text-slate-450 tracking-wider">Current Decision Status</span>
-                              <div className="inline-block mx-auto">
-                                <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${
-                                  trackingOrder.status === 'Cancelled'
-                                    ? 'bg-red-500/10 text-red-500 border-red-500/25'
-                                    : ['Delivered', 'Completed'].includes(trackingOrder.status)
-                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25'
-                                    : 'bg-amber-500/10 text-amber-500 border-amber-500/25'
-                                }`}>
-                                  {trackingOrder.status === 'Order Received' ? 'Under Preview' :
-                                   trackingOrder.status === 'Preparing' ? 'Resume Screening' :
-                                   ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(trackingOrder.status) ? 'Shortlisted' :
-                                   ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(trackingOrder.status) ? 'Interview Scheduled' :
-                                   ['Delivered', 'Completed'].includes(trackingOrder.status) ? 'Selected / Offered' :
-                                   trackingOrder.status === 'Cancelled' ? 'Application Rejected' : 'Under Review'}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-semibold">
-                                {trackingOrder.status === 'Cancelled'
-                                  ? 'Thank you for your interest. We will not be moving forward with your candidacy at this time.'
-                                  : ['Delivered', 'Completed'].includes(trackingOrder.status)
-                                  ? 'Congratulations! You have been selected. Check your email for the official offer letter.'
-                                  : 'Our HR team is currently reviewing your details. We will contact you soon.'}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Customized Recruiting Progress Timeline */}
-                          <div className="bg-white dark:bg-slate-900 p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-5 text-left">Recruiting Progress Timeline</h4>
-                            <div className="flex justify-between items-center relative w-full px-2">
-                              <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 -z-10" />
-                              
-                              {['Application Received', 'Resume Screening', 'Shortlisted', 'Interview Scheduled', 'Selected / Offered'].map((step, idx) => {
-                                const statusMap = {
-                                  'Order Received': 0,
-                                  'Preparing': 1,
-                                  'Ready For Pickup': 2,
-                                  'Assigned To Delivery Partner': 2,
-                                  'Delivery Partner Accepted': 2,
-                                  'Picked Up': 3,
-                                  'Out For Delivery': 3,
-                                  'Near Customer': 3,
-                                  'Delivered': 4,
-                                  'Completed': 4
-                                };
-                                const isCancelled = trackingOrder.status === 'Cancelled';
-                                const currentIdx = statusMap[trackingOrder.status] || 0;
-                                const isCompleted = !isCancelled && idx <= currentIdx;
-                                const isActive = !isCancelled && idx === currentIdx;
-                                
-                                return (
-                                  <div key={idx} className="flex flex-col items-center gap-1.5 z-10">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
-                                      isCancelled && idx === currentIdx
-                                        ? 'bg-rose-500 border-rose-400 text-white shadow-[0_0_8px_#F43F5E]'
-                                        : isCompleted 
-                                          ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
-                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
-                                    }`}>
-                                      {isCancelled && idx === currentIdx ? '✗' : isCompleted ? '✓' : idx + 1}
-                                    </div>
-                                    <span className={`text-[8px] font-bold uppercase transition-colors whitespace-nowrap ${
-                                      isCancelled && idx === currentIdx ? 'text-rose-500' : isActive ? 'text-amber-500' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
-                                    }`}>
-                                      {step}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Next Steps Box */}
-                          <div className="bg-slate-50 dark:bg-slate-950 p-4 border border-slate-100 dark:border-slate-800/80 rounded-2xl text-left space-y-2.5">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-350">What to expect next?</h4>
-                            <ul className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
-                              {trackingOrder.status === 'Cancelled' ? (
-                                <li>Your profile will be kept in our talent pool for future openings that match your skills.</li>
-                              ) : (
-                                <>
-                                  <li>Our recruiting team reviews resumes within 3-5 business days.</li>
-                                  <li>If your profile matches the role requirements, you will receive an invitation email for a technical screening.</li>
-                                  <li>Make sure to check your spam folder for emails from <strong>recruiting@connectapp.com</strong>.</li>
-                                </>
-                              )}
-                            </ul>
-                          </div>
                         </div>
                       ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(trackingOrder.type) ? (
                         /* Beautiful Booking Status Tracking UI */
@@ -9249,17 +9145,17 @@ export default function CustomerDashboard({
                                 setTrackingTimeline([]);
                                 setTrackingPartner(null);
                                 setTrackingCoords(null);
+                                setActiveProfileTab('bookings');
                               }}
                               className="text-xs text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
                             >
                               <ChevronLeft className="w-4 h-4" />
                               <span>Back to Bookings</span>
                             </button>
-                            <span className="text-[10px] bg-blue-400/10 text-blue-500 border border-blue-400/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                              Booking Status
+                            <span className="text-[10px] bg-amber-400/10 text-amber-500 border border-amber-400/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              Booking Confirmation
                             </span>
                           </div>
-
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2.5 text-xs text-slate-800 dark:text-slate-200 shadow-xs text-left">
                               <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">{trackingOrder.product_details}</h4>
@@ -9914,9 +9810,13 @@ export default function CustomerDashboard({
                                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
                                   <IconComp className="w-4 h-4" />
                                 </div>
+                                <div className="text-left leading-tight">
+                                  <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.title}</h5>
+                                  <p className="text-[10px] text-slate-400 font-semibold">{item.desc}</p>
                                 </div>
-                              );
-                            })}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
