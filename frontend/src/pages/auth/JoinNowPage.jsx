@@ -198,10 +198,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-900 dark:text-slate-100 font-sans select-none flex items-center justify-center p-3 sm:p-6 lg:p-8 overflow-y-auto py-8">
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-900 dark:text-slate-100 font-sans select-none flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 lg:p-8 py-8 sm:py-12 overflow-y-auto">
       
       {/* Centered Registration Card */}
-      <div className="w-full max-w-2xl bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-8 md:p-10 shadow-xl space-y-5 my-auto">
+      <div className="w-full max-w-2xl bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-8 md:p-10 shadow-xl space-y-5 my-auto shrink-0">
         
         {/* Top Header Logo & Login Link */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
