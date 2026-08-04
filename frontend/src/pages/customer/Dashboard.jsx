@@ -361,10 +361,18 @@ export default function CustomerDashboard({
   isLandingPage = false,
   hideProfile = false,
   onAuthClick,
-  onNavigateToJoinNow
+  onNavigateToJoinNow,
+  initialLoginModalOpen = false
 }) {
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(initialLoginModalOpen || false);
+
+  useEffect(() => {
+    if (initialLoginModalOpen) {
+      setIsLoginModalOpen(true);
+    }
+  }, [initialLoginModalOpen]);
+  
   const [theme, setTheme] = useState(
     () => localStorage.getItem('theme') || 'light'
   );

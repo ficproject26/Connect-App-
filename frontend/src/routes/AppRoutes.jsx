@@ -56,15 +56,21 @@ export default function AppRoutes({
 
   if (currentPage === 'login') {
     return (
-      <AuthLayout>
-        <LoginPage
-          onAuthSuccess={(user) => {
-            login(user.email, user.role, handleAuthSuccess);
-          }}
-          onBackToHome={handleHomeNavigate}
-          onNavigateToJoinNow={() => setCurrentPage('join-now')}
-        />
-      </AuthLayout>
+      <CustomerLayout>
+        <ErrorBoundary>
+          <CustomerDashboard 
+            currentUser={currentUser} 
+            onLogOut={handleLogout} 
+            onJobsClick={() => setIsJobsOpen(true)}
+            onCategoryClick={handleCategoryClick}
+            isLandingPage={!currentUser}
+            hideProfile={!currentUser}
+            initialLoginModalOpen={true}
+            onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+            onNavigateToJoinNow={() => setCurrentPage('join-now')}
+          />
+        </ErrorBoundary>
+      </CustomerLayout>
     );
   }
 
