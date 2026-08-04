@@ -2977,7 +2977,7 @@ export default function CustomerDashboard({
     return (
       <header className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-2.5 sm:px-6 py-2 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
         {/* Row 1 for Mobile / Left Section for Desktop */}
-        <div className="flex items-center justify-between gap-1 sm:gap-4 w-full md:w-auto overflow-x-hidden">
+        <div className="flex items-center justify-between gap-1 sm:gap-4 w-full md:w-auto overflow-visible">
           {/* Logo */}
           <div className="flex items-center gap-1.5 select-none cursor-pointer shrink-0" onClick={clearAllFilters}>
             <div className="w-6.5 h-6.5 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60 shrink-0">
@@ -3007,7 +3007,7 @@ export default function CustomerDashboard({
                   onClick={() => setIsLocationDropdownOpen(false)}
                   className="fixed inset-0 z-40 bg-black/10 backdrop-blur-2xs" 
                 />
-                <div className="absolute left-0 sm:left-0 mt-2 w-[270px] sm:w-80 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-50 text-slate-800 dark:text-slate-200 animate-fade-in space-y-3">
+                <div className="absolute left-0 mt-2 w-[280px] sm:w-80 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl p-4 z-[100] text-slate-800 dark:text-slate-200 animate-fade-in space-y-3">
                   
                   {/* Header Title & Close Button */}
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
