@@ -8982,52 +8982,82 @@ wishlistProducts.forEach(item => addToCart(item));
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-50 bg-white dark:bg-[#0b1329] w-screen h-screen flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-800 dark:text-slate-200">
             {/* Modal Navigation Sidebar (Responsive: Header Bar on Mobile, Vertical Panel on Desktop) */}
-            <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 p-4 md:p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200 max-h-[35vh] md:max-h-full overflow-y-auto custom-scrollbar">
+            <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 p-4 md:p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
               <div className="space-y-4 md:space-y-6 text-left w-full">
 
-                {/* Top Profile Header Bar */}
-                <div className="flex items-center justify-between gap-3 pb-3 md:pb-5 border-b border-slate-100 dark:border-slate-800/60 w-full">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        setIsProfileModalOpen(false);
-                        setActiveTab('Home');
-                      }}
-                      className="w-9 h-9 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs shrink-0"
-                      aria-label="Back"
-                      title="Back"
-                    >
-                      <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
-                    </button>
-                    <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-lg md:text-2xl border border-amber-300 shadow-sm shrink-0">
-                      {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-                    </div>
-                    <div className="flex flex-col text-left truncate">
-                      <h4 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
-                        {currentUser?.name || profileName}
-                      </h4>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="inline-block px-2 py-0.2 text-[8px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 rounded-full uppercase tracking-wider">
-                          Customer
-                        </span>
-                        <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold truncate">
+                {/* 1. Mobile Header View (< md) */}
+                <div className="flex md:hidden flex-col gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/60 w-full">
+                  <div className="flex items-center justify-between gap-2 w-full">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <button
+                        onClick={() => {
+                          setIsProfileModalOpen(false);
+                          setActiveTab('Home');
+                        }}
+                        className="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs shrink-0"
+                        aria-label="Back"
+                      >
+                        <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+                      </button>
+                      <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-sm border border-amber-300 shadow-sm shrink-0">
+                        {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
+                      </div>
+                      <div className="flex flex-col text-left min-w-0 truncate">
+                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
+                          {currentUser?.name || profileName}
+                        </h4>
+                        <span className="text-[9.5px] font-mono text-amber-600 dark:text-amber-400 font-bold truncate">
                           ID: {activeCustomerId}
                         </span>
                       </div>
                     </div>
-                  </div>
 
-                  <button 
+                    {/* Mobile Explicit Logout Button */}
+                    <button 
+                      onClick={() => {
+                        setIsProfileModalOpen(false);
+                        onLogOut();
+                      }}
+                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50 rounded-xl text-xs font-extrabold transition-colors flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
+                      title="Logout"
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-red-600" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Desktop Sidebar Header View (>= md) */}
+                <div className="hidden md:flex flex-col items-center text-center gap-3 pb-5 border-b border-slate-100 dark:border-slate-800/60 w-full relative">
+                  <button
                     onClick={() => {
                       setIsProfileModalOpen(false);
-                      onLogOut();
+                      setActiveTab('Home');
                     }}
-                    className="p-2 md:w-full md:py-3 bg-white hover:bg-red-50 text-red-600 border border-red-200 dark:bg-slate-900 dark:hover:bg-red-950/20 dark:border-red-900/50 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
-                    title="Logout"
+                    className="absolute top-0 left-0 w-9 h-9 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs"
+                    aria-label="Back"
+                    title="Back to Store"
                   >
-                    <LogOut className="w-4 h-4 text-red-600" />
-                    <span className="hidden md:inline">Logout</span>
+                    <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                   </button>
+
+                  <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0 mt-2">
+                    {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
+                  </div>
+                  <div className="w-full overflow-hidden flex flex-col items-center px-1">
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-words leading-tight">
+                      {currentUser?.name || profileName}
+                    </h4>
+                    <span className="inline-block px-3 py-0.5 text-[9px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 rounded-full mt-1.5 uppercase tracking-wider">
+                      Customer Member
+                    </span>
+                    <div className="mt-2 flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/20 dark:bg-amber-950/30 dark:border-amber-900/40 px-3 py-1 rounded-xl shadow-2xs max-w-full">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">ID:</span>
+                      <span className="text-[10.5px] font-black text-amber-600 dark:text-amber-400 font-mono tracking-wider truncate">
+                        {activeCustomerId}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Navigation Menu */}
@@ -9053,7 +9083,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             setTrackingOrder(null);
                           }
                         }}
-                        className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl text-xs font-bold transition-all shrink-0 md:shrink md:w-full text-left whitespace-nowrap cursor-pointer border-none ${
+                        className={`flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-xl text-xs font-bold transition-all shrink-0 md:shrink md:w-full text-left whitespace-nowrap cursor-pointer border-none ${
                           isActive 
                             ? 'bg-[#FFB300] text-slate-950 shadow-sm font-extrabold'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white bg-transparent'
@@ -9066,6 +9096,18 @@ wishlistProducts.forEach(item => addToCart(item));
                   })}
                 </div>
               </div>
+
+              {/* Desktop Dedicated Full-Width Logout Button */}
+              <button 
+                onClick={() => {
+                  setIsProfileModalOpen(false);
+                  onLogOut();
+                }}
+                className="hidden md:flex mt-6 w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-slate-900 dark:hover:bg-red-950/20 dark:border-red-900/50 rounded-xl text-xs font-bold transition-colors items-center justify-center gap-2 cursor-pointer shadow-xs"
+              >
+                <LogOut className="w-4 h-4 text-red-600" />
+                <span>Logout Account</span>
+              </button>
             </div>
 
             {/* Modal Right Content Panel */}
