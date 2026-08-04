@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
+import { securityManager } from '../security/securityManager';
 
 const router = Router();
 
@@ -10,7 +11,6 @@ router.get('/categories', async (req: Request, res: Response) => {
     if (mongoDb) {
       const all = await mongoDb.collection('categories').find().sort({ sortOrder: 1, name: 1 }).toArray();
       
-      // Build tree structure
       const map: Record<string, any> = {};
       const roots: any[] = [];
 
@@ -64,6 +64,53 @@ router.get('/banners', async (req: Request, res: Response) => {
     console.error("Error fetching banners in backend:", err);
     res.status(500).json({ error: err.message || 'Server error' });
   }
+});
+
+// Admin Security Control Center API Routes
+router.get('/security/metrics', (req: Request, res: Response) => {
+  const metrics = securityManager.getSecurityMetrics();
+  return res.json({
+    status: 'success',
+    metrics
+  });
+});
+
+router.get('/security/logs', (req: Request, res: Response) => {
+  const logs = securityManager.getAuditLogs();
+  return res.json({
+    status: 'success',
+    logs
+  });
+});
+
+router.get('/security/locked-accounts', (req: Request, res: Response) => {
+  const records = securityManager.getAllUserSecurityRecords();
+  const locked = records.filter(r => r.isPermanentlyLocked || (r.accountLockedUntil && new Date(r.accountLockedUntil).getTime() > Date.now()));
+  return res.json({
+    status: 'success',
+    lockedAccounts: locked
+  });
+});
+
+router.post('/security/unlock-account', (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ status: 'error', message: 'Email or Mobile required.' });
+  
+  securityManager.unlockAccount(email);
+  securityManager.logEvent({
+    action: 'ADMIN_UNLOCKED_ACCOUNT',
+    email,
+    ip: req.ip || '127.0.0.1',
+    device: 'Admin Control Center',
+    country: 'India',
+    status: 'SUCCESS',
+    details: `Admin unlocked account for ${email}.`
+  });
+
+  return res.json({
+    status: 'success',
+    message: `Account ${email} has been unlocked by Admin.`
+  });
 });
 
 // Mock Data

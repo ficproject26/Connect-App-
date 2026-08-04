@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import http from 'http';
 import adminRouter from './routes/admin';
@@ -10,6 +11,7 @@ import ordersRouter from './routes/orders';
 import mapsRouter from './routes/maps';
 import { socketManager } from './socket';
 import { db } from './db';
+import { helmetSecurityMiddleware, sanitizeInputsMiddleware } from './security/middleware';
 
 // Load environmental variables
 dotenv.config();
@@ -17,18 +19,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// Enable Middlewares
+// OWASP Security Headers (Helmet) & Input Sanitization
+app.use(helmetSecurityMiddleware);
+
+// Enable CORS with Credentials
 app.use(cors({
-  origin: '*', // Allow all origins for testing
+  origin: true,
   credentials: true
 }));
-app.use(express.json());
+
+app.use(cookieParser());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(sanitizeInputsMiddleware);
 
 // Base Health Check Route
 app.get('/', (req, res) => {
   res.json({
     status: 'success',
-    message: 'Connect App REST API is running successfully.',
+    message: 'Connect App Enterprise REST API is running with OWASP Security enabled.',
     timestamp: new Date().toISOString()
   });
 });
@@ -49,7 +58,7 @@ socketManager.init(server);
 db.connect()
   .then(() => {
     server.listen(PORT, () => {
-      console.log(`[Server]: Connect App Backend running on http://localhost:${PORT}`);
+      console.log(`[Server]: Connect App Backend running on http://localhost:${PORT} with DevSecOps Security`);
     });
   })
   .catch((err) => {

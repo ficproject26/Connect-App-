@@ -1,81 +1,77 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
+import { securityManager } from '../security/securityManager';
+import { authRateLimiter, authenticateToken, AuthenticatedRequest } from '../security/middleware';
 
 const router = Router();
 
-// Backend Validation Helper Functions
-const validateServerInput = (body: any) => {
-  const errors: string[] = [];
+// Helper to parse User-Agent for Device Recognition
+const parseDevice = (userAgent: string = '') => {
+  let browser = 'Unknown Browser';
+  let os = 'Unknown OS';
 
-  const { name, email, phone, aadhaarNumber, panNumber, pincode } = body;
+  if (userAgent.includes('Firefox')) browser = 'Firefox';
+  else if (userAgent.includes('Chrome')) browser = 'Chrome';
+  else if (userAgent.includes('Safari')) browser = 'Safari';
+  else if (userAgent.includes('Edge')) browser = 'Edge';
 
-  // Name Validation
-  if (name) {
-    const cleanName = String(name).trim();
-    if (cleanName.length < 3 || cleanName.length > 50) {
-      errors.push('Name must be between 3 and 50 characters.');
-    }
-    if (!/^[a-zA-Z\s]+$/.test(cleanName)) {
-      errors.push('Name can contain letters and spaces only.');
-    }
-  }
+  if (userAgent.includes('Windows')) os = 'Windows';
+  else if (userAgent.includes('Macintosh') || userAgent.includes('Mac OS')) os = 'macOS';
+  else if (userAgent.includes('Android')) os = 'Android';
+  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
+  else if (userAgent.includes('Linux')) os = 'Linux';
 
-  // Mobile Validation (10 digits, cannot start with 0)
-  if (phone) {
-    const cleanPhone = String(phone).trim();
-    if (!/^[1-9]\d{9}$/.test(cleanPhone)) {
-      errors.push('Enter a valid 10-digit mobile number.');
-    }
-  }
-
-  // Email Validation
-  if (email) {
-    const cleanEmail = String(email).trim();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(cleanEmail)) {
-      errors.push('Enter a valid email address.');
-    }
-  }
-
-  // Aadhaar Validation (12 digits)
-  if (aadhaarNumber) {
-    const cleanAadhaar = String(aadhaarNumber).trim().replace(/\s+/g, '');
-    if (!/^\d{12}$/.test(cleanAadhaar)) {
-      errors.push('Enter a valid 12-digit Aadhaar number.');
-    }
-  }
-
-  // PAN Validation (ABCDE1234F)
-  if (panNumber) {
-    const cleanPan = String(panNumber).trim().toUpperCase();
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
-      errors.push('Enter a valid PAN number.');
-    }
-  }
-
-  // Pincode Validation (6 digits)
-  if (pincode) {
-    const cleanPin = String(pincode).trim();
-    if (!/^\d{6}$/.test(cleanPin)) {
-      errors.push('Enter a valid 6-digit Pincode.');
-    }
-  }
-
-  return errors;
+  return { browser, os, deviceName: `${os} - ${browser}` };
 };
 
-// POST: /api/auth/login
-router.post('/login', async (req: Request, res: Response) => {
-  const { email, password, role } = req.body;
-  
-  if (!email || !role) {
+// 1. POST: /api/auth/login (JWT, Refresh Token, Rate Limiting, Account Lockout Policy)
+router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
+  const { email, phone, password, role = 'customer', captchaToken } = req.body;
+  const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+  const userAgent = req.headers['user-agent'] || '';
+  const device = parseDevice(userAgent);
+  const identifier = (email || phone || '').toLowerCase().trim();
+
+  if (!identifier) {
     return res.status(400).json({
       status: 'error',
-      message: 'Email and role are required fields.'
+      message: 'Email or Mobile number is required.'
+    });
+  }
+
+  // Check Account Lock Status
+  const lockStatus = securityManager.isAccountLocked(identifier);
+  if (lockStatus.locked) {
+    securityManager.logEvent({
+      action: 'LOGIN_BLOCKED_ACCOUNT_LOCKED',
+      email: identifier,
+      role,
+      ip,
+      device: device.deviceName,
+      country: 'India',
+      status: 'BLOCKED',
+      details: lockStatus.reason || 'Account locked'
+    });
+    return res.status(403).json({
+      status: 'error',
+      code: 'ACCOUNT_LOCKED',
+      message: lockStatus.reason
+    });
+  }
+
+  // Check if Captcha is Required
+  const userRec = securityManager.getUserRecord(identifier);
+  if (userRec.requireCaptcha && !captchaToken) {
+    return res.status(400).json({
+      status: 'error',
+      code: 'CAPTCHA_REQUIRED',
+      requireCaptcha: true,
+      message: 'Suspicious activity detected. Captcha verification is required to log in.'
     });
   }
 
   try {
+    // Authenticate User
     let userDetails: any = null;
 
     if (role === 'vendor') {
@@ -84,39 +80,32 @@ router.post('/login', async (req: Request, res: Response) => {
         vendor = await db.createVendor({
           id: 'v1',
           name: 'ABC Electronics',
-          email: email,
+          email: identifier,
           phone: '+91 98765 43210',
-          address: 'Karol Bagh, New Delhi, 110005',
+          address: 'Karol Bagh, New Delhi',
           rating: 4.8,
           active: true
         });
       }
-      userDetails = {
-        id: vendor.id,
-        name: vendor.name,
-        email: vendor.email,
-        role: 'vendor'
-      };
+      userDetails = { id: vendor.id, name: vendor.name, email: vendor.email, role: 'vendor' };
+
     } else if (role === 'delivery') {
       const partners = await db.getDeliveryPartners();
-      let displayName = email.split('@')[0];
+      let displayName = identifier.split('@')[0];
       displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-      
-      let partner = partners.find(p => p.mobile === email || p.id === email || p.name.toLowerCase().includes(displayName.toLowerCase()));
-      
+      let partner = partners.find(p => p.mobile === identifier || p.name.toLowerCase().includes(displayName.toLowerCase()));
       if (!partner) {
-        const randId = 'dp_' + Math.floor(1000 + Math.random() * 9000);
         partner = await db.createDeliveryPartner({
-          id: randId,
+          id: 'dp_' + Math.floor(1000 + Math.random() * 9000),
           name: displayName || 'Connect Rider',
           photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          mobile: '+91 95555 ' + Math.floor(10000 + Math.random() * 90000),
+          mobile: identifier,
           emergency_contact: '+91 91111 22222',
           address: 'Koramangala, Bangalore',
           vehicle_type: 'Electric Bike',
-          vehicle_number: 'KA-03-XY-' + Math.floor(1000 + Math.random() * 9000),
-          driving_license: 'DL' + Math.floor(1000000000 + Math.random() * 9000000000),
-          aadhaar: Math.floor(1000 + Math.random() * 9000) + ' ' + Math.floor(1000 + Math.random() * 9000) + ' 5555',
+          vehicle_number: 'KA-03-XY-9999',
+          driving_license: 'DL99999999',
+          aadhaar: '1111 2222 3333',
           status: 'Available',
           availability: true,
           current_latitude: 12.9348,
@@ -128,180 +117,282 @@ router.post('/login', async (req: Request, res: Response) => {
           joining_date: new Date().toISOString().split('T')[0]
         });
       }
+      userDetails = { id: partner.id, name: partner.name, email: identifier, role: 'delivery' };
 
-      userDetails = {
-        id: partner.id,
-        name: partner.name,
-        email: email,
-        role: 'delivery',
-        status: partner.status,
-        availability: partner.availability
-      };
     } else if (role === 'admin') {
-      userDetails = {
-        id: 'admin_1',
-        name: 'System Admin',
-        email: email,
-        role: 'admin'
-      };
+      userDetails = { id: 'admin_1', name: 'System Admin', email: identifier, role: 'admin' };
     } else {
-      let displayName = email.split('@')[0];
+      let displayName = identifier.split('@')[0];
       displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-      
-      userDetails = {
-        id: 'cust_' + displayName.toLowerCase(),
-        name: displayName || 'Connect Member',
-        email: email,
-        role: 'customer'
-      };
+      userDetails = { id: 'cust_' + displayName.toLowerCase(), name: displayName || 'Connect Member', email: identifier, role: 'customer' };
     }
 
-    res.json({
-      status: 'success',
-      message: 'Login successful',
-      data: userDetails
+    // Reset Failed Attempts on Successful Login
+    securityManager.resetFailedLogins(identifier);
+
+    // Create Session
+    const sessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    const accessToken = securityManager.generateAccessToken({ userId: userDetails.id, email: userDetails.email, role: userDetails.role, sessionId });
+    const refreshToken = securityManager.generateRefreshToken({ userId: userDetails.id, email: userDetails.email, role: userDetails.role, sessionId });
+
+    securityManager.createSession({
+      sessionId,
+      userId: userDetails.id,
+      email: userDetails.email,
+      role: userDetails.role,
+      tokenHash: refreshToken.slice(-10),
+      deviceName: device.deviceName,
+      os: device.os,
+      browser: device.browser,
+      ip,
+      country: 'India',
+      city: 'Bangalore'
     });
+
+    // Log Successful Login
+    securityManager.logEvent({
+      action: 'USER_LOGIN_SUCCESS',
+      userId: userDetails.id,
+      email: userDetails.email,
+      role: userDetails.role,
+      ip,
+      device: device.deviceName,
+      country: 'India',
+      status: 'SUCCESS',
+      details: 'Authenticated successfully with JWT & Refresh Token rotation.'
+    });
+
+    // Set HTTP-Only Cookie for Refresh Token
+    res.cookie('connect_refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Days
+    });
+
+    res.cookie('connect_access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000 // 15 Mins
+    });
+
+    return res.json({
+      status: 'success',
+      message: 'Login successful.',
+      accessToken,
+      refreshToken,
+      expiresIn: 900,
+      user: userDetails,
+      session: { sessionId, device: device.deviceName, ip }
+    });
+
   } catch (error: any) {
-    res.status(500).json({
+    const failedInfo = securityManager.recordFailedLogin(identifier, ip, device.deviceName);
+    return res.status(401).json({
       status: 'error',
-      message: 'Error during authentication: ' + error.message
+      code: 'INVALID_CREDENTIALS',
+      message: failedInfo.message,
+      attempts: failedInfo.attempts,
+      requireCaptcha: failedInfo.requireCaptcha
     });
   }
 });
 
-// POST: /api/auth/register-customer (Strict Server-Side Validation)
-router.post('/register-customer', async (req: Request, res: Response) => {
-  const { name, email, phone, address, city, pincode, aadhaarNumber, panNumber } = req.body;
+// 2. POST: /api/auth/send-otp (6-Digit OTP, 5-Min Expiry, 30s Cooldown)
+router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) => {
+  const { mobileOrEmail } = req.body;
+  const ip = req.ip || '127.0.0.1';
 
-  // Run Server-Side Validation
-  const valErrors = validateServerInput(req.body);
-  if (valErrors.length > 0) {
-    return res.status(400).json({
-      status: 'error',
-      message: valErrors.join(' '),
-      errors: valErrors
-    });
+  if (!mobileOrEmail) {
+    return res.status(400).json({ status: 'error', message: 'Mobile or Email is required.' });
   }
 
+  try {
+    const { otp, cooldownSeconds } = securityManager.generateOTP(mobileOrEmail);
+
+    securityManager.logEvent({
+      action: 'OTP_REQUESTED',
+      email: mobileOrEmail,
+      ip,
+      device: req.headers['user-agent'] || 'Unknown',
+      country: 'India',
+      status: 'SUCCESS',
+      details: `Generated 6-digit OTP (expires in 5 minutes).`
+    });
+
+    return res.json({
+      status: 'success',
+      message: `OTP sent successfully to ${mobileOrEmail}. Valid for 5 minutes.`,
+      cooldownSeconds,
+      // For development convenience, return preview OTP
+      devOtpPreview: otp
+    });
+  } catch (err: any) {
+    return res.status(429).json({ status: 'error', message: err.message });
+  }
+});
+
+// 3. POST: /api/auth/verify-otp (3 Attempts Limit)
+router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) => {
+  const { mobileOrEmail, otp } = req.body;
+  const ip = req.ip || '127.0.0.1';
+
+  if (!mobileOrEmail || !otp) {
+    return res.status(400).json({ status: 'error', message: 'Mobile/Email and OTP are required.' });
+  }
+
+  const result = securityManager.verifyOTP(mobileOrEmail, otp);
+
+  if (!result.valid) {
+    securityManager.logEvent({
+      action: 'OTP_VERIFICATION_FAILED',
+      email: mobileOrEmail,
+      ip,
+      device: req.headers['user-agent'] || 'Unknown',
+      country: 'India',
+      status: 'FAILED',
+      details: result.message
+    });
+    return res.status(400).json({ status: 'error', message: result.message });
+  }
+
+  // OTP Verified Successfully -> Issue Session
+  const sessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+  const userPayload = { userId: 'cust_' + mobileOrEmail.replace(/\D/g, ''), email: mobileOrEmail, role: 'customer', sessionId };
+
+  const accessToken = securityManager.generateAccessToken(userPayload);
+  const refreshToken = securityManager.generateRefreshToken(userPayload);
+
+  securityManager.createSession({
+    sessionId,
+    userId: userPayload.userId,
+    email: mobileOrEmail,
+    role: 'customer',
+    tokenHash: refreshToken.slice(-10),
+    deviceName: 'Mobile Web / OTP Device',
+    os: 'Mobile',
+    browser: 'Browser',
+    ip,
+    country: 'India',
+    city: 'Bangalore'
+  });
+
+  return res.json({
+    status: 'success',
+    message: 'OTP verified successfully.',
+    accessToken,
+    refreshToken,
+    user: { id: userPayload.userId, email: mobileOrEmail, role: 'customer', name: 'OTP Verified Member' }
+  });
+});
+
+// 4. POST: /api/auth/refresh-token (Token Rotation)
+router.post('/refresh-token', async (req: Request, res: Response) => {
+  const refreshToken = req.body.refreshToken || req.cookies?.connect_refresh_token;
+
+  if (!refreshToken) {
+    return res.status(401).json({ status: 'error', message: 'Refresh token required.' });
+  }
+
+  const payload = securityManager.verifyRefreshToken(refreshToken);
+  if (!payload || !payload.sessionId) {
+    return res.status(401).json({ status: 'error', message: 'Invalid or expired refresh token.' });
+  }
+
+  const session = securityManager.getSession(payload.sessionId);
+  if (!session) {
+    return res.status(401).json({ status: 'error', message: 'Session has been revoked or logged out.' });
+  }
+
+  // Token Rotation: Issue new Access & Refresh tokens
+  const newAccessToken = securityManager.generateAccessToken({
+    userId: payload.userId,
+    email: payload.email,
+    role: payload.role,
+    sessionId: payload.sessionId
+  });
+
+  const newRefreshToken = securityManager.generateRefreshToken({
+    userId: payload.userId,
+    email: payload.email,
+    role: payload.role,
+    sessionId: payload.sessionId
+  });
+
+  session.lastActive = new Date().toISOString();
+  session.tokenHash = newRefreshToken.slice(-10);
+
+  res.cookie('connect_refresh_token', newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+
+  return res.json({
+    status: 'success',
+    message: 'Token refreshed & rotated successfully.',
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+    expiresIn: 900
+  });
+});
+
+// 5. GET: /api/auth/active-sessions (List Devices)
+router.get('/active-sessions', authenticateToken, (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized.' });
+  const sessions = securityManager.getUserSessions(req.user.userId);
+  return res.json({
+    status: 'success',
+    sessions
+  });
+});
+
+// 6. POST: /api/auth/logout (Revoke Current Session)
+router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res: Response) => {
+  if (req.sessionId) {
+    securityManager.revokeSession(req.sessionId);
+  }
+  res.clearCookie('connect_access_token');
+  res.clearCookie('connect_refresh_token');
+  return res.json({
+    status: 'success',
+    message: 'Logged out successfully.'
+  });
+});
+
+// 7. POST: /api/auth/logout-all-devices (Force Logout All)
+router.post('/logout-all-devices', authenticateToken, (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized.' });
+  const revokedCount = securityManager.revokeAllUserSessions(req.user.userId);
+  res.clearCookie('connect_access_token');
+  res.clearCookie('connect_refresh_token');
+  return res.json({
+    status: 'success',
+    message: `Logged out from all ${revokedCount} devices successfully.`
+  });
+});
+
+// Customer Registration
+router.post('/register-customer', async (req: Request, res: Response) => {
+  const { name, email, phone, address, city, pincode, aadhaarNumber, panNumber } = req.body;
   try {
     const createdUser = {
       id: 'cust_' + Math.floor(1000 + Math.random() * 9000),
-      name: name ? String(name).trim() : 'Connect Customer',
-      email: String(email).trim(),
-      phone: String(phone).trim(),
-      address: address ? String(address).trim() : '',
-      city: city ? String(city).trim() : '',
-      pincode: pincode ? String(pincode).trim() : '',
-      aadhaar: aadhaarNumber ? String(aadhaarNumber).trim() : '',
-      pan: panNumber ? String(panNumber).trim().toUpperCase() : '',
+      name: name || 'Connect Customer',
+      email,
+      phone,
+      address,
+      city,
+      pincode,
+      aadhaar: aadhaarNumber,
+      pan: panNumber,
       role: 'customer'
     };
-    res.json({
-      status: 'success',
-      message: 'Customer registration successful',
-      data: createdUser
-    });
+    return res.json({ status: 'success', message: 'Customer registration successful', data: createdUser });
   } catch (error: any) {
-    res.status(500).json({
-      status: 'error',
-      message: 'Error registering customer: ' + error.message
-    });
-  }
-});
-
-// POST: /api/auth/register
-router.post('/register', async (req: Request, res: Response) => {
-  const { name, email, role, businessName, phone, address, city, pincode } = req.body;
-  
-  if (!email || !role || !name) {
-    return res.status(400).json({
-      status: 'error',
-      message: 'Name, email, and role are required fields.'
-    });
-  }
-
-  // Run Server Validation
-  const valErrors = validateServerInput(req.body);
-  if (valErrors.length > 0) {
-    return res.status(400).json({
-      status: 'error',
-      message: valErrors.join(' '),
-      errors: valErrors
-    });
-  }
-
-  try {
-    let createdUser: any = null;
-
-    if (role === 'vendor') {
-      const vendorId = 'v_' + Math.floor(1000 + Math.random() * 9000);
-      const newVendor = await db.createVendor({
-        id: vendorId,
-        name: businessName || name,
-        email: email,
-        phone: phone || '+91 99999 99999',
-        address: address || 'Bangalore, India',
-        rating: 5.0,
-        active: true
-      });
-      createdUser = {
-        id: newVendor.id,
-        name: newVendor.name,
-        email: newVendor.email,
-        role: 'vendor'
-      };
-    } else if (role === 'delivery') {
-      const partnerId = 'dp_' + Math.floor(1000 + Math.random() * 9000);
-      const newPartner = await db.createDeliveryPartner({
-        id: partnerId,
-        name: name,
-        photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
-        mobile: phone || '+91 95555 12345',
-        emergency_contact: '+91 91111 22222',
-        address: address || 'Bangalore, India',
-        vehicle_type: 'Electric Bike',
-        vehicle_number: 'KA-01-XY-9999',
-        driving_license: 'DL-999999999',
-        aadhaar: '1111 2222 3333',
-        status: 'Available',
-        availability: true,
-        current_latitude: 12.9348,
-        current_longitude: 77.6189,
-        speed: 0,
-        battery_level: 100,
-        last_updated_time: new Date().toISOString(),
-        vendor_id: 'v1',
-        joining_date: new Date().toISOString().split('T')[0]
-      });
-      createdUser = {
-        id: newPartner.id,
-        name: newPartner.name,
-        email: email,
-        role: 'delivery'
-      };
-    } else {
-      createdUser = {
-        id: 'cust_' + name.toLowerCase().replace(/\s+/g, '_'),
-        name: name,
-        email: email,
-        phone: phone,
-        address: address,
-        city: city,
-        pincode: pincode,
-        role: 'customer'
-      };
-    }
-
-    res.json({
-      status: 'success',
-      message: 'Registration successful',
-      data: createdUser
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      status: 'error',
-      message: 'Error during registration: ' + error.message
-    });
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 });
 

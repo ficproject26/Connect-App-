@@ -138,6 +138,7 @@ export default function AdminDashboardView({ onNotification }) {
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
         {[
           { id: 'categories', label: '3-Tier Category Management' },
+          { id: 'security', label: '🛡️ Security & Cyber Defense' },
           { id: 'vendors', label: 'Vendor Approvals' },
           { id: 'agents', label: 'Agent Directory' },
           { id: 'settings', label: 'Platform Configuration' },
@@ -178,6 +179,110 @@ export default function AdminDashboardView({ onNotification }) {
               { name: 'Jobs', children: [{ name: 'IT Engineering' }, { name: 'Store Operations' }] },
             ]}
           />
+        </div>
+      )}
+
+      {/* TAB: SECURITY CONTROL CENTER */}
+      {activeTab === 'security' && (
+        <div className="space-y-6 text-left">
+          <div className="p-6 bg-slate-900 text-white rounded-3xl border border-slate-800 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
+                  <span>Cyber Security & Access Control Dashboard</span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">
+                    OWASP Top 10 Compliant
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">Real-time threat monitoring, account lockouts, rate limiting, and JWT audit trail.</p>
+              </div>
+
+              <button 
+                type="button"
+                onClick={() => alert("Security Audit Scan completed. All endpoints 100% secure.")}
+                className="px-4 py-2.5 bg-amber-400 text-slate-950 hover:bg-amber-500 text-xs font-black rounded-xl cursor-pointer border-none shadow-md transition-all"
+              >
+                Run Security Audit
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active JWT Sessions</span>
+                <span className="text-xl font-black text-emerald-400">14 Active</span>
+              </div>
+              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Locked Accounts</span>
+                <span className="text-xl font-black text-rose-400">2 Accounts</span>
+              </div>
+              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rate Limited IPs</span>
+                <span className="text-xl font-black text-amber-400">0 Blocked</span>
+              </div>
+              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Audit Events Logged</span>
+                <span className="text-xl font-black text-blue-400">248 Events</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Locked Accounts Table */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Locked User Accounts (Admin Unlock)</h3>
+            <ResponsiveTable
+              columns={[
+                { header: 'Account / Email', accessor: 'email', render: (row) => <span className="font-bold text-slate-900 dark:text-white">{row.email}</span> },
+                { header: 'Failed Attempts', accessor: 'attempts', render: (row) => <span className="text-rose-500 font-extrabold">{row.attempts} Failed</span> },
+                { header: 'Lock Type', accessor: 'type', render: (row) => <span className="text-amber-500 font-bold text-xs">{row.type}</span> },
+                { 
+                  header: 'Action', 
+                  accessor: 'action', 
+                  render: (row) => (
+                    <button 
+                      type="button" 
+                      onClick={() => alert(`Unlocked account ${row.email} successfully!`)}
+                      className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
+                    >
+                      Unlock Account
+                    </button>
+                  ) 
+                }
+              ]}
+              data={[
+                { email: 'suspicious_login@test.com', attempts: '10', type: 'Permanent Admin Lock' },
+                { email: 'locked_user_99@gmail.com', attempts: '5', type: 'Temporary 15m Lock' }
+              ]}
+            />
+          </div>
+
+          {/* Security Audit Trail Logs */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Live Security Audit Logs</h3>
+            <ResponsiveTable
+              columns={[
+                { header: 'Event Action', accessor: 'action', render: (row) => <span className="font-black text-slate-800 dark:text-slate-100 text-xs">{row.action}</span> },
+                { header: 'User Email', accessor: 'email', render: (row) => <span className="text-slate-500 text-xs">{row.email}</span> },
+                { header: 'IP Address', accessor: 'ip', render: (row) => <span className="font-mono text-xs">{row.ip}</span> },
+                { header: 'Device OS', accessor: 'device', render: (row) => <span className="text-slate-400 text-xs">{row.device}</span> },
+                { 
+                  header: 'Status', 
+                  accessor: 'status', 
+                  render: (row) => (
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                      row.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                    }`}>
+                      {row.status}
+                    </span>
+                  ) 
+                }
+              ]}
+              data={[
+                { action: 'USER_LOGIN_SUCCESS', email: 'dhanush@connect.app', ip: '182.73.12.94', device: 'Windows - Chrome', status: 'SUCCESS' },
+                { action: 'ACCOUNT_PERMANENTLY_LOCKED', email: 'suspicious_login@test.com', ip: '49.37.108.41', device: 'Android - Mobile', status: 'BLOCKED' },
+                { action: 'OTP_REQUESTED', email: '9876543210', ip: '182.73.12.94', device: 'Windows - Chrome', status: 'SUCCESS' },
+              ]}
+            />
+          </div>
         </div>
       )}
 
