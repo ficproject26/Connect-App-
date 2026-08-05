@@ -275,10 +275,13 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
     const catLower = safeCat.toLowerCase();
     const staticData = categoryData[safeCat] || categoryData['Services'];
     
-    const matchingProducts = vendorProducts.filter(p => 
-      (p.subNavbarCategory || '').toLowerCase() === catLower ||
-      (p.category || '').toLowerCase() === catLower
-    );
+    const matchingProducts = vendorProducts.filter(p => {
+      const subNav = (p.subNavbarCategory || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      const mainCat = (p.mainCategory || '').toLowerCase();
+      const tag = (p.tag || '').toLowerCase();
+      return subNav === catLower || cat === catLower || mainCat === catLower || tag === catLower;
+    });
 
     // If it's Products category or isProductGrid, merge static & dynamic products
     if (staticData.isProductGrid || safeCat === 'Products') {

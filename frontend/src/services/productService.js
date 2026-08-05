@@ -331,7 +331,33 @@ const inferSubNavbarCategory = (p) => {
 };
 
 const sanitizeProduct = (p) => {
+  if (!p) return p;
   const updated = { ...p };
+
+  // Standardize ID
+  updated.id = p.id || p._id || p.productId || `vendor-prod-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+
+  // Standardize Name / Title
+  updated.name = p.name || p.title || p.productName || p.serviceName || p.jobTitle || 'Vendor Listing';
+
+  // Standardize Price & Offer Price
+  const rawPrice = p.price !== undefined && p.price !== null ? p.price : (p.offerPrice || p.mrp || p.rate || p.amount || p.cost || 0);
+  updated.price = typeof rawPrice === 'number' ? rawPrice : (parseFloat(String(rawPrice).replace(/[^0-9.]/g, '')) || 0);
+
+  if (p.offerPrice || p.originalPrice || p.mrp) {
+    const rawOrig = p.originalPrice || p.mrp || p.price;
+    updated.originalPrice = typeof rawOrig === 'number' ? rawOrig : (parseFloat(String(rawOrig).replace(/[^0-9.]/g, '')) || 0);
+    const rawOffer = p.offerPrice || p.price;
+    updated.offerPrice = typeof rawOffer === 'number' ? rawOffer : (parseFloat(String(rawOffer).replace(/[^0-9.]/g, '')) || 0);
+  }
+
+  // Standardize Vendor Name / Brand
+  updated.vendorName = p.vendorName || p.brand || p.companyName || p.company || p.vendor_name || 'Verified Vendor';
+
+  // Standardize Rating & Reviews
+  updated.rating = p.rating ? Number(p.rating) : 4.5;
+  updated.reviews = p.reviews ? Number(p.reviews) : 12;
+
   for (const key in updated) {
     if (typeof updated[key] === 'string') {
       updated[key] = sanitizeString(updated[key]);
@@ -353,10 +379,23 @@ export const productService = {
   getProducts: async (forceLive = true) => {
     const mergeWithBaseline = (fetchedList) => {
       const sanitizedFetched = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
-      if (sanitizedFetched.length > 0) {
-        return sanitizedFetched;
+      const sanitizedBaseline = DEFAULT_BASELINE_PRODUCTS.map(sanitizeProduct);
+
+      if (sanitizedFetched.length === 0) {
+        return sanitizedBaseline;
       }
-      return DEFAULT_BASELINE_PRODUCTS.map(sanitizeProduct);
+
+      // Prepend vendor-added items at top and deduplicate with baseline items
+      const vendorIds = new Set(sanitizedFetched.map(p => String(p.id || p._id)));
+      const vendorNames = new Set(sanitizedFetched.map(p => (p.name || '').toLowerCase().trim()));
+
+      const filteredBaseline = sanitizedBaseline.filter(p => {
+        const pId = String(p.id || p._id);
+        const pName = (p.name || '').toLowerCase().trim();
+        return !vendorIds.has(pId) && !vendorNames.has(pName);
+      });
+
+      return [...sanitizedFetched, ...filteredBaseline];
     };
 
     const getLocalCache = () => {
