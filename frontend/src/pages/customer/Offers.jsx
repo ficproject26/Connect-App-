@@ -82,22 +82,6 @@ export default function Offers() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M12 6v4M5 10c0-3 3-5 7-5s7 2 7 5m-14 4h14M9 14v4M7 18h10" />
         </svg>
       )
-    },
-    { 
-      title: 'Clinic Consultation Waiver', 
-      discount: '100% Waived Fee', 
-      code: 'CONN-HEALTHFREE', 
-      desc: 'Instant priority pass slot booking at Apollo Clinic outlets.',
-      icon: ShieldCheck,
-      lightBg: 'bg-[#f0fdf4] dark:bg-[#081b10]/40',
-      borderColor: 'border-[#bbf7d0] dark:border-[#0e2d1c]/50',
-      tagBg: 'bg-gradient-to-r from-emerald-500 to-teal-600',
-      iconBg: 'bg-[#d1fae5] dark:bg-[#0c2f1f] text-[#10b981]',
-      illustration: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="absolute -right-2 -bottom-2 w-32 h-32 text-emerald-200/25 dark:text-emerald-500/5 pointer-events-none select-none">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1" />
-        </svg>
-      )
     }
   ];
 

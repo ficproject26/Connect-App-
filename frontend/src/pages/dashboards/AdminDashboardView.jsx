@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Shield, Layers, Users, ShoppingBag, BarChart3, Settings, 
-  Plus, Edit3, Trash2, CheckCircle2, XCircle, Search, RefreshCw, Sparkles 
+  Plus, Edit3, Trash2, CheckCircle2, XCircle, Search, RefreshCw, Sparkles, Tag, Gift 
 } from 'lucide-react';
 import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { fetchAdminCategories } from '../../services/categoryService';
+import { getAdminBackendUrl } from '../../services/apiSetup';
 
 export default function AdminDashboardView({ onNotification }) {
-  const [activeTab, setActiveTab] = useState('categories'); // categories | vendors | agents | reports | settings
+  const [activeTab, setActiveTab] = useState('categories'); // categories | offers | security | vendors | agents | settings
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Offers State
+  const [offersList, setOffersList] = useState([]);
+  const [showAddOfferModal, setShowAddOfferModal] = useState(false);
+  const [newOffer, setNewOffer] = useState({ title: '', discount: '', code: '', desc: '', category: 'Products' });
 
   // Load Categories from Backend API
   const loadCategories = () => {
@@ -23,14 +29,88 @@ export default function AdminDashboardView({ onNotification }) {
     });
   };
 
+  // Load Offers from Backend API
+  const loadOffers = async () => {
+    try {
+      const res = await fetch(`${getAdminBackendUrl()}/api/admin/exclusive-offers/all`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setOffersList(data);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch admin offers:", err);
+    }
+  };
+
   useEffect(() => {
     loadCategories();
+    loadOffers();
   }, []);
+
+  const handleCreateOffer = async (e) => {
+    e.preventDefault();
+    if (!newOffer.title || !newOffer.discount || !newOffer.code) {
+      alert("Please fill in Offer Title, Discount, and Promo Code.");
+      return;
+    }
+    try {
+      const res = await fetch(`${getAdminBackendUrl()}/api/admin/exclusive-offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOffer)
+      });
+      if (res.ok) {
+        if (onNotification) onNotification("Success", "New offer published successfully!");
+        setShowAddOfferModal(false);
+        setNewOffer({ title: '', discount: '', code: '', desc: '', category: 'Products' });
+        loadOffers();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed creating offer");
+      }
+    } catch (err) {
+      console.error("Error creating offer:", err);
+      alert("Server error creating offer");
+    }
+  };
+
+  const handleToggleOffer = async (id, currentStatus) => {
+    try {
+      const res = await fetch(`${getAdminBackendUrl()}/api/admin/exclusive-offers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+      if (res.ok) {
+        loadOffers();
+        if (onNotification) onNotification("Updated", `Offer status changed to ${!currentStatus ? 'Published' : 'Hidden'}.`);
+      }
+    } catch (err) {
+      console.error("Error toggling offer status:", err);
+    }
+  };
+
+  const handleDeleteOffer = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this offer?")) return;
+    try {
+      const res = await fetch(`${getAdminBackendUrl()}/api/admin/exclusive-offers/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        loadOffers();
+        if (onNotification) onNotification("Deleted", "Offer deleted successfully.");
+      }
+    } catch (err) {
+      console.error("Error deleting offer:", err);
+    }
+  };
 
   const adminStats = [
     { label: 'Total Platform Users', value: '48,920', icon: Users, color: 'text-blue-500 bg-blue-500/10' },
     { label: 'Verified Vendors', value: '1,240', icon: ShoppingBag, color: 'text-amber-500 bg-amber-500/10' },
-    { label: 'Active Field Agents', value: '380', icon: Shield, color: 'text-emerald-500 bg-emerald-500/10' },
+    { label: 'Active Privilege Offers', value: offersList.filter(o => o.isActive).length || '3', icon: Gift, color: 'text-rose-500 bg-rose-500/10' },
     { label: 'Active Categories', value: categories.length || '7', icon: Layers, color: 'text-purple-500 bg-purple-500/10' },
   ];
 
@@ -138,6 +218,7 @@ export default function AdminDashboardView({ onNotification }) {
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
         {[
           { id: 'categories', label: '3-Tier Category Management' },
+          { id: 'offers', label: '🎁 Privilege Offers' },
           { id: 'security', label: '🛡️ Security & Cyber Defense' },
           { id: 'vendors', label: 'Vendor Approvals' },
           { id: 'agents', label: 'Agent Directory' },
@@ -156,6 +237,89 @@ export default function AdminDashboardView({ onNotification }) {
           </button>
         ))}
       </div>
+
+      {/* TAB: PRIVILEGE OFFERS */}
+      {activeTab === 'offers' && (
+        <div className="space-y-6 text-left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl">
+            <div>
+              <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
+                <span>🎁 Dynamic Privilege Offers & Coupons</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                  {offersList.filter(o => o.isActive).length} Active Live
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">Publish exclusive promotional offers for active Connect App members in real time.</p>
+            </div>
+            <button
+              onClick={() => setShowAddOfferModal(true)}
+              className="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow-md flex items-center gap-2 transition-all"
+            >
+              <Plus size={16} /> Publish New Offer
+            </button>
+          </div>
+
+          <ResponsiveTable
+            columns={[
+              { 
+                header: 'Offer Title', 
+                accessor: 'title', 
+                render: (row) => (
+                  <div className="flex flex-col">
+                    <span className="font-extrabold text-slate-900 dark:text-white">{row.title}</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{row.desc}</span>
+                  </div>
+                ) 
+              },
+              { 
+                header: 'Discount Tag', 
+                accessor: 'discount', 
+                render: (row) => <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{row.discount}</span> 
+              },
+              { 
+                header: 'Promo Code', 
+                accessor: 'code', 
+                render: (row) => <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800">{row.code}</span> 
+              },
+              { 
+                header: 'Category', 
+                accessor: 'category', 
+                render: (row) => <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{row.category || 'General'}</span> 
+              },
+              { 
+                header: 'Publish Status', 
+                accessor: 'isActive', 
+                render: (row) => (
+                  <button
+                    onClick={() => handleToggleOffer(row._id, row.isActive)}
+                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border cursor-pointer transition-all ${
+                      row.isActive
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700 hover:bg-slate-300'
+                    }`}
+                  >
+                    {row.isActive ? '● Published' : '○ Draft / Hidden'}
+                  </button>
+                ) 
+              },
+              { 
+                header: 'Actions', 
+                accessor: 'actions', 
+                render: (row) => (
+                  <button
+                    onClick={() => handleDeleteOffer(row._id)}
+                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer border-none"
+                    title="Delete Offer"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                ) 
+              }
+            ]}
+            data={offersList}
+          />
+        </div>
+      )}
 
       {/* TAB: 3-TIER CATEGORIES */}
       {activeTab === 'categories' && (
@@ -351,6 +515,117 @@ export default function AdminDashboardView({ onNotification }) {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* MODAL: PUBLISH NEW OFFER */}
+      {showAddOfferModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <Gift size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">Publish Privilege Offer</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Configure new promotion for Connect App members.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddOfferModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold border-none bg-transparent cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOffer} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 block mb-1">Offer Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Monsoon Special Delight"
+                  value={newOffer.title}
+                  onChange={(e) => setNewOffer({ ...newOffer, title: e.target.value })}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 block mb-1">Discount Tag *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. FLAT 25% OFF"
+                    value={newOffer.discount}
+                    onChange={(e) => setNewOffer({ ...newOffer, discount: e.target.value })}
+                    className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 block mb-1">Promo Code *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. CONN-MONSOON25"
+                    value={newOffer.code}
+                    onChange={(e) => setNewOffer({ ...newOffer, code: e.target.value })}
+                    className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-black text-indigo-600 dark:text-indigo-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 block mb-1">Main Category</label>
+                  <select
+                    value={newOffer.category}
+                    onChange={(e) => setNewOffer({ ...newOffer, category: e.target.value })}
+                    className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                  >
+                    <option value="Products">Products</option>
+                    <option value="Services">Services</option>
+                    <option value="Food">Food</option>
+                    <option value="Stay">Stay</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Daily Needs">Daily Needs</option>
+                    <option value="Jobs">Jobs</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 block mb-1">Short Description</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Valid at all participating stores and online bookings."
+                  value={newOffer.desc}
+                  onChange={(e) => setNewOffer({ ...newOffer, desc: e.target.value })}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddOfferModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl cursor-pointer border-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow-md transition-all"
+                >
+                  Publish Offer Live
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

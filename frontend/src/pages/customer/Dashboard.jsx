@@ -2999,7 +2999,7 @@ export default function CustomerDashboard({
           <div className="relative">
             <Tag className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
             <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-              3
+              {adminOffers.length > 0 ? adminOffers.length : 3}
             </span>
           </div>
           {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Offers</span>}
@@ -3419,7 +3419,7 @@ export default function CustomerDashboard({
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs font-black text-slate-850 dark:text-slate-100">Offers</span>
-                      <span className="text-[9px] font-extrabold text-red-500">3 Active Deals</span>
+                      <span className="text-[9px] font-extrabold text-red-500">{adminOffers.length > 0 ? adminOffers.length : 3} Active Deals</span>
                     </div>
                   </button>
 
@@ -4648,18 +4648,7 @@ export default function CustomerDashboard({
         tagColor: 'bg-emerald-500 text-white', 
         btnColor: 'bg-emerald-500 hover:bg-emerald-600 text-white',
         image: hotelActual 
-      },
-      { 
-        id: 'o4', 
-        brand: 'Travel', 
-        discount: 'EXTRA 10% OFF', 
-        desc: 'On travel bookings', 
-        code: 'TRAVEL10', 
-        bg: 'bg-indigo-50/70 dark:bg-[#160824] border-indigo-100 dark:border-[#2f114d]/50', 
-        tagColor: 'bg-indigo-500 text-white', 
-        btnColor: 'bg-indigo-500 hover:bg-indigo-600 text-white',
-        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=250&auto=format&fit=crop&0=80' 
-      },
+      }
     ];
 
     const liveOffers = typeof adminExclusiveOffers !== 'undefined' && Array.isArray(adminExclusiveOffers) ? adminExclusiveOffers : [];

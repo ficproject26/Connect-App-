@@ -66,6 +66,153 @@ router.get('/banners', async (req: Request, res: Response) => {
   }
 });
 
+const defaultInitialOffers = [
+  {
+    _id: 'off_1',
+    title: 'Summer Festival Sale',
+    discount: 'Flat 20% OFF',
+    code: 'CONN-SUMMER20',
+    desc: 'Active at all ABC Electronics stores and select lifestyle boutiques.',
+    category: 'Products',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: 'off_2',
+    title: 'Priority Dine-In Privilege',
+    discount: 'Flat 15% OFF',
+    code: 'CONN-DINEOUT15',
+    desc: 'Valid at Celeste Dining Skylounge and partner restaurants.',
+    category: 'Food',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: 'off_3',
+    title: 'Helicopter Transfer Deal',
+    discount: 'Flat 25% OFF',
+    code: 'CONN-CHARTER25',
+    desc: 'Valid for private airport transfers and yacht cruises.',
+    category: 'Travel',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  }
+];
+
+// Helper to handle offers collection
+async function getOffersCollection() {
+  const mongoDb = db.getDb();
+  if (mongoDb) {
+    const col = mongoDb.collection('exclusive_offers');
+    const count = await col.countDocuments();
+    if (count === 0) {
+      await col.insertMany(defaultInitialOffers as any);
+    }
+    return col;
+  }
+  return null;
+}
+
+// GET: /api/admin/public/exclusive-offers OR /api/admin/exclusive-offers
+router.get(['/public/exclusive-offers', '/exclusive-offers'], async (req: Request, res: Response) => {
+  try {
+    const col = await getOffersCollection();
+    if (col) {
+      const offers = await col.find({ isActive: true }).toArray();
+      return res.json(offers);
+    }
+    return res.json(defaultInitialOffers.filter(o => o.isActive));
+  } catch (err: any) {
+    console.error("Error fetching public exclusive offers:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// GET: /api/admin/exclusive-offers/all (All active + inactive for Admin)
+router.get('/exclusive-offers/all', async (req: Request, res: Response) => {
+  try {
+    const col = await getOffersCollection();
+    if (col) {
+      const offers = await col.find().sort({ createdAt: -1 }).toArray();
+      return res.json(offers);
+    }
+    return res.json(defaultInitialOffers);
+  } catch (err: any) {
+    console.error("Error fetching all exclusive offers for admin:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// POST: /api/admin/exclusive-offers (Create & Publish Offer)
+router.post('/exclusive-offers', async (req: Request, res: Response) => {
+  try {
+    const { title, discount, code, desc, category } = req.body;
+    if (!title || !discount || !code) {
+      return res.status(400).json({ error: 'Title, discount, and code are required.' });
+    }
+
+    const newOffer = {
+      _id: `off_${Date.now()}`,
+      title,
+      discount,
+      code: code.toUpperCase(),
+      desc: desc || 'Exclusive privilege offer for active Connect members.',
+      category: category || 'General',
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+
+    const col = await getOffersCollection();
+    if (col) {
+      await col.insertOne(newOffer as any);
+      return res.status(201).json({ status: 'success', offer: newOffer });
+    }
+    return res.status(500).json({ error: 'Database unavailable' });
+  } catch (err: any) {
+    console.error("Error creating exclusive offer:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// PUT: /api/admin/exclusive-offers/:id (Update or toggle offer)
+router.put('/exclusive-offers/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    const col = await getOffersCollection();
+    if (col) {
+      delete updateData._id;
+      const result = await col.findOneAndUpdate(
+        { _id: id as any },
+        { $set: updateData },
+        { returnDocument: 'after' }
+      );
+      return res.json({ status: 'success', offer: result });
+    }
+    return res.status(500).json({ error: 'Database unavailable' });
+  } catch (err: any) {
+    console.error("Error updating offer:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// DELETE: /api/admin/exclusive-offers/:id (Delete offer)
+router.delete('/exclusive-offers/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const col = await getOffersCollection();
+    if (col) {
+      await col.deleteOne({ _id: id as any });
+      return res.json({ status: 'success', message: 'Offer deleted successfully.' });
+    }
+    return res.status(500).json({ error: 'Database unavailable' });
+  } catch (err: any) {
+    console.error("Error deleting offer:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+
 // Admin Security Control Center API Routes
 router.get('/security/metrics', (req: Request, res: Response) => {
   const metrics = securityManager.getSecurityMetrics();
