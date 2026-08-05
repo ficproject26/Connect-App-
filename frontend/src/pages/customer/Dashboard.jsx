@@ -719,13 +719,28 @@ export default function CustomerDashboard({
   const normalizeMainCatName = (rawName) => {
     if (!rawName) return '';
     const n = rawName.trim().toLowerCase();
-    if (n === 'stores' || n === 'products' || n === 'product' || n === 'store') return 'products';
-    if (n === 'hotels' || n === 'stay' || n === 'hotel') return 'stay';
-    if (n === 'restaurants' || n === 'food' || n === 'restaurant') return 'food';
-    if (n === 'daily need' || n === 'daily needs') return 'daily needs';
-    if (n === 'job' || n === 'jobs') return 'jobs';
-    if (n === 'service' || n === 'services') return 'services';
-    if (n === 'travel') return 'travel';
+    
+    // Products
+    if (['products', 'product', 'stores', 'store', 'electronics', 'mobile', 'mobiles', 'smartphone', 'smartphones', 'fashion', 'saree', 'sarees', 'clothing', 'apparel', 'accessories', 'appliances', 'gadgets', 'laptops', 'watches', 'jewellery', 'jewelry', 'furniture'].some(k => n === k || n.includes(k))) return 'products';
+    
+    // Stay
+    if (['stay', 'stays', 'hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'rooms', 'accommodation'].some(k => n === k || n.includes(k))) return 'stay';
+    
+    // Food
+    if (['food', 'foods', 'restaurant', 'restaurants', 'dining', 'bakery', 'cafe', 'cafes', 'biryani', 'biriyani', 'catering'].some(k => n === k || n.includes(k))) return 'food';
+    
+    // Daily Needs
+    if (['daily need', 'daily needs', 'daily-needs', 'dailyneeds', 'grocery', 'groceries', 'supermarket', 'vegetable', 'vegetables', 'fruits', 'rice', 'eggs', 'milk', 'dairy'].some(k => n === k || n.includes(k))) return 'daily needs';
+    
+    // Jobs
+    if (['job', 'jobs', 'hiring', 'recruitment', 'career', 'careers', 'it jobs', 'it domain', 'full time', 'part time'].some(k => n === k || n.includes(k))) return 'jobs';
+    
+    // Services
+    if (['service', 'services', 'hospital', 'hospitals', 'doctor', 'doctors', 'clinic', 'healthcare', 'repair', 'plumbing', 'cleaning', 'salon'].some(k => n === k || n.includes(k))) return 'services';
+    
+    // Travel
+    if (['travel', 'travels', 'tour', 'tours', 'cab', 'cabs', 'taxi', 'bus', 'flight'].some(k => n === k || n.includes(k))) return 'travel';
+    
     return n;
   };
 

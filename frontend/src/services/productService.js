@@ -56,13 +56,13 @@ const inferSubNavbarCategory = (p) => {
   const normalizeCat = (val) => {
     if (!val || typeof val !== 'string') return '';
     const v = val.trim().toLowerCase();
-    if (v === 'services' || v === 'service') return 'Services';
-    if (v === 'products' || v === 'product') return 'Products';
-    if (v === 'daily needs' || v === 'daily-needs' || v === 'dailyneeds' || v === 'grocery' || v === 'groceries') return 'Daily Needs';
-    if (v === 'food' || v === 'foods' || v === 'dining' || v === 'restaurant') return 'Food';
-    if (v === 'stay' || v === 'stays' || v === 'hotel' || v === 'hotels') return 'Stay';
-    if (v === 'travel' || v === 'travels' || v === 'tour' || v === 'tours') return 'Travel';
-    if (v === 'jobs' || v === 'job' || v === 'hiring' || v === 'recruitment') return 'Jobs';
+    if (['services', 'service', 'hospitality', 'healthcare', 'doctor', 'repair'].some(k => v === k || v.includes(k))) return 'Services';
+    if (['products', 'product', 'electronics', 'mobile', 'mobiles', 'smartphone', 'smartphones', 'fashion', 'saree', 'sarees', 'clothing', 'apparel', 'accessories', 'appliances', 'gadgets', 'laptops', 'watches', 'jewellery', 'jewelry', 'furniture'].some(k => v === k || v.includes(k))) return 'Products';
+    if (['daily needs', 'daily-needs', 'dailyneeds', 'grocery', 'groceries', 'supermarket', 'vegetable', 'fruits', 'rice', 'egg', 'eggs', 'milk', 'dairy'].some(k => v === k || v.includes(k))) return 'Daily Needs';
+    if (['food', 'foods', 'dining', 'restaurant', 'restaurants', 'bakery', 'cafe', 'biryani', 'biriyani', 'catering'].some(k => v === k || v.includes(k))) return 'Food';
+    if (['stay', 'stays', 'hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'accommodation'].some(k => v === k || v.includes(k))) return 'Stay';
+    if (['travel', 'travels', 'tour', 'tours', 'cab', 'taxi', 'bus', 'flight'].some(k => v === k || v.includes(k))) return 'Travel';
+    if (['jobs', 'job', 'hiring', 'recruitment', 'career', 'careers', 'it jobs', 'full time', 'part time'].some(k => v === k || v.includes(k))) return 'Jobs';
     return '';
   };
 
