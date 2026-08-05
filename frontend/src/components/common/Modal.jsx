@@ -201,7 +201,7 @@ export default function JobsModal({ isOpen, onClose }) {
                         required
                         value={applicantName}
                         onChange={(e) => setApplicantName(e.target.value)}
-                        placeholder="e.g. Dhanush An"
+                        placeholder="Enter your full name"
                         className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-gold focus:border-brand-gold text-xs bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200"
                       />
                     </div>
@@ -212,7 +212,7 @@ export default function JobsModal({ isOpen, onClose }) {
                         required
                         value={applicantEmail}
                         onChange={(e) => setApplicantEmail(e.target.value)}
-                        placeholder="e.g. dhanush@connect.app"
+                        placeholder="e.g. email@example.com"
                         className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-gold focus:border-brand-gold text-xs bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200"
                       />
                     </div>

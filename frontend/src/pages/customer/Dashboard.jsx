@@ -1440,32 +1440,37 @@ export default function CustomerDashboard({
 
   // Job Application States
   const [appliedJobId, setAppliedJobId] = useState(null);
-  const [applicantName, setApplicantName] = useState(profileName || currentUser?.name || 'Dhanush Tamilarasan');
-  const [applicantEmail, setApplicantEmail] = useState(profileEmail || currentUser?.email || 'dhanush@connect.app');
+  const [applicantName, setApplicantName] = useState(currentUser?.name || profileName || '');
+  const [applicantEmail, setApplicantEmail] = useState(currentUser?.email || profileEmail || '');
   const [applicantResume, setApplicantResume] = useState('');
   const [isJobSubmitting, setIsJobSubmitting] = useState(false);
   const [jobSubmitSuccess, setJobSubmitSuccess] = useState(false);
 
   // Additional job application & orders tab state variables
-  const [applicantPhone, setApplicantPhone] = useState('+91 98765 43210');
-  const [applicantLocation, setApplicantLocation] = useState('Bangalore, Karnataka');
-  const [applicantLinkedIn, setApplicantLinkedIn] = useState('https://linkedin.com/in/username');
-  const [applicantPortfolio, setApplicantPortfolio] = useState('https://yourportfolio.com');
+  const [applicantPhone, setApplicantPhone] = useState(currentUser?.phone || '');
+  const [applicantLocation, setApplicantLocation] = useState(currentUser?.location || currentUser?.city || (selectedLocation?.city ? `${selectedLocation.area ? selectedLocation.area + ', ' : ''}${selectedLocation.city}` : ''));
+  const [applicantLinkedIn, setApplicantLinkedIn] = useState(currentUser?.linkedin || '');
+  const [applicantPortfolio, setApplicantPortfolio] = useState(currentUser?.portfolio || '');
   const [applicantExperience, setApplicantExperience] = useState('Fresher');
   const [applicantCurrentCompany, setApplicantCurrentCompany] = useState('');
   const [applicantNoticePeriod, setApplicantNoticePeriod] = useState('Immediate');
-  const [resumeFile, setResumeFile] = useState(() => {
-    const name = currentUser?.name || profileName || 'Dhanush Tamilarasan';
-    const formattedName = name.replace(/\s+/g, '_') + '_Resume.pdf';
-    return { name: formattedName, size: '450 KB' };
-  });
+  const [resumeFile, setResumeFile] = useState(null);
   const [applicantCoverLetter, setApplicantCoverLetter] = useState('');
 
-  // Sync applicant name/email when profile updates
+  // Sync applicant name/email when profile/user updates
   useEffect(() => {
-    if (profileName) setApplicantName(profileName);
-    if (profileEmail) setApplicantEmail(profileEmail);
-  }, [profileName, profileEmail]);
+    if (currentUser?.name || profileName) setApplicantName(currentUser?.name || profileName);
+    if (currentUser?.email || profileEmail) setApplicantEmail(currentUser?.email || profileEmail);
+    if (currentUser?.phone) setApplicantPhone(currentUser.phone);
+  }, [currentUser, profileName, profileEmail]);
+
+  // When activeTab changes to Jobs, always show Jobs listing page first
+  useEffect(() => {
+    if (activeTab === 'Jobs') {
+      setAppliedJobId(null);
+      setJobSubmitSuccess(false);
+    }
+  }, [activeTab]);
 
   const staticJobsList = [];
 
@@ -2327,8 +2332,24 @@ export default function CustomerDashboard({
     return false;
   };
 
+  const isJobCardItem = (item) => {
+    if (!item) return false;
+    const subCat = String(item.subNavbarCategory || '').toLowerCase().trim();
+    const tag = String(item.tag || '').toLowerCase().trim();
+    const cat = String(item.category || '').toLowerCase().trim();
+    const mainCat = String(item.mainCategory || '').toLowerCase().trim();
+    const subSub = String(item.subSubcategory || '').toLowerCase().trim();
+    const name = String(item.name || item.title || '').toLowerCase().trim();
+
+    if (subCat === 'jobs' || subCat === 'job' || tag === 'jobs' || tag === 'job' || cat === 'jobs' || cat === 'job' || mainCat === 'jobs' || mainCat === 'job') return true;
+    if (item.salary || item.offeredSalary || item.jobTitle || item.jobType || item.employmentType) return true;
+    if (name.includes('job opening') || cat.includes('it jobs') || subSub.includes('it jobs')) return true;
+    return false;
+  };
+
   const isJobCartItem = (item) => {
     if (!item) return false;
+    if (isJobCardItem(item)) return true;
     const subCat = String(item.subNavbarCategory || '');
     const tag = String(item.tag || '');
     const cat = String(item.category || '');
@@ -2337,6 +2358,40 @@ export default function CustomerDashboard({
 
     const jobCategories = ['Jobs', 'Job', 'Careers', 'Career'];
     if (jobCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
+    return false;
+  };
+
+  const isPastTimeForSelectedDate = (timeStr, dateStr) => {
+    if (!timeStr || !dateStr) return false;
+    const now = new Date();
+    const todayStr = formatDateYYYYMMDD(now);
+
+    if (dateStr < todayStr) return true;
+    if (dateStr > todayStr) return false;
+
+    let hours = 0;
+    let minutes = 0;
+
+    const match12 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (match12) {
+      hours = parseInt(match12[1], 10);
+      minutes = parseInt(match12[2], 10);
+      const ampm = match12[3].toUpperCase();
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+    } else {
+      const match24 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})$/);
+      if (match24) {
+        hours = parseInt(match24[1], 10);
+        minutes = parseInt(match24[2], 10);
+      }
+    }
+
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    if (hours < currentHours) return true;
+    if (hours === currentHours && minutes < currentMinutes) return true;
     return false;
   };
 
@@ -2771,9 +2826,18 @@ export default function CustomerDashboard({
       }
 
       // Default Products / Other tabs Filter Checks
+      const isJob = isJobCardItem(product);
+      if (selectedCategories.includes('Products') || activeTab === 'Products') {
+        if (isJob) return false;
+      }
+
       const matchesCategoryFilter = selectedCategories.length === 0 || 
         (activeTab === 'Home' 
-          ? selectedCategories.includes(product.subNavbarCategory) 
+          ? (
+              selectedCategories.includes('Products')
+                ? (!isJob && (normalizeMainCatName(product.subNavbarCategory) === 'products' || product.category === 'Products' || (product.category || '').toLowerCase().includes('product')))
+                : selectedCategories.includes(product.subNavbarCategory)
+            )
           : selectedCategories.some(cat => 
               (product.category || '').toLowerCase().includes(cat.toLowerCase()) ||
               (product.subSubcategory || '').toLowerCase().includes(cat.toLowerCase()) ||
@@ -2791,11 +2855,18 @@ export default function CustomerDashboard({
 
       let matchesPriceFilter = true;
       if (selectedPrices.length > 0) {
+        let rawPrice = product.price !== undefined && product.price !== null ? product.price : (product.offerPrice || product.startingPrice || product.mrp || 0);
+        let prodPrice = 0;
+        if (typeof rawPrice === 'number') {
+          prodPrice = rawPrice;
+        } else if (typeof rawPrice === 'string') {
+          prodPrice = parseFloat(rawPrice.replace(/[^0-9.]/g, '')) || 0;
+        }
         matchesPriceFilter = selectedPrices.some(range => {
-          if (range === 'under-199') return product.price < 199;
-          if (range === '199-399') return product.price >= 199 && product.price <= 399;
-          if (range === '399-599') return product.price >= 399 && product.price <= 599;
-          if (range === 'above-599') return product.price > 599;
+          if (range === 'under-199') return prodPrice < 199;
+          if (range === '199-399') return prodPrice >= 199 && prodPrice <= 399;
+          if (range === '399-599') return prodPrice >= 399 && prodPrice <= 599;
+          if (range === 'above-599') return prodPrice > 599;
           return true;
         });
       }
@@ -2831,12 +2902,37 @@ export default function CustomerDashboard({
   }, [activeProducts, activeTab]);
 
   const displayProducts = useMemo(() => {
-    if (filteredProducts && filteredProducts.length > 0) return filteredProducts;
-    if (activeTab === 'Home' && (!searchQuery || searchQuery.trim() === '')) {
+    const hasActiveFilters = (
+      selectedCategories.length > 0 ||
+      selectedPrices.length > 0 ||
+      selectedBrands.length > 0 ||
+      selectedColors.length > 0 ||
+      selectedRating !== null ||
+      selectedServiceTypes.length > 0 ||
+      selectedLocTypes.length > 0 ||
+      selectedCuisines.length > 0 ||
+      selectedDistances.length > 0 ||
+      selectedAccomTypes.length > 0 ||
+      selectedTravelTypes.length > 0 ||
+      selectedDailyNeedsTypes.length > 0 ||
+      (searchQuery && searchQuery.trim() !== '') ||
+      (selectedSubNavbarCategory && selectedSubNavbarCategory !== 'All')
+    );
+
+    if (hasActiveFilters) {
+      return filteredProducts;
+    }
+
+    if (activeTab === 'Home') {
       return activeProducts;
     }
     return fallbackTabProducts.length > 0 ? fallbackTabProducts : activeProducts;
-  }, [filteredProducts, activeTab, searchQuery, activeProducts, fallbackTabProducts]);
+  }, [
+    filteredProducts, activeTab, searchQuery, activeProducts, fallbackTabProducts,
+    selectedCategories, selectedPrices, selectedBrands, selectedColors, selectedRating,
+    selectedServiceTypes, selectedLocTypes, selectedCuisines, selectedDistances,
+    selectedAccomTypes, selectedTravelTypes, selectedDailyNeedsTypes, selectedSubNavbarCategory
+  ]);
 
   const wishlistProducts = useMemo(() => {
     const allItems = Array.isArray(products) ? products : [];
@@ -10468,7 +10564,9 @@ wishlistProducts.forEach(item => addToCart(item));
                         <div>
                           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : 'Select Check-In Time Slot'}</span>
                           <div className="grid grid-cols-5 gap-2">
-                            {checkInTimeSlots.map((slot) => {
+                            {checkInTimeSlots
+                              .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
+                              .map((slot) => {
                               const isSelected = checkInTime === slot.time;
                               const isAvail = slot.status === 'Available';
                               return (
@@ -10520,17 +10618,26 @@ wishlistProducts.forEach(item => addToCart(item));
                               <input 
                                 type="time" 
                                 value={customTimeInput || ''} 
+                                min={stayCheckInDate === formatDateYYYYMMDD(todayObj) ? `${String(todayObj.getHours()).padStart(2, '0')}:${String(todayObj.getMinutes()).padStart(2, '0')}` : undefined}
                                 onChange={(e) => {
                                   const raw = e.target.value;
-                                  setCustomTimeInput(raw);
-                                  if (raw) {
-                                    const [h, m] = raw.split(':');
-                                    let hour = parseInt(h, 10);
-                                    const ampm = hour >= 12 ? 'PM' : 'AM';
-                                    hour = hour % 12 || 12;
-                                    const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
-                                    setCheckInTime(formatted);
+                                  if (!raw) {
+                                    setCustomTimeInput('');
+                                    return;
                                   }
+                                  const [h, m] = raw.split(':');
+                                  let hour = parseInt(h, 10);
+                                  const min = parseInt(m, 10);
+                                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                                  let hour12 = hour % 12 || 12;
+                                  const formatted = `${String(hour12).padStart(2, '0')}:${String(min).padStart(2, '0')} ${ampm}`;
+
+                                  if (stayCheckInDate === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(formatted, stayCheckInDate)) {
+                                    triggerNotification("Past departure times cannot be selected for today. Please select a current or future time.", "error");
+                                    return;
+                                  }
+                                  setCustomTimeInput(raw);
+                                  setCheckInTime(formatted);
                                 }}
                                 className="bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
                               />
@@ -11108,7 +11215,9 @@ wishlistProducts.forEach(item => addToCart(item));
                         <div>
                           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : 'Select Check-In Time Slot'}</span>
                           <div className="grid grid-cols-5 gap-2">
-                            {checkInTimeSlots.map((slot) => {
+                            {checkInTimeSlots
+                              .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
+                              .map((slot) => {
                               const isSelected = checkInTime === slot.time;
                               const isAvail = slot.status === 'Available';
                               return (
@@ -11160,17 +11269,26 @@ wishlistProducts.forEach(item => addToCart(item));
                               <input 
                                 type="time" 
                                 value={customTimeInput || ''} 
+                                min={stayCheckInDate === formatDateYYYYMMDD(todayObj) ? `${String(todayObj.getHours()).padStart(2, '0')}:${String(todayObj.getMinutes()).padStart(2, '0')}` : undefined}
                                 onChange={(e) => {
                                   const raw = e.target.value;
-                                  setCustomTimeInput(raw);
-                                  if (raw) {
-                                    const [h, m] = raw.split(':');
-                                    let hour = parseInt(h, 10);
-                                    const ampm = hour >= 12 ? 'PM' : 'AM';
-                                    hour = hour % 12 || 12;
-                                    const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
-                                    setCheckInTime(formatted);
+                                  if (!raw) {
+                                    setCustomTimeInput('');
+                                    return;
                                   }
+                                  const [h, m] = raw.split(':');
+                                  let hour = parseInt(h, 10);
+                                  const min = parseInt(m, 10);
+                                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                                  let hour12 = hour % 12 || 12;
+                                  const formatted = `${String(hour12).padStart(2, '0')}:${String(min).padStart(2, '0')} ${ampm}`;
+
+                                  if (stayCheckInDate === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(formatted, stayCheckInDate)) {
+                                    triggerNotification("Past departure times cannot be selected for today. Please select a current or future time.", "error");
+                                    return;
+                                  }
+                                  setCustomTimeInput(raw);
+                                  setCheckInTime(formatted);
                                 }}
                                 className="bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
                               />
