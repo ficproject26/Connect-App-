@@ -50,55 +50,43 @@ export const isRealVendorProduct = (p) => {
 const DEFAULT_BASELINE_PRODUCTS = [];
 
 const inferSubNavbarCategory = (p) => {
-  if (p.subNavbarCategory) return p.subNavbarCategory;
-  if (p.mainCategory) return p.mainCategory;
+  if (!p) return 'Products';
 
-  const normalizeCat = (val) => {
-    if (!val || typeof val !== 'string') return '';
-    const v = val.trim().toLowerCase();
-    if (['services', 'service', 'hospitality', 'healthcare', 'doctor', 'repair'].some(k => v === k || v.includes(k))) return 'Services';
-    if (['products', 'product', 'electronics', 'mobile', 'mobiles', 'smartphone', 'smartphones', 'fashion', 'saree', 'sarees', 'clothing', 'apparel', 'accessories', 'appliances', 'gadgets', 'laptops', 'watches', 'jewellery', 'jewelry', 'furniture'].some(k => v === k || v.includes(k))) return 'Products';
-    if (['daily needs', 'daily-needs', 'dailyneeds', 'grocery', 'groceries', 'supermarket', 'vegetable', 'fruits', 'rice', 'egg', 'eggs', 'milk', 'dairy'].some(k => v === k || v.includes(k))) return 'Daily Needs';
-    if (['food', 'foods', 'dining', 'restaurant', 'restaurants', 'bakery', 'cafe', 'biryani', 'biriyani', 'catering'].some(k => v === k || v.includes(k))) return 'Food';
-    if (['stay', 'stays', 'hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'accommodation'].some(k => v === k || v.includes(k))) return 'Stay';
-    if (['travel', 'travels', 'tour', 'tours', 'cab', 'taxi', 'bus', 'flight'].some(k => v === k || v.includes(k))) return 'Travel';
-    if (['jobs', 'job', 'hiring', 'recruitment', 'career', 'careers', 'it jobs', 'full time', 'part time'].some(k => v === k || v.includes(k))) return 'Jobs';
-    return '';
-  };
+  const catStr = `${p.name || ''} ${p.category || ''} ${p.subcategory || ''} ${p.subSubcategory || ''} ${p.tag || ''}`.toLowerCase();
 
-  const directTag = normalizeCat(p.tag) || normalizeCat(p.type);
-  if (directTag) return directTag;
-
-  const directCat = normalizeCat(p.category) || normalizeCat(p.subcategory) || normalizeCat(p.subSubcategory);
-  if (directCat) return directCat;
-
-  if (p.jobTitle || p.offeredSalary || p.salary || p.jobType) return 'Jobs';
-
-  const catStr = `${p.category || ''} ${p.subcategory || ''} ${p.subSubcategory || ''} ${p.tag || ''}`.toLowerCase();
-
-  if (['parotta', 'biryani', 'dosa', 'idli', 'thali', 'pizza', 'burger', 'fast food', 'south indian', 'north indian', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'restaurant', 'cafe'].some(k => catStr.includes(k))) {
+  // 1. Check for Jobs keywords
+  if (['full time', 'part time', 'full stack', 'developer', 'software engineer', 'it jobs', 'non-it jobs', 'bpo jobs', 'jobs', 'job', 'opening', 'talent', 'operator', 'specialist', 'recruiter', 'manager', 'analyst'].some(k => catStr.includes(k))) {
+    return 'Jobs';
+  }
+  // 2. Check for Services keywords
+  if (['doctor', 'clinic', 'hospital', 'physiotherapy', 'home service', 'repair', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'gym', 'fitness', 'automobile', 'car service', 'recharge'].some(k => catStr.includes(k))) {
+    return 'Services';
+  }
+  // 3. Check for Food keywords
+  if (['parotta', 'biryani', 'biriyani', 'dosa', 'idli', 'thali', 'pizza', 'burger', 'fast food', 'south indian', 'north indian', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'restaurant', 'cafe', 'salad'].some(k => catStr.includes(k))) {
     return 'Food';
   }
-  if (['cab', 'taxi', 'bus', 'sleeper', 'flight', 'train', 'car rental', 'bike rental', 'tour package', 'travel'].some(k => catStr.includes(k))) {
-    return 'Travel';
-  }
+  // 4. Check for Stay keywords
   if (['hotel', 'resort', 'homestay', 'suite', 'deluxe room', 'lodge', 'accommodation', 'stay'].some(k => catStr.includes(k))) {
     return 'Stay';
   }
-  if (['rice', 'egg', 'eggs', 'fruits', 'vegetables', 'dairy', 'milk', 'supermarket', 'daily needs', 'pharmacy'].some(k => catStr.includes(k))) {
+  // 5. Check for Travel keywords
+  if (['cab', 'taxi', 'bus', 'sleeper', 'flight', 'train', 'car rental', 'bike rental', 'tour package', 'travel'].some(k => catStr.includes(k))) {
+    return 'Travel';
+  }
+  // 6. Check for Daily Needs keywords
+  if (['rice', 'egg', 'eggs', 'fruits', 'vegetables', 'dairy', 'milk', 'supermarket', 'daily needs', 'pharmacy', 'tomato', 'onions', 'urad dal'].some(k => catStr.includes(k))) {
     return 'Daily Needs';
   }
-  if (['full time', 'part time', 'full stack', 'developer', 'software engineer', 'it jobs', 'non-it jobs', 'bpo jobs', 'jobs', 'opening', 'talent', 'operator', 'specialist', 'recruiter', 'manager'].some(k => catStr.includes(k))) {
-    return 'Jobs';
-  }
-  if (['doctor', 'clinic', 'hospital', 'physiotherapy', 'home service', 'repair', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'gym', 'fitness'].some(k => catStr.includes(k))) {
-    return 'Services';
-  }
-  if (['saree', 'fashion', 'electronics', 'mobile', 'smartphone', 'laptop', 'watch', 'jewellery', 'furniture', 'appliance', 'jean', 'shoes', 'footwear', 'clothing', 'shirt'].some(k => catStr.includes(k))) {
+  // 7. Check for Products keywords
+  if (['saree', 'fashion', 'electronics', 'mobile', 'mobiles', 'smartphone', 'smartphones', 'laptop', 'watch', 'jewellery', 'jewelry', 'furniture', 'appliance', 'jean', 'jeans', 'shoes', 'footwear', 'clothing', 'shirt', 'headphone', 'phone'].some(k => catStr.includes(k))) {
     return 'Products';
   }
 
-  return 'Products';
+  if (p.subNavbarCategory && p.subNavbarCategory !== 'Products') return p.subNavbarCategory;
+  if (p.mainCategory && p.mainCategory !== 'Products') return p.mainCategory;
+
+  return p.subNavbarCategory || p.mainCategory || 'Products';
 };
 
 const sanitizeProduct = (p) => {
