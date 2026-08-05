@@ -115,9 +115,14 @@ export default function VendorDashboardView({
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 block mb-1">
-            Vendor Business Portal
-          </span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 block">
+              Vendor Business Portal
+            </span>
+            <span className="text-[10px] text-slate-400 font-semibold font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+              Reg ID: ven-fic-2026-v001
+            </span>
+          </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-sans">
             SK Electronics & Services
           </h1>
