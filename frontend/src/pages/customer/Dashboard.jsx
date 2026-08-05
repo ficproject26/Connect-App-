@@ -6486,19 +6486,13 @@ export default function CustomerDashboard({
                                 })()}
                               </p>
                               
-                              {/* Rating & Duration Row */}
+                              {/* Rating Row */}
                               <div className="flex items-center gap-3.5 mt-2.5 text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
                                 <div className="flex items-center gap-1 font-bold">
                                   <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                                   <span className="font-extrabold">{product.rating || '4.5'}</span>
                                   <span className="text-slate-400 font-semibold">({product.reviews || '120'})</span>
                                 </div>
-                                {product.duration && product.subNavbarCategory !== 'Products' && product.subNavbarCategory !== 'Daily Needs' && (
-                                  <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-3">
-                                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                    <span>{product.duration}</span>
-                                  </div>
-                                )}
                                 {(() => {
                                   const guestsCount = getGuestsCount(product);
                                   const isStayCard = product.subNavbarCategory === 'Stay' || product.tag === 'Stay';
