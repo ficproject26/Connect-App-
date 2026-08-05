@@ -19,7 +19,7 @@ Food
 └ Premium Dining
 */
 import React, { useEffect, useState } from 'react';
-import { productService } from '../../services/productService';
+import { productService, isRealVendorProduct } from '../../services/productService';
 import { ArrowLeft, Star, ChevronRight, Compass, Search, RefreshCw, X } from 'lucide-react';
 import saree1 from '../../assets/images/saree_1.png';
 import saree2 from '../../assets/images/saree_2.png';
@@ -276,6 +276,7 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
     const staticData = categoryData[safeCat] || categoryData['Services'];
     
     const matchingProducts = vendorProducts.filter(p => {
+      if (!isRealVendorProduct(p)) return false;
       const subNav = (p.subNavbarCategory || '').toLowerCase();
       const cat = (p.category || '').toLowerCase();
       const mainCat = (p.mainCategory || '').toLowerCase();
@@ -283,13 +284,12 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
       return subNav === catLower || cat === catLower || mainCat === catLower || tag === catLower;
     });
 
-    // If it's Products category or isProductGrid, merge static & dynamic products
+    // If it's Products category or isProductGrid, return matching real vendor products only
     if (staticData.isProductGrid || safeCat === 'Products') {
-      const combinedProducts = matchingProducts.length > 0 ? matchingProducts : (staticData.products || []);
       return {
         tagline: staticData.tagline || 'Explore exclusive luxury deals.',
         isProductGrid: true,
-        products: combinedProducts
+        products: matchingProducts
       };
     }
 

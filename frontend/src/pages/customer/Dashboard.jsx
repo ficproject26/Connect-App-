@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
 import { getAdminBackendUrl } from '../../services/apiSetup';
-import { productService } from '../../services/productService';
+import { productService, isRealVendorProduct } from '../../services/productService';
 import { socketService } from '../../services/socketService';
 import { getActiveMainCategories } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
@@ -2631,7 +2631,7 @@ export default function CustomerDashboard({
   };
 
   const activeProducts = useMemo(() => {
-    return products.filter(p => !deletedProductIds.includes(p.id));
+    return products.filter(p => !deletedProductIds.includes(p.id) && isRealVendorProduct(p));
   }, [products, deletedProductIds]);
 
   // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)

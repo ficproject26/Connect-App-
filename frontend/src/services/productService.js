@@ -17,6 +17,36 @@ const sanitizeString = (str) => {
     .replace(/ðŸ›°ï¸ /g, '');
 };
 
+export const isRealVendorProduct = (p) => {
+  if (!p) return false;
+
+  const vId = String(p.vendorId || p.vendor_id || '');
+  const pId = String(p.id || p._id || '');
+
+  // Exclude hardcoded demo/dump ID formats (like u06q3qsi5mqg7ni0h, 9iitzyfekmqg7ni0w)
+  if (vId.includes('mqg7ni') || pId.includes('mqg7ni')) return false;
+
+  // Exclude static baseline/dump item IDs
+  if (pId.startsWith('base-') || pId === 'p1' || pId === 'p2' || pId === 'p3' || pId === 'p4') return false;
+
+  // Exclude known demo dump names if any
+  const dumpNames = [
+    'bicycle', 'perfume', 'sony', 'xiomi', 'soap', 'h&m', 'dolo 650',
+    'adrika alluring sarees', 'banita ensemble sarees', 'trendy refined sarees', 'adrika pretty sarees'
+  ];
+  const pName = (p.name || '').toLowerCase().trim();
+  if (dumpNames.includes(pName)) return false;
+
+  // Real vendor products have a 24-hex Mongo ObjectId for vendorId or id
+  const isMongoId = (id) => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+  if (isMongoId(vId) || isMongoId(pId)) return true;
+
+  // If vendorName is explicitly set by a registered vendor
+  if (p.vendorName && p.vendorName !== 'Connect Certified Partner' && p.vendorName !== 'Connect Group Enterprise') return true;
+
+  return false;
+};
+
 const DEFAULT_BASELINE_PRODUCTS = [];
 
 const inferSubNavbarCategory = (p) => {
@@ -118,25 +148,9 @@ export const productService = {
   },
 
   getProducts: async (forceLive = true) => {
-    const mergeWithBaseline = (fetchedList) => {
-      const sanitizedFetched = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
-      const sanitizedBaseline = DEFAULT_BASELINE_PRODUCTS.map(sanitizeProduct);
-
-      if (sanitizedFetched.length === 0) {
-        return sanitizedBaseline;
-      }
-
-      // Prepend vendor-added items at top and deduplicate with baseline items
-      const vendorIds = new Set(sanitizedFetched.map(p => String(p.id || p._id)));
-      const vendorNames = new Set(sanitizedFetched.map(p => (p.name || '').toLowerCase().trim()));
-
-      const filteredBaseline = sanitizedBaseline.filter(p => {
-        const pId = String(p.id || p._id);
-        const pName = (p.name || '').toLowerCase().trim();
-        return !vendorIds.has(pId) && !vendorNames.has(pName);
-      });
-
-      return [...sanitizedFetched, ...filteredBaseline];
+    const filterVendorAddedOnly = (fetchedList) => {
+      const sanitized = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
+      return sanitized.filter(isRealVendorProduct);
     };
 
     const getLocalCache = () => {
@@ -145,11 +159,11 @@ export const productService = {
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return mergeWithBaseline(parsed);
+            return filterVendorAddedOnly(parsed);
           }
         }
       } catch (e) {}
-      return null;
+      return [];
     };
 
     try {
@@ -162,23 +176,23 @@ export const productService = {
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.products)) {
-          const merged = mergeWithBaseline(data.products);
+          const vendorProducts = filterVendorAddedOnly(data.products);
           try {
-            localStorage.setItem('connect_cached_products', JSON.stringify(merged));
+            localStorage.setItem('connect_cached_products', JSON.stringify(vendorProducts));
           } catch(e) {}
-          return { success: true, products: merged, source: 'live' };
+          return { success: true, products: vendorProducts, source: 'live' };
         }
       }
     } catch (err) {
-      console.warn("Failed to fetch products from vendor backend (using persistent local cache):", err);
+      console.warn("Failed to fetch products from vendor backend:", err);
     }
 
     const localCached = getLocalCache();
-    if (localCached) {
+    if (localCached && localCached.length > 0) {
       return { success: true, products: localCached, source: 'cache' };
     }
 
-    return { success: true, products: mergeWithBaseline([]), source: 'baseline' };
+    return { success: true, products: [], source: 'empty' };
   },
 
   deleteAllProducts: async () => {
