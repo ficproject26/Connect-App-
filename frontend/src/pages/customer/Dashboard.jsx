@@ -6504,7 +6504,7 @@ export default function CustomerDashboard({
                                   <span className="font-extrabold">{product.rating || '4.5'}</span>
                                   <span className="text-slate-400 font-semibold">({product.reviews || '120'})</span>
                                 </div>
-                                {product.duration && (
+                                {product.duration && product.subNavbarCategory !== 'Products' && product.subNavbarCategory !== 'Daily Needs' && (
                                   <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-3">
                                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                                     <span>{product.duration}</span>
