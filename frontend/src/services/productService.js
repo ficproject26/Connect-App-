@@ -88,13 +88,13 @@ const inferSubNavbarCategory = (p) => {
   if (['rice', 'egg', 'eggs', 'fruits', 'vegetables', 'dairy', 'milk', 'supermarket', 'daily needs', 'pharmacy'].some(k => catStr.includes(k))) {
     return 'Daily Needs';
   }
-  if (['full time', 'part time', 'full stack', 'developer', 'software engineer', 'it jobs', 'non-it jobs', 'bpo jobs', 'jobs', 'opening'].some(k => catStr.includes(k))) {
+  if (['full time', 'part time', 'full stack', 'developer', 'software engineer', 'it jobs', 'non-it jobs', 'bpo jobs', 'jobs', 'opening', 'talent', 'operator', 'specialist', 'recruiter', 'manager'].some(k => catStr.includes(k))) {
     return 'Jobs';
   }
-  if (['doctor', 'clinic', 'hospital', 'physiotherapy', 'home service', 'repair', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting'].some(k => catStr.includes(k))) {
+  if (['doctor', 'clinic', 'hospital', 'physiotherapy', 'home service', 'repair', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'gym', 'fitness'].some(k => catStr.includes(k))) {
     return 'Services';
   }
-  if (['saree', 'fashion', 'electronics', 'mobile', 'smartphone', 'laptop', 'watch', 'jewellery', 'furniture', 'appliance'].some(k => catStr.includes(k))) {
+  if (['saree', 'fashion', 'electronics', 'mobile', 'smartphone', 'laptop', 'watch', 'jewellery', 'furniture', 'appliance', 'jean', 'shoes', 'footwear', 'clothing', 'shirt'].some(k => catStr.includes(k))) {
     return 'Products';
   }
 

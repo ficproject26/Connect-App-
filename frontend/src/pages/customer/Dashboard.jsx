@@ -2679,13 +2679,31 @@ export default function CustomerDashboard({
         (product.category || '').toLowerCase().includes((searchQuery || '').toLowerCase())) &&
         (searchCategory === 'All' || normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(searchCategory));
 
-      const matchesSubNavbar = selectedSubNavbarCategory === 'All' || 
-        activeTab === 'Home' ||
-        normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(selectedSubNavbarCategory) ||
-        (product.subcategory && product.subcategory.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
-        (product.subSubcategory && product.subSubcategory.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
-        (product.category && product.category.toLowerCase() === selectedSubNavbarCategory.toLowerCase()) ||
-        (product.tag && product.tag.toLowerCase() === selectedSubNavbarCategory.toLowerCase());
+      const isMainCategoryTabName = (name) => {
+        if (!name) return true;
+        const lower = name.trim().toLowerCase();
+        return ['all', 'home', 'products', 'services', 'food', 'stay', 'travel', 'jobs', 'daily needs'].includes(lower);
+      };
+
+      let matchesSubNavbar = true;
+      if (selectedSubNavbarCategory && !isMainCategoryTabName(selectedSubNavbarCategory)) {
+        const targetSub = selectedSubNavbarCategory.toLowerCase().trim();
+        const pCat = (product.category || '').toLowerCase().trim();
+        const pSubCat = (product.subcategory || '').toLowerCase().trim();
+        const pSubSubCat = (product.subSubcategory || '').toLowerCase().trim();
+        const pTag = (product.tag || '').toLowerCase().trim();
+        const pName = (product.name || '').toLowerCase().trim();
+
+        matchesSubNavbar = 
+          pCat === targetSub ||
+          pSubCat === targetSub ||
+          pSubSubCat === targetSub ||
+          pTag === targetSub ||
+          pCat.includes(targetSub) ||
+          pSubCat.includes(targetSub) ||
+          pSubSubCat.includes(targetSub) ||
+          pName.includes(targetSub);
+      }
 
       // Services Filter Checks
       if (activeTab === 'Services') {
