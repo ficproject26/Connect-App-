@@ -570,7 +570,14 @@ export default function CustomerDashboard({
 
   useEffect(() => {
     if (activeScheduleModalItem || activeBookNowModalItem) {
-      setCheckInTime('12:00 PM');
+      const todayYMD = formatDateYYYYMMDD(new Date());
+      const isToday = stayCheckInDate === todayYMD;
+      if (isToday && isPastTimeForSelectedDate(checkInTime, stayCheckInDate)) {
+        const validSlot = checkInTimeSlots.find(s => s.status === 'Available' && !isPastTimeForSelectedDate(s.time, stayCheckInDate));
+        if (validSlot) {
+          setCheckInTime(validSlot.time);
+        }
+      }
       setCheckOutTime('11:00 AM');
       setAdultCount(1);
       setChildCount(0);
@@ -935,6 +942,7 @@ export default function CustomerDashboard({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
   const [razorpayPayMethod, setRazorpayPayMethod] = useState('upi');
+  const [selectedNetbank, setSelectedNetbank] = useState('HDFC Bank');
   const [razorpayProcessing, setRazorpayProcessing] = useState(false);
   const [supportOrderModal, setSupportOrderModal] = useState(null);
   const [reportReason, setReportReason] = useState('Order Defect / Damage');
@@ -1463,7 +1471,16 @@ export default function CustomerDashboard({
 
   // Additional job application & orders tab state variables
   const [applicantPhone, setApplicantPhone] = useState(currentUser?.phone || '');
-  const [applicantLocation, setApplicantLocation] = useState(currentUser?.location || currentUser?.city || (selectedLocation?.city ? `${selectedLocation.area ? selectedLocation.area + ', ' : ''}${selectedLocation.city}` : ''));
+  const [applicantLocation, setApplicantLocation] = useState(
+    currentUser?.location || currentUser?.city || (selectedLocation?.city ? `${selectedLocation.area ? selectedLocation.area + ', ' : ''}${selectedLocation.city}` : selectedLocation?.name || '')
+  );
+
+  useEffect(() => {
+    const autoLoc = currentUser?.location || currentUser?.city || (selectedLocation?.city ? `${selectedLocation.area ? selectedLocation.area + ', ' : ''}${selectedLocation.city}` : selectedLocation?.name || '');
+    if (autoLoc && (!applicantLocation || applicantLocation.includes('Koramangala, 5th Block'))) {
+      setApplicantLocation(autoLoc);
+    }
+  }, [selectedLocation, currentUser]);
   const [applicantLinkedIn, setApplicantLinkedIn] = useState(currentUser?.linkedin || '');
   const [applicantPortfolio, setApplicantPortfolio] = useState(currentUser?.portfolio || '');
   const [applicantExperience, setApplicantExperience] = useState('Fresher');
@@ -2380,8 +2397,21 @@ export default function CustomerDashboard({
     const now = new Date();
     const todayStr = formatDateYYYYMMDD(now);
 
-    if (dateStr < todayStr) return true;
-    if (dateStr > todayStr) return false;
+    let normalizedDateStr = dateStr;
+    if (dateStr.includes(',')) {
+      const parsedDate = new Date(dateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        normalizedDateStr = formatDateYYYYMMDD(parsedDate);
+      }
+    } else if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        normalizedDateStr = `${parts[0]}-${String(parts[1]).padStart(2, '0')}-${String(parts[2]).padStart(2, '0')}`;
+      }
+    }
+
+    if (normalizedDateStr < todayStr) return true;
+    if (normalizedDateStr > todayStr) return false;
 
     let hours = 0;
     let minutes = 0;
@@ -2405,7 +2435,7 @@ export default function CustomerDashboard({
     const currentMinutes = now.getMinutes();
 
     if (hours < currentHours) return true;
-    if (hours === currentHours && minutes < currentMinutes) return true;
+    if (hours === currentHours && minutes <= currentMinutes) return true;
     return false;
   };
 
@@ -5967,9 +5997,13 @@ export default function CustomerDashboard({
                                           <input
                                             type="tel"
                                             required
+                                            maxLength={10}
                                             value={applicantPhone}
-                                            onChange={(e) => setApplicantPhone(e.target.value)}
-                                            placeholder="98765 43210"
+                                            onChange={(e) => {
+                                              const numericVal = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                              setApplicantPhone(numericVal);
+                                            }}
+                                            placeholder="9876543210"
                                             className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-400 font-medium"
                                           />
                                         </div>
@@ -10536,6 +10570,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                   disabled={!d.isAvailable}
                                   onClick={() => {
                                     setStayCheckInDate(d.dateStr);
+                                    if (d.dateStr === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(checkInTime, d.dateStr)) {
+                                      const validSlot = checkInTimeSlots.find(s => s.status === 'Available' && !isPastTimeForSelectedDate(s.time, d.dateStr));
+                                      if (validSlot) setCheckInTime(validSlot.time);
+                                    }
                                     if (stayCheckOutDate <= d.dateStr) {
                                       const next = new Date(d.dateStr + 'T00:00:00');
                                       next.setDate(next.getDate() + 1);
@@ -11187,6 +11225,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                   disabled={!d.isAvailable}
                                   onClick={() => {
                                     setStayCheckInDate(d.dateStr);
+                                    if (d.dateStr === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(checkInTime, d.dateStr)) {
+                                      const validSlot = checkInTimeSlots.find(s => s.status === 'Available' && !isPastTimeForSelectedDate(s.time, d.dateStr));
+                                      if (validSlot) setCheckInTime(validSlot.time);
+                                    }
                                     if (stayCheckOutDate <= d.dateStr) {
                                       const next = new Date(d.dateStr + 'T00:00:00');
                                       next.setDate(next.getDate() + 1);
@@ -12136,10 +12178,19 @@ wishlistProducts.forEach(item => addToCart(item));
 
                     {razorpayPayMethod === 'netbanking' && (
                       <div className="grid grid-cols-3 gap-2 text-[10px] font-extrabold">
-                        {['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Kotak', 'YES Bank'].map((b, i) => (
-                          <div key={b} className={`p-2 rounded-xl border text-center cursor-pointer ${i === 0 ? 'border-blue-500 bg-blue-50 dark:bg-blue-950 text-blue-600' : 'border-slate-200 dark:border-slate-800'}`}>
+                        {['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Kotak', 'YES Bank'].map((b) => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => setSelectedNetbank(b)}
+                            className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${
+                              selectedNetbank === b
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-extrabold shadow-3xs'
+                                : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-blue-300'
+                            }`}
+                          >
                             {b}
-                          </div>
+                          </button>
                         ))}
                       </div>
                     )}
