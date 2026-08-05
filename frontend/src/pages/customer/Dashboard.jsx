@@ -2922,37 +2922,8 @@ export default function CustomerDashboard({
   }, [activeProducts, activeTab]);
 
   const displayProducts = useMemo(() => {
-    const hasActiveFilters = (
-      selectedCategories.length > 0 ||
-      selectedPrices.length > 0 ||
-      selectedBrands.length > 0 ||
-      selectedColors.length > 0 ||
-      selectedRating !== null ||
-      selectedServiceTypes.length > 0 ||
-      selectedLocTypes.length > 0 ||
-      selectedCuisines.length > 0 ||
-      selectedDistances.length > 0 ||
-      selectedAccomTypes.length > 0 ||
-      selectedTravelTypes.length > 0 ||
-      selectedDailyNeedsTypes.length > 0 ||
-      (searchQuery && searchQuery.trim() !== '') ||
-      (selectedSubNavbarCategory && selectedSubNavbarCategory !== 'All')
-    );
-
-    if (hasActiveFilters) {
-      return filteredProducts;
-    }
-
-    if (activeTab === 'Home') {
-      return activeProducts;
-    }
-    return fallbackTabProducts.length > 0 ? fallbackTabProducts : activeProducts;
-  }, [
-    filteredProducts, activeTab, searchQuery, activeProducts, fallbackTabProducts,
-    selectedCategories, selectedPrices, selectedBrands, selectedColors, selectedRating,
-    selectedServiceTypes, selectedLocTypes, selectedCuisines, selectedDistances,
-    selectedAccomTypes, selectedTravelTypes, selectedDailyNeedsTypes, selectedSubNavbarCategory
-  ]);
+    return filteredProducts;
+  }, [filteredProducts]);
 
   const wishlistProducts = useMemo(() => {
     const allItems = Array.isArray(products) ? products : [];

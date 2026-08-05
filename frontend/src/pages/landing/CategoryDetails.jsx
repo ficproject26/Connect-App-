@@ -285,12 +285,7 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
 
     // If it's Products category or isProductGrid, merge static & dynamic products
     if (staticData.isProductGrid || safeCat === 'Products') {
-      const combinedProducts = [...(staticData.products || [])];
-      matchingProducts.forEach(mp => {
-        if (!combinedProducts.some(p => p.id === mp.id || p.name === mp.name)) {
-          combinedProducts.push(mp);
-        }
-      });
+      const combinedProducts = matchingProducts.length > 0 ? matchingProducts : (staticData.products || []);
       return {
         tagline: staticData.tagline || 'Explore exclusive luxury deals.',
         isProductGrid: true,
