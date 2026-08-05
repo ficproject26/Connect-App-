@@ -2673,6 +2673,9 @@ export default function CustomerDashboard({
 
       // Services Filter Checks
       if (activeTab === 'Services') {
+        const pMainCat = normalizeMainCatName(product.subNavbarCategory);
+        if (pMainCat !== 'services' && (product.category || '').toLowerCase() !== 'services') return false;
+
         const matchesServiceType = selectedServiceTypes.length === 0 ||
           selectedServiceTypes.some(st => 
             (product.category || '').toLowerCase().includes(st.toLowerCase()) ||
@@ -2693,6 +2696,9 @@ export default function CustomerDashboard({
 
       // Food Filter Checks
       if (activeTab === 'Food') {
+        const pMainCat = normalizeMainCatName(product.subNavbarCategory);
+        if (pMainCat !== 'food' && (product.category || '').toLowerCase() !== 'food') return false;
+
         const matchesCuisine = selectedCuisines.length === 0 ||
           selectedCuisines.some(c => 
             (product.category || '').toLowerCase().includes(c.toLowerCase()) ||
@@ -2733,6 +2739,9 @@ export default function CustomerDashboard({
 
       // Stay Filter Checks
       if (activeTab === 'Stay') {
+        const pMainCat = normalizeMainCatName(product.subNavbarCategory);
+        if (pMainCat !== 'stay' && (product.category || '').toLowerCase() !== 'stay') return false;
+
         const matchesAccom = selectedAccomTypes.length === 0 ||
           selectedAccomTypes.some(acc => 
             (product.category || '').toLowerCase().includes(acc.toLowerCase()) ||
@@ -2761,6 +2770,9 @@ export default function CustomerDashboard({
 
       // Travel Filter Checks
       if (activeTab === 'Travel') {
+        const pMainCat = normalizeMainCatName(product.subNavbarCategory);
+        if (pMainCat !== 'travel' && (product.category || '').toLowerCase() !== 'travel') return false;
+
         const matchesTravelType = selectedTravelTypes.length === 0 ||
           selectedTravelTypes.some(tt => 
             (product.category || '').toLowerCase().includes(tt.toLowerCase()) ||
@@ -2800,6 +2812,9 @@ export default function CustomerDashboard({
 
       // Daily Needs Filter Checks
       if (activeTab === 'Daily Needs') {
+        const pMainCat = normalizeMainCatName(product.subNavbarCategory);
+        if (pMainCat !== 'daily needs' && (product.category || '').toLowerCase() !== 'daily needs') return false;
+
         const matchesDailyNeedsType = selectedDailyNeedsTypes.length === 0 ||
           selectedDailyNeedsTypes.some(type => 
             (product.category || '').toLowerCase().includes(type.toLowerCase()) ||
@@ -2827,7 +2842,12 @@ export default function CustomerDashboard({
 
       // Default Products / Other tabs Filter Checks
       const isJob = isJobCardItem(product);
-      if (selectedCategories.includes('Products') || activeTab === 'Products') {
+      if (activeTab === 'Products') {
+        const pMainCat = normalizeMainCatName(product.subNavbarCategory);
+        if (pMainCat !== 'products' || isJob) return false;
+      }
+
+      if (selectedCategories.includes('Products')) {
         if (isJob) return false;
       }
 
