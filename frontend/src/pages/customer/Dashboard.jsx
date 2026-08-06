@@ -8752,17 +8752,22 @@ export default function CustomerDashboard({
                                   e.stopPropagation(); 
                                   addToCart(prod); 
                                 }} 
-                                className="bg-amber-400 hover:bg-amber-500 text-slate-900 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0"
+                                className="bg-amber-400 hover:bg-amber-500 text-slate-900 text-[9.5px] font-black px-2.5 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0 flex items-center gap-1"
                               >
-                                + Add
+                                <ShoppingCart className="w-3 h-3 text-slate-900" />
+                                <span>+ Add to Cart</span>
                               </button>
                               <button 
                                 onClick={(e) => { 
                                   e.stopPropagation(); 
-                                  addToCart(prod);
-                                  setIsCartOpen(true);
+                                  if (!currentUser) {
+                                    setIsLoginModalOpen(true);
+                                  } else {
+                                    addToCart(prod);
+                                    setIsCartOpen(true);
+                                  }
                                 }} 
-                                className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-700/30 shrink-0"
+                                className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white text-[9.5px] font-black px-2.5 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border-none shrink-0"
                               >
                                 Order Now
                               </button>
@@ -11098,7 +11103,9 @@ wishlistProducts.forEach(item => addToCart(item));
                                 onClick={() => {
                                   const maxAllowed = Number(activeScheduleModalItem?.guests || activeScheduleModalItem?.maxGuests || activeScheduleModalItem?.capacity || getGuestsCount(activeScheduleModalItem) || 4);
                                   if (adultCount + childCount >= maxAllowed) {
-                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    const isTravel = activeScheduleModalItem?.subNavbarCategory === 'Travel' || activeScheduleModalItem?.tag === 'Travel' || activeScheduleModalItem?.category === 'Travel';
+                                    const msg = isTravel ? `Maximum passengers allowed is ${maxAllowed}.` : `Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`;
+                                    triggerNotification(msg);
                                     return;
                                   }
                                   setAdultCount(prev => prev + 1);
@@ -11130,7 +11137,9 @@ wishlistProducts.forEach(item => addToCart(item));
                                 onClick={() => {
                                   const maxAllowed = Number(activeScheduleModalItem?.guests || activeScheduleModalItem?.maxGuests || activeScheduleModalItem?.capacity || getGuestsCount(activeScheduleModalItem) || 4);
                                   if (adultCount + childCount >= maxAllowed) {
-                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    const isTravel = activeScheduleModalItem?.subNavbarCategory === 'Travel' || activeScheduleModalItem?.tag === 'Travel' || activeScheduleModalItem?.category === 'Travel';
+                                    const msg = isTravel ? `Maximum passengers allowed is ${maxAllowed}.` : `Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`;
+                                    triggerNotification(msg);
                                     return;
                                   }
                                   setChildCount(prev => prev + 1);
@@ -11753,7 +11762,9 @@ wishlistProducts.forEach(item => addToCart(item));
                                 onClick={() => {
                                   const maxAllowed = Number(activeBookNowModalItem?.guests || activeBookNowModalItem?.maxGuests || activeBookNowModalItem?.capacity || getGuestsCount(activeBookNowModalItem) || 4);
                                   if (adultCount + childCount >= maxAllowed) {
-                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    const isTravel = activeBookNowModalItem?.subNavbarCategory === 'Travel' || activeBookNowModalItem?.tag === 'Travel' || activeBookNowModalItem?.category === 'Travel';
+                                    const msg = isTravel ? `Maximum passengers allowed is ${maxAllowed}.` : `Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`;
+                                    triggerNotification(msg);
                                     return;
                                   }
                                   setAdultCount(prev => prev + 1);
@@ -11785,7 +11796,9 @@ wishlistProducts.forEach(item => addToCart(item));
                                 onClick={() => {
                                   const maxAllowed = Number(activeBookNowModalItem?.guests || activeBookNowModalItem?.maxGuests || activeBookNowModalItem?.capacity || getGuestsCount(activeBookNowModalItem) || 4);
                                   if (adultCount + childCount >= maxAllowed) {
-                                    triggerNotification(`Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`);
+                                    const isTravel = activeBookNowModalItem?.subNavbarCategory === 'Travel' || activeBookNowModalItem?.tag === 'Travel' || activeBookNowModalItem?.category === 'Travel';
+                                    const msg = isTravel ? `Maximum passengers allowed is ${maxAllowed}.` : `Maximum room capacity is ${maxAllowed} guest${maxAllowed > 1 ? 's' : ''}.`;
+                                    triggerNotification(msg);
                                     return;
                                   }
                                   setChildCount(prev => prev + 1);
