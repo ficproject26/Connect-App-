@@ -7915,6 +7915,35 @@ export default function CustomerDashboard({
         ? product.description.trim() 
         : null;
 
+      const isJob = isJobCardItem(product) || subCat.includes('job') || cat.includes('job');
+      if (isJob) {
+        return [
+          "Verified Employer & Genuine Job Opportunity",
+          "Competitive Industry Compensation & Salary Package",
+          "Structured Professional Growth & Skill Advancement",
+          "Inclusive & Collaborative Workplace Environment",
+          "Equal Opportunity Employer with Merit-Based Hiring"
+        ];
+      }
+      if (subCat.includes('stay') || cat.includes('hotel') || cat.includes('resort')) {
+        return [
+          "100% Verified Accommodation & Safe Environment",
+          "Sanitized Rooms & Clean Linen Guarantee",
+          "Complimentary High-Speed Wi-Fi & Breakfast Options",
+          "Flexible Check-In / Check-Out Timings Available",
+          "24/7 Front Desk & Dedicated Guest Support"
+        ];
+      }
+      if (subCat.includes('travel') || cat.includes('bus') || cat.includes('cab') || cat.includes('taxi')) {
+        return [
+          "100% Verified Transport & Licensed Professional Driver",
+          "Sanitized Vehicle & Punctual Schedule Maintenance",
+          "Real-Time Vehicle Tracking & Live Emergency Support",
+          "Comfortable Seating & Air-Conditioned Fleet Options",
+          "Transparent Pricing with No Hidden Surcharges"
+        ];
+      }
+
       if (subCat.includes('service') || isMedical) {
         if (isMedical) {
           return [
@@ -8642,27 +8671,90 @@ export default function CustomerDashboard({
                           <Star className="w-3 h-3 fill-emerald-600 text-emerald-600 animate-pulse" />
                           <span className="text-[9px] font-bold text-slate-700 dark:text-slate-355">{prod.rating}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              addToCart(prod); 
-                            }} 
-                            className="bg-amber-400 hover:bg-amber-500 text-slate-955 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0"
-                          >
-                            + Add
-                          </button>
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              addToCart(prod);
-                              setIsCartOpen(true);
-                            }} 
-                            className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
-                          >
-                            Order Now
-                          </button>
-                        </div>
+                        {(() => {
+                          const isJob = isJobCardItem(prod) || prod.subNavbarCategory === 'Jobs' || prod.category === 'Jobs' || (prod.category || '').toLowerCase().includes('job');
+                          const isService = prod.subNavbarCategory === 'Services' || prod.subNavbarCategory === 'Stay' || prod.subNavbarCategory === 'Travel';
+
+                          if (isJob) {
+                            const appliedOrder = customerOrders.find(o => 
+                              o.type === 'Job' && o.items?.some(item => item.productId === prod.id)
+                            );
+                            if (appliedOrder) {
+                              return (
+                                <button 
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    setIsProfileModalOpen(true);
+                                    setActiveProfileTab('myjobs');
+                                    setTrackingOrder(appliedOrder);
+                                  }} 
+                                  className="bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-slate-950 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-xs border-none shrink-0"
+                                >
+                                  View Status
+                                </button>
+                              );
+                            }
+                            return (
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if (!currentUser) {
+                                    setIsLoginModalOpen(true);
+                                  } else {
+                                    setSelectedProduct(prod);
+                                  }
+                                }} 
+                                className="bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9.5px] font-black px-3.5 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-xs border border-amber-500/20 shrink-0"
+                              >
+                                Apply Now
+                              </button>
+                            );
+                          } else if (isService) {
+                            return (
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if (!currentUser) {
+                                    setIsLoginModalOpen(true);
+                                  } else {
+                                    setActiveBookNowModalItem(prod);
+                                    setSelectedModalDate('Wednesday, 21 May 2025');
+                                    setSelectedModalTime('11:00 AM');
+                                    setSelectedModalType(prod.subNavbarCategory === 'Stay' ? 'Standard Room' : (prod.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                                    setSelectedTimeOfDayTab('Morning');
+                                  }
+                                }} 
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-[9.5px] font-black px-3.5 py-1.5 rounded-lg transition-all cursor-pointer shadow-xs border-none shrink-0"
+                              >
+                                Book Now
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  addToCart(prod); 
+                                }} 
+                                className="bg-amber-400 hover:bg-amber-500 text-slate-955 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0"
+                              >
+                                + Add
+                              </button>
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  addToCart(prod);
+                                  setIsCartOpen(true);
+                                }} 
+                                className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
+                              >
+                                Order Now
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -9365,7 +9457,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     {trackingOrder ? (
                       trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs' ? (
                         /* Beautiful Job Application Status Tracking UI */
-                        <div className="space-y-4 animate-fade-in">
+                        <div className="space-y-5 animate-fade-in text-left">
                           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
                             <button
                               onClick={() => {
@@ -9375,7 +9467,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                 setTrackingCoords(null);
                                 setActiveProfileTab('myjobs');
                               }}
-                              className="text-xs text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                              className="text-xs font-bold text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
                             >
                               <ChevronLeft className="w-4 h-4" />
                               <span>Back to Applications</span>
@@ -9383,6 +9475,99 @@ wishlistProducts.forEach(item => addToCart(item));
                             <span className="text-[10px] bg-amber-400/10 text-amber-500 border border-amber-400/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
                               Application Status
                             </span>
+                          </div>
+
+                          {/* Application Summary Card */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4">
+                            <div className="flex justify-between items-start flex-wrap gap-3">
+                              <div className="flex items-center gap-3.5">
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
+                                  <Briefcase className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
+                                    {trackingOrder.product_details || 'Job Application'}
+                                  </h3>
+                                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                                    Application No: <strong className="text-slate-800 dark:text-slate-200">#{trackingOrder.order_number}</strong>
+                                  </p>
+                                </div>
+                              </div>
+                              <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${
+                                trackingOrder.status === 'Cancelled' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                ['Delivered', 'Completed'].includes(trackingOrder.status) ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                                ['Picked Up', 'Out For Delivery'].includes(trackingOrder.status) ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' :
+                                ['Ready For Pickup', 'Assigned To Delivery Partner'].includes(trackingOrder.status) ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' :
+                                'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                              }`}>
+                                {trackingOrder.status === 'Order Received' ? 'Under Review' :
+                                 trackingOrder.status === 'Preparing' ? 'Resume Screening' :
+                                 ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(trackingOrder.status) ? 'Shortlisted' :
+                                 ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(trackingOrder.status) ? 'Interview Scheduled' :
+                                 ['Delivered', 'Completed'].includes(trackingOrder.status) ? 'Selected / Offered' :
+                                 trackingOrder.status === 'Cancelled' ? 'Rejected' : 'Under Review'}
+                              </span>
+                            </div>
+
+                            {/* Job Application Progress Timeline */}
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Recruitment Process Stage</span>
+                              <div className="grid grid-cols-4 gap-2 text-center">
+                                {[
+                                  { label: 'Submitted', done: true },
+                                  { label: 'Screening', done: ['Preparing', 'Ready For Pickup', 'Assigned To Delivery Partner', 'Picked Up', 'Out For Delivery', 'Delivered', 'Completed'].includes(trackingOrder.status) },
+                                  { label: 'Interview', done: ['Picked Up', 'Out For Delivery', 'Delivered', 'Completed'].includes(trackingOrder.status) },
+                                  { label: 'Decision', done: ['Delivered', 'Completed', 'Cancelled'].includes(trackingOrder.status) }
+                                ].map((step, sIdx) => (
+                                  <div key={sIdx} className="flex flex-col items-center gap-1.5">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                                      step.done 
+                                        ? 'bg-emerald-500 text-white shadow-xs' 
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                                    }`}>
+                                      {step.done ? '✓' : sIdx + 1}
+                                    </div>
+                                    <span className={`text-[9.5px] font-bold ${step.done ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
+                                      {step.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Candidate Application Details */}
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-3">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                              <UserCheck className="w-4 h-4 text-indigo-500" />
+                              <span>Applicant Details</span>
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[10.5px]">Applicant Name</span>
+                                <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{trackingOrder.memberName || trackingOrder.customer_name || currentUser?.name || 'Applicant'}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[10.5px]">Contact Email</span>
+                                <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{trackingOrder.candidateEmail || profileEmail || currentUser?.email || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[10.5px]">Contact Phone</span>
+                                <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{trackingOrder.applicantPhone || trackingOrder.customer_phone || applicantPhone || currentUser?.phone || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[10.5px]">Application Date</span>
+                                <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{new Date(trackingOrder.created_at || Date.now()).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[10.5px]">Resume Attached</span>
+                                <span className="font-extrabold text-indigo-600 dark:text-indigo-400 block mt-0.5">{trackingOrder.candidateResume || 'Resume.pdf'}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[10.5px]">Experience Level</span>
+                                <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{trackingOrder.experience || 'Fresher'}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(trackingOrder.type) ? (
@@ -9669,16 +9854,56 @@ wishlistProducts.forEach(item => addToCart(item));
                               </p>
                             </div>
                             <div className="flex items-center gap-4 text-slate-700 dark:text-slate-300">
-                              <button 
-                                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} 
-                                className="relative p-2 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer border-none bg-transparent"
-                                title="Notifications"
-                              >
-                                <Bell className="w-5 h-5" />
-                                {unreadCount > 0 && (
-                                  <span className="absolute top-0 right-0 w-4 h-4 bg-[#FFC107] text-slate-950 text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">{unreadCount}</span>
+                              <div className="relative">
+                                <button 
+                                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} 
+                                  className="relative p-2 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer border-none bg-transparent"
+                                  title="Notifications"
+                                >
+                                  <Bell className="w-5 h-5" />
+                                  {unreadCount > 0 && (
+                                    <span className="absolute top-0 right-0 w-4 h-4 bg-[#FFC107] text-slate-950 text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">{unreadCount}</span>
+                                  )}
+                                </button>
+                                {isNotificationsOpen && (
+                                  <>
+                                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
+                                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left">
+                                      <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
+                                        <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
+                                        {unreadCount > 0 && (
+                                          <button 
+                                            onClick={() => {
+                                              setUnreadCount(0);
+                                              triggerNotification("All notifications marked as read");
+                                            }}
+                                            className="text-[10px] text-amber-500 hover:text-amber-600 font-bold hover:underline cursor-pointer border-none bg-transparent"
+                                          >
+                                            Mark all as read
+                                          </button>
+                                        )}
+                                      </div>
+                                      <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
+                                        {unreadCount > 0 ? (
+                                          notificationsList.map((notif, idx) => (
+                                            <div key={idx} className="flex gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors text-left border-b border-slate-50 dark:border-slate-900 last:border-b-0">
+                                              <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5" />
+                                              <div className="leading-tight">
+                                                <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{notif.text}</p>
+                                                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{notif.time}</span>
+                                              </div>
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
+                                            No unread notifications
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </>
                                 )}
-                              </button>
+                              </div>
                               <button className="flex items-center gap-1.5 text-xs font-bold hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent">
                                 <Phone className="w-4 h-4" />
                                 <span>Help & Support</span>
