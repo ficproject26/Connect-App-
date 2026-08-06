@@ -46,11 +46,14 @@ export function AuthProvider({ children }) {
     if (!finalName || finalName === 'OTP Verified Member' || /^\d+$/.test(finalName)) {
       if (registeredMatch && registeredMatch.name && !/^\d+$/.test(registeredMatch.name)) {
         finalName = registeredMatch.name;
-      } else if (inputUser.email && !/^\d+$/.test(inputUser.email)) {
-        const parts = inputUser.email.split('@')[0];
-        finalName = parts.charAt(0).toUpperCase() + parts.slice(1);
       } else {
-        finalName = 'Connect Member';
+        // Try to extract a readable name from email, but skip if prefix is all digits
+        const emailPrefix = inputUser.email ? inputUser.email.split('@')[0] : '';
+        if (emailPrefix && !/^\d+$/.test(emailPrefix)) {
+          finalName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+        } else {
+          finalName = 'Connect Member';
+        }
       }
     }
 

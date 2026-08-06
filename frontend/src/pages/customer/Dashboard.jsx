@@ -799,23 +799,43 @@ export default function CustomerDashboard({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState('orders'); // 'orders' | 'settings' | 'card' | 'edit'
   const [profileName, setProfileName] = useState(() => {
-    const savedUser = localStorage.getItem('connect_current_user');
-    if (savedUser) {
-      try {
+    try {
+      const savedUser = localStorage.getItem('connect_current_user');
+      if (savedUser) {
         const u = JSON.parse(savedUser);
-        if (u.name && !/^\d+$/.test(u.name)) return u.name;
-      } catch (e) {}
-    }
-    return (currentUser?.name && !/^\d+$/.test(currentUser.name)) ? currentUser.name : (currentUser?.email ? currentUser.email.split('@')[0] : '');
+        // If name is valid (not digits-only), use it
+        if (u.name && !/^\d+$/.test(u.name) && u.name !== 'Connect Member') return u.name;
+        // Otherwise, try to find the registered user by phone or email
+        const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
+        const phone = (u.phone || '').replace(/\D/g, '');
+        const email = (u.email || '').toLowerCase();
+        const match = registeredUsers.find(r =>
+          (phone && r.phone && r.phone.replace(/\D/g, '') === phone) ||
+          (email && r.email && r.email.toLowerCase() === email)
+        );
+        if (match && match.name && !/^\d+$/.test(match.name)) return match.name;
+      }
+    } catch (e) {}
+    if (currentUser?.name && !/^\d+$/.test(currentUser.name)) return currentUser.name;
+    return '';
   });
   const [profileEmail, setProfileEmail] = useState(() => {
-    const savedUser = localStorage.getItem('connect_current_user');
-    if (savedUser) {
-      try {
+    try {
+      const savedUser = localStorage.getItem('connect_current_user');
+      if (savedUser) {
         const u = JSON.parse(savedUser);
+        // Prefer real email (not auto-generated digits@connect.app)
+        if (u.email && !u.email.match(/^\d+@connect\.app$/)) return u.email;
+        // Otherwise look up registered user
+        const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
+        const phone = (u.phone || '').replace(/\D/g, '');
+        const match = registeredUsers.find(r =>
+          phone && r.phone && r.phone.replace(/\D/g, '') === phone
+        );
+        if (match && match.email) return match.email;
         if (u.email) return u.email;
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
     return currentUser?.email || '';
   });
 
@@ -914,14 +934,36 @@ export default function CustomerDashboard({
 
   useEffect(() => {
     if (currentUser) {
-      if (currentUser.name && !/^\d+$/.test(currentUser.name)) {
-        setProfileName(currentUser.name);
+      // Try to find the full registered profile if current user has digit-only name or auto-generated email
+      let resolvedUser = { ...currentUser };
+      const hasDigitName = !currentUser.name || /^\d+$/.test(currentUser.name) || currentUser.name === 'Connect Member';
+      const hasAutoEmail = !currentUser.email || currentUser.email.match(/^\d+@connect\.app$/);
+
+      if (hasDigitName || hasAutoEmail) {
+        try {
+          const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
+          const phone = (currentUser.phone || '').replace(/\D/g, '');
+          const email = (currentUser.email || '').toLowerCase();
+          const match = registeredUsers.find(r =>
+            (phone && r.phone && r.phone.replace(/\D/g, '') === phone) ||
+            (!hasAutoEmail && email && r.email && r.email.toLowerCase() === email)
+          );
+          if (match) {
+            resolvedUser = { ...match, ...currentUser, name: match.name || currentUser.name, email: match.email || currentUser.email };
+          }
+        } catch (e) {}
       }
-      if (currentUser.email) {
-        setProfileEmail(currentUser.email);
+
+      if (resolvedUser.name && !/^\d+$/.test(resolvedUser.name) && resolvedUser.name !== 'Connect Member') {
+        setProfileName(resolvedUser.name);
       }
-      if (currentUser.phone) {
-        setProfilePhone(currentUser.phone);
+      if (resolvedUser.email && !resolvedUser.email.match(/^\d+@connect\.app$/)) {
+        setProfileEmail(resolvedUser.email);
+      } else if (resolvedUser.email) {
+        setProfileEmail(resolvedUser.email);
+      }
+      if (resolvedUser.phone) {
+        setProfilePhone(resolvedUser.phone);
       }
     }
   }, [currentUser]);
