@@ -29,20 +29,8 @@ export const isRealVendorProduct = (p) => {
   // Exclude static baseline/dump item IDs
   if (pId.startsWith('base-') || pId === 'p1' || pId === 'p2' || pId === 'p3' || pId === 'p4') return false;
 
-  // Exclude known demo dump names if any
-  const dumpNames = [
-    'bicycle', 'perfume', 'sony', 'xiomi', 'soap', 'h&m', 'dolo 650',
-    'adrika alluring sarees', 'banita ensemble sarees', 'trendy refined sarees', 'adrika pretty sarees'
-  ];
-  const pName = (p.name || '').toLowerCase().trim();
-  if (dumpNames.includes(pName)) return false;
-
-  // Real vendor products have a 24-hex Mongo ObjectId for vendorId or id
-  const isMongoId = (id) => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
-  if (isMongoId(vId) || isMongoId(pId)) return true;
-
-  // If vendorName is explicitly set by a registered vendor
-  if (p.vendorName && p.vendorName !== 'Connect Certified Partner' && p.vendorName !== 'Connect Group Enterprise') return true;
+  // Real vendor products with valid ID or vendor name are valid
+  if (pId || vId || p.vendorName || p.name) return true;
 
   return false;
 };
