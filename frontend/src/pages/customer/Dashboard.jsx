@@ -1475,16 +1475,7 @@ export default function CustomerDashboard({
 
   // Additional job application & orders tab state variables
   const [applicantPhone, setApplicantPhone] = useState(currentUser?.phone || '');
-  const [applicantLocation, setApplicantLocation] = useState(
-    currentUser?.location || currentUser?.city || (selectedLocation?.city ? `${selectedLocation.area ? selectedLocation.area + ', ' : ''}${selectedLocation.city}` : selectedLocation?.name || '')
-  );
-
-  useEffect(() => {
-    const autoLoc = currentUser?.location || currentUser?.city || (selectedLocation?.city ? `${selectedLocation.area ? selectedLocation.area + ', ' : ''}${selectedLocation.city}` : selectedLocation?.name || '');
-    if (autoLoc && (!applicantLocation || applicantLocation.includes('Koramangala, 5th Block'))) {
-      setApplicantLocation(autoLoc);
-    }
-  }, [selectedLocation, currentUser]);
+  const [applicantLocation, setApplicantLocation] = useState('');
   const [applicantLinkedIn, setApplicantLinkedIn] = useState(currentUser?.linkedin || '');
   const [applicantPortfolio, setApplicantPortfolio] = useState(currentUser?.portfolio || '');
   const [applicantExperience, setApplicantExperience] = useState('Fresher');
@@ -6521,11 +6512,9 @@ export default function CustomerDashboard({
                               <h4 className="text-[14px] sm:text-[15px] font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-blue-600 transition-colors">{product.name}</h4>
                               <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1 font-medium">
                                 {(() => {
-                                  if (product.subNavbarCategory === 'Stay' || product.tag === 'Stay') {
-                                    const desc = (product.description || '').trim();
-                                    if (!desc || /^\d+$/.test(desc) || desc.length < 4) {
-                                      return product.roomType || product.subcategory || product.category || 'Luxury Room';
-                                    }
+                                  const isStayCard = product.subNavbarCategory === 'Stay' || product.tag === 'Stay' || product.category === 'Stay' || (product.category || '').toLowerCase().includes('stay') || (product.category || '').toLowerCase().includes('hotel');
+                                  if (isStayCard) {
+                                    return product.roomType || product.room_type || product.subCategory || product.subcategory || 'Deluxe Family Suite';
                                   }
                                   return product.description || `All types of ${(product.category || '').toLowerCase()} services`;
                                 })()}
@@ -12220,71 +12209,61 @@ wishlistProducts.forEach(item => addToCart(item));
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-black text-sm">
-                PDF
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-black text-sm shrink-0">
+                  PDF
+                </div>
+                <div className="text-left">
+                  <h3 className="text-base font-black text-slate-900 dark:text-white line-clamp-1">
+                    {resumeFile?.name || 'Uploaded_Candidate_CV.pdf'}
+                  </h3>
+                  <span className="text-xs text-slate-400 font-semibold block mt-0.5">
+                    Uploaded by {applicantName || profileName || currentUser?.name || 'Applicant'} • {applicantEmail || profileEmail || currentUser?.email || 'N/A'}
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  {resumeFile?.name || 'Dhanush_Tamilarasan_Resume.pdf'}
-                </h3>
-                <span className="text-xs text-slate-400 font-semibold">
-                  {applicantName || profileName || 'Dhanush Tamilarasan'} • {applicantEmail || profileEmail || 'dhanush@connect.app'}
-                </span>
-              </div>
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50">
+                Verified File ✓
+              </span>
             </div>
 
-            {/* Resume Document Body */}
-            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 space-y-4 text-xs font-sans text-slate-700 dark:text-slate-300">
-              <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h4 className="text-sm font-black text-slate-900 dark:text-white">{applicantName || profileName || 'Dhanush Tamilarasan'}</h4>
-                <p className="text-[11px] text-slate-500 font-bold mt-0.5">Senior Full Stack Web Developer</p>
-                <p className="text-[10px] text-slate-400 mt-1">📧 {applicantEmail || profileEmail || 'dhanush@connect.app'} • 📞 +91 98765 43210 • 📍 Bangalore, India</p>
-              </div>
-
-              <div>
-                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Executive Summary</h5>
-                <p className="leading-relaxed text-slate-600 dark:text-slate-400">
-                  Passionate Full Stack Developer with 4+ years of hands-on experience building high-performance web applications using React.js, Node.js, Express, MongoDB, and modern CSS frameworks. Proven track record in developing scalable e-commerce systems, API integrations, and intuitive customer interfaces.
+            {/* Resume Document Viewer */}
+            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-6 space-y-5 text-xs font-sans text-slate-700 dark:text-slate-300 text-left">
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h4 className="text-base font-black text-slate-900 dark:text-white">
+                  {applicantName || profileName || currentUser?.name || 'Candidate Name'}
+                </h4>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400 font-extrabold mt-0.5">
+                  Official Uploaded Curriculum Vitae (CV / Resume)
                 </p>
-              </div>
-
-              <div>
-                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Core Skills</h5>
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {['JavaScript (ES6+)', 'React.js', 'Node.js', 'Express.js', 'MongoDB', 'HTML5/CSS3', 'Tailwind CSS', 'REST APIs', 'Git & GitHub', 'Redux'].map(s => (
-                    <span key={s} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                      {s}
-                    </span>
-                  ))}
+                <div className="flex flex-wrap gap-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-2">
+                  <span>📧 {applicantEmail || profileEmail || currentUser?.email || 'N/A'}</span>
+                  <span>📞 {applicantPhone || currentUser?.phone || 'N/A'}</span>
+                  {applicantLocation && <span>📍 {applicantLocation}</span>}
                 </div>
               </div>
 
-              <div>
-                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Professional Experience</h5>
-                <div className="space-y-2">
-                  <div>
-                    <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200">
-                      <span>Senior Full Stack Engineer — Tech Connect Solutions</span>
-                      <span className="text-slate-400 text-[10px]">2024 - Present</span>
+              {/* Uploaded File Details Box */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-5 h-5 text-indigo-500" />
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-800 dark:text-white block line-clamp-1">
+                        {resumeFile?.name || 'Candidate_CV_Document.pdf'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold block">
+                        Format: PDF Document • Status: Scanned & Attached
+                      </span>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">• Engineered real-time customer and vendor dashboard interfaces serving 50k+ monthly active users.</p>
                   </div>
-                  <div>
-                    <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200">
-                      <span>Frontend Developer — WebCraft Labs</span>
-                      <span className="text-slate-400 text-[10px]">2022 - 2024</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">• Developed responsive UI components, reduced bundle size by 30%, and optimized page load speed.</p>
-                  </div>
+                  <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 font-bold px-2.5 py-1 rounded-lg">
+                    {resumeFile?.size ? (resumeFile.size / 1024).toFixed(0) + ' KB' : 'Active CV'}
+                  </span>
                 </div>
-              </div>
-
-              <div>
-                <h5 className="font-extrabold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">Education</h5>
-                <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200">
-                  <span>B.Tech in Computer Science & Engineering — VTU</span>
-                  <span className="text-slate-400 text-[10px]">Graduated 2022</span>
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                  This document was directly uploaded by the applicant for job application screening. The employer HR team can review and download the original file using the action button below.
                 </div>
               </div>
             </div>
@@ -12293,12 +12272,12 @@ wishlistProducts.forEach(item => addToCart(item));
               <button
                 type="button"
                 onClick={() => {
-                  triggerNotification("Downloading Resume PDF...");
+                  triggerNotification(`Downloading ${resumeFile?.name || 'Uploaded CV'}...`);
                   setIsPreviewResumeOpen(false);
                 }}
-                className="px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none"
+                className="px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none"
               >
-                Download PDF
+                Download CV File
               </button>
               <button
                 type="button"
