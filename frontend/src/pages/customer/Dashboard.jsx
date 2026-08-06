@@ -7205,11 +7205,9 @@ export default function CustomerDashboard({
             {/* Operator Header info */}
             <div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
+                <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40 text-[8.5px] sm:text-[9.5px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none shadow-3xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   VERIFIED OPERATOR
-                </span>
-                <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] sm:text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider leading-none">
-                  Verified
                 </span>
               </div>
               
