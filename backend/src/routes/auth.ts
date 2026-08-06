@@ -450,6 +450,7 @@ router.post('/register-customer', async (req: Request, res: Response) => {
       pan: panNumber,
       role: 'customer'
     };
+    await db.createCustomerUser(createdUser).catch(() => {});
     return res.json({ status: 'success', message: 'Customer registration successful', data: createdUser });
   } catch (error: any) {
     return res.status(500).json({ status: 'error', message: error.message });

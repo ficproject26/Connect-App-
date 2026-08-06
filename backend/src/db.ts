@@ -677,6 +677,31 @@ class DatabaseManager {
     this.saveMockDbToFile();
     return fullLog;
   }
+
+  // 10. Customer User registration persistence
+  public async createCustomerUser(userData: any): Promise<any> {
+    const custData = {
+      name: userData.name || 'Connect Customer',
+      email: userData.email || '',
+      phone: userData.phone || '',
+      address: userData.address || '',
+      city: userData.city || '',
+      pincode: userData.pincode || '',
+      aadhaarNumber: userData.aadhaar || userData.aadhaarNumber || '',
+      panNumber: userData.pan || userData.panNumber || '',
+      role: 'Member',
+      status: 'Active',
+      isActive: true,
+      customerType: 'Standard',
+      district: userData.city || 'Direct',
+      createdAt: new Date()
+    };
+    if (this.mongoDb) {
+      await this.mongoDb.collection('users').insertOne(custData).catch(() => {});
+      await this.mongoDb.collection('customers').insertOne(custData).catch(() => {});
+    }
+    return custData;
+  }
 }
 
 export const db = new DatabaseManager();

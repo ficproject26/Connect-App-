@@ -44,7 +44,7 @@ import {
   LifeBuoy, LogOut, MapPin, Phone, PhoneCall, Package, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
   Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar,
-  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe
+  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe, Mail
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -961,6 +961,7 @@ export default function CustomerDashboard({
   const [selectedNetbank, setSelectedNetbank] = useState('HDFC Bank');
   const [razorpayProcessing, setRazorpayProcessing] = useState(false);
   const [supportOrderModal, setSupportOrderModal] = useState(null);
+  const [isHelpSupportOpen, setIsHelpSupportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('Order Defect / Damage');
   const [reportNotes, setReportNotes] = useState('');
   const [isReportSubmitted, setIsReportSubmitted] = useState(false);
@@ -9932,7 +9933,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                   </>
                                 )}
                               </div>
-                              <button className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent">
+                              <button 
+                                onClick={() => setIsHelpSupportOpen(true)}
+                                className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                              >
                                 <Phone className="w-4 h-4" />
                                 <span>Help & Support</span>
                               </button>
@@ -12616,6 +12620,89 @@ wishlistProducts.forEach(item => addToCart(item));
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* ==================== HELP & SUPPORT MODAL ==================== */}
+      {isHelpSupportOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200 select-none">
+          <div onClick={() => setIsHelpSupportOpen(false)} className="absolute inset-0" />
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh] z-10 animate-scale-up">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20">
+              <div className="flex items-center gap-2.5 text-left">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-400/20">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">Help & Support</h3>
+                  <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">We're here to assist you 24/7</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsHelpSupportOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer border-none"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5 overflow-y-auto no-scrollbar space-y-4 text-left">
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 gap-3">
+                <a
+                  href="tel:18001234567"
+                  className="flex flex-col items-center gap-2 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl hover:shadow-md transition-all no-underline group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 text-center">Call Helpline</span>
+                  <span className="text-[9px] text-emerald-500 font-bold">1800-123-4567</span>
+                </a>
+
+                <a
+                  href="mailto:support@forgeindiaconnect.com"
+                  className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 rounded-2xl hover:shadow-md transition-all no-underline group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-black text-blue-700 dark:text-blue-300 text-center">Email Support</span>
+                  <span className="text-[9px] text-blue-500 font-bold">support@connect.app</span>
+                </a>
+              </div>
+
+              {/* FAQ Section */}
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Frequently Asked Questions</h4>
+                {[
+                  { q: 'How do I track my order?', a: 'Go to My Orders, click on any active order and tap "Track Order" to see real-time delivery status.' },
+                  { q: 'How do I cancel or return an order?', a: 'Open the order details from My Orders, then click the "Report / Support" button to raise a cancellation or return request.' },
+                  { q: 'How do I update my delivery address?', a: 'Go to your Profile > Settings tab > Saved Addresses to add or edit your delivery addresses.' },
+                  { q: 'How do I contact a vendor directly?', a: 'Visit the vendor\'s product page and use the "Call" or "Chat" button to connect with them directly.' },
+                  { q: 'Where can I view my wallet balance?', a: 'Navigate to your Profile and click on "Connect Wallet" from the sidebar menu.' }
+                ].map((faq, i) => (
+                  <details key={i} className="group border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+                    <summary className="flex items-center justify-between px-4 py-3 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors list-none">
+                      <span>{faq.q}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-open:rotate-180 transition-transform shrink-0" />
+                    </summary>
+                    <div className="px-4 pb-3 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800 pt-2">
+                      {faq.a}
+                    </div>
+                  </details>
+                ))}
+              </div>
+
+              {/* Support Info */}
+              <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 space-y-2 text-center">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Support Hours: <strong className="text-slate-700 dark:text-slate-200">24/7 Available</strong></p>
+                <p className="text-[10px] text-slate-400">Average response time: <strong className="text-emerald-500">Under 2 minutes</strong></p>
+              </div>
+            </div>
           </div>
         </div>
       )}
