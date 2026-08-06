@@ -4677,8 +4677,8 @@ export default function CustomerDashboard({
         desc: 'On all food orders', 
         code: 'FOOD20', 
         bg: 'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50', 
-        tagColor: 'bg-rose-500 text-white', 
-        btnColor: 'bg-rose-500 hover:bg-rose-600 text-white',
+        tagColor: 'bg-rose-500 text-white font-black', 
+        btnColor: 'bg-rose-500 hover:bg-rose-600 text-white font-black',
         image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=250&auto=format&fit=crop&q=80' 
       },
       { 
@@ -4688,8 +4688,8 @@ export default function CustomerDashboard({
         desc: 'On all services', 
         code: 'SERV15', 
         bg: 'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50', 
-        tagColor: 'bg-blue-500 text-white', 
-        btnColor: 'bg-blue-500 hover:bg-blue-600 text-white',
+        tagColor: 'bg-blue-500 text-white font-black', 
+        btnColor: 'bg-blue-500 hover:bg-blue-600 text-white font-black',
         image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=250&auto=format&fit=crop&q=80' 
       },
       { 
@@ -4699,31 +4699,45 @@ export default function CustomerDashboard({
         desc: 'On hotel bookings', 
         code: 'STAY30', 
         bg: 'bg-emerald-50/70 dark:bg-[#041c12] border-emerald-100 dark:border-[#0e3a24]/50', 
-        tagColor: 'bg-emerald-500 text-white', 
-        btnColor: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        tagColor: 'bg-emerald-500 text-white font-black', 
+        btnColor: 'bg-emerald-500 hover:bg-emerald-600 text-white font-black',
         image: hotelActual 
+      },
+      { 
+        id: 'o4', 
+        brand: 'Travel', 
+        discount: 'FLAT ₹500 OFF', 
+        desc: 'On bus & cab bookings', 
+        code: 'TRAVEL500', 
+        bg: 'bg-amber-50/70 dark:bg-[#1e1707] border-amber-100 dark:border-amber-900/50', 
+        tagColor: 'bg-amber-500 text-slate-950 font-black', 
+        btnColor: 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black',
+        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=250&auto=format&fit=crop&q=80' 
       }
     ];
 
-    const liveOffers = typeof adminExclusiveOffers !== 'undefined' && Array.isArray(adminExclusiveOffers) ? adminExclusiveOffers : [];
-    const displayOffers = liveOffers.length > 0 ? liveOffers.map((o, idx) => {
+    const liveOffers = (typeof adminExclusiveOffers !== 'undefined' && Array.isArray(adminExclusiveOffers) && adminExclusiveOffers.length > 0) 
+      ? adminExclusiveOffers 
+      : [];
+
+    let formattedOffers = liveOffers.map((o, idx) => {
       const bgs = [
-        'bg-gradient-to-br from-amber-50/90 via-amber-50/40 to-white dark:from-[#1e1707] dark:to-slate-900 border-amber-200/80 dark:border-amber-900/50',
-        'bg-gradient-to-br from-blue-50/90 via-blue-50/40 to-white dark:from-[#06122c] dark:to-slate-900 border-blue-200/80 dark:border-[#11244d]/50',
-        'bg-gradient-to-br from-rose-50/90 via-rose-50/40 to-white dark:from-[#1a0914] dark:to-slate-900 border-rose-200/80 dark:border-[#3e1422]/50',
-        'bg-gradient-to-br from-emerald-50/90 via-emerald-50/40 to-white dark:from-[#041c12] dark:to-slate-900 border-emerald-200/80 dark:border-[#0e3a24]/50'
+        'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50',
+        'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50',
+        'bg-emerald-50/70 dark:bg-[#041c12] border-emerald-100 dark:border-[#0e3a24]/50',
+        'bg-amber-50/70 dark:bg-[#1e1707] border-amber-100 dark:border-amber-900/50'
       ];
       const tagColors = [
-        'bg-amber-500 text-slate-950 font-black',
-        'bg-blue-500 text-white font-black',
         'bg-rose-500 text-white font-black',
-        'bg-emerald-500 text-white font-black'
+        'bg-blue-500 text-white font-black',
+        'bg-emerald-500 text-white font-black',
+        'bg-amber-500 text-slate-950 font-black'
       ];
       const btnColors = [
-        'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black',
+        'bg-rose-500 hover:bg-rose-600 text-white font-black',
         'bg-blue-600 hover:bg-blue-700 text-white font-black',
-        'bg-rose-600 hover:bg-rose-700 text-white font-black',
-        'bg-emerald-600 hover:bg-emerald-700 text-white font-black'
+        'bg-emerald-600 hover:bg-emerald-700 text-white font-black',
+        'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black'
       ];
 
       return {
@@ -4737,7 +4751,13 @@ export default function CustomerDashboard({
         btnColor: btnColors[idx % btnColors.length],
         image: o.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=250&auto=format&fit=crop&q=80'
       };
-    }) : defaultOffers;
+    });
+
+    if (formattedOffers.length < 4) {
+      formattedOffers = [...formattedOffers, ...defaultOffers.slice(formattedOffers.length, 4)];
+    }
+
+    const displayOffers = formattedOffers;
 
     return (
       <div className="space-y-4 text-left w-full">
