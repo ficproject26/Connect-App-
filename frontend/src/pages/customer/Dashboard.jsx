@@ -1996,7 +1996,7 @@ export default function CustomerDashboard({
               <button
                 type="button"
                 onClick={() => setIsAddingAddress(false)}
-                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-850 rounded-full text-slate-450 cursor-pointer"
+                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-900 rounded-full text-slate-400 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2019,7 +2019,7 @@ export default function CustomerDashboard({
                   placeholder="Receiver's Name"
                   value={addressForm.name}
                   onChange={(e) => setAddressForm({ ...addressForm, name: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -2030,7 +2030,7 @@ export default function CustomerDashboard({
                   placeholder="Mobile Number"
                   value={addressForm.phone}
                   onChange={(e) => setAddressForm({ ...addressForm, phone: sanitizeMobileInput(e.target.value) })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -2041,7 +2041,7 @@ export default function CustomerDashboard({
                   placeholder="6-digit Pincode"
                   value={addressForm.pincode}
                   onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -2052,7 +2052,7 @@ export default function CustomerDashboard({
                   placeholder="Locality / Sector / Area"
                   value={addressForm.locality}
                   onChange={(e) => setAddressForm({ ...addressForm, locality: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -2074,7 +2074,7 @@ export default function CustomerDashboard({
                   placeholder="City"
                   value={addressForm.city}
                   onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -2083,7 +2083,7 @@ export default function CustomerDashboard({
                 <select
                   value={addressForm.state}
                   onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 >
                   <option value="">--Select State--</option>
                   {IndianStates.map(st => (
@@ -2099,7 +2099,7 @@ export default function CustomerDashboard({
                   placeholder="e.g. Near Apollo Hospital"
                   value={addressForm.landmark}
                   onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -2110,7 +2110,7 @@ export default function CustomerDashboard({
                   placeholder="Alternate Contact Number"
                   value={addressForm.altPhone}
                   onChange={(e) => setAddressForm({ ...addressForm, altPhone: sanitizeMobileInput(e.target.value) })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-850 dark:text-slate-100"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-lg p-2 focus:outline-none focus:border-amber-500 font-medium text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -2145,7 +2145,7 @@ export default function CustomerDashboard({
               <button
                 type="button"
                 onClick={() => setIsAddingAddress(false)}
-                className="px-4 py-2 border border-slate-250 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer text-slate-650 dark:text-slate-350"
+                className="px-4 py-2 border border-slate-250 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer text-slate-600 dark:text-slate-300"
               >
                 Cancel
               </button>
@@ -2172,7 +2172,7 @@ export default function CustomerDashboard({
                 >
                   <div className="space-y-1.5 text-left">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-850 dark:text-white">{addr.name}</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">{addr.name}</span>
                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
                         addr.type === 'Home' 
                           ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
@@ -2190,11 +2190,11 @@ export default function CustomerDashboard({
                     </span>
                   </div>
 
-                  <div className="flex justify-end gap-2.5 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-850">
+                  <div className="flex justify-end gap-2.5 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-900">
                     <button
                       type="button"
                       onClick={() => handleDeleteAddress(addr.id)}
-                      className="text-[10px] font-black text-red-500 hover:text-red-650 transition-colors uppercase tracking-wider cursor-pointer border-none bg-transparent"
+                      className="text-[10px] font-black text-red-500 hover:text-red-600 transition-colors uppercase tracking-wider cursor-pointer border-none bg-transparent"
                     >
                       Delete
                     </button>
@@ -2240,13 +2240,13 @@ export default function CustomerDashboard({
                     let statusLabel = "Paid";
                     
                     if (ord.status === "Cancelled") {
-                      statusColor = "bg-red-500/10 text-red-650 dark:text-red-400 border-red-500/20";
+                      statusColor = "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20";
                       statusLabel = "Cancelled";
                     } else if (ord.status === "Refunded" || ord.is_refunded) {
                       statusColor = "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
                       statusLabel = "Refunded";
                     } else if (ord.status?.toLowerCase().includes("refund")) {
-                      statusColor = "bg-purple-500/10 text-purple-650 dark:text-purple-400 border-purple-500/20";
+                      statusColor = "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20";
                       statusLabel = "Refunded";
                     }
 
@@ -2255,7 +2255,7 @@ export default function CustomerDashboard({
                         <td className="py-3 px-3 font-mono text-[10px] text-slate-500 dark:text-slate-400">TXN_{ord.order_number || String(ord.id || '').slice(-6).toUpperCase()}</td>
                         <td className="py-3 px-3 max-w-[150px] truncate font-medium">{ord.product_details}</td>
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</td>
-                        <td className="py-3 px-3 font-semibold text-slate-650 dark:text-slate-350">Connect Wallet</td>
+                        <td className="py-3 px-3 font-semibold text-slate-600 dark:text-slate-300">Connect Wallet</td>
                         <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">₹{ord.amount}</td>
                         <td className="py-3 px-3 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusColor}`}>
@@ -3369,7 +3369,7 @@ export default function CustomerDashboard({
                         <User className="w-4 h-4 text-slate-950" />
                       </div>
                       <div className="flex flex-col text-left leading-tight">
-                        <span className="text-xs font-black text-slate-850 dark:text-white">Guest Visitor</span>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">Guest Visitor</span>
                         <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400">Login for full access</span>
                       </div>
                     </div>
@@ -3399,7 +3399,7 @@ export default function CustomerDashboard({
                         className="w-9 h-9 rounded-full object-cover border-2 border-amber-400 shadow-xs"
                       />
                       <div className="flex flex-col text-left">
-                        <span className="text-xs font-black text-slate-850 dark:text-white">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
                           Hi, {(currentUser?.name || profileName).split(' ')[0]}
                         </span>
                         <span className="text-[9.5px] font-black text-amber-500 uppercase tracking-wider">
@@ -3429,7 +3429,7 @@ export default function CustomerDashboard({
                       {theme === 'dark' ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5 text-slate-700" />}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">Theme</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-slate-100">Theme</span>
                       <span className="text-[9px] font-extrabold text-slate-400 capitalize">{theme} Mode</span>
                     </div>
                   </button>
@@ -3450,7 +3450,7 @@ export default function CustomerDashboard({
                       <Tag className="w-4.5 h-4.5 text-red-500" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">Offers</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-slate-100">Offers</span>
                       <span className="text-[9px] font-extrabold text-red-500">{adminOffers.length > 0 ? adminOffers.length : 3} Active Deals</span>
                     </div>
                   </button>
@@ -3467,7 +3467,7 @@ export default function CustomerDashboard({
                       <Heart className={`w-4.5 h-4.5 ${favorites.length > 0 ? 'fill-rose-500 text-rose-500' : 'text-rose-500'}`} />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">Wishlist</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-slate-100">Wishlist</span>
                       <span className="text-[9px] font-extrabold text-slate-400">{favorites.length} Saved</span>
                     </div>
                   </button>
@@ -3484,7 +3484,7 @@ export default function CustomerDashboard({
                       <ShoppingCart className="w-4.5 h-4.5 text-emerald-500" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">My Cart</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-slate-100">My Cart</span>
                       <span className="text-[9px] font-extrabold text-emerald-600">{cart.length} Items</span>
                     </div>
                   </button>
@@ -3502,7 +3502,7 @@ export default function CustomerDashboard({
                     </div>
                     <div className="flex items-center justify-between w-full pr-1">
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-slate-850 dark:text-slate-100">Notifications</span>
+                        <span className="text-xs font-black text-slate-900 dark:text-slate-100">Notifications</span>
                         <span className="text-[9px] font-extrabold text-slate-400">{unreadCount} Unread Alerts</span>
                       </div>
                       {unreadCount > 0 && (
@@ -3525,9 +3525,9 @@ export default function CustomerDashboard({
             placeholder="Search products, services, food, hotels..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs bg-transparent focus:outline-none text-slate-850 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-1"
+            className="w-full text-xs bg-transparent focus:outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-1"
           />
-          <button className="w-7 h-7 rounded-full bg-[#FFC107] hover:bg-amber-500 text-slate-955 flex items-center justify-center shrink-0 cursor-pointer transition-colors shadow-xs">
+          <button className="w-7 h-7 rounded-full bg-[#FFC107] hover:bg-amber-500 text-slate-900 flex items-center justify-center shrink-0 cursor-pointer transition-colors shadow-xs">
             <Search className="w-3 h-3" />
           </button>
         </div>
@@ -3727,7 +3727,7 @@ export default function CustomerDashboard({
         waveGradient: 'from-slate-200 via-slate-300 to-slate-400',
         waveText: 'text-slate-800',
         chipBg: 'from-slate-300 to-slate-400',
-        sealBg: 'from-slate-200 via-slate-100 to-slate-300 text-slate-850 border-slate-300',
+        sealBg: 'from-slate-200 via-slate-100 to-slate-300 text-slate-900 border-slate-300',
         sealText: 'SILVER MEMBER',
         btnBg: 'bg-slate-700 hover:bg-slate-800 text-white dark:bg-slate-300 dark:hover:bg-slate-200 dark:text-slate-950',
         benefits: [
@@ -4205,14 +4205,14 @@ export default function CustomerDashboard({
                 setSelectedSubNavbarCategory('Services');
                 triggerNotification("Explore our premium services catalog!");
               }}
-              className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-955 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none w-full sm:w-auto"
+              className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-900 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none w-full sm:w-auto"
             >
               <span>Explore Services</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setShowUpgradeModal(true)}
-              className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-755 bg-white hover:bg-slate-50 px-6 py-3.5 rounded-full transition-all border border-slate-350 shadow-2xs hover:scale-[1.02] duration-300 cursor-pointer w-full sm:w-auto"
+              className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-755 bg-white hover:bg-slate-50 px-6 py-3.5 rounded-full transition-all border border-slate-300 shadow-2xs hover:scale-[1.02] duration-300 cursor-pointer w-full sm:w-auto"
             >
               <span>Become a Member</span>
               <Award className="w-4 h-4 text-amber-500 fill-current ml-1" />
@@ -4565,7 +4565,7 @@ export default function CustomerDashboard({
                 className={`w-2 h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
                   currentSlideIdx === idx 
                     ? 'bg-blue-600 dark:bg-blue-500 w-5' 
-                    : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-650'
+                    : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
               />
@@ -4595,7 +4595,7 @@ export default function CustomerDashboard({
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Top Categories</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight uppercase">Top Categories</h3>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -4619,7 +4619,7 @@ export default function CustomerDashboard({
                 <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-3 ${cat.color.split(' ').slice(1).join(' ')}`}>
                   <Icon className={`w-5.5 h-5.5 ${cat.color.split(' ')[0]}`} />
                 </div>
-                <span className="text-xs font-black text-slate-850 dark:text-white block leading-tight">{cat.title}</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white block leading-tight">{cat.title}</span>
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 block mt-1 leading-none">{cat.count}</span>
               </div>
             );
@@ -4720,7 +4720,7 @@ export default function CustomerDashboard({
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Exclusive Offers for You</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight uppercase">Exclusive Offers for You</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -4735,7 +4735,7 @@ export default function CustomerDashboard({
                   <span className={`text-[10px] sm:text-[11px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${offer.tagColor}`}>
                     {offer.discount}
                   </span>
-                  <p className="text-xs sm:text-sm font-black text-slate-850 dark:text-white leading-snug mt-1 line-clamp-2">
+                  <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white leading-snug mt-1 line-clamp-2">
                     {offer.desc}
                   </p>
                 </div>
@@ -4743,7 +4743,7 @@ export default function CustomerDashboard({
                 <div className="space-y-2 w-full mt-2">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-bold text-slate-400 uppercase dark:text-slate-500">Code:</span>
-                    <span className="text-[10px] font-black font-mono border-dashed border border-slate-350 dark:border-slate-700 px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-slate-200">
+                    <span className="text-[10px] font-black font-mono border-dashed border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-slate-200">
                       {offer.code}
                     </span>
                   </div>
@@ -4783,7 +4783,7 @@ export default function CustomerDashboard({
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight uppercase">Recommended for You</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight uppercase">Recommended for You</h3>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-5">
@@ -4825,7 +4825,7 @@ export default function CustomerDashboard({
                   {(item.tag === 'Jobs' || item.subNavbarCategory === 'Jobs') ? (
                     <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                       <Briefcase className="w-8 h-8 text-amber-500" />
-                      <span className="text-[9px] text-slate-450 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                     </div>
                   ) : (
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
@@ -4854,13 +4854,13 @@ export default function CustomerDashboard({
                 
                 <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between text-left">
                   <div>
-                    <h4 className="text-xs sm:text-sm font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-indigo-500 transition-colors">{item.name}</h4>
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-indigo-500 transition-colors">{item.name}</h4>
                     <span className="text-[9.5px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-bold block mt-1 leading-none">{item.category}</span>
                   </div>
                   
                   <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 mt-2.5 pt-2.5 w-full">
                     <div className="flex flex-col">
-                      <span className="text-xs sm:text-sm font-black text-slate-850 dark:text-white">
+                      <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
                         ₹{(item.price || 0).toLocaleString()}
                         {item.tag === 'Stay' && <span className="text-[9.5px] font-bold text-slate-400">/night</span>}
                         {item.tag === 'Jobs' && <span className="text-[9.5px] font-bold text-slate-400">/year</span>}
@@ -4902,8 +4902,8 @@ export default function CustomerDashboard({
                   <Icon className={`w-4.5 h-4.5 ${b.color}`} />
                 </div>
                 <div className="leading-tight">
-                  <span className="text-[10px] font-black text-slate-850 dark:text-white block">{b.title}</span>
-                  <span className="text-[8px] font-bold text-slate-450 dark:text-slate-500 block mt-0.5 uppercase tracking-wider">{b.subtitle}</span>
+                  <span className="text-[10px] font-black text-slate-900 dark:text-white block">{b.title}</span>
+                  <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 block mt-0.5 uppercase tracking-wider">{b.subtitle}</span>
                 </div>
               </div>
             );
@@ -4964,7 +4964,7 @@ export default function CustomerDashboard({
     return (
       <div className="space-y-4 text-left w-full">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-350 uppercase tracking-widest">Trending Products & Services</h3>
+          <h3 className="text-xs font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest">Trending Products & Services</h3>
           <button onClick={() => { setSelectedSubNavbarCategory('Products'); setActiveTab('Products'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline cursor-pointer">View All →</button>
         </div>
 
@@ -5043,7 +5043,7 @@ export default function CustomerDashboard({
                               addToCart(product);
                               setIsCartOpen(true);
                             }} 
-                            className="flex-1 inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30"
+                            className="flex-1 inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-700/30"
                           >
                             <span>Order Now</span>
                           </button>
@@ -5090,7 +5090,7 @@ export default function CustomerDashboard({
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] font-black text-slate-800 dark:text-white font-mono">₹{(stay.price || 0).toLocaleString()}</span>
-                    <span className="text-[7px] text-slate-450 dark:text-slate-500 font-semibold block">/ Night</span>
+                    <span className="text-[7px] text-slate-400 dark:text-slate-500 font-semibold block">/ Night</span>
                   </div>
                 </div>
               </div>
@@ -5108,7 +5108,7 @@ export default function CustomerDashboard({
     return (
       <div className="space-y-4 text-left w-full text-slate-800 dark:text-slate-805 dark:text-slate-200">
         <div className="flex justify-between items-baseline">
-          <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 dark:text-slate-450 uppercase tracking-widest">Popular Restaurants</h3>
+          <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Popular Restaurants</h3>
           <button onClick={() => { setSelectedSubNavbarCategory('Food'); setActiveTab('Food'); setSelectedCategories([]); }} className="text-[10px] font-bold text-amber-500 hover:text-amber-600 hover:underline cursor-pointer">View All →</button>
         </div>
 
@@ -5124,7 +5124,7 @@ export default function CustomerDashboard({
                   <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-200 dark:text-white line-clamp-1 leading-none">{rest.name}</h4>
                   <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block truncate">{rest.category || 'Gourmet Dining'}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2 text-[8px] font-bold text-slate-500 dark:text-slate-450">
+                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2 mt-2 text-[8px] font-bold text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <span>{rest.rating || 4.5}</span>
@@ -5320,7 +5320,7 @@ export default function CustomerDashboard({
               </div>
               <div className="text-left leading-none">
                 <span className="text-[8px] text-slate-400 dark:text-slate-500 dark:text-slate-500 font-bold uppercase tracking-wider block">Cashback Available</span>
-                <span className="text-xs font-black text-emerald-650 dark:text-emerald-400 dark:text-emerald-400 block mt-1 font-mono">₹1,250.00</span>
+                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 dark:text-emerald-400 block mt-1 font-mono">₹1,250.00</span>
               </div>
             </div>
 
@@ -5550,7 +5550,7 @@ export default function CustomerDashboard({
           <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
             {/* Header Row on Mobile / Left Label on Desktop */}
             <div className="flex items-center justify-between md:justify-start gap-2 border-b md:border-b-0 pb-2.5 md:pb-0 border-slate-100 dark:border-slate-800/60">
-              <div className="flex items-center gap-1.5 text-slate-850 dark:text-white font-black text-xs">
+              <div className="flex items-center gap-1.5 text-slate-900 dark:text-white font-black text-xs">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
                 <span>FILTERS</span>
               </div>
@@ -5821,7 +5821,7 @@ export default function CustomerDashboard({
               <select 
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)} 
-                className="w-full sm:w-auto col-span-2 sm:col-span-1 bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 focus:outline-none focus:border-amber-500 text-slate-750 cursor-pointer font-extrabold text-xs truncate"
+                className="w-full sm:w-auto col-span-2 sm:col-span-1 bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 focus:outline-none focus:border-amber-500 text-slate-700 cursor-pointer font-extrabold text-xs truncate"
               >
                 <option value="popularity">Sort: Relevance / Popularity</option>
                 <option value="price-asc">{activeTab === 'Jobs' ? 'Salary: Low to High' : 'Price: Low to High'}</option>
@@ -5952,7 +5952,7 @@ export default function CustomerDashboard({
                                   <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-5">
                                     <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                                       <User className="w-4 h-4 text-slate-400" />
-                                      <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider">
+                                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
                                         1. Personal Information
                                       </h3>
                                     </div>
@@ -6060,7 +6060,7 @@ export default function CustomerDashboard({
                                   <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-5">
                                     <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                                       <Briefcase className="w-4 h-4 text-slate-400" />
-                                      <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider">
+                                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
                                         2. Work Experience
                                       </h3>
                                     </div>
@@ -6119,7 +6119,7 @@ export default function CustomerDashboard({
                                     <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                                       <ShieldCheck className="w-4 h-4 text-slate-400" />
                                       <div>
-                                        <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider">
+                                        <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
                                           3. Resume / CV
                                         </h3>
                                         <p className="text-[10px] text-slate-400">Upload your updated resume</p>
@@ -6472,7 +6472,7 @@ export default function CustomerDashboard({
                             {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs') ? (
                               <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                                 <Briefcase className="w-8 h-8 text-amber-500" />
-                                <span className="text-[9px] text-slate-450 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
+                                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                               </div>
                             ) : (
                               <img src={product.image} alt={product.name} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
@@ -6509,7 +6509,7 @@ export default function CustomerDashboard({
                           
                           <div className="p-4 flex-grow flex flex-col justify-between text-left">
                             <div>
-                              <h4 className="text-[14px] sm:text-[15px] font-black text-slate-850 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-blue-600 transition-colors">{product.name}</h4>
+                              <h4 className="text-[14px] sm:text-[15px] font-black text-slate-900 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-blue-600 transition-colors">{product.name}</h4>
                               <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1 font-medium">
                                 {(() => {
                                   const isStayCard = product.subNavbarCategory === 'Stay' || product.tag === 'Stay' || product.category === 'Stay' || (product.category || '').toLowerCase().includes('stay') || (product.category || '').toLowerCase().includes('hotel');
@@ -6545,7 +6545,7 @@ export default function CustomerDashboard({
                                 <div className="mt-3.5 space-y-1 text-left">
                                   <span className="text-[9px] sm:text-[10px] text-amber-500 uppercase tracking-wider block font-black leading-none">Offered Salary</span>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[15px] sm:text-[16px] font-black text-slate-850 dark:text-white font-mono">
+                                    <span className="text-[15px] sm:text-[16px] font-black text-slate-900 dark:text-white font-mono">
                                       {formatJobSalary(product)}
                                     </span>
                                     <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-900/30 px-2 py-0.5 rounded-full">
@@ -6585,7 +6585,7 @@ export default function CustomerDashboard({
                             </div>
                             
                             {/* Action Buttons based on category type */}
-                            <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-850/60 w-full flex flex-col xs:flex-row items-center gap-1.5 sm:gap-2">
+                            <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full flex flex-col xs:flex-row items-center gap-1.5 sm:gap-2">
                               {(() => {
                                 const isUnavail = isVendorProductUnavailable(product);
                                 if (isUnavail) {
@@ -6609,7 +6609,7 @@ export default function CustomerDashboard({
                                           e.stopPropagation(); 
                                           addToCart(product); 
                                         }} 
-                                        className="w-full xs:flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 border border-slate-200/40 dark:border-slate-750/30 leading-none h-8.5 sm:h-9"
+                                        className="w-full xs:flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 border border-slate-200/40 dark:border-slate-700/30 leading-none h-8.5 sm:h-9"
                                       >
                                         <Plus className="w-3.5 h-3.5 shrink-0" />
                                         <span>Add to Cart</span>
@@ -6765,7 +6765,7 @@ export default function CustomerDashboard({
               {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
                 <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                   <Briefcase className="w-12 h-12 text-amber-500" />
-                  <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                  <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
                 </div>
               ) : (
                 <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
@@ -6779,7 +6779,7 @@ export default function CustomerDashboard({
 
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-6 text-left">
               <div className="text-center shrink-0"><div className="flex items-center gap-1 text-amber-500 font-black text-lg"><Star className="w-5 h-5 fill-amber-500" /> {selectedProduct.rating || '4.5'}</div><span className="text-[10px] text-slate-400 font-bold">/5</span><span className="text-[9px] text-slate-400 font-bold block">({selectedProduct.reviews || 120} Reviews)</span></div>
-              <div className="border-l border-slate-200 dark:border-slate-800 pl-5 flex items-center gap-2"><span className="text-emerald-500 font-black text-lg"></span><div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">Guests love</span><span className="text-[10px] text-slate-450 font-bold">cleanliness & service</span></div></div>
+              <div className="border-l border-slate-200 dark:border-slate-800 pl-5 flex items-center gap-2"><span className="text-emerald-500 font-black text-lg"></span><div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">Guests love</span><span className="text-[10px] text-slate-400 font-bold">cleanliness & service</span></div></div>
             </div>
           </div>
 
@@ -6788,7 +6788,7 @@ export default function CustomerDashboard({
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2"><span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Property</span><span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 border border-blue-100 dark:border-blue-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider">Best Price Guaranteed</span></div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white">{selectedProduct.name}</h1>
-              <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Luxury Hotels'}</span>
+              <span className="text-xs font-bold text-slate-400">{selectedProduct.category || 'Luxury Hotels'}</span>
               <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span></div>
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
@@ -6878,9 +6878,9 @@ export default function CustomerDashboard({
           {/* RIGHT: Booking Summary */}
           <div className="lg:col-span-3 flex flex-col gap-5">
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 sticky top-4 text-left">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-850 pb-3">Booking Summary</h3>
-              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Vehicle' : 'Hotel'}</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Depart' : 'Check-in'}</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Arrival' : 'Check-out'}</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Duration' : 'Nights'}</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {selectedProduct?.subNavbarCategory === 'Travel' ? (nights === 1 ? 'Day' : 'Days') : (nights === 1 ? 'Night' : 'Nights')}</span></div></div>
-              <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">₹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- ₹{memberDiscount.toLocaleString()}</span></div></div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-900 pb-3">Booking Summary</h3>
+              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-400 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Vehicle' : 'Hotel'}</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Depart' : 'Check-in'}</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckInDate)}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Arrival' : 'Check-out'}</span><span className="font-extrabold text-slate-800 dark:text-white">{formatDate(stayCheckOutDate)}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">{selectedProduct?.subNavbarCategory === 'Travel' ? 'Duration' : 'Nights'}</span><span className="font-extrabold text-slate-800 dark:text-white">{nights} {selectedProduct?.subNavbarCategory === 'Travel' ? (nights === 1 ? 'Day' : 'Days') : (nights === 1 ? 'Night' : 'Nights')}</span></div></div>
+              <div className="border-t border-slate-100 dark:border-slate-900 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-400 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">₹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- ₹{memberDiscount.toLocaleString()}</span></div></div>
               <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><div><span className="text-sm font-black text-slate-900 dark:text-white block">Total Amount</span><span className="text-[9px] text-slate-400 font-bold">Incl. all taxes</span></div><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalPrice.toLocaleString()}</span></div>
               <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 24 hrs before check-in for full refund.</span></div></div>
               <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate(formatDate(stayCheckInDate)); setSelectedModalTime('12:00 PM'); setSelectedModalType('Standard Room'); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Continue to Payment <ArrowRight className="w-4 h-4" /></button>
@@ -6893,7 +6893,7 @@ export default function CustomerDashboard({
         {/* Bottom Trust Badges */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
           {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title: 'Safe & Secure Booking',desc:"Your booking is protected by ConnectApp's secure system."},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title: 'Best Price Guarantee',desc:"Found a lower price? We'll match it."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title: '24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
-            <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-450 font-bold">{b.desc}</span></div></div>
+            <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-400 font-bold">{b.desc}</span></div></div>
           ))}
         </div>
       </div>
@@ -6941,7 +6941,7 @@ export default function CustomerDashboard({
               {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
                 <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                   <Briefcase className="w-12 h-12 text-amber-500" />
-                  <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                  <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
                 </div>
               ) : (
                 <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
@@ -6955,7 +6955,7 @@ export default function CustomerDashboard({
 
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 text-left">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">About {selectedProduct.name}</span>
-              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black text-[9px] shrink-0 uppercase tracking-wider">{(selectedProduct.name || 'GYM').substring(0, 4)}</div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">{selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" /></h3><span className="text-[11px] text-slate-450 font-bold">{selectedProduct.category || 'Premium Gym & Fitness Center'}</span></div></div>
+              <div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black text-[9px] shrink-0 uppercase tracking-wider">{(selectedProduct.name || 'GYM').substring(0, 4)}</div><div><h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">{selectedProduct.name} <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" /></h3><span className="text-[11px] text-slate-400 font-bold">{selectedProduct.category || 'Premium Gym & Fitness Center'}</span></div></div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{selectedProduct.description || 'A group workout and fitness center with state-of-the-art equipment, expert trainers and world-class facilities to help you achieve your fitness goals.'}</p>
               <div className="grid grid-cols-3 gap-3 pt-2">{[{l:'Certified Trainers',i:<UserCheck className="w-4 h-4"/>},{l:'Modern Equipment',i:<Activity className="w-4 h-4"/>},{l:'Hygienic Environment',i:<ShieldCheck className="w-4 h-4"/>},{l:'Personal Training',i:<Briefcase className="w-4 h-4"/>},{l:'Diet & Nutrition',i:<Utensils className="w-4 h-4"/>},{l:'Flexible Hours',i:<Clock className="w-4 h-4"/>}].map((f, fi) => (<div key={fi} className="flex flex-col items-center text-center gap-1.5 py-2"><span className="text-slate-500 dark:text-slate-400">{f.i}</span><span className="text-[8px] font-bold text-slate-500 uppercase leading-tight">{f.l}</span></div>))}</div>
             </div>
@@ -6975,7 +6975,7 @@ export default function CustomerDashboard({
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2">
               <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Partner</span>
               <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">{selectedProduct.name} <CheckCircle2 className="w-5 h-5 text-white dark:text-white fill-blue-500 shrink-0" /></h1>
-              <span className="text-xs font-bold text-slate-450">{selectedProduct.category || 'Gym Membership'}</span>
+              <span className="text-xs font-bold text-slate-400">{selectedProduct.category || 'Gym Membership'}</span>
               <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || '2,450'} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Partner</span></div>
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
@@ -6996,16 +6996,16 @@ export default function CustomerDashboard({
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Trainers</h3>
-              <div className="flex gap-4 overflow-x-auto no-scrollbar">{[{name:'Rohit Sharma',role:'Strength Coach',exp:'5 Years'},{name:'Anjali Mehta',role:'Yoga Instructor',exp:'4 Years'},{name:'Karan Verma',role:'HIIT Coach',exp:'6 Years'},{name:'Pooja Iyer',role:'Nutrition Expert',exp:'5 Years'}].map((t, ti) => (<div key={ti} className="flex flex-col items-center shrink-0"><div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500"><UserCheck className="w-5 h-5" /></div><span className="text-[10px] font-extrabold text-slate-800 dark:text-white mt-1.5 block text-center">{t.name}</span><span className="text-[8px] text-slate-450 font-bold text-center">{t.role}</span><span className="text-[8px] text-slate-400 font-bold">{t.exp} Exp.</span></div>))}</div>
+              <div className="flex gap-4 overflow-x-auto no-scrollbar">{[{name:'Rohit Sharma',role:'Strength Coach',exp:'5 Years'},{name:'Anjali Mehta',role:'Yoga Instructor',exp:'4 Years'},{name:'Karan Verma',role:'HIIT Coach',exp:'6 Years'},{name:'Pooja Iyer',role:'Nutrition Expert',exp:'5 Years'}].map((t, ti) => (<div key={ti} className="flex flex-col items-center shrink-0"><div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500"><UserCheck className="w-5 h-5" /></div><span className="text-[10px] font-extrabold text-slate-800 dark:text-white mt-1.5 block text-center">{t.name}</span><span className="text-[8px] text-slate-400 font-bold text-center">{t.role}</span><span className="text-[8px] text-slate-400 font-bold">{t.exp} Exp.</span></div>))}</div>
             </div>
           </div>
 
           {/* RIGHT: Booking Summary */}
           <div className="lg:col-span-3 flex flex-col gap-5">
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 sticky top-4 text-left">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-850 pb-3">Booking Summary</h3>
-              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Service</span><span className="font-extrabold text-slate-800 dark:text-white text-right">Gym Membership</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Gym</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Membership Plan</span><span className="font-extrabold text-slate-800 dark:text-white">{selectedPlan.name}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Timing</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedTiming.name} ({selectedTiming.time})</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Start Date</span><span className="font-extrabold text-slate-800 dark:text-white">Wed, 21 May 2025</span></div></div>
-              <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-450 font-bold">Plan Amount</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedPlan.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">GST (18%)</span><span className="font-extrabold text-slate-800 dark:text-white">₹{gst.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-450 font-bold">Convenience Fee</span><span className="font-extrabold text-slate-800 dark:text-white">₹{convFee}</span></div></div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-900 pb-3">Booking Summary</h3>
+              <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-400 font-bold">Service</span><span className="font-extrabold text-slate-800 dark:text-white text-right">Gym Membership</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Gym</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Membership Plan</span><span className="font-extrabold text-slate-800 dark:text-white">{selectedPlan.name}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Timing</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedTiming.name} ({selectedTiming.time})</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Start Date</span><span className="font-extrabold text-slate-800 dark:text-white">Wed, 21 May 2025</span></div></div>
+              <div className="border-t border-slate-100 dark:border-slate-900 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-400 font-bold">Plan Amount</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedPlan.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">GST (18%)</span><span className="font-extrabold text-slate-800 dark:text-white">₹{gst.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Convenience Fee</span><span className="font-extrabold text-slate-800 dark:text-white">₹{convFee}</span></div></div>
               <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><span className="text-sm font-black text-slate-900 dark:text-white">Total Amount</span><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalAmount.toLocaleString()}</span></div>
               <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/20 rounded-xl px-3 py-2.5"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /><div><span className="text-[10px] font-black text-amber-700 dark:text-amber-400 block">Members get up to 15% OFF</span><span className="text-[8px] text-amber-600/70 font-bold">Join Silver / Gold / Diamond membership to save more.</span></div></div><button onClick={() => triggerNotification("Opening membership plans...")} className="text-[9px] text-blue-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer mt-1">Explore Memberships →</button></div>
               <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 2 hrs before start time</span></div></div>
@@ -7020,7 +7020,7 @@ export default function CustomerDashboard({
         {/* Bottom Trust Badges */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
           {[{icon:<ShieldCheck className="w-5 h-5 text-emerald-500"/>,title: 'Trusted & Verified Professionals',desc:'All service providers are verified and trusted.'},{icon:<Tag className="w-5 h-5 text-blue-500"/>,title: 'Safe & Secure Payments',desc:"Your payments are 100% safe with ConnectApp."},{icon:<LifeBuoy className="w-5 h-5 text-amber-500"/>,title: '24/7 Customer Support',desc:"We're here to help, anytime."}].map((b, bi) => (
-            <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-450 font-bold">{b.desc}</span></div></div>
+            <div key={bi} className="flex items-center gap-3">{b.icon}<div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">{b.title}</span><span className="text-[10px] text-slate-400 font-bold">{b.desc}</span></div></div>
           ))}
         </div>
       </div>
@@ -7056,12 +7056,12 @@ export default function CustomerDashboard({
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => triggerNotification("Travel link copied to clipboard!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               <span>Share</span>
             </button>
             <span className="text-slate-200 dark:text-slate-800">|</span>
             <button onClick={() => triggerNotification("Added to comparison drawer!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               <span>Compare</span>
             </button>
           </div>
@@ -7082,7 +7082,7 @@ export default function CustomerDashboard({
                     className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
                       activeThumbnailIndex === idx 
                         ? 'border-amber-400 shadow-md scale-102' 
-                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-350'
+                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
                     }`}
                   >
                     <img src={thumb} alt="" className="w-full h-full object-cover" />
@@ -7097,11 +7097,11 @@ export default function CustomerDashboard({
               </div>
 
               {/* Main Large Display with Page indicator and nav arrows */}
-              <div className="relative flex-grow aspect-[4/3] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-850 overflow-hidden flex items-center justify-center">
+              <div className="relative flex-grow aspect-[4/3] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-900 overflow-hidden flex items-center justify-center">
                 {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
                   <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                     <Briefcase className="w-12 h-12 text-amber-500" />
-                    <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                    <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
                   </div>
                 ) : (
                   <img 
@@ -7160,24 +7160,24 @@ export default function CustomerDashboard({
                     {selectedProduct.name}
                     <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" />
                   </h3>
-                  <span className="text-[11px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">
                     Operated by {selectedProduct.name} Tours & Travels Pvt. Ltd.
                   </span>
                 </div>
               </div>
 
               {/* Rating summary */}
-              <div className="grid grid-cols-2 gap-4 border-y border-slate-100 dark:border-slate-850 py-3 mt-1.5">
+              <div className="grid grid-cols-2 gap-4 border-y border-slate-100 dark:border-slate-900 py-3 mt-1.5">
                 <div className="text-left">
                   <div className="flex items-center gap-1 text-amber-500 font-black text-sm">
                     <Star className="w-4 h-4 fill-amber-500 text-amber-505" />
                     <span>{selectedProduct.rating || 4.5}</span>
                   </div>
-                  <span className="text-[9.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5">({selectedProduct.reviews || 12520} Ratings)</span>
+                  <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">({selectedProduct.reviews || 12520} Ratings)</span>
                 </div>
-                <div className="text-left border-l border-slate-100 dark:border-slate-850 pl-4">
-                  <span className="text-emerald-600 dark:text-emerald-450 font-black text-sm">98%</span>
-                  <span className="text-[9.5px] text-slate-450 dark:text-slate-500 font-bold block mt-0.5">On-time Performance</span>
+                <div className="text-left border-l border-slate-100 dark:border-slate-900 pl-4">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">98%</span>
+                  <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-bold block mt-0.5">On-time Performance</span>
                 </div>
               </div>
 
@@ -7226,8 +7226,8 @@ export default function CustomerDashboard({
                 {/* Source */}
                 <div className="flex-1 text-center md:text-left w-full">
                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">From</span>
-                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">{selectedProduct.fromCity || 'Bangalore'}</span>
-                  <span className="text-[10px] text-slate-450 dark:text-slate-500 font-medium block mt-0.5">Kempegowda Bus Stand</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white block mt-1">{selectedProduct.fromCity || 'Bangalore'}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">Kempegowda Bus Stand</span>
                 </div>
 
                 {/* Duration & Bus separator graphic */}
@@ -7243,13 +7243,13 @@ export default function CustomerDashboard({
                 {/* Destination */}
                 <div className="flex-1 text-center md:text-right w-full">
                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">To</span>
-                  <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">{selectedProduct.toCity || 'Chennai'}</span>
-                  <span className="text-[10px] text-slate-450 dark:text-slate-500 font-medium block mt-0.5">Koyambedu Bus Stand</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white block mt-1">{selectedProduct.toCity || 'Chennai'}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">Koyambedu Bus Stand</span>
                 </div>
               </div>
 
               {/* Sub Route Specs */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-850/60 pt-4 mt-1">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-900/60 pt-4 mt-1">
                 <div>
                   <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Departure</span>
                   <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">09:00 PM</span>
@@ -7334,8 +7334,8 @@ export default function CustomerDashboard({
                   return travelAmenities.map((amenity, idx) => {
                     const getIconComponent = getIcon(amenity);
                     return (
-                      <div key={idx} className="flex flex-col items-center justify-center p-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl text-center shadow-3xs hover:border-slate-350 transition-colors">
-                        {getIconComponent("w-4.5 h-4.5 text-slate-655 dark:text-slate-350 mb-1")}
+                      <div key={idx} className="flex flex-col items-center justify-center p-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl text-center shadow-3xs hover:border-slate-300 transition-colors">
+                        {getIconComponent("w-4.5 h-4.5 text-slate-655 dark:text-slate-300 mb-1")}
                         <span className="text-[8.5px] font-black text-slate-700 dark:text-slate-400 leading-tight block mt-1">{amenity}</span>
                       </div>
                     );
@@ -7351,22 +7351,22 @@ export default function CustomerDashboard({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Seats Left</span>
-                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">12</span>
+                  <span className="text-[15px] font-black text-slate-900 dark:text-white mt-1 leading-none">12</span>
                   <span className="text-[8.5px] text-slate-500 dark:text-slate-400 font-bold block mt-1 leading-none">Total Seats: 36</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Window Seats</span>
-                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">5</span>
+                  <span className="text-[15px] font-black text-slate-900 dark:text-white mt-1 leading-none">5</span>
                   <span className="text-[8.5px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1 leading-none">Available</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Lower Berths</span>
-                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">3</span>
+                  <span className="text-[15px] font-black text-slate-900 dark:text-white mt-1 leading-none">3</span>
                   <span className="text-[8.5px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1 leading-none">Available</span>
                 </div>
                 <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center items-start shadow-3xs">
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Female Seats</span>
-                  <span className="text-[15px] font-black text-slate-850 dark:text-white mt-1 leading-none">2</span>
+                  <span className="text-[15px] font-black text-slate-900 dark:text-white mt-1 leading-none">2</span>
                   <span className="text-[8.5px] text-emerald-600 dark:text-emerald-400 font-bold block mt-1 leading-none">Available</span>
                 </div>
               </div>
@@ -7382,7 +7382,7 @@ export default function CustomerDashboard({
                     className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer bg-transparent border-none shrink-0 ${
                       travelDetailsTab === tab
                         ? 'border-blue-600 text-blue-600 font-black'
-                        : 'border-transparent text-slate-450 hover:text-slate-705 dark:hover:text-slate-300'
+                        : 'border-transparent text-slate-400 hover:text-slate-705 dark:hover:text-slate-300'
                     }`}
                   >
                     {tab}
@@ -7412,7 +7412,7 @@ export default function CustomerDashboard({
                   </div>
                 )}
                 {travelDetailsTab === 'Boarding Points' && (
-                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
+                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-300 text-xs">
                     {selectedProduct?.boardingPoint ? (
                       <div>• {selectedProduct.boardingPoint} - {selectedProduct.boardingTime || selectedProduct.busTiming || '09:00 PM'}</div>
                     ) : (
@@ -7425,7 +7425,7 @@ export default function CustomerDashboard({
                   </div>
                 )}
                 {travelDetailsTab === 'Dropping Points' && (
-                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-355 text-xs">
+                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-300 text-xs">
                     {selectedProduct?.dropPoint ? (
                       <div>• {selectedProduct.dropPoint} - {selectedProduct.arrivalTime || '05:30 AM'}</div>
                     ) : (
@@ -7438,19 +7438,19 @@ export default function CustomerDashboard({
                   </div>
                 )}
                 {travelDetailsTab === 'Stops' && (
-                  <div className="space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-355 text-left">
+                  <div className="space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-300 text-left">
                     <div className="relative pl-6 border-l-2 border-blue-500 dark:border-blue-700 space-y-5">
                       <div className="relative">
                         <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                         <div>
-                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">{selectedProduct?.boardingPoint || 'Bengaluru Majestic (Source)'}</div>
+                          <div className="font-extrabold text-slate-900 dark:text-white text-xs">{selectedProduct?.boardingPoint || 'Bengaluru Majestic (Source)'}</div>
                           <div className="text-[10px] text-slate-400 mt-0.5">Departure at {selectedProduct?.boardingTime || selectedProduct?.busTiming || '09:00 PM'}</div>
                         </div>
                       </div>
                       
                       {(selectedProduct?.stoppings || []).map((stop, idx) => (
                         <div className="relative" key={idx}>
-                          <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-350 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                          <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                           <div>
                             <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">{stop.stopName || `Stop ${idx + 1}`}</div>
                             <div className="text-[10px] text-slate-400 mt-0.5">Arrival {stop.time || '10:00 PM'} {stop.distance ? `| ${stop.distance} km` : ''}</div>
@@ -7461,21 +7461,21 @@ export default function CustomerDashboard({
                       {!(selectedProduct?.stoppings && selectedProduct.stoppings.length > 0) && (
                         <>
                           <div className="relative">
-                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-350 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                             <div>
                               <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Hosur Stop</div>
                               <div className="text-[10px] text-slate-400 mt-0.5">Arrival 10:00 PM | 5 mins stop</div>
                             </div>
                           </div>
                           <div className="relative">
-                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                             <div>
                               <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Krishnagiri Toll Plaza</div>
                               <div className="text-[10px] text-slate-400 mt-0.5">Arrival 11:15 PM | 10 mins dinner break</div>
                             </div>
                           </div>
                           <div className="relative">
-                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-355 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                             <div>
                               <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Vellore Bypass</div>
                               <div className="text-[10px] text-slate-400 mt-0.5">Arrival 02:00 AM | 5 mins stop</div>
@@ -7487,7 +7487,7 @@ export default function CustomerDashboard({
                       <div className="relative">
                         <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
                         <div>
-                          <div className="font-extrabold text-slate-850 dark:text-white text-xs">{selectedProduct?.dropPoint || 'Chennai Koyambedu (Destination)'}</div>
+                          <div className="font-extrabold text-slate-900 dark:text-white text-xs">{selectedProduct?.dropPoint || 'Chennai Koyambedu (Destination)'}</div>
                           <div className="text-[10px] text-slate-400 mt-0.5">Arrival at {selectedProduct?.arrivalTime || '05:30 AM'}</div>
                         </div>
                       </div>
@@ -7497,10 +7497,10 @@ export default function CustomerDashboard({
 
                 {travelDetailsTab === 'Ratings & Reviews' && (
                   <div className="space-y-3 text-xs">
-                    <div className="font-black text-slate-850 dark:text-white">Customer Feedback (★ 4.5/5 based on 12,520 reviews)</div>
-                    <div className="border-t border-slate-105 dark:border-slate-850/60 pt-3 mt-2">
+                    <div className="font-black text-slate-900 dark:text-white">Customer Feedback (★ 4.5/5 based on 12,520 reviews)</div>
+                    <div className="border-t border-slate-105 dark:border-slate-900/60 pt-3 mt-2">
                       <div className="flex justify-between font-extrabold text-[11px]">
-                        <span className="text-slate-850 dark:text-white">Suresh K.</span>
+                        <span className="text-slate-900 dark:text-white">Suresh K.</span>
                         <span className="text-amber-500">★ 5.0</span>
                       </div>
                       <p className="text-slate-600 dark:text-slate-300 mt-1">Excellent travel experience. On time departure and very comfortable sleeper berth. Clean blankets were provided.</p>
@@ -7508,7 +7508,7 @@ export default function CustomerDashboard({
                   </div>
                 )}
                 {travelDetailsTab === 'Policies' && (
-                  <div className="space-y-3 text-xs font-semibold text-slate-700 dark:text-slate-355">
+                  <div className="space-y-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
                     <div>• Cancellation Policy: Free cancellation up to 24 hours before departure.</div>
                     <div>• Baggage Policy: 15kg checked luggage and 5kg hand baggage allowed.</div>
                     <div>• Child Policy: Children above 3 years require a separate ticket.</div>
@@ -7527,7 +7527,7 @@ export default function CustomerDashboard({
                     <span className="text-xs text-slate-400 line-through">₹{(selectedProduct.originalPrice || Math.round((selectedProduct.price || 1200) * 1.25)).toLocaleString()}</span>
                   </div>
                 </div>
-                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-450 block leading-none">
+                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 block leading-none">
                   {selectedProduct.discount || '20% OFF Member Special'}
                 </span>
               </div>
@@ -7535,7 +7535,7 @@ export default function CustomerDashboard({
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => triggerNotification("Initiating chat with travel desk agent...")}
-                  className="flex-1 sm:flex-none px-3.5 sm:px-5 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-black uppercase transition-all bg-transparent h-11 sm:h-12 cursor-pointer whitespace-nowrap"
+                  className="flex-1 sm:flex-none px-3.5 sm:px-5 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-black uppercase transition-all bg-transparent h-11 sm:h-12 cursor-pointer whitespace-nowrap"
                 >
                   Chat Agent
                 </button>
@@ -7576,7 +7576,7 @@ export default function CustomerDashboard({
           { name: 'Red', class: 'bg-red-600 border-red-500' },
           { name: 'Black', class: 'bg-slate-950 border-slate-900' },
           { name: 'Blue', class: 'bg-blue-600 border-blue-500' },
-          { name: 'White', class: 'bg-white border-slate-350' }
+          { name: 'White', class: 'bg-white border-slate-300' }
         ],
         sizes: ['6', '7', '8', '9', '10', '11'],
         sizeLabel: 'Size (UK/India)',
@@ -7600,7 +7600,7 @@ export default function CustomerDashboard({
       return {
         type: 'electronics',
         colors: [
-          { name: 'Space Grey', class: 'bg-slate-650 border-slate-600' },
+          { name: 'Space Grey', class: 'bg-slate-600 border-slate-600' },
           { name: 'Silver', class: 'bg-slate-200 border-slate-300' },
           { name: 'Midnight', class: 'bg-slate-900 border-slate-950' }
         ],
@@ -8042,12 +8042,12 @@ export default function CustomerDashboard({
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => triggerNotification("Product link copied to clipboard!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               <span>Share</span>
             </button>
             <span className="text-slate-200 dark:text-slate-800">|</span>
             <button onClick={() => triggerNotification("Added to comparison drawer!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              <svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               <span>Compare</span>
             </button>
           </div>
@@ -8068,7 +8068,7 @@ export default function CustomerDashboard({
                     className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
                       activeThumbnailIndex === idx 
                         ? 'border-amber-400 shadow-md scale-102' 
-                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-350'
+                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
                     }`}
                   >
                     <img 
@@ -8092,11 +8092,11 @@ export default function CustomerDashboard({
               </div>
 
               {/* Main Large Display */}
-              <div className="relative flex-grow aspect-square bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-850 overflow-hidden flex items-center justify-center p-4">
+              <div className="relative flex-grow aspect-square bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-900 overflow-hidden flex items-center justify-center p-4">
                 {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
                   <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2 rounded-xl">
                     <Briefcase className="w-12 h-12 text-amber-500" />
-                    <span className="text-xs font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
+                    <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
                   </div>
                 ) : (
                   <img 
@@ -8285,7 +8285,7 @@ export default function CustomerDashboard({
                             className={`px-3 py-1.5 rounded-lg border-2 text-[10.5px] font-black uppercase cursor-pointer transition-all hover:border-slate-400 ${
                               selectedSize === s
                                 ? 'bg-amber-400 border-amber-400 text-slate-950 font-black shadow-xs'
-                                : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350'
+                                : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                             }`}
                           >
                             {s}
@@ -8363,7 +8363,7 @@ export default function CustomerDashboard({
                   {getProductHighlights(selectedProduct).map((hl, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
                       <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-505" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                       </div>
                       <span className="font-medium text-left">{hl}</span>
                     </div>
@@ -8395,7 +8395,7 @@ export default function CustomerDashboard({
                         onClick={() => {
                           addToCart(selectedProduct);
                         }}
-                        className="flex-1 py-3 sm:py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-11 sm:h-12"
+                        className="flex-1 py-3 sm:py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700/30 h-11 sm:h-12"
                       >
                         <ShoppingCart className="w-4 h-4" />
                         <span>{getActionButtons(selectedProduct).actionText}</span>
@@ -8458,7 +8458,7 @@ export default function CustomerDashboard({
               { title: '500', sub: "Reward Points", detail: "On This Purchase", icon: Award, bg: "bg-amber-50/50 dark:bg-amber-450/5", iconCol: "text-amber-500" },
               { title: '2,000', sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
               { title: '500', sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
-              { title: '1 Year', sub: "Extended Warranty", detail: "By Connect", icon: ShieldCheck, bg: "bg-emerald-50/50 dark:bg-emerald-450/5", iconCol: "text-emerald-500" },
+              { title: '1 Year', sub: "Extended Warranty", detail: "By Connect", icon: ShieldCheck, bg: "bg-emerald-50/50 dark:bg-emerald-400/5", iconCol: "text-emerald-500" },
               { title: 'Priority', sub: "Customer Support", detail: "24/7 VIP Support", icon: LifeBuoy, bg: "bg-cyan-50/50 dark:bg-cyan-450/5", iconCol: "text-cyan-500" },
               { title: 'Free', sub: "Express Delivery", detail: "2-3 Days Delivery", icon: Truck, bg: "bg-indigo-50/50 dark:bg-indigo-450/5", iconCol: "text-indigo-500" },
             ].map((b, idx) => {
@@ -8469,7 +8469,7 @@ export default function CustomerDashboard({
                     <Icon className={`w-5 h-5 ${b.iconCol}`} />
                   </div>
                   <span className="text-xs font-black text-slate-800 dark:text-white block leading-tight">{b.title}</span>
-                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350 block mt-0.5 leading-tight">{b.sub}</span>
+                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mt-0.5 leading-tight">{b.sub}</span>
                   <span className="text-[8px] font-bold text-slate-500 dark:text-slate-300 block mt-1.5 uppercase tracking-wider">{b.detail}</span>
                 </div>
               );
@@ -8480,7 +8480,7 @@ export default function CustomerDashboard({
         {/* Partner Benefits */}
         <div className="space-y-4">
           <div className="flex justify-between items-baseline text-left">
-            <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight">Partner Benefits You Get</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Partner Benefits You Get</h3>
             <button onClick={() => triggerNotification("Showing partner details and terms...")} className="text-xs font-bold text-blue-500 hover:underline bg-transparent border-none cursor-pointer">View All Partners</button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -8507,7 +8507,7 @@ export default function CustomerDashboard({
                   )}
                 </div>
                 <div className="space-y-0.5 text-center">
-                  <span className="text-sm font-black text-slate-850 dark:text-white block">{p.disc}</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white block">{p.disc}</span>
                   <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">{p.cap}</span>
                   <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider mt-1.5">{p.app}</span>
                 </div>
@@ -8518,7 +8518,7 @@ export default function CustomerDashboard({
 
         {/* Ecosystem promotion */}
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight text-left">More Savings Across Connect Ecosystem</h3>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight text-left">More Savings Across Connect Ecosystem</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
             {[
               { name: "Products", desc: "Save More on 3200+ Products", icon: ShoppingBag, bg: "from-rose-400/10 to-pink-500/10 hover:border-rose-400", activeTab: "Products" },
@@ -8539,9 +8539,9 @@ export default function CustomerDashboard({
                 >
                   <div>
                     <div className="w-8.5 h-8.5 rounded-full bg-white dark:bg-slate-900 shadow-3xs flex items-center justify-center mb-3.5">
-                      <Icon className="w-4 h-4 text-slate-700 dark:text-slate-350 group-hover:scale-110 transition-transform" />
+                      <Icon className="w-4 h-4 text-slate-700 dark:text-slate-300 group-hover:scale-110 transition-transform" />
                     </div>
-                    <h4 className="text-xs font-black text-slate-850 dark:text-white tracking-wide">{e.name}</h4>
+                    <h4 className="text-xs font-black text-slate-900 dark:text-white tracking-wide">{e.name}</h4>
                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 leading-normal line-clamp-2">{e.desc}</p>
                   </div>
                   <button className="text-[9px] font-black uppercase text-amber-500 group-hover:text-amber-600 dark:group-hover:text-amber-400 mt-4.5 flex items-center gap-1 transition-colors bg-transparent border-none cursor-pointer">
@@ -8556,7 +8556,7 @@ export default function CustomerDashboard({
         {/* Rewards summary widget */}
         <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs flex flex-col lg:flex-row justify-between items-center gap-6">
           <div className="flex-1 space-y-4 text-left w-full">
-            <h3 className="text-sm font-black text-slate-850 dark:text-white tracking-tight">Connect Rewards</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Connect Rewards</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
               {[
                 { label: "Total Reward Points", val: "2,540", icon: Award, color: "text-amber-500" },
@@ -8572,7 +8572,7 @@ export default function CustomerDashboard({
                     </div>
                     <div className="leading-tight">
                       <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">{r.label}</span>
-                      <span className="text-xs font-black text-slate-850 dark:text-white block mt-1">{r.val}</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-white block mt-1">{r.val}</span>
                     </div>
                   </div>
                 );
@@ -8581,7 +8581,7 @@ export default function CustomerDashboard({
           </div>
           <div className="shrink-0 flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start pt-5 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-150 dark:border-slate-800 lg:pl-6">
             <div className="text-left leading-tight hidden md:block">
-              <span className="text-xs font-black text-slate-850 dark:text-white block">Unlock Platinum Tiers</span>
+              <span className="text-xs font-black text-slate-900 dark:text-white block">Unlock Platinum Tiers</span>
               <span className="text-[10px] text-slate-455 dark:text-slate-500 block mt-1.5 max-w-[150px]">Double your savings by getting a Platinum upgrade today.</span>
             </div>
             <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('card'); }} className="bg-[#0b1e36] hover:bg-[#13325a] text-white text-xs font-black uppercase tracking-wider px-5 py-3.5 rounded-xl transition-all shadow cursor-pointer border-none shrink-0 w-full lg:w-auto text-center">
@@ -8606,7 +8606,7 @@ export default function CustomerDashboard({
               ) : item.icon;
               return (
                 <div key={idx} className="flex items-start gap-3.5 text-left">
-                  <div className={`w-8.5 h-8.5 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-850 flex items-center justify-center shrink-0 ${item.color}`}>
+                  <div className={`w-8.5 h-8.5 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-900 flex items-center justify-center shrink-0 ${item.color}`}>
                     <Icon className="w-4.5 h-4.5" />
                   </div>
                   <div className="leading-tight">
@@ -8622,7 +8622,7 @@ export default function CustomerDashboard({
         {/* Recommended products carousel */}
         {related.length > 0 && (
           <div className="space-y-4 text-left">
-            <h3 className="text-sm font-black text-slate-850 dark:text-white uppercase tracking-tight">Customers Also Bought</h3>
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Customers Also Bought</h3>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
               {related.map((prod) => {
                 const isFavorited = favorites.includes(prod.id);
@@ -8638,7 +8638,7 @@ export default function CustomerDashboard({
                       {(prod.tag === 'Jobs' || prod.subNavbarCategory === 'Jobs') ? (
                         <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                           <Briefcase className="w-8 h-8 text-amber-500" />
-                          <span className="text-[9px] text-slate-450 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                         </div>
                       ) : (
                         <img src={prod.image} alt={prod.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
@@ -8646,7 +8646,7 @@ export default function CustomerDashboard({
                       {prod.tag && <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[7px] font-black px-2 py-0.5 rounded uppercase">{prod.tag}</span>}
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleFavorite(prod.id); }} 
-                        className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 dark:bg-[#0b1329] text-slate-450 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60"
+                        className="absolute right-2.5 top-2.5 w-7.5 h-7.5 rounded-full bg-white/95 dark:bg-[#0b1329] text-slate-400 hover:text-red-500 flex items-center justify-center shadow-3xs cursor-pointer border border-slate-200/60"
                       >
                         <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                       </button>
@@ -8671,7 +8671,7 @@ export default function CustomerDashboard({
                       <div className="border-t border-slate-100 dark:border-slate-800/60 mt-3 pt-2.5 flex items-center justify-between gap-1 w-full">
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Star className="w-3 h-3 fill-emerald-600 text-emerald-600 animate-pulse" />
-                          <span className="text-[9px] font-bold text-slate-700 dark:text-slate-355">{prod.rating}</span>
+                          <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300">{prod.rating}</span>
                         </div>
                         {(() => {
                           const isJob = isJobCardItem(prod) || prod.subNavbarCategory === 'Jobs' || prod.category === 'Jobs' || (prod.category || '').toLowerCase().includes('job');
@@ -8740,7 +8740,7 @@ export default function CustomerDashboard({
                                   e.stopPropagation(); 
                                   addToCart(prod); 
                                 }} 
-                                className="bg-amber-400 hover:bg-amber-500 text-slate-955 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0"
+                                className="bg-amber-400 hover:bg-amber-500 text-slate-900 text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border border-amber-500/20 shrink-0"
                               >
                                 + Add
                               </button>
@@ -8750,7 +8750,7 @@ export default function CustomerDashboard({
                                   addToCart(prod);
                                   setIsCartOpen(true);
                                 }} 
-                                className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-750/30 shrink-0"
+                                className="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-black px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-700/30 shrink-0"
                               >
                                 Order Now
                               </button>
@@ -8887,7 +8887,7 @@ export default function CustomerDashboard({
 
                 <button 
                   onClick={() => setIsSizeGuideOpen(false)}
-                  className="mt-5 w-full py-3 bg-[#0b1e36] dark:bg-slate-850 hover:bg-[#13325a] dark:hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow-xs active:scale-98 transition-all"
+                  className="mt-5 w-full py-3 bg-[#0b1e36] dark:bg-slate-900 hover:bg-[#13325a] dark:hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none shadow-xs active:scale-98 transition-all"
                 >
                   Close Chart
                 </button>
@@ -8976,7 +8976,7 @@ export default function CustomerDashboard({
             <div className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800/60">
               <div className="mb-6 text-left">
                 <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Connect Catalog</span>
-                <h3 className="text-lg font-black text-slate-850 dark:text-white tracking-tight uppercase mt-1">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight uppercase mt-1">
                   Explore All Products & Services
                 </h3>
               </div>
@@ -9038,7 +9038,7 @@ export default function CustomerDashboard({
               cart.map((item) => (
                 <div 
                   key={item.id}
-                  className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 relative animate-fade-in text-slate-800 dark:text-slate-200 gap-3"
+                  className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-900 relative animate-fade-in text-slate-800 dark:text-slate-200 gap-3"
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
                     <input 
@@ -9202,7 +9202,7 @@ export default function CustomerDashboard({
                 return (
                   <div 
                     key={item.id}
-                    className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-850 relative animate-fade-in gap-3 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-750 transition-all shadow-3xs"
+                    className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-900 relative animate-fade-in gap-3 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-3xs"
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
                       <img 
@@ -9618,7 +9618,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             </div>
                             
                             <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col justify-center text-center space-y-1.5 shadow-xs">
-                              <span className="text-[10px] uppercase font-bold text-slate-450 tracking-wider">Booking Status</span>
+                              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Booking Status</span>
                               <div className="inline-block mx-auto">
                                 <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${
                                   trackingOrder.status === 'Cancelled'
@@ -9906,7 +9906,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                   </>
                                 )}
                               </div>
-                              <button className="flex items-center gap-1.5 text-xs font-bold hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent">
+                              <button className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent">
                                 <Phone className="w-4 h-4" />
                                 <span>Help & Support</span>
                               </button>
@@ -10481,7 +10481,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 )}
               </div>
 
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-850 text-[10px] text-center text-slate-400 font-semibold leading-none">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-900 text-[10px] text-center text-slate-400 font-semibold leading-none">
                 Connect Wallet Client v1.2.6 • Forge India Secure Node
               </div>
             </div>
@@ -10553,7 +10553,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   <div className={`border rounded-2xl p-4 flex gap-3 text-left ${(tier?.name || '').toLowerCase().includes('silver') ? 'bg-slate-50/50 dark:bg-slate-800/10 border-slate-300 dark:border-slate-700/60' : 'opacity-60 border-slate-100 dark:border-slate-900 bg-transparent'}`}>
-                    <div className="w-8 h-8 rounded-full bg-slate-400/15 flex items-center justify-center shrink-0 border border-slate-400/20 text-slate-405">
+                    <div className="w-8 h-8 rounded-full bg-slate-400/15 flex items-center justify-center shrink-0 border border-slate-400/20 text-slate-400">
                       <Star className="w-4 h-4 fill-current text-slate-400" />
                     </div>
                     <div>
@@ -10572,7 +10572,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       <Sparkles className="w-4 h-4 fill-current" />
                     </div>
                     <div>
-                      <h5 className="text-xs font-bold text-slate-850 dark:text-amber-400">Gold Member Perks</h5>
+                      <h5 className="text-xs font-bold text-slate-900 dark:text-amber-400">Gold Member Perks</h5>
                       <ul className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 space-y-1.5 list-disc pl-3">
                         <li>Flat 15% discount on partner Stay bookings</li>
                         <li>Flat 10% off restaurant bills & food vouchers</li>
@@ -10656,16 +10656,16 @@ wishlistProducts.forEach(item => addToCart(item));
                       <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
                     </div>
                     
-                    <span className="mt-3 text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-450 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-0.5 rounded-full">Available</span>
+                    <span className="mt-3 text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-0.5 rounded-full">Available</span>
                     
-                    <h3 className="text-base font-black text-slate-850 dark:text-white mt-3 flex items-center gap-1 justify-center w-full">
+                    <h3 className="text-base font-black text-slate-900 dark:text-white mt-3 flex items-center gap-1 justify-center w-full">
                       <span className="truncate max-w-[80%]">{activeScheduleModalItem.name}</span>
                       <CheckCircle2 className="w-4 h-4 text-white dark:text-white fill-blue-500 shrink-0" />
                     </h3>
                     
-                    <span className="text-xs font-bold text-slate-450 dark:text-slate-400 mt-1 block">{terms.category}</span>
+                    <span className="text-xs font-bold text-slate-400 dark:text-slate-400 mt-1 block">{terms.category}</span>
                     
-                    <span className="text-[10px] text-slate-500 dark:text-slate-405 mt-2.5 leading-relaxed text-center block">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed text-center block">
                       {(() => {
                         const isDoctor = activeScheduleModalItem.name?.startsWith('Dr.') || ['Hospital', 'Clinic', 'Cardiology', 'Pediatrics', 'Dentist', 'Homeopathy'].includes(activeScheduleModalItem.category);
                         if (isStayItem) {
@@ -10683,27 +10683,27 @@ wishlistProducts.forEach(item => addToCart(item));
 
                     <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-full px-2.5 py-0.5 mt-3 select-none">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
-                      <span className="text-[11px] font-black text-slate-750 dark:text-amber-450">{activeScheduleModalItem.rating || 4.5} <span className="font-bold text-slate-450 dark:text-slate-500">({activeScheduleModalItem.reviews || 120} Reviews)</span></span>
+                      <span className="text-[11px] font-black text-slate-700 dark:text-amber-450">{activeScheduleModalItem.rating || 4.5} <span className="font-bold text-slate-400 dark:text-slate-500">({activeScheduleModalItem.reviews || 120} Reviews)</span></span>
                     </div>
                   </div>
 
-                  <div className="w-full mt-6 space-y-2 border-t border-slate-100 dark:border-slate-850/40 pt-4 text-left">
+                  <div className="w-full mt-6 space-y-2 border-t border-slate-100 dark:border-slate-900/40 pt-4 text-left">
                     {!isTravelItem && (
                       <>
                         <div className="flex items-center justify-between text-xs font-medium">
-                          <span className="text-slate-405 dark:text-slate-400">{terms.type2}</span>
-                          <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
+                          <span className="text-slate-400 dark:text-slate-400">{terms.type2}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Available</span>
                         </div>
                         <div className="flex items-center justify-between text-xs font-medium">
-                          <span className="text-slate-405 dark:text-slate-400">{terms.type1}</span>
-                          <span className="text-emerald-600 dark:text-emerald-450 font-bold">Available</span>
+                          <span className="text-slate-400 dark:text-slate-400">{terms.type1}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Available</span>
                         </div>
                       </>
                     )}
-                    <div className="flex items-center justify-between text-xs font-medium border-t border-slate-50 dark:border-slate-850/30 pt-2.5">
-                      <span className="text-slate-405 dark:text-slate-400">{terms.feeLabel}</span>
+                    <div className="flex items-center justify-between text-xs font-medium border-t border-slate-50 dark:border-slate-900/30 pt-2.5">
+                      <span className="text-slate-400 dark:text-slate-400">{terms.feeLabel}</span>
                       <div className="text-right">
-                        <span className="text-slate-850 dark:text-white font-extrabold">₹{totalPrice.toLocaleString()}</span>
+                        <span className="text-slate-900 dark:text-white font-extrabold">₹{totalPrice.toLocaleString()}</span>
                         {isStayItem && diffNights > 1 && (
                           <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
                         )}
@@ -10716,7 +10716,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 <div className="lg:col-span-2 bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-4 select-none flex-wrap gap-2">
-                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left flex items-center gap-2">
+                      <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left flex items-center gap-2">
                         <span>Configure Timings & Dates</span>
                       </h3>
                       <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2.5 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0">
@@ -10735,7 +10735,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         className={`py-2 px-1 text-[10px] font-black uppercase rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 ${
                           selectedModalType === terms.type2
                             ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-black' 
-                            : 'bg-transparent text-slate-650 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            : 'bg-transparent text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
                         }`}
                       >
                         <Home className="w-3.5 h-3.5 shrink-0" />
@@ -10746,7 +10746,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         className={`py-2 px-1 text-[10px] font-black uppercase rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 ${
                           selectedModalType === terms.type1
                             ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-black' 
-                            : 'bg-transparent text-slate-650 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            : 'bg-transparent text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
                         }`}
                       >
                         <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -10809,8 +10809,8 @@ wishlistProducts.forEach(item => addToCart(item));
                                     isSelected
                                       ? 'bg-blue-600 text-white border-blue-600 shadow-md font-black ring-2 ring-blue-500/30'
                                       : !d.isAvailable
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400'
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
+                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400'
                                   }`}
                                 >
                                   <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
@@ -10858,7 +10858,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
                                       : !isAvail
                                         ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
                                   }`}
                                 >
                                   <span className="text-[11px] font-extrabold">{slot.time}</span>
@@ -10965,8 +10965,8 @@ wishlistProducts.forEach(item => addToCart(item));
                                       isSelected
                                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
                                         : (!d.isAvailable || !isAfterIn)
-                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
-                                          : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
+                                          : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
                                     }`}
                                   >
                                     <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
@@ -11001,7 +11001,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                     className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                                       isSelected
                                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
                                     }`}
                                   >
                                     <span className="text-[11px] font-extrabold">{tSlot}</span>
@@ -11069,7 +11069,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           {/* Adults Selector */}
                           <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
                             <div className="shrink-0">
-                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Adults</span>
+                              <span className="block font-black text-xs text-slate-900 dark:text-white leading-tight">Adults</span>
                               <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 12+</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
@@ -11101,7 +11101,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           {/* Children Selector */}
                           <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
                             <div className="shrink-0">
-                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Children</span>
+                              <span className="block font-black text-xs text-slate-900 dark:text-white leading-tight">Children</span>
                               <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 2-12</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
@@ -11226,15 +11226,15 @@ wishlistProducts.forEach(item => addToCart(item));
                 {/* Column 4: Appointment Summary */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div className="space-y-5">
-                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Appointment Summary</h3>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left">Appointment Summary</h3>
                     
                     <div className="space-y-3.5 text-xs text-left">
                       <div className="flex items-start gap-3">
-                        <User className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                        <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{terms.label}</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200">{activeScheduleModalItem.name}</span>
-                          <span className="text-[10px] text-slate-450 dark:text-slate-550 block mt-0.5 leading-none">{terms.category}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5 leading-none">{terms.category}</span>
                         </div>
                       </div>
 
@@ -11264,7 +11264,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         const diff = Math.max(1, Math.ceil((e - s) / 86400000));
                         return (
                           <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                            <Home className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                            <Home className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                             <div>
                               <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Duration</span>
                               <span className="font-extrabold text-slate-800 dark:text-slate-200">{diff} {durationUnit}</span>
@@ -11275,12 +11275,12 @@ wishlistProducts.forEach(item => addToCart(item));
 
                       {(isStayItem || isTravelItem) && (
                         <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                          <User className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                          <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                           <div>
                             <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Guests / Travelers</span>
                             <span className="font-extrabold text-slate-800 dark:text-slate-200">
                               {adultCount + childCount} {adultCount + childCount === 1 ? 'Person' : 'People'}
-                              <span className="text-[10px] text-slate-450 dark:text-slate-550 block mt-0.5 leading-none">
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5 leading-none">
                                 ({adultCount} Adults, {childCount} Children)
                               </span>
                             </span>
@@ -11292,7 +11292,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5 animate-pulse" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Booking Time (Live)</span>
-                          <span className="font-extrabold text-slate-850 dark:text-white flex items-center gap-1.5">
+                          <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
                             <LiveClock />
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                           </span>
@@ -11300,7 +11300,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                        <svg className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        <svg className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Type</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200">
@@ -11310,10 +11310,10 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
-                        <CreditCard className="w-4 h-4 text-slate-450 shrink-0 mt-0.5" />
+                        <CreditCard className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee</span>
-                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -11357,7 +11357,7 @@ wishlistProducts.forEach(item => addToCart(item));
               </div>
 
               {/* Secure Footer Banner */}
-              <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/50 dark:border-slate-850/40 pt-4 mt-2 text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-widest select-none">
+              <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/50 dark:border-slate-900/40 pt-4 mt-2 text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase tracking-widest select-none">
                 <ShieldCheck className="w-4.5 h-4.5 text-blue-500" />
                 <span>Your appointment is safe and secure with Connect App</span>
               </div>
@@ -11399,7 +11399,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 <div className="lg:col-span-2 bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-4 select-none flex-wrap gap-2">
-                      <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left flex items-center gap-2">
+                      <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left flex items-center gap-2">
                         <span>Configure Timings & Dates</span>
                       </h3>
                       <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 shrink-0 animate-pulse">
@@ -11464,8 +11464,8 @@ wishlistProducts.forEach(item => addToCart(item));
                                     isSelected
                                       ? 'bg-blue-600 text-white border-blue-600 shadow-md font-black ring-2 ring-blue-500/30'
                                       : !d.isAvailable
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400'
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
+                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400'
                                   }`}
                                 >
                                   <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
@@ -11513,7 +11513,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
                                       : !isAvail
                                         ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
                                   }`}
                                 >
                                   <span className="text-[11px] font-extrabold">{slot.time}</span>
@@ -11620,8 +11620,8 @@ wishlistProducts.forEach(item => addToCart(item));
                                       isSelected
                                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
                                         : (!d.isAvailable || !isAfterIn)
-                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-750 opacity-40 cursor-not-allowed line-through'
-                                          : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
+                                          : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
                                     }`}
                                   >
                                     <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
@@ -11656,7 +11656,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                     className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                                       isSelected
                                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                        : 'bg-white dark:bg-slate-950 text-slate-750 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
                                     }`}
                                   >
                                     <span className="text-[11px] font-extrabold">{tSlot}</span>
@@ -11724,7 +11724,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           {/* Adults Selector */}
                           <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
                             <div className="shrink-0">
-                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Adults</span>
+                              <span className="block font-black text-xs text-slate-900 dark:text-white leading-tight">Adults</span>
                               <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 12+</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
@@ -11756,7 +11756,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           {/* Children Selector */}
                           <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 overflow-hidden">
                             <div className="shrink-0">
-                              <span className="block font-black text-xs text-slate-850 dark:text-white leading-tight">Children</span>
+                              <span className="block font-black text-xs text-slate-900 dark:text-white leading-tight">Children</span>
                               <span className="text-[9px] font-bold text-slate-400 block mt-0.5">Age 2-12</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-3xs shrink-0">
@@ -11894,7 +11894,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 {/* Column 3: Confirmation Summary */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div className="space-y-5">
-                    <h3 className="text-xs font-black text-slate-850 dark:text-white uppercase tracking-wider text-left">Your Appointment</h3>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left">Your Appointment</h3>
                     
                     {/* Mini Profile card */}
                     <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#030712] border border-slate-100 dark:border-slate-800 rounded-xl p-3 select-none">
@@ -11902,12 +11902,12 @@ wishlistProducts.forEach(item => addToCart(item));
                         <img src={activeBookNowModalItem.image} alt={activeBookNowModalItem.name} className="w-full h-full object-cover rounded-full" />
                       </div>
                       <div className="text-left flex-grow">
-                        <h4 className="text-xs font-black text-slate-850 dark:text-white flex items-center gap-0.5 w-full">
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-0.5 w-full">
                           <span className="truncate max-w-[80%]">{activeBookNowModalItem.name}</span>
                           <CheckCircle2 className="w-3.5 h-3.5 text-white dark:text-white fill-blue-500 shrink-0" />
                         </h4>
                         <span className="text-[9px] text-slate-400 block leading-none mt-1">{terms.category}</span>
-                        <div className="flex items-center gap-0.5 mt-1.5 text-[9px] font-black text-slate-650 dark:text-amber-400">
+                        <div className="flex items-center gap-0.5 mt-1.5 text-[9px] font-black text-slate-600 dark:text-amber-400">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400 animate-pulse" />
                           <span>{activeBookNowModalItem.rating || 4.5} <span className="font-bold text-slate-400 dark:text-slate-400">({activeBookNowModalItem.reviews || 120} Reviews)</span></span>
                         </div>
@@ -11918,7 +11918,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     <div className="space-y-3.5 text-xs text-left">
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
                         <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> {isTravelItem ? 'Depart' : 'Check-In'}</span>
-                        <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
+                        <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
                           {formatDateFromYYYYMMDD(stayCheckInDate)}
                           <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-bold">{checkInTime}</span>
                         </span>
@@ -11927,7 +11927,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       {isStayItem && (
                         <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
                           <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-500" /> Check-Out</span>
-                          <span className="font-extrabold text-slate-850 dark:text-slate-200 text-right">
+                          <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
                             {formatDateFromYYYYMMDD(stayCheckOutDate)}
                             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">{checkOutTime}</span>
                           </span>
@@ -11941,17 +11941,17 @@ wishlistProducts.forEach(item => addToCart(item));
                         return (
                           <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
                             <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Home className="w-4 h-4 text-slate-400" /> Duration</span>
-                            <span className="font-extrabold text-slate-850 dark:text-slate-200">{diff} {diff === 1 ? 'Night' : 'Nights'}</span>
+                            <span className="font-extrabold text-slate-900 dark:text-slate-200">{diff} {diff === 1 ? 'Night' : 'Nights'}</span>
                           </div>
                         );
                       })()}
 
                       {(isStayItem || isTravelItem) && (
                         <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                          <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><User className="w-4 h-4 text-slate-450" /> Travelers / Guests</span>
+                          <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><User className="w-4 h-4 text-slate-400" /> Travelers / Guests</span>
                           <span className="font-extrabold text-slate-855 dark:text-slate-200 text-right">
                             {adultCount + childCount} {adultCount + childCount === 1 ? 'Person' : 'People'}
-                            <span className="text-[10px] text-slate-450 dark:text-slate-550 block mt-0.5 font-bold leading-none">
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold leading-none">
                               ({adultCount} Adults, {childCount} Children)
                             </span>
                           </span>
@@ -11959,7 +11959,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       )}
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-blue-500 animate-pulse" /> Booking Time (Live)</span>
+                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Clock className="w-4 h-4 text-blue-500 animate-pulse" /> Booking Time (Live)</span>
                         <span className="font-extrabold text-slate-855 dark:text-white flex items-center gap-1.5">
                           <LiveClock />
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -11967,16 +11967,16 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Type</span>
-                        <span className="font-extrabold text-slate-850 dark:text-slate-200">
+                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Type</span>
+                        <span className="font-extrabold text-slate-900 dark:text-slate-200">
                           {isStayItem ? (activeBookNowModalItem?.roomType || activeBookNowModalItem?.subcategory || activeBookNowModalItem?.subCategory || activeBookNowModalItem?.name || selectedModalType || 'Luxury Room') : selectedModalType}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-405 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
+                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
                         <div className="text-right">
-                          <span className="font-black text-slate-850 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
                           {isStayItem && diffNights > 1 && (
                             <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
                           )}
@@ -12070,7 +12070,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         <div className="w-8 h-8 rounded-full bg-slate-400/10 text-slate-500 flex items-center justify-center border border-slate-400/20">
                           <Star className="w-4 h-4 fill-slate-400 text-slate-400" />
                         </div>
-                        <span className="text-[9px] bg-slate-100 text-slate-550 border border-slate-200 font-black px-2 py-0.5 rounded">Silver Tier</span>
+                        <span className="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 font-black px-2 py-0.5 rounded">Silver Tier</span>
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Silver Membership</h4>
@@ -12275,7 +12275,7 @@ wishlistProducts.forEach(item => addToCart(item));
                   triggerNotification(`Downloading ${resumeFile?.name || 'Uploaded CV'}...`);
                   setIsPreviewResumeOpen(false);
                 }}
-                className="px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-955 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none"
+                className="px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-900 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none"
               >
                 Download CV File
               </button>
@@ -12359,7 +12359,7 @@ wishlistProducts.forEach(item => addToCart(item));
                   </div>
 
                   {/* Payment Detail Section */}
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-4 rounded-2xl space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-4 rounded-2xl space-y-3">
                     {razorpayPayMethod === 'upi' && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-xs font-extrabold">
@@ -12492,7 +12492,7 @@ wishlistProducts.forEach(item => addToCart(item));
               ) : (
                 <>
                   {/* Reporting Order Info Summary */}
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-4 rounded-2xl space-y-2">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-4 rounded-2xl space-y-2">
                     <div className="flex justify-between items-baseline">
                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Order Reference</span>
                       <span className="text-xs font-mono font-extrabold text-blue-600 dark:text-blue-400">#{supportOrderModal.order_number}</span>
