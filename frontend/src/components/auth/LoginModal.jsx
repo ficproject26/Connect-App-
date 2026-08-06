@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, Mail, Lock, Eye, EyeOff, LogIn, Check, 
-  Phone, ShieldCheck, AlertCircle, RefreshCw, KeyRound, CheckCircle2 
+  Phone, ShieldCheck, AlertCircle, RefreshCw, KeyRound, CheckCircle2, ArrowLeft 
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { sanitizeMobileInput, validateMobile } from '../../utils/validation';
@@ -117,13 +117,15 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
     }
   };
 
-  // Handler for OTP Generation
+  // Handler for OTP Generation with Registration Check
   const handleSendOtp = async () => {
     const target = otpTarget.trim();
     if (!target) {
-      setErrorMsg('Please enter a valid mobile number or email address.');
+      setErrorMsg('Please enter a valid 10-digit mobile number.');
       return;
     }
+
+    const cleanTargetDigits = target.replace(/\D/g, '');
 
     setErrorMsg('');
     setOtpSuccessMsg('');
@@ -139,22 +141,43 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       });
 
       const data = await res.json();
-      setIsSubmitting(false);
 
       if (res.ok && data.status === 'success') {
+        setIsSubmitting(false);
         const issuedCode = data.devOtpPreview || fallbackCode;
         setGeneratedOtpCode(issuedCode);
         setIsOtpSent(true);
         setResendCooldown(data.cooldownSeconds || 30);
         setOtpSuccessMsg(`OTP Sent Successfully! Security Code: ${issuedCode}`);
         return;
+      } else if (res.status === 404 || data.notRegistered || (data.message && data.message.toLowerCase().includes('not registered'))) {
+        setIsSubmitting(false);
+        setErrorMsg('Your mobile number is not registered. Please sign up first.');
+        return;
       }
     } catch (err) {
-      console.warn('Backend server offline, executing instant fallback OTP generator:', err);
+      console.warn('Backend server check:', err);
     }
 
-    // Instant Fallback OTP Generator
+    // Check locally saved registered users & known mobile numbers
+    const savedMobiles = JSON.parse(localStorage.getItem('connect_registered_mobiles') || '[]');
+    const savedUser = JSON.parse(localStorage.getItem('connect_current_user') || '{}');
+    const knownMobiles = [
+      '9876543210', '8220266311', '9176543210', '9443322110', '9876543211', '9988776655',
+      ...(savedUser.phone ? [savedUser.phone.replace(/\D/g, '')] : []),
+      ...savedMobiles.map(m => (typeof m === 'string' ? m.replace(/\D/g, '') : m))
+    ];
+
+    const isRegistered = knownMobiles.includes(cleanTargetDigits);
+
     setIsSubmitting(false);
+
+    if (!isRegistered) {
+      setErrorMsg('Your mobile number is not registered. Please sign up first.');
+      return;
+    }
+
+    // Mobile is registered: Proceed to send OTP
     setGeneratedOtpCode(fallbackCode);
     setIsOtpSent(true);
     setResendCooldown(30);
@@ -280,7 +303,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
 
             {/* 1. PASSWORD LOGIN FORM */}
             {loginMethod === 'password' ? (
-              <form onSubmit={handlePasswordSubmit} className="space-y-3.5">
+              <form onSubmit={handlePasswordSubmit} autoComplete="off" className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
                     Email Address or Phone Number
@@ -290,6 +313,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
                     <input
                       type="text"
                       required
+                      autoComplete="off"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter email or 10-digit mobile"
@@ -307,6 +331,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
                     <input
                       type={showPassword ? "text" : "password"}
                       required
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password"
@@ -431,6 +456,20 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
                   })()
                 ) : (
                   <form onSubmit={handleVerifyOtp} className="space-y-3.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOtpSent(false);
+                        setOtpInput('');
+                        setErrorMsg('');
+                        setOtpSuccessMsg('');
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-900 dark:hover:text-white border-none bg-transparent cursor-pointer mb-1 transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Back to Mobile Number</span>
+                    </button>
+
                     <div>
                       <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
                         Enter 6-Digit Security OTP

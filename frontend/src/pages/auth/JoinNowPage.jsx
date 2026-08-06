@@ -158,6 +158,15 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
         return;
       }
 
+      // Store mobile in local registered numbers list
+      try {
+        const saved = JSON.parse(localStorage.getItem('connect_registered_mobiles') || '[]');
+        if (!saved.includes(phoneNumber)) {
+          saved.push(phoneNumber);
+          localStorage.setItem('connect_registered_mobiles', JSON.stringify(saved));
+        }
+      } catch (e) {}
+
       setIsSubmitting(false);
       setSuccess(true);
 
@@ -178,6 +187,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
     } catch (err) {
       console.warn('Backend unreachable, proceeding with verified local signup:', err);
+      try {
+        const saved = JSON.parse(localStorage.getItem('connect_registered_mobiles') || '[]');
+        if (!saved.includes(phoneNumber)) {
+          saved.push(phoneNumber);
+          localStorage.setItem('connect_registered_mobiles', JSON.stringify(saved));
+        }
+      } catch (e) {}
+
       setIsSubmitting(false);
       setSuccess(true);
       setTimeout(() => {
