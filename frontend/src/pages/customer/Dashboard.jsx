@@ -803,20 +803,20 @@ export default function CustomerDashboard({
     if (savedUser) {
       try {
         const u = JSON.parse(savedUser);
-        return u.name || currentUser?.name || 'Dhanush Tamilarasan';
+        if (u.name && !/^\d+$/.test(u.name)) return u.name;
       } catch (e) {}
     }
-    return currentUser?.name || 'Dhanush Tamilarasan';
+    return (currentUser?.name && !/^\d+$/.test(currentUser.name)) ? currentUser.name : (currentUser?.email ? currentUser.email.split('@')[0] : '');
   });
   const [profileEmail, setProfileEmail] = useState(() => {
     const savedUser = localStorage.getItem('connect_current_user');
     if (savedUser) {
       try {
         const u = JSON.parse(savedUser);
-        return u.email || currentUser?.email || 'dhanush.kumar@gmail.com';
+        if (u.email) return u.email;
       } catch (e) {}
     }
-    return currentUser?.email || 'dhanush.kumar@gmail.com';
+    return currentUser?.email || '';
   });
 
   const activeCustomerId = useMemo(() => {
@@ -832,7 +832,13 @@ export default function CustomerDashboard({
   }, [currentUser]);
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
   const [profilePhone, setProfilePhone] = useState(() => {
-    return localStorage.getItem('connect_profile_phone') || '+91 98765 43210';
+    const savedPhone = localStorage.getItem('connect_profile_phone');
+    if (savedPhone && savedPhone !== '+91 98765 43210') return savedPhone;
+    try {
+      const u = JSON.parse(localStorage.getItem('connect_current_user') || '{}');
+      if (u.phone) return u.phone;
+    } catch (e) {}
+    return currentUser?.phone || '';
   });
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
@@ -873,47 +879,50 @@ export default function CustomerDashboard({
 
   useEffect(() => {
     if (currentUser) {
-      const regAddrText = currentUser.address || currentUser.registration_address || currentUser.location || (currentUser.city ? `Main Street, ${currentUser.city}` : '5th Block, Koramangala, Bangalore');
-      const regPincode = currentUser.pincode || '560095';
-      const regCity = currentUser.city || 'Bangalore';
-      const regState = currentUser.state || 'Karnataka';
+      const realAddress = (currentUser.address || currentUser.registration_address || currentUser.location || '').trim();
+      const realPincode = currentUser.pincode || '';
+      const realCity = currentUser.city || '';
+      const realState = currentUser.state || (realCity ? 'Karnataka' : '');
+      const realName = currentUser.name || profileName || '';
+      const realPhone = currentUser.phone || profilePhone || '';
 
-      const regAddressObj = {
-        id: 'addr_reg_' + (currentUser.email ? currentUser.email.replace(/[^a-z0-9]/g, '_') : 'default'),
-        name: currentUser.name || profileName || 'Registered User',
-        phone: currentUser.phone || profilePhone || '+91 98765 43210',
-        pincode: regPincode,
-        locality: currentUser.locality || currentUser.area || regCity,
-        address: regAddrText,
-        city: regCity,
-        state: regState,
-        landmark: 'Registration Location',
-        altPhone: '',
-        type: 'Home',
-        isRegistrationAddress: true
-      };
+      if (realAddress) {
+        const regAddressObj = {
+          id: 'addr_reg_' + (currentUser.email ? currentUser.email.replace(/[^a-z0-9]/g, '_') : 'default'),
+          name: realName,
+          phone: realPhone,
+          pincode: realPincode,
+          locality: currentUser.locality || currentUser.area || realCity,
+          address: realAddress,
+          city: realCity,
+          state: realState,
+          landmark: '',
+          altPhone: '',
+          type: 'Home',
+          isRegistrationAddress: true
+        };
 
-      setAddresses(prev => {
-        if (prev.length === 0) return [regAddressObj];
-        if (prev.some(a => a.isRegistrationAddress || a.address === regAddrText)) return prev;
-        return [regAddressObj, ...prev];
-      });
+        setAddresses(prev => {
+          const nonReg = prev.filter(a => !a.isRegistrationAddress);
+          return [regAddressObj, ...nonReg];
+        });
+      } else {
+        setAddresses(prev => prev.filter(a => !a.isRegistrationAddress));
+      }
     }
   }, [currentUser, profileName, profilePhone]);
 
   useEffect(() => {
     if (currentUser) {
-      const savedUser = localStorage.getItem('connect_current_user');
-      if (savedUser) {
-        try {
-          const u = JSON.parse(savedUser);
-          setProfileName(u.name || currentUser.name);
-          setProfileEmail(u.email || currentUser.email);
-          return;
-        } catch (e) {}
+      if (currentUser.name && !/^\d+$/.test(currentUser.name)) {
+        setProfileName(currentUser.name);
       }
-      setProfileName(currentUser.name);
-      setProfileEmail(currentUser.email);
+      if (currentUser.email) {
+        setProfileEmail(currentUser.email);
+      }
+      if (currentUser.phone) {
+        setProfilePhone(currentUser.phone);
+      }
     }
   }, [currentUser]);
 
@@ -2537,7 +2546,7 @@ export default function CustomerDashboard({
           method: 'POST',
           body: JSON.stringify({
             vendor_id: groupVendorId,
-            customer_name: profileName || currentUser?.name || 'Dhanush Tamilarasan',
+            customer_name: profileName || currentUser?.name || 'Customer',
             customer_phone: profilePhone || '+91 98765 43210',
             customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
             customer_latitude: 12.9498,
@@ -3899,7 +3908,7 @@ export default function CustomerDashboard({
                           <div className="flex justify-between items-end">
                             <div className="flex flex-col leading-none">
                               <span className="text-[10px] font-extrabold uppercase tracking-wider text-white">
-                                {profileName || 'DHANUSH TAMILARASAN'}
+                                {profileName || currentUser?.name || 'VIP MEMBER'}
                               </span>
                               <span className="text-[7px] font-bold uppercase tracking-widest text-slate-300 mt-0.5">
                                 CARD PERIOD: MONTHLY (1 MONTH)

@@ -93,11 +93,11 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       setIsSubmitting(false);
       setSuccess(true);
 
-      const loggedUser = data.user || { name: email.split('@')[0], email, role: 'customer' };
-      login(loggedUser.email, loggedUser.role, () => {
+      const loggedUser = data.user || { email: email.trim(), role: 'customer' };
+      login(loggedUser, 'customer', (finalUser) => {
         setTimeout(() => {
           setSuccess(false);
-          if (onLoginSuccess) onLoginSuccess(loggedUser);
+          if (onLoginSuccess) onLoginSuccess(finalUser);
           onClose();
         }, 600);
       });
@@ -106,11 +106,11 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       console.warn('Backend offline, proceeding with local authenticated session:', err);
       setIsSubmitting(false);
       setSuccess(true);
-      const userObj = { name: email ? email.split('@')[0] : 'Connect Customer', email: email || 'customer@connect.app', role: 'customer' };
-      login(userObj.email, userObj.role, () => {
+      const userObj = { email: email.trim() || 'customer@connect.app', role: 'customer' };
+      login(userObj, 'customer', (finalUser) => {
         setTimeout(() => {
           setSuccess(false);
-          if (onLoginSuccess) onLoginSuccess(userObj);
+          if (onLoginSuccess) onLoginSuccess(finalUser);
           onClose();
         }, 600);
       });
@@ -204,11 +204,23 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
     setTimeout(() => {
       setIsSubmitting(false);
       setSuccess(true);
-      const userObj = { name: 'OTP Verified Member', email: otpTarget, role: 'customer' };
-      login(userObj.email, userObj.role, () => {
+      const cleanDigits = otpTarget.replace(/\D/g, '');
+      const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
+      const registeredMatch = registeredUsers.find(u => 
+        (cleanDigits && u.phone && u.phone.replace(/\D/g, '') === cleanDigits) ||
+        (otpTarget && u.email && u.email.toLowerCase() === otpTarget.toLowerCase())
+      );
+
+      const loggedUser = registeredMatch || {
+        phone: cleanDigits || otpTarget,
+        email: otpTarget.includes('@') ? otpTarget : `${cleanDigits}@connect.app`,
+        role: 'customer'
+      };
+
+      login(loggedUser, 'customer', (finalUser) => {
         setTimeout(() => {
           setSuccess(false);
-          if (onLoginSuccess) onLoginSuccess(userObj);
+          if (onLoginSuccess) onLoginSuccess(finalUser);
           onClose();
         }, 600);
       });
