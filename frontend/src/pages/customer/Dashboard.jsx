@@ -872,27 +872,34 @@ export default function CustomerDashboard({
   }, [addresses, currentUser]);
 
   useEffect(() => {
-    if (currentUser?.address) {
-      const newAddr = {
-        id: 'addr_reg_' + Date.now(),
-        name: currentUser.name || profileName || 'Customer',
+    if (currentUser) {
+      const regAddrText = currentUser.address || currentUser.registration_address || currentUser.location || (currentUser.city ? `Main Street, ${currentUser.city}` : '5th Block, Koramangala, Bangalore');
+      const regPincode = currentUser.pincode || '560095';
+      const regCity = currentUser.city || 'Bangalore';
+      const regState = currentUser.state || 'Karnataka';
+
+      const regAddressObj = {
+        id: 'addr_reg_' + (currentUser.email ? currentUser.email.replace(/[^a-z0-9]/g, '_') : 'default'),
+        name: currentUser.name || profileName || 'Registered User',
         phone: currentUser.phone || profilePhone || '+91 98765 43210',
-        pincode: currentUser.pincode || '560001',
-        locality: currentUser.city || 'Main Street',
-        address: currentUser.address,
-        city: currentUser.city || 'Bangalore',
-        state: 'Karnataka',
-        landmark: '',
+        pincode: regPincode,
+        locality: currentUser.locality || currentUser.area || regCity,
+        address: regAddrText,
+        city: regCity,
+        state: regState,
+        landmark: 'Registration Location',
         altPhone: '',
         type: 'Home',
         isRegistrationAddress: true
       };
+
       setAddresses(prev => {
-        if (prev.some(a => a.address === currentUser.address)) return prev;
-        return [newAddr, ...prev];
+        if (prev.length === 0) return [regAddressObj];
+        if (prev.some(a => a.isRegistrationAddress || a.address === regAddrText)) return prev;
+        return [regAddressObj, ...prev];
       });
     }
-  }, [currentUser]);
+  }, [currentUser, profileName, profilePhone]);
 
   useEffect(() => {
     if (currentUser) {
@@ -2171,7 +2178,7 @@ export default function CustomerDashboard({
                   className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 bg-slate-50/50 dark:bg-slate-900/20 text-slate-800 dark:text-slate-200 flex flex-col justify-between"
                 >
                   <div className="space-y-1.5 text-left">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">{addr.name}</span>
                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
                         addr.type === 'Home' 
@@ -2180,6 +2187,11 @@ export default function CustomerDashboard({
                       }`}>
                         {addr.type}
                       </span>
+                      {addr.isRegistrationAddress && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          Registration Address
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                       {addr.address}, {addr.locality}, {addr.city}, {addr.state} - <span className="font-extrabold">{addr.pincode}</span>
@@ -7535,7 +7547,7 @@ export default function CustomerDashboard({
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => triggerNotification("Initiating chat with travel desk agent...")}
-                  className="flex-1 sm:flex-none px-3.5 sm:px-5 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-black uppercase transition-all bg-transparent h-11 sm:h-12 cursor-pointer whitespace-nowrap"
+                  className="flex-1 sm:flex-none px-3.5 sm:px-5 py-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-black uppercase transition-all h-11 sm:h-12 cursor-pointer whitespace-nowrap shadow-xs"
                 >
                   Chat Agent
                 </button>
@@ -8378,9 +8390,9 @@ export default function CustomerDashboard({
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-4 pt-2 w-full">
                 <button
                   onClick={() => triggerNotification("Initiating chat session...")}
-                  className="w-full sm:w-auto px-4 py-3 sm:py-3.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent h-11 sm:h-12 shrink-0"
+                  className="w-full sm:w-auto px-4 py-3 sm:py-3.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 h-11 sm:h-12 shrink-0 shadow-xs"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                  <svg className="w-4 h-4 text-slate-500 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                   <span>{getActionButtons(selectedProduct).chatText}</span>
                 </button>
                 
