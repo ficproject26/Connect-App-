@@ -1181,9 +1181,13 @@ export default function CustomerDashboard({
     try {
       const res = await apiFetch('/orders');
       if (res.status === 'success') {
-        const name = profileName || currentUser?.name || 'Dhanush Tamilarasan';
-        const filtered = (res.data || []).filter(o => o.customer_name === name);
-        setCustomerOrders(filtered);
+        const name = profileName || currentUser?.name;
+        if (name) {
+          const filtered = (res.data || []).filter(o => o.customer_name && o.customer_name.toLowerCase() === name.toLowerCase());
+          setCustomerOrders(filtered);
+        } else {
+          setCustomerOrders([]);
+        }
       }
     } catch (err) {
       console.warn('Failed to load customer orders:', err);
@@ -2494,12 +2498,19 @@ export default function CustomerDashboard({
     if (bookingItems.length > 0) orderGroups.push({ items: bookingItems, type: 'Booking' });
     if (jobItems.length > 0) orderGroups.push({ items: jobItems, type: 'Job' });
 
-    const totalProductDetails = selectedItems.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
+    const totalProductDetails = selectedItems.map(item => {
+      const isBooking = isBookingCartItem(item) || isJobCartItem(item) || ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory);
+      if (isBooking) return item.name;
+      return (item.quantity && item.quantity > 1) ? `${item.name} (Qty: ${item.quantity})` : item.name;
+    }).join(', ');
+
+    const hasBookingType = bookingItems.length > 0;
+    const txnPrefix = hasBookingType ? 'Booking Payment - ' : 'Order Payment - ';
 
     addTransaction(
-      `Order Payment - ${totalProductDetails.substring(0, 30)}${totalProductDetails.length > 30 ? '...' : ''}`,
+      `${txnPrefix}${totalProductDetails.substring(0, 30)}${totalProductDetails.length > 30 ? '...' : ''}`,
       -totalAmount,
-      'Purchase'
+      hasBookingType ? 'Booking' : 'Purchase'
     );
 
     try {
@@ -3888,7 +3899,7 @@ export default function CustomerDashboard({
                                 {profileName || 'DHANUSH TAMILARASAN'}
                               </span>
                               <span className="text-[7px] font-bold uppercase tracking-widest text-slate-300 mt-0.5">
-                                MEMBER SINCE 05/2025
+                                CARD PERIOD: MONTHLY (1 MONTH)
                               </span>
                             </div>
                           </div>
@@ -8390,15 +8401,17 @@ export default function CustomerDashboard({
                   </div>
                 ) : getActionButtons(selectedProduct).showBooking ? (
                   <div className="flex items-center gap-2 w-full sm:flex-1">
-                    <button
-                      onClick={() => {
-                        addToCart(selectedProduct);
-                      }}
-                      className="flex-1 py-3 sm:py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-11 sm:h-12"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>{getActionButtons(selectedProduct).actionText}</span>
-                    </button>
+                    {!( ['Services', 'Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Services', 'Stay', 'Travel'].includes(selectedProduct.tag) || isMedicalService(selectedProduct) || selectedProduct.category === 'Hospital' || selectedProduct.category === 'Hospitals' ) && (
+                      <button
+                        onClick={() => {
+                          addToCart(selectedProduct);
+                        }}
+                        className="flex-1 py-3 sm:py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-750/30 h-11 sm:h-12"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>{getActionButtons(selectedProduct).actionText}</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         if (!currentUser) {

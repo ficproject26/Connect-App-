@@ -5,7 +5,8 @@ export const CustomerContext = createContext(null);
 export function CustomerProvider({ children }) {
   const [walletBalance, setWalletBalance] = useState(() => {
     const saved = localStorage.getItem('connect_customer_wallet');
-    return saved ? parseFloat(saved) : 5000.00;
+    const parsed = saved ? parseFloat(saved) : 5000.00;
+    return isNaN(parsed) || parsed < 0 ? 0 : parsed;
   });
 
   const [transactions, setTransactions] = useState(() => {
@@ -17,11 +18,7 @@ export function CustomerProvider({ children }) {
         console.warn("Failed to parse connect_customer_transactions from localStorage:", err);
       }
     }
-    return [
-      { id: 'TXN1098', description: 'Priority Clinic Check-in - Apollo Hospital', amount: -250, date: '2026-06-16', category: 'Healthcare' },
-      { id: 'TXN1097', description: 'Privilege Cashback Earned', amount: 1500, date: '2026-06-15', category: 'Bonus' },
-      { id: 'TXN1096', description: 'Gourmet Dine-in discount - Celeste Hall', amount: -1200, date: '2026-06-14', category: 'Dining' }
-    ];
+    return [];
   });
 
   const [membershipTier, setMembershipTier] = useState(() => {
@@ -29,7 +26,7 @@ export function CustomerProvider({ children }) {
   });
 
   useEffect(() => {
-    localStorage.setItem('connect_customer_wallet', walletBalance.toString());
+    localStorage.setItem('connect_customer_wallet', Math.max(0, walletBalance).toString());
   }, [walletBalance]);
 
   useEffect(() => {
@@ -49,7 +46,7 @@ export function CustomerProvider({ children }) {
       category
     };
     setTransactions(prev => [newTxn, ...prev]);
-    setWalletBalance(prev => prev + amount);
+    setWalletBalance(prev => Math.max(0, prev + amount));
   };
 
   const updateTier = (newTier) => {

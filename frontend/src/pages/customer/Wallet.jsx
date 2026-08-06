@@ -43,7 +43,7 @@ export default function Wallet() {
           <div>
             <span className="text-xs text-slate-400 uppercase font-black tracking-widest block">Total Balance</span>
             <span className="text-4xl lg:text-5xl font-black text-white block mt-3 font-mono tracking-tight">
-              ₹{walletBalance.toLocaleString()}
+              ₹{Math.max(0, walletBalance || 0).toLocaleString()}
             </span>
           </div>
           <div className="flex items-center justify-between pt-4 border-t border-slate-800/80">
@@ -94,6 +94,10 @@ export default function Wallet() {
           ) : (
             transactions.map((txn, index) => {
               const isDeposit = txn.amount > 0;
+              let rawDesc = (txn.description || '').replace(/\s*\(Qty:\s*\d+\)/gi, '');
+              if (/stay|hotel|travel|tour|cab|clinic|doctor|booking|service/i.test(rawDesc)) {
+                rawDesc = rawDesc.replace(/^Order Payment\s*-\s*/i, 'Booking Payment - ');
+              }
               return (
                 <div 
                   key={txn.id || index} 
@@ -104,12 +108,12 @@ export default function Wallet() {
                       {isDeposit ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                     </div>
                     <div className="text-left">
-                      <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white block">{txn.description}</span>
+                      <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white block">{rawDesc}</span>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider mt-0.5">{txn.category} • {txn.date}</span>
                     </div>
                   </div>
                   <span className={`text-base sm:text-lg font-black font-mono ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
-                    {isDeposit ? '+' : ''}₹{txn.amount.toLocaleString()}
+                    {isDeposit ? '+' : ''}₹{Math.abs(txn.amount).toLocaleString()}
                   </span>
                 </div>
               );
