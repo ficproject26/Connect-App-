@@ -306,7 +306,8 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
 
   // OTP Verified Successfully -> Issue Session
   const sessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-  const userPayload = { userId: 'cust_' + mobileOrEmail.replace(/\D/g, ''), email: mobileOrEmail, role: 'customer', sessionId };
+  const cleanPhone = mobileOrEmail.replace(/\D/g, '');
+  const userPayload = { userId: 'cust_' + cleanPhone, email: mobileOrEmail, role: 'customer', sessionId };
 
   const accessToken = securityManager.generateAccessToken(userPayload);
   const refreshToken = securityManager.generateRefreshToken(userPayload);
@@ -325,12 +326,32 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     city: 'Bangalore'
   });
 
+  // Look up real registered customer profile from DB
+  let userProfile: any = null;
+  try {
+    userProfile = await db.findCustomerByPhone(cleanPhone);
+  } catch (e) {}
+
+  const responseUser = userProfile
+    ? {
+        id: userPayload.userId,
+        name: userProfile.name || 'Connect Member',
+        email: userProfile.email || mobileOrEmail,
+        phone: userProfile.phone || cleanPhone,
+        address: userProfile.address || '',
+        city: userProfile.city || '',
+        pincode: userProfile.pincode || '',
+        state: userProfile.state || '',
+        role: 'customer'
+      }
+    : { id: userPayload.userId, email: mobileOrEmail, phone: cleanPhone, role: 'customer' };
+
   return res.json({
     status: 'success',
     message: 'OTP verified successfully.',
     accessToken,
     refreshToken,
-    user: { id: userPayload.userId, email: mobileOrEmail, role: 'customer', name: 'OTP Verified Member' }
+    user: responseUser
   });
 });
 

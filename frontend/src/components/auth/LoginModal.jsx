@@ -201,12 +201,59 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
     setOtpSuccessMsg('');
     setIsSubmitting(true);
 
+    const cleanDigits = otpTarget.replace(/\D/g, '');
+
+    // Try backend verify first to get real user profile
+    try {
+      const res = await fetch(`${getApiBase()}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileOrEmail: otpTarget, otp: otpInput })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success' && data.user) {
+        setIsSubmitting(false);
+        setSuccess(true);
+        // Merge backend user with local registered data for completeness
+        const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
+        const localMatch = registeredUsers.find(u =>
+          cleanDigits && u.phone && u.phone.replace(/\D/g, '') === cleanDigits
+        );
+        const mergedUser = {
+          ...(localMatch || {}),
+          ...data.user,
+          // Prefer local name/email if backend returned placeholder
+          name: (data.user.name && data.user.name !== 'OTP Verified Member' && data.user.name !== 'Connect Member')
+            ? data.user.name
+            : (localMatch?.name || data.user.name),
+          email: (data.user.email && !data.user.email.match(/^\d+@connect\.app$/))
+            ? data.user.email
+            : (localMatch?.email || data.user.email),
+          phone: data.user.phone || localMatch?.phone || cleanDigits,
+          address: data.user.address || localMatch?.address || '',
+          city: data.user.city || localMatch?.city || '',
+          pincode: data.user.pincode || localMatch?.pincode || '',
+          role: 'customer'
+        };
+        login(mergedUser, 'customer', (finalUser) => {
+          setTimeout(() => {
+            setSuccess(false);
+            if (onLoginSuccess) onLoginSuccess(finalUser);
+            onClose();
+          }, 600);
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend verify-otp failed, using local verification:', err);
+    }
+
+    // Fallback: local OTP already verified above, use local registered data
     setTimeout(() => {
       setIsSubmitting(false);
       setSuccess(true);
-      const cleanDigits = otpTarget.replace(/\D/g, '');
       const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-      const registeredMatch = registeredUsers.find(u => 
+      const registeredMatch = registeredUsers.find(u =>
         (cleanDigits && u.phone && u.phone.replace(/\D/g, '') === cleanDigits) ||
         (otpTarget && u.email && u.email.toLowerCase() === otpTarget.toLowerCase())
       );

@@ -702,6 +702,33 @@ class DatabaseManager {
     }
     return custData;
   }
+
+  // 11. Find customer by phone number (for OTP login profile lookup)
+  public async findCustomerByPhone(phone: string): Promise<any | null> {
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (this.mongoDb) {
+      try {
+        // Search both users and customers collections
+        const user = await this.mongoDb.collection('users').findOne({
+          $or: [
+            { phone: cleanPhone },
+            { phone: `+91${cleanPhone}` },
+            { phone: `91${cleanPhone}` }
+          ]
+        });
+        if (user) return user;
+        const customer = await this.mongoDb.collection('customers').findOne({
+          $or: [
+            { phone: cleanPhone },
+            { phone: `+91${cleanPhone}` },
+            { phone: `91${cleanPhone}` }
+          ]
+        });
+        if (customer) return customer;
+      } catch (e) {}
+    }
+    return null;
+  }
 }
 
 export const db = new DatabaseManager();
