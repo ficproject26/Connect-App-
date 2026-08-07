@@ -728,9 +728,6 @@ export default function CustomerDashboard({
     if (!rawName) return '';
     const n = rawName.trim().toLowerCase();
     
-    // Products
-    if (['products', 'product', 'stores', 'store', 'electronics', 'mobile', 'mobiles', 'smartphone', 'smartphones', 'fashion', 'saree', 'sarees', 'clothing', 'apparel', 'accessories', 'appliances', 'gadgets', 'laptops', 'watches', 'jewellery', 'jewelry', 'furniture'].some(k => n === k || n.includes(k))) return 'products';
-    
     // Stay
     if (['stay', 'stays', 'hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'rooms', 'accommodation'].some(k => n === k || n.includes(k))) return 'stay';
     
@@ -748,8 +745,9 @@ export default function CustomerDashboard({
     
     // Travel
     if (['travel', 'travels', 'tour', 'tours', 'cab', 'cabs', 'taxi', 'bus', 'flight'].some(k => n === k || n.includes(k))) return 'travel';
-    
-    return n;
+
+    // Products (Default for all physical goods, clothing, dress, jeans, shoes, electronics, etc.)
+    return 'products';
   };
 
   // Dynamic Sub-navbar categories
@@ -2793,6 +2791,7 @@ export default function CustomerDashboard({
       let matchesSubNavbar = true;
       if (selectedSubNavbarCategory && !isMainCategoryTabName(selectedSubNavbarCategory)) {
         const targetSub = selectedSubNavbarCategory.toLowerCase().trim();
+        const targetSingular = targetSub.endsWith('s') && targetSub.length > 3 ? targetSub.slice(0, -1) : targetSub;
         const pCat = (product.category || '').toLowerCase().trim();
         const pSubCat = (product.subcategory || '').toLowerCase().trim();
         const pSubSubCat = (product.subSubcategory || '').toLowerCase().trim();
@@ -2800,14 +2799,15 @@ export default function CustomerDashboard({
         const pName = (product.name || '').toLowerCase().trim();
 
         matchesSubNavbar = 
-          pCat === targetSub ||
-          pSubCat === targetSub ||
-          pSubSubCat === targetSub ||
-          pTag === targetSub ||
-          pCat.includes(targetSub) ||
-          pSubCat.includes(targetSub) ||
-          pSubSubCat.includes(targetSub) ||
-          pName.includes(targetSub);
+          pCat === targetSub || pCat === targetSingular ||
+          pSubCat === targetSub || pSubCat === targetSingular ||
+          pSubSubCat === targetSub || pSubSubCat === targetSingular ||
+          pTag === targetSub || pTag === targetSingular ||
+          pCat.includes(targetSub) || pCat.includes(targetSingular) ||
+          pSubCat.includes(targetSub) || pSubCat.includes(targetSingular) ||
+          pSubSubCat.includes(targetSub) || pSubSubCat.includes(targetSingular) ||
+          pTag.includes(targetSub) || pTag.includes(targetSingular) ||
+          pName.includes(targetSub) || pName.includes(targetSingular);
       }
 
       // Services Filter Checks
