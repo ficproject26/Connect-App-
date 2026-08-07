@@ -20,6 +20,11 @@ const sanitizeString = (str) => {
 export const isRealVendorProduct = (p) => {
   if (!p) return false;
 
+  const status = (p.status || p.vendorStatus || '').toString().toLowerCase().trim();
+  if (['suspended', 'inactive', 'rejected', 'deactivated', 'blocked'].includes(status) || p.isSuspended === true || p.isVendorSuspended === true) {
+    return false;
+  }
+
   const vId = String(p.vendorId || p.vendor_id || '');
   const pId = String(p.id || p._id || '');
 
