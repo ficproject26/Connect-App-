@@ -105,6 +105,14 @@ const sanitizeProduct = (p) => {
   updated.rating = p.rating ? Number(p.rating) : 4.5;
   updated.reviews = p.reviews ? Number(p.reviews) : 12;
 
+  // Standardize Image
+  updated.image = p.image || p.imageUrl || (p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : '') || p.img || '';
+  if (Array.isArray(p.images) && p.images.length > 0) {
+    updated.images = p.images;
+  } else if (updated.image) {
+    updated.images = [updated.image];
+  }
+
   for (const key in updated) {
     if (typeof updated[key] === 'string') {
       updated[key] = sanitizeString(updated[key]);
@@ -146,7 +154,15 @@ export const productService = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-      const res = await fetch(`${getVendorBackendUrl()}/api/public/products`, { signal: controller.signal });
+      const res = await fetch(`${getVendorBackendUrl()}/api/public/products?t=${Date.now()}`, { 
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       clearTimeout(timeoutId);
 
       if (res.ok) {

@@ -474,17 +474,22 @@ export default function CustomerDashboard({
 
     loadVendorProducts();
 
-    // Poll every 10 seconds for real-time vendor updates
-    const intervalId = setInterval(loadVendorProducts, 10000);
+    // Poll every 3 seconds for real-time vendor updates
+    const intervalId = setInterval(loadVendorProducts, 3000);
 
     // Refetch immediately when customer switches back to window/tab
     const handleFocus = () => loadVendorProducts();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') loadVendorProducts();
+    };
     window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
