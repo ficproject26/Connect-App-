@@ -44,7 +44,7 @@ import {
   LifeBuoy, LogOut, MapPin, Phone, PhoneCall, Package, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
   Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar,
-  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe, Mail
+  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe, Mail, FileText, Upload
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -968,6 +968,14 @@ export default function CustomerDashboard({
       }
     }
   }, [currentUser]);
+
+  const [profilePhoto, setProfilePhoto] = useState(() => {
+    try {
+      return localStorage.getItem('connect_profile_photo') || currentUser?.avatar || currentUser?.photo || '';
+    } catch (e) {
+      return '';
+    }
+  });
 
   const [cart, setCart] = useState(() => {
     try {
@@ -2975,7 +2983,12 @@ export default function CustomerDashboard({
       const isJob = isJobCardItem(product);
       if (activeTab === 'Products') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
-        if (pMainCat !== 'products' || isJob) return false;
+        const pMain = (product.mainCategory || '').toLowerCase();
+        const pCat = (product.category || '').toLowerCase();
+        const pSubCat = (product.subcategory || '').toLowerCase();
+        const pName = (product.name || '').toLowerCase();
+        const isServiceItem = pMainCat === 'services' || pMain === 'services' || pCat === 'services' || pCat.includes('service') || pSubCat.includes('service') || pName.includes('service');
+        if (pMainCat !== 'products' || isJob || isServiceItem) return false;
       }
 
       if (selectedCategories.includes('Products')) {
@@ -5514,20 +5527,17 @@ export default function CustomerDashboard({
       originalPrice = temp;
     } else if (originalPrice === 0 && price > 0 && discountVal > 0 && discountVal < 100) {
       originalPrice = Math.round(price / (1 - discountVal / 100));
-    } else if (originalPrice === 0 && price > 0) {
-      originalPrice = Math.round(price / 0.8);
-      discountVal = 20;
     }
 
     const discountPercent = (originalPrice > price && originalPrice > 0)
       ? Math.round(((originalPrice - price) / originalPrice) * 100)
-      : (discountVal || 20);
+      : (discountVal || 0);
 
     return {
       price,
-      originalPrice,
+      originalPrice: (originalPrice > price) ? originalPrice : null,
       discountPercent,
-      discountText: `${discountPercent}% off`
+      discountText: discountPercent > 0 ? `${discountPercent}% off` : ''
     };
   };
 
@@ -9348,9 +9358,13 @@ wishlistProducts.forEach(item => addToCart(item));
                       >
                         <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                       </button>
-                      <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-sm border border-amber-300 shadow-sm shrink-0">
-                        {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-                      </div>
+                      {profilePhoto ? (
+                        <img src={profilePhoto} alt="Profile" className="w-9 h-9 rounded-full object-cover border border-amber-300 shadow-sm shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-sm border border-amber-300 shadow-sm shrink-0">
+                          {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
+                        </div>
+                      )}
                       <div className="flex flex-col text-left min-w-0 truncate">
                         <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
                           {currentUser?.name || profileName}
@@ -9390,9 +9404,13 @@ wishlistProducts.forEach(item => addToCart(item));
                     <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                   </button>
 
-                  <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0 mt-2">
-                    {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-                  </div>
+                  {profilePhoto ? (
+                    <img src={profilePhoto} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-amber-300 shadow-sm shrink-0 mt-2" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0 mt-2">
+                      {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
+                    </div>
+                  )}
                   <div className="w-full overflow-hidden flex flex-col items-center px-1">
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-words leading-tight">
                       {currentUser?.name || profileName}
@@ -10098,13 +10116,9 @@ wishlistProducts.forEach(item => addToCart(item));
                                 <button 
                                   onClick={() => {
                                     setIsProfileModalOpen(false);
-                                    if (activeProfileTab === 'bookings') {
-                                      setActiveTab('Services');
-                                    } else if (activeProfileTab === 'myjobs') {
-                                      setActiveTab('Jobs');
-                                    } else {
-                                      setActiveTab('Products');
-                                    }
+                                    setActiveTab('Home');
+                                    setSelectedSubNavbarCategory('All');
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
                                   }}
                                   className="mt-6 px-6 py-3 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-1.5 border-none"
                                 >
@@ -10410,6 +10424,58 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
 
                       <div className="space-y-3">
+                        {/* Profile Photo Upload Box */}
+                        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#fbb53c] text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 border-2 border-amber-300 shadow-xs">
+                            {profilePhoto ? (
+                              <img src={profilePhoto} alt="Profile Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <span>{(currentUser?.name || profileName).charAt(0).toUpperCase() || 'U'}</span>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">Profile Photo</label>
+                            <p className="text-[10px] text-slate-400">Upload a JPG, PNG or WEBP picture</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 text-[11px] font-black uppercase rounded-xl cursor-pointer transition-all shadow-2xs">
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Upload Photo</span>
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        const base64 = reader.result;
+                                        setProfilePhoto(base64);
+                                        localStorage.setItem('connect_profile_photo', base64);
+                                        triggerNotification("Profile photo uploaded successfully!");
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {profilePhoto && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProfilePhoto('');
+                                    localStorage.removeItem('connect_profile_photo');
+                                    triggerNotification("Profile photo removed");
+                                  }}
+                                  className="px-2.5 py-1 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:underline bg-transparent border-none cursor-pointer"
+                                >
+                                  Remove Photo
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
                         <div>
                           <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
                           <input 
