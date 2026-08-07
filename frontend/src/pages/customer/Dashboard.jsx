@@ -8500,74 +8500,6 @@ export default function CustomerDashboard({
           </div>
         </div>
 
-        {/* Benefits Grid */}
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-[#0b1e36] text-white text-center py-2.5 px-4 rounded-xl text-xs font-black tracking-wide shadow-xs">
-            Benefits You Unlock With This Purchase
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-            {[
-              { title: '500', sub: "Reward Points", detail: "On This Purchase", icon: Award, bg: "bg-amber-50/50 dark:bg-amber-450/5", iconCol: "text-amber-500" },
-              { title: '2,000', sub: "Travel Voucher", detail: "On Next Booking", icon: Plane, bg: "bg-blue-50/50 dark:bg-blue-450/5", iconCol: "text-blue-500" },
-              { title: '500', sub: "Food Coupon", detail: "Instant Discount", icon: Utensils, bg: "bg-red-50/50 dark:bg-red-450/5", iconCol: "text-red-500" },
-              { title: '1 Year', sub: "Extended Warranty", detail: "By Connect", icon: ShieldCheck, bg: "bg-emerald-50/50 dark:bg-emerald-400/5", iconCol: "text-emerald-500" },
-              { title: 'Priority', sub: "Customer Support", detail: "24/7 VIP Support", icon: LifeBuoy, bg: "bg-cyan-50/50 dark:bg-cyan-450/5", iconCol: "text-cyan-500" },
-              { title: 'Free', sub: "Express Delivery", detail: "2-3 Days Delivery", icon: Truck, bg: "bg-indigo-50/50 dark:bg-indigo-450/5", iconCol: "text-indigo-500" },
-            ].map((b, idx) => {
-              const Icon = b.icon;
-              return (
-                <div key={idx} className={`${b.bg} border border-slate-200/40 dark:border-slate-800/40 rounded-2xl p-4.5 text-center flex flex-col items-center justify-center transition-all hover:scale-103 shadow-3xs`}>
-                  <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 shadow-3xs flex items-center justify-center mb-3">
-                    <Icon className={`w-5 h-5 ${b.iconCol}`} />
-                  </div>
-                  <span className="text-xs font-black text-slate-800 dark:text-white block leading-tight">{b.title}</span>
-                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mt-0.5 leading-tight">{b.sub}</span>
-                  <span className="text-[8px] font-bold text-slate-500 dark:text-slate-300 block mt-1.5 uppercase tracking-wider">{b.detail}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Partner Benefits */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-baseline text-left">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Partner Benefits You Get</h3>
-            <button onClick={() => triggerNotification("Showing partner details and terms...")} className="text-xs font-bold text-blue-500 hover:underline bg-transparent border-none cursor-pointer">View All Partners</button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-            {[
-              { name: "zomato", disc: "10% OFF", cap: "Up to ₹100", app: "On All Orders", logoCol: "text-[#E23744]", logoBg: "bg-red-50/20", border: "border-red-100 dark:border-red-950/20" },
-              { name: "MARRIOTT BONVOY", disc: "15% OFF", cap: "Up to ₹2,000", app: "On Hotel Bookings", logoCol: "text-slate-800 dark:text-slate-200 font-serif tracking-widest text-[9px] uppercase", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
-              { name: "make my trip", disc: "5% OFF", cap: "Up to ₹1,500", app: "On Flight Bookings", logoCol: "text-[#008ECF] italic font-black", logoBg: "bg-blue-50/20", border: "border-blue-100 dark:border-blue-950/20" },
-              { name: "bb bigbasket", disc: "10% OFF", cap: "Up to ₹500", app: "On Groceries", logoCol: "text-[#84c225] font-black tracking-tighter", logoBg: "bg-green-50/20", border: "border-green-100 dark:border-green-950/20" },
-              { name: "TRENDS", disc: "10% OFF", cap: "Up to ₹700", app: "On Fashion", logoCol: "text-slate-800 dark:text-slate-200 font-extrabold tracking-widest", logoBg: "bg-slate-50/20", border: "border-slate-200 dark:border-slate-800" },
-              { name: "netmeds", disc: "15% OFF", cap: "Up to ₹300", app: "On Medicines", logoCol: "text-[#00A4A6] font-black", logoBg: "bg-cyan-50/20", border: "border-cyan-100 dark:border-cyan-950/20" }
-            ].map((p, idx) => (
-              <div key={idx} className={`bg-white dark:bg-[#0b1329] border ${p.border} rounded-2xl p-4 text-center flex flex-col justify-between transition-all hover:-translate-y-0.5 shadow-2xs`}>
-                <div className={`h-8 flex items-center justify-center rounded-lg ${p.logoBg} mb-3.5 font-black text-xs px-2`}>
-                  {idx === 2 ? (
-                    <span className={p.logoCol}>
-                      <span className="text-red-500">make</span><span className="text-blue-500">my</span><span className="text-red-500">trip</span>
-                    </span>
-                  ) : idx === 3 ? (
-                    <span className={p.logoCol}>
-                      <span className="text-red-500 text-[10px]">bb </span>bigbasket
-                    </span>
-                  ) : (
-                    <span className={p.logoCol}>{p.name}</span>
-                  )}
-                </div>
-                <div className="space-y-0.5 text-center">
-                  <span className="text-sm font-black text-slate-900 dark:text-white block">{p.disc}</span>
-                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">{p.cap}</span>
-                  <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider mt-1.5">{p.app}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Ecosystem promotion */}
         <div className="space-y-4">
           <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight text-left">More Savings Across Connect Ecosystem</h3>
@@ -8602,43 +8534,6 @@ export default function CustomerDashboard({
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        {/* Rewards summary widget */}
-        <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs flex flex-col lg:flex-row justify-between items-center gap-6">
-          <div className="flex-1 space-y-4 text-left w-full">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Connect Rewards</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
-              {[
-                { label: "Total Reward Points", val: "2,540", icon: Award, color: "text-amber-500" },
-                { label: "Cashback Earned", val: "₹12,450", icon: Wallet, color: "text-emerald-500" },
-                { label: "Referral Earnings", val: "₹1,250", icon: UserCheck, color: "text-blue-500" },
-                { label: "Total Savings Till Now", val: "₹25,600", icon: Gift, color: "text-rose-500" }
-              ].map((r, idx) => {
-                const Icon = r.icon;
-                return (
-                  <div key={idx} className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/60 rounded-2xl p-4 flex items-center gap-3 shadow-3xs">
-                    <div className={`w-9.5 h-9.5 rounded-full bg-white dark:bg-slate-900 shadow-3xs flex items-center justify-center shrink-0 ${r.color}`}>
-                      <Icon className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="leading-tight">
-                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-wider">{r.label}</span>
-                      <span className="text-xs font-black text-slate-900 dark:text-white block mt-1">{r.val}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="shrink-0 flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start pt-5 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-150 dark:border-slate-800 lg:pl-6">
-            <div className="text-left leading-tight hidden md:block">
-              <span className="text-xs font-black text-slate-900 dark:text-white block">Unlock Platinum Tiers</span>
-              <span className="text-[10px] text-slate-455 dark:text-slate-500 block mt-1.5 max-w-[150px]">Double your savings by getting a Platinum upgrade today.</span>
-            </div>
-            <button onClick={() => { setIsProfileModalOpen(true); setActiveProfileTab('card'); }} className="bg-[#0b1e36] hover:bg-[#13325a] text-white text-xs font-black uppercase tracking-wider px-5 py-3.5 rounded-xl transition-all shadow cursor-pointer border-none shrink-0 w-full lg:w-auto text-center">
-              View Rewards Dashboard
-            </button>
           </div>
         </div>
 
@@ -12621,13 +12516,24 @@ wishlistProducts.forEach(item => addToCart(item));
                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Order Reference</span>
                       <span className="text-xs font-mono font-extrabold text-blue-600 dark:text-blue-400">#{supportOrderModal.order_number}</span>
                     </div>
-                    <h4 className="text-xs font-black text-slate-800 dark:text-white line-clamp-1">{supportOrderModal.product_details}</h4>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-white line-clamp-1">
+                      {(() => {
+                        let details = supportOrderModal.product_details || '';
+                        if (Array.isArray(supportOrderModal.items) && supportOrderModal.items.length > 0) {
+                          details = supportOrderModal.items.map(i => `${i.name || i.title || 'Item'} (Qty: ${i.quantity || 1})`).join(', ');
+                        }
+                        if (!details || details.trim() === 'HD' || details.trim() === 'HD (Qty: 1)') {
+                          details = supportOrderModal.type === 'Job' ? 'Job Application' : ['Booking', 'Stay', 'Travel', 'Services'].includes(supportOrderModal.type) ? 'Service / Booking' : 'Connect Store Order';
+                        }
+                        return details;
+                      })()}
+                    </h4>
                     
                     {/* Reporting Amount Badge */}
                     <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between items-center">
                       <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Reporting Amount:</span>
                       <span className="text-base font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">
-                        ₹{supportOrderModal.amount}
+                        ₹{(supportOrderModal.amount || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
