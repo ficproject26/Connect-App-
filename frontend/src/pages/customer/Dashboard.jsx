@@ -692,8 +692,9 @@ export default function CustomerDashboard({
       if (activeTab) {
         localStorage.setItem('connect_active_tab', activeTab);
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {}
-  }, [activeTab]);
+  }, [activeTab, selectedSubNavbarCategory]);
 
   // Browser History Sync for Back (←) and Next (→) Navigation Buttons on Dashboard Tabs
   useEffect(() => {
@@ -3954,7 +3955,7 @@ export default function CustomerDashboard({
                                 {profileName || currentUser?.name || 'VIP MEMBER'}
                               </span>
                               <span className="text-[7px] font-bold uppercase tracking-widest text-slate-300 mt-0.5">
-                                CARD PERIOD: MONTHLY (1 MONTH)
+                                CARD PERIOD: MONTHLY
                               </span>
                             </div>
                           </div>
@@ -5653,16 +5654,6 @@ export default function CustomerDashboard({
               {activeTab === 'Home' && (
                 <>
                   <select
-                    value={selectedCategories[0] || ""}
-                    onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
-                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
-                  >
-                    <option value="">All Categories</option>
-                    {['Products', 'Services'].map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                  <select
                     value={selectedPrices[0] || ""}
                     onChange={(e) => setSelectedPrices(e.target.value ? [e.target.value] : [])}
                     className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
@@ -5679,16 +5670,6 @@ export default function CustomerDashboard({
               {/* Products Tab Filters */}
               {activeTab === 'Products' && (
                 <>
-                  <select
-                    value={selectedCategories[0] || ""}
-                    onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
-                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
-                  >
-                    <option value="">All Categories</option>
-                    {getCategoriesForTab('Products').map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
                   <select
                     value={selectedBrands[0] || ""}
                     onChange={(e) => setSelectedBrands(e.target.value ? [e.target.value] : [])}
@@ -5823,16 +5804,6 @@ export default function CustomerDashboard({
                     <option value="Ooty">To: Ooty</option>
                     <option value="Mysore">To: Mysore</option>
                     <option value="Kochi">To: Kochi</option>
-                  </select>
-                  <select
-                    value={selectedCategories[0] || ""}
-                    onChange={(e) => setSelectedCategories(e.target.value ? [e.target.value] : [])}
-                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
-                  >
-                    <option value="">All Categories</option>
-                    {getCategoriesForTab('Travel').map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
                   </select>
                   <select
                     value={selectedPrices[0] || ""}
@@ -6643,7 +6614,6 @@ export default function CustomerDashboard({
                                     const { price: cardPrice, originalPrice: cardOrigPrice, discountText: cardDiscountText } = getProductPrices(product);
                                     return (
                                       <div className="mt-3.5 space-y-1">
-                                        <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider block font-bold leading-none">Starting from</span>
                                         <div className="flex items-baseline gap-1.5 flex-wrap">
                                           <span className="text-[15px] sm:text-[16px] font-black text-slate-900 dark:text-white">₹{cardPrice.toLocaleString()}</span>
                                           {cardOrigPrice && cardOrigPrice > cardPrice && (
@@ -8144,40 +8114,42 @@ export default function CustomerDashboard({
           <div className="lg:col-span-5 flex flex-col justify-between">
             <div className="flex gap-4">
               {/* Thumbnails list */}
-              <div className="flex flex-col gap-2.5 shrink-0 select-none">
-                {thumbnails.slice(0, 5).map((thumb, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => { setActiveProductImage(thumb); setActiveThumbnailIndex(idx); }}
-                    className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
-                      activeThumbnailIndex === idx 
-                        ? 'border-amber-400 shadow-md scale-102' 
-                        : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
-                    }`}
-                  >
-                    <img 
-                      src={thumb} 
-                      alt="" 
-                      className={`w-full h-full object-cover ${
-                        idx === 1 ? 'contrast-125 saturate-125' :
-                        idx === 2 ? 'hue-rotate-15' :
-                        idx === 3 ? 'brightness-90' :
-                        idx === 4 ? 'sepia-10' : ''
-                      }`} 
-                    />
-                  </button>
-                ))}
-                {thumbnails.length > 5 && (
-                  <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
-                    <span>+{thumbnails.length - 5}</span>
-                    <span>More</span>
-                  </div>
-                )}
-              </div>
+              {!(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.category === 'Jobs' || selectedProduct.mainCategory === 'Jobs') && (
+                <div className="flex flex-col gap-2.5 shrink-0 select-none">
+                  {thumbnails.slice(0, 5).map((thumb, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => { setActiveProductImage(thumb); setActiveThumbnailIndex(idx); }}
+                      className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
+                        activeThumbnailIndex === idx 
+                          ? 'border-amber-400 shadow-md scale-102' 
+                          : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
+                      }`}
+                    >
+                      <img 
+                        src={thumb} 
+                        alt="" 
+                        className={`w-full h-full object-cover ${
+                          idx === 1 ? 'contrast-125 saturate-125' :
+                          idx === 2 ? 'hue-rotate-15' :
+                          idx === 3 ? 'brightness-90' :
+                          idx === 4 ? 'sepia-10' : ''
+                        }`} 
+                      />
+                    </button>
+                  ))}
+                  {thumbnails.length > 5 && (
+                    <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                      <span>+{thumbnails.length - 5}</span>
+                      <span>More</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Main Large Display */}
               <div className="relative flex-grow aspect-square bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-900 overflow-hidden flex items-center justify-center p-4">
-                {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs') ? (
+                {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.category === 'Jobs' || selectedProduct.mainCategory === 'Jobs') ? (
                   <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2 rounded-xl">
                     <Briefcase className="w-12 h-12 text-amber-500" />
                     <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
@@ -8204,20 +8176,6 @@ export default function CustomerDashboard({
                 </button>
               </div>
             </div>
-
-            {/* Media helpers underneath - ONLY for Products */}
-            {(selectedProduct.subNavbarCategory === 'Products' || selectedProduct.mainCategory === 'Products') && (
-              <div className="flex justify-center gap-4 mt-6">
-                <button onClick={() => setIs360ModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
-                  <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>
-                  <span>View in 360°</span>
-                </button>
-                <button onClick={() => setIsArModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all shadow-3xs border border-slate-200/50 dark:border-slate-800/50 cursor-pointer">
-                  <svg className="w-4.5 h-4.5 text-slate-455" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                  <span>AR View</span>
-                </button>
-              </div>
-            )}
 
             {/* Stats Row underneath */}
             <div className="grid grid-cols-4 gap-2.5 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
@@ -8256,12 +8214,12 @@ export default function CustomerDashboard({
               <div className="text-left space-y-0.5 mb-3.5">
                 <div className="text-[14px] font-extrabold text-slate-800 dark:text-slate-200">
                   {selectedProduct.category === 'Smartphones' ? 'Smartphone & Mobiles' : 
-                   selectedProduct.category === 'Hospital' || selectedProduct.category === 'Services' ? 'Cardiologist' :
-                   selectedProduct.category}
+                   isMedicalService(selectedProduct) ? 'Medical Specialist' :
+                   selectedProduct.category || selectedProduct.department || 'General'}
                 </div>
                 <div className="text-[11.5px] text-slate-500 dark:text-slate-400 font-semibold">
                   {selectedProduct.category === 'Smartphones' ? '128GB ROM, 8GB RAM' : 
-                   selectedProduct.category === 'Hospital' || selectedProduct.category === 'Services' ? 'MBBS, MD - Cardiology' :
+                   isMedicalService(selectedProduct) ? 'MBBS, MD - Cardiology' :
                    'Verified Premium Tier'}
                 </div>
               </div>
