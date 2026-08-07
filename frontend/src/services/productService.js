@@ -28,8 +28,8 @@ export const isRealVendorProduct = (p) => {
   const vId = String(p.vendorId || p.vendor_id || '');
   const pId = String(p.id || p._id || '');
 
-  // Exclude hardcoded demo/dump ID formats (like u06q3qsi5mqg7ni0h, 9iitzyfekmqg7ni0w)
-  if (vId.includes('mqg7ni') || pId.includes('mqg7ni')) return false;
+  // Exclude hardcoded demo/dump ID formats from initial seed data
+  if (vId.includes('mqg7ni') || pId.includes('mqg7ni') || vId.includes('mqhms') || pId.includes('mqhms') || vId.includes('mqhn3') || pId.includes('mqhn3') || vId.includes('mqkqu') || pId.includes('mqkqu')) return false;
 
   // Exclude static baseline/dump item IDs
   if (pId.startsWith('base-') || pId === 'p1' || pId === 'p2' || pId === 'p3' || pId === 'p4') return false;
