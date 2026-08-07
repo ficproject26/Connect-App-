@@ -5078,7 +5078,7 @@ export default function CustomerDashboard({
           {trending.map(product => {
             const isFavorited = favorites.includes(product.id);
             return (
-              <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-350 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-0.5">
+              <div key={product.id} onClick={() => { setActiveProductImage(product.image); setActiveThumbnailIndex(0); setSelectedProduct(product); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-350 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-0.5">
                 <div className="relative aspect-[0.95/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
                   {isVendorProductUnavailable(product) && (
                     <div className="absolute top-0 left-0 z-20 w-24 h-24 overflow-hidden pointer-events-none">
@@ -5179,7 +5179,7 @@ export default function CustomerDashboard({
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stays.map((stay, idx) => (
-            <div key={idx} onClick={() => setSelectedProduct(stay)} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+            <div key={idx} onClick={() => { setActiveProductImage(stay.image); setActiveThumbnailIndex(0); setSelectedProduct(stay); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
                 <img src={stay.image} alt={stay.name} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">15% SAVINGS</span>
@@ -5501,7 +5501,7 @@ export default function CustomerDashboard({
 
   const getProductPrices = (product) => {
     let price = Number(product?.price || 0);
-    let originalPrice = Number(product?.originalPrice || 0);
+    let originalPrice = Number(product?.originalPrice || product?.mrp || product?.original_price || 0);
 
     const isJob = product?.subNavbarCategory === 'Jobs' || 
       product?.mainCategory === 'Jobs' || 
@@ -5533,7 +5533,7 @@ export default function CustomerDashboard({
       const temp = price;
       price = originalPrice;
       originalPrice = temp;
-    } else if (originalPrice === 0 && price > 0 && discountVal > 0 && discountVal < 100) {
+    } else if ((!originalPrice || originalPrice <= price) && price > 0 && discountVal > 0 && discountVal < 100) {
       originalPrice = Math.round(price / (1 - discountVal / 100));
     }
 
@@ -5545,7 +5545,7 @@ export default function CustomerDashboard({
       price,
       originalPrice: (originalPrice > price) ? originalPrice : null,
       discountPercent,
-      discountText: discountPercent > 0 ? `${discountPercent}% off` : ''
+      discountText: discountPercent > 0 ? `${discountPercent}% off` : (product?.discount && product.discount.includes('%') ? product.discount : '')
     };
   };
 
@@ -6533,7 +6533,7 @@ export default function CustomerDashboard({
                     {displayProducts.map((product) => {
                       const isFavorited = favorites.includes(product.id);
                       return (
-                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
+                        <div key={product.id} onClick={() => { setActiveProductImage(product.image); setActiveThumbnailIndex(0); setSelectedProduct(product); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
                           <div className="relative aspect-[1.4/1] bg-slate-50 dark:bg-slate-950 overflow-hidden flex items-center justify-center select-none border-b border-slate-100 dark:border-slate-800/60">
                             {isVendorProductUnavailable(product) && (
                               <div className="absolute top-0 left-0 z-20 w-24 h-24 overflow-hidden pointer-events-none">
@@ -8166,7 +8166,7 @@ export default function CustomerDashboard({
               )}
 
               {/* Main Large Display */}
-              <div className="relative flex-grow aspect-square bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-900 overflow-hidden flex items-center justify-center p-4">
+              <div className="relative flex-grow min-h-[380px] sm:min-h-[450px] aspect-[4/3] sm:aspect-[1.1/1] w-full bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-900 overflow-hidden flex items-center justify-center p-0">
                 {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.category === 'Jobs' || selectedProduct.mainCategory === 'Jobs') ? (
                   <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2 rounded-xl">
                     <Briefcase className="w-12 h-12 text-amber-500" />
@@ -8176,7 +8176,7 @@ export default function CustomerDashboard({
                   <img 
                     src={activeProductImage || selectedProduct.image} 
                     alt={selectedProduct.name} 
-                    className={`w-full h-full object-contain max-h-[420px] transition-all duration-300 ${
+                    className={`w-full h-full object-cover transition-all duration-300 ${
                       activeThumbnailIndex === 1 ? 'contrast-125 saturate-125' :
                       activeThumbnailIndex === 2 ? 'hue-rotate-15' :
                       activeThumbnailIndex === 3 ? 'brightness-90' :
@@ -8585,7 +8585,10 @@ export default function CustomerDashboard({
                   <div 
                     key={prod.id} 
                     onClick={() => {
+                      setActiveProductImage(prod.image);
+                      setActiveThumbnailIndex(0);
                       setSelectedProduct(prod);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }} 
                     className="group bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-3xs hover:shadow-md transition-all duration-300 flex flex-col justify-between cursor-pointer hover:-translate-y-0.5"
                   >
