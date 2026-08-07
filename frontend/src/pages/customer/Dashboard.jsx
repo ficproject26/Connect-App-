@@ -5135,28 +5135,67 @@ export default function CustomerDashboard({
                           <span>Vendor Unavailable</span>
                         </button>
                       ) : (
-                        <>
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              addToCart(product); 
-                            }} 
-                            className="flex-1 inline-flex items-center justify-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Add</span>
-                          </button>
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              addToCart(product);
-                              setIsCartOpen(true);
-                            }} 
-                            className="flex-1 inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-emerald-700/30"
-                          >
-                            <span>Order Now</span>
-                          </button>
-                        </>
+                        (() => {
+                          const cartItem = cart.find(i => String(i.id) === String(product.id) || String(i.id) === String(product._id));
+                          const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
+                          return (
+                            <>
+                              {inCartQty > 0 ? (
+                                <div 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex-1 px-1 py-0.5 bg-emerald-600 text-white font-black text-[10px] rounded-lg flex items-center justify-between shadow-xs select-none"
+                                >
+                                  <button 
+                                    type="button"
+                                    onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      updateCartQuantity(cartItem.id, -1); 
+                                    }}
+                                    className="w-5 h-5 rounded bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
+                                    title="Decrease quantity"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="text-[10px] font-black text-white px-0.5">
+                                    {inCartQty} in Cart
+                                  </span>
+                                  <button 
+                                    type="button"
+                                    onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      updateCartQuantity(cartItem.id, 1); 
+                                    }}
+                                    className="w-5 h-5 rounded bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
+                                    title="Increase quantity"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button 
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    addToCart(product); 
+                                  }} 
+                                  className="flex-1 inline-flex items-center justify-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Add</span>
+                                </button>
+                              )}
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  addToCart(product);
+                                  setIsCartOpen(true);
+                                }} 
+                                className="flex-1 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-blue-700/30"
+                              >
+                                <span>Order Now</span>
+                              </button>
+                            </>
+                          );
+                        })()
                       )}
                     </div>
                   </div>
@@ -6677,18 +6716,54 @@ export default function CustomerDashboard({
 
                                 const category = activeTab === 'Home' ? product.subNavbarCategory : activeTab;
                                 if (category === 'Products' || category === 'Daily Needs' || category === 'Food') {
+                                  const cartItem = cart.find(i => String(i.id) === String(product.id) || String(i.id) === String(product._id));
+                                  const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
+
                                   return (
                                     <>
-                                      <button 
-                                        onClick={(e) => { 
-                                          e.stopPropagation(); 
-                                          addToCart(product); 
-                                        }} 
-                                        className="w-full xs:flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 border border-slate-200/40 dark:border-slate-700/30 leading-none h-8.5 sm:h-9"
-                                      >
-                                        <Plus className="w-3.5 h-3.5 shrink-0" />
-                                        <span>Add to Cart</span>
-                                      </button>
+                                      {inCartQty > 0 ? (
+                                        <div 
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="w-full xs:flex-1 py-1 px-1.5 bg-emerald-600 text-white font-black text-xs rounded-xl flex items-center justify-between shadow-sm h-8.5 sm:h-9 select-none"
+                                        >
+                                          <button 
+                                            type="button"
+                                            onClick={(e) => { 
+                                              e.stopPropagation(); 
+                                              updateCartQuantity(cartItem.id, -1); 
+                                            }}
+                                            className="w-6.5 h-6.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
+                                            title="Decrease quantity"
+                                          >
+                                            <Minus className="w-3.5 h-3.5" />
+                                          </button>
+                                          <span className="text-[11px] font-black text-white px-1">
+                                            {inCartQty} in Cart
+                                          </span>
+                                          <button 
+                                            type="button"
+                                            onClick={(e) => { 
+                                              e.stopPropagation(); 
+                                              updateCartQuantity(cartItem.id, 1); 
+                                            }}
+                                            className="w-6.5 h-6.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
+                                            title="Increase quantity"
+                                          >
+                                            <Plus className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button 
+                                          onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            addToCart(product); 
+                                          }} 
+                                          className="w-full xs:flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 border border-slate-200/40 dark:border-slate-700/30 leading-none h-8.5 sm:h-9"
+                                        >
+                                          <Plus className="w-3.5 h-3.5 shrink-0" />
+                                          <span>Add to Cart</span>
+                                        </button>
+                                      )}
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
@@ -8499,17 +8574,43 @@ export default function CustomerDashboard({
                   </div>
                 ) : getActionButtons(selectedProduct).showBooking ? (
                   <div className="flex items-center gap-2 w-full sm:flex-1">
-                    {!( ['Services', 'Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Services', 'Stay', 'Travel'].includes(selectedProduct.tag) || isMedicalService(selectedProduct) || selectedProduct.category === 'Hospital' || selectedProduct.category === 'Hospitals' ) && (
-                      <button
-                        onClick={() => {
-                          addToCart(selectedProduct);
-                        }}
-                        className="flex-1 py-3 sm:py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700/30 h-11 sm:h-12"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        <span>{getActionButtons(selectedProduct).actionText}</span>
-                      </button>
-                    )}
+                    {!( ['Services', 'Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Services', 'Stay', 'Travel'].includes(selectedProduct.tag) || isMedicalService(selectedProduct) || selectedProduct.category === 'Hospital' || selectedProduct.category === 'Hospitals' ) && (() => {
+                      const cartItem = cart.find(i => String(i.id) === String(selectedProduct.id) || String(i.id) === String(selectedProduct._id));
+                      const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
+                      return inCartQty > 0 ? (
+                        <div className="flex-1 py-1 px-2.5 bg-emerald-600 text-white font-black text-xs rounded-xl flex items-center justify-between shadow-sm h-11 sm:h-12 select-none border border-emerald-700">
+                          <button 
+                            type="button"
+                            onClick={() => updateCartQuantity(cartItem.id, -1)}
+                            className="w-8 h-8 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
+                            title="Decrease quantity"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <span className="text-xs font-black text-white px-2">
+                            {inCartQty} in Cart
+                          </span>
+                          <button 
+                            type="button"
+                            onClick={() => updateCartQuantity(cartItem.id, 1)}
+                            className="w-8 h-8 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
+                            title="Increase quantity"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            addToCart(selectedProduct);
+                          }}
+                          className="flex-1 py-3 sm:py-3.5 bg-[#0b1e36] dark:bg-slate-800 hover:bg-[#13325a] dark:hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700/30 h-11 sm:h-12"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          <span>{getActionButtons(selectedProduct).actionText}</span>
+                        </button>
+                      );
+                    })()}
                     <button
                       onClick={() => {
                         if (!currentUser) {
