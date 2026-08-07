@@ -7891,7 +7891,7 @@ export default function CustomerDashboard({
       ) {
         return [
           { title: 'Freshness', val: "100% Farm Fresh", icon: (className) => <CheckCircle2 className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
-          { title: 'Return Policy', val: "Same Day Return", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Quality Assurance', val: "100% Quality Checked", icon: (className) => <ShieldCheck className={className} />, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
           { title: 'Delivery Speed', val: "Express Delivery", icon: (className) => <Clock className={className} />, bg: "bg-amber-50 dark:bg-amber-950/35", color: "text-amber-500" },
           { title: 'Packaging', val: "Hygienically Packed", icon: (className) => <Package className={className} />, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
@@ -7899,7 +7899,7 @@ export default function CustomerDashboard({
         // General Products (Electronics, Appliances, Gadgets, Sarees)
         return [
           { title: 'Brand Warranty', val: "1 Year Covered", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, bg: "bg-blue-50 dark:bg-blue-950/35", color: "text-blue-500" },
-          { title: 'Return Policy', val: "7 Days Replacement", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3" /></svg>, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
+          { title: 'Quality Assurance', val: "Authentic Product", icon: (className) => <ShieldCheck className={className} />, bg: "bg-indigo-50 dark:bg-indigo-950/35", color: "text-indigo-500" },
           { title: 'Delivery Speed', val: "Express Shipping", icon: (className) => <Clock className={className} />, bg: "bg-emerald-50 dark:bg-emerald-950/35", color: "text-emerald-500" },
           { title: 'Package Security', val: "Secure Transit", icon: (className) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>, bg: "bg-teal-50 dark:bg-teal-950/35", color: "text-teal-500" }
         ];
