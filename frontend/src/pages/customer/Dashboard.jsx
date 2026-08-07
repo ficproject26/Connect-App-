@@ -2772,6 +2772,9 @@ export default function CustomerDashboard({
         sCity === '' ||
         sCity === 'all' || 
         sCity === 'any' || 
+        activeTab === 'Products' ||
+        activeTab === 'Home' ||
+        activeTab === 'Daily Needs' ||
         !pCity ||
         pCity === '' ||
         pCity === 'city' ||
