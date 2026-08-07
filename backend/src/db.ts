@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -736,16 +736,24 @@ class DatabaseManager {
     if (this.mongoDb) {
       try {
         const vIdStr = String(vendorId).trim();
+        const orConditions: any[] = [
+          { vendorId: vIdStr },
+          { registrationId: vIdStr },
+          { regId: vIdStr },
+          { primaryBusinessId: vIdStr },
+          { 'businesses._id': vIdStr }
+        ];
+
+        if (ObjectId.isValid(vIdStr)) {
+          orConditions.push({ _id: new ObjectId(vIdStr) });
+        } else {
+          orConditions.push({ _id: vIdStr });
+        }
+
         const user = await this.mongoDb.collection('users').findOne({
-          $or: [
-            { _id: vIdStr },
-            { vendorId: vIdStr },
-            { registrationId: vIdStr },
-            { regId: vIdStr },
-            { primaryBusinessId: vIdStr },
-            { 'businesses._id': vIdStr }
-          ]
-        });
+          $or: orConditions
+        } as any);
+
         if (user) {
           const statusLower = (user.status || '').toLowerCase().trim();
           const isSuspended = ['suspended', 'inactive', 'rejected', 'deactivated', 'disabled', 'blocked'].includes(statusLower) ||
