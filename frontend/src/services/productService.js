@@ -136,6 +136,19 @@ export const productService = {
     } catch (e) {}
   },
 
+  getCachedProducts: () => {
+    try {
+      const cached = localStorage.getItem('connect_cached_products');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return [];
+  },
+
   getProducts: async (forceLive = true) => {
     const filterVendorAddedOnly = (fetchedList) => {
       const sanitized = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];

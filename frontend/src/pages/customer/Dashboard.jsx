@@ -383,7 +383,26 @@ export default function CustomerDashboard({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(() => {
+    try {
+      const cached = localStorage.getItem('connect_cached_products');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
+  const [isLoadingProducts, setIsLoadingProducts] = useState(() => {
+    try {
+      const cached = localStorage.getItem('connect_cached_products');
+      return !(cached && JSON.parse(cached).length > 0);
+    } catch (e) {
+      return true;
+    }
+  });
   const [selectedColor, setSelectedColor] = useState('Red');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -407,67 +426,71 @@ export default function CustomerDashboard({
     const loadVendorProducts = async () => {
       try {
         const res = await productService.getProducts(true);
-        if (isMounted && res && res.success && Array.isArray(res.products)) {
-          const patched = res.products.map(p => {
-            const updated = { ...p };
-            // Correct Eggs category
-            if (p.name && p.name.toLowerCase().includes('egg') && p.category === 'Rice') {
-              updated.category = 'Eggs';
-            }
-            // Correct doctor images
-            if (p.subNavbarCategory === 'Services' && (!p.image || p.image.includes('unsplash.com/photo-1523275335684-37898b6baf30'))) {
-              if (p.name && p.name.toLowerCase().includes('robert')) {
-                updated.image = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60';
-              } else if (p.name && p.name.toLowerCase().includes('james')) {
-                updated.image = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60';
-              } else if (p.name && p.name.toLowerCase().includes('emily')) {
-                updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
-              } else {
-                updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
+        if (isMounted) {
+          setIsLoadingProducts(false);
+          if (res && res.success && Array.isArray(res.products)) {
+            const patched = res.products.map(p => {
+              const updated = { ...p };
+              // Correct Eggs category
+              if (p.name && p.name.toLowerCase().includes('egg') && p.category === 'Rice') {
+                updated.category = 'Eggs';
               }
-            }
-            // Assign foodType (Veg / Non-Veg) for Food items
-            if (p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani' || p.category === 'Biriyani' || p.tag === 'Food') {
-              const nameLower = (p.name || '').toLowerCase();
-              const descLower = (p.description || '').toLowerCase();
-              const catLower = (p.category || '').toLowerCase();
-              const ftLower = (p.foodType || p.dietary || '').toLowerCase();
-
-              const isExplicitlyNonVeg = ftLower.includes('non') || p.isVeg === false || p.veg === false;
-              const isNonVegKeyword = 
-                nameLower.includes('chicken') || 
-                nameLower.includes('mutton') || 
-                nameLower.includes('egg') || 
-                nameLower.includes('fish') || 
-                nameLower.includes('meat') || 
-                nameLower.includes('prawn') ||
-                nameLower.includes('crab') ||
-                nameLower.includes('non-veg') ||
-                nameLower.includes('non veg') ||
-                catLower.includes('non-veg') ||
-                catLower.includes('non veg') ||
-                descLower.includes('chicken') ||
-                descLower.includes('mutton') ||
-                ((nameLower.includes('biryani') || nameLower.includes('biriyani')) && !nameLower.includes('veg') && !descLower.includes('veg biryani') && !descLower.includes('veg biriyani'));
-
-              if (isExplicitlyNonVeg || isNonVegKeyword) {
-                updated.foodType = 'Non-Veg';
-              } else {
-                updated.foodType = 'Veg';
+              // Correct doctor images
+              if (p.subNavbarCategory === 'Services' && (!p.image || p.image.includes('unsplash.com/photo-1523275335684-37898b6baf30'))) {
+                if (p.name && p.name.toLowerCase().includes('robert')) {
+                  updated.image = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60';
+                } else if (p.name && p.name.toLowerCase().includes('james')) {
+                  updated.image = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60';
+                } else if (p.name && p.name.toLowerCase().includes('emily')) {
+                  updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
+                } else {
+                  updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
+                }
               }
-            }
-            // Patch Travel (Bus) items with fromCity, toCity, busType, busClass
-            if (p.subNavbarCategory === 'Travel') {
-              updated.fromCity = p.fromCity || 'Bangalore';
-              updated.toCity = p.toCity || 'Chennai';
-              updated.busType = (p.description?.toLowerCase().includes('non-ac') || p.name?.toLowerCase().includes('non-ac')) ? 'Non-AC' : 'AC';
-              updated.busClass = (p.description?.toLowerCase().includes('seater') || p.name?.toLowerCase().includes('seater')) ? 'Seater' : 'Sleeper';
-            }
-            return updated;
-          });
-          setProducts(patched);
+              // Assign foodType (Veg / Non-Veg) for Food items
+              if (p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani' || p.category === 'Biriyani' || p.tag === 'Food') {
+                const nameLower = (p.name || '').toLowerCase();
+                const descLower = (p.description || '').toLowerCase();
+                const catLower = (p.category || '').toLowerCase();
+                const ftLower = (p.foodType || p.dietary || '').toLowerCase();
+
+                const isExplicitlyNonVeg = ftLower.includes('non') || p.isVeg === false || p.veg === false;
+                const isNonVegKeyword = 
+                  nameLower.includes('chicken') || 
+                  nameLower.includes('mutton') || 
+                  nameLower.includes('egg') || 
+                  nameLower.includes('fish') || 
+                  nameLower.includes('meat') || 
+                  nameLower.includes('prawn') ||
+                  nameLower.includes('crab') ||
+                  nameLower.includes('non-veg') ||
+                  nameLower.includes('non veg') ||
+                  catLower.includes('non-veg') ||
+                  catLower.includes('non veg') ||
+                  descLower.includes('chicken') ||
+                  descLower.includes('mutton') ||
+                  ((nameLower.includes('biryani') || nameLower.includes('biriyani')) && !nameLower.includes('veg') && !descLower.includes('veg biryani') && !descLower.includes('veg biriyani'));
+
+                if (isExplicitlyNonVeg || isNonVegKeyword) {
+                  updated.foodType = 'Non-Veg';
+                } else {
+                  updated.foodType = 'Veg';
+                }
+              }
+              // Patch Travel (Bus) items with fromCity, toCity, busType, busClass
+              if (p.subNavbarCategory === 'Travel') {
+                updated.fromCity = p.fromCity || 'Bangalore';
+                updated.toCity = p.toCity || 'Chennai';
+                updated.busType = (p.description?.toLowerCase().includes('non-ac') || p.name?.toLowerCase().includes('non-ac')) ? 'Non-AC' : 'AC';
+                updated.busClass = (p.description?.toLowerCase().includes('seater') || p.name?.toLowerCase().includes('seater')) ? 'Seater' : 'Sleeper';
+              }
+              return updated;
+            });
+            setProducts(patched);
+          }
         }
       } catch (err) {
+        if (isMounted) setIsLoadingProducts(false);
         console.warn("Failed to load vendor products dynamically:", err);
       }
     };
@@ -727,7 +750,18 @@ export default function CustomerDashboard({
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-  const [dbCategories, setDbCategories] = useState([]);
+  const [dbCategories, setDbCategories] = useState(() => {
+    try {
+      const cached = localStorage.getItem('connect_cached_db_categories');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
 
   const normalizeMainCatName = (rawName) => {
     if (!rawName) return '';
@@ -1197,6 +1231,9 @@ export default function CustomerDashboard({
           const data = await res.json();
           if (Array.isArray(data)) {
             setDbCategories(data);
+            try {
+              localStorage.setItem('connect_cached_db_categories', JSON.stringify(data));
+            } catch (e) {}
           }
         }
       } catch (err) {
@@ -6846,6 +6883,17 @@ export default function CustomerDashboard({
                         </div>
                       );
                     })}
+                  </div>
+                ) : isLoadingProducts ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                      <div key={n} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-xs animate-pulse p-4 space-y-3">
+                        <div className="w-full aspect-[1.4/1] bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+                        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-3/4"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+                        <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-xl w-full"></div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-16 px-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs w-full">
