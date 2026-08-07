@@ -980,6 +980,9 @@ export default function CustomerDashboard({
     }
   });
 
+  const [selectedServicePlanId, setSelectedServicePlanId] = useState('1month');
+  const [selectedServiceTimingName, setSelectedServiceTimingName] = useState('Morning');
+
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem('connect_cart');
@@ -6984,8 +6987,8 @@ export default function CustomerDashboard({
       { id:'12month', name:'12 Month Plan', price: Math.round(basePrice * 8), perLabel:'/year', validity:'Valid for 365 Days', originalPrice: Math.round(basePrice * 12), save: Math.round(basePrice * 4), best: true }
     ];
     const timings = [{name:'Morning',time:'5:00 AM - 9:00 AM'},{name:'Afternoon',time:'12:00 PM - 4:00 PM'},{name:'Evening',time:'5:00 PM - 10:00 PM'},{name:'Night',time:'10:00 PM - 12:00 AM'}];
-    const selectedPlan = plans[0];
-    const selectedTiming = timings[0];
+    const selectedPlan = plans.find(p => p.id === selectedServicePlanId) || plans[0];
+    const selectedTiming = timings.find(t => t.name === selectedServiceTimingName) || timings[0];
     const gst = Math.round(selectedPlan.price * 0.18);
     const convFee = 50;
     const totalAmount = selectedPlan.price + gst + convFee;
@@ -7052,11 +7055,57 @@ export default function CustomerDashboard({
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Membership Plans</h3>
-              <div className="grid grid-cols-3 gap-3">{plans.map(plan => (<div key={plan.id} className={`relative p-3 rounded-xl border-2 cursor-pointer transition-all ${plan.id === '1month' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'}`}>{plan.best && <span className="absolute -top-2 right-2 bg-amber-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Best Value</span>}<span className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block">{plan.name}</span><span className="text-lg font-black text-slate-900 dark:text-white block mt-1">₹{plan.price.toLocaleString()}</span><span className="text-[9px] text-slate-400 font-bold">{plan.perLabel}</span>{plan.originalPrice && <><br/><span className="text-[9px] text-slate-400 line-through">₹{plan.originalPrice.toLocaleString()}</span> <span className="text-[9px] font-black text-emerald-600">Save ₹{plan.save.toLocaleString()}</span></>}<span className="text-[8px] text-slate-400 font-bold block mt-1.5">{plan.validity}</span></div>))}</div>
+              <div className="grid grid-cols-3 gap-3">
+                {plans.map(plan => {
+                  const isSelected = plan.id === selectedPlan.id;
+                  return (
+                    <div 
+                      key={plan.id} 
+                      onClick={() => setSelectedServicePlanId(plan.id)}
+                      className={`relative p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        isSelected 
+                          ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/10 shadow-sm scale-102' 
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      }`}
+                    >
+                      {plan.best && <span className="absolute -top-2 right-2 bg-amber-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Best Value</span>}
+                      <span className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block">{plan.name}</span>
+                      <span className="text-lg font-black text-slate-900 dark:text-white block mt-1">₹{plan.price.toLocaleString()}</span>
+                      <span className="text-[9px] text-slate-400 font-bold">{plan.perLabel}</span>
+                      {plan.originalPrice && (
+                        <>
+                          <br/>
+                          <span className="text-[9px] text-slate-400 line-through">₹{plan.originalPrice.toLocaleString()}</span>{" "}
+                          <span className="text-[9px] font-black text-emerald-600">Save ₹{plan.save.toLocaleString()}</span>
+                        </>
+                      )}
+                      <span className="text-[8px] text-slate-400 font-bold block mt-1.5">{plan.validity}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Select Gym Timing</h3>
-              <div className="grid grid-cols-4 gap-2">{timings.map(t => (<button key={t.name} className={`p-2.5 rounded-xl border-2 text-center cursor-pointer transition-all ${t.name === 'Morning' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'} bg-transparent`}><span className="text-[10px] font-black text-slate-800 dark:text-white block">{t.name}</span><span className="text-[8px] text-slate-400 font-bold">{t.time}</span></button>))}</div>
+              <div className="grid grid-cols-4 gap-2">
+                {timings.map(t => {
+                  const isSelected = t.name === selectedTiming.name;
+                  return (
+                    <button 
+                      key={t.name} 
+                      onClick={() => setSelectedServiceTimingName(t.name)}
+                      className={`p-2.5 rounded-xl border-2 text-center cursor-pointer transition-all ${
+                        isSelected 
+                          ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/10 shadow-sm scale-102 font-black' 
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      } bg-transparent`}
+                    >
+                      <span className="text-[10px] font-black text-slate-800 dark:text-white block">{t.name}</span>
+                      <span className="text-[8px] text-slate-400 font-bold">{t.time}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Membership Benefits</h3>
