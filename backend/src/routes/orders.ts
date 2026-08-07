@@ -236,6 +236,16 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
+    if (vendor_id) {
+      const isVendorActive = await db.isVendorActive(vendor_id);
+      if (!isVendorActive) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'This vendor is currently suspended and cannot receive new orders or bookings.'
+        });
+      }
+    }
+
     const isBookingType = ['Booking', 'Stay', 'Travel', 'Services'].includes(type);
     const isJobType = ['Job', 'Jobs'].includes(type);
     const prefix = isBookingType ? 'BKG' : isJobType ? 'JOB' : 'ORD';

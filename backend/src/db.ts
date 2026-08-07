@@ -729,6 +729,33 @@ class DatabaseManager {
     }
     return null;
   }
+
+  // 12. Check if Vendor is Active/Approved (not Suspended)
+  public async isVendorActive(vendorId: string): Promise<boolean> {
+    if (!vendorId) return true;
+    if (this.mongoDb) {
+      try {
+        const vIdStr = String(vendorId).trim();
+        const user = await this.mongoDb.collection('users').findOne({
+          $or: [
+            { _id: vIdStr },
+            { vendorId: vIdStr },
+            { registrationId: vIdStr },
+            { regId: vIdStr },
+            { primaryBusinessId: vIdStr },
+            { 'businesses._id': vIdStr }
+          ]
+        });
+        if (user) {
+          const statusLower = (user.status || '').toLowerCase().trim();
+          const isSuspended = ['suspended', 'inactive', 'rejected', 'deactivated', 'disabled', 'blocked'].includes(statusLower) ||
+            user.isActive === false || user.isApproved === false || user.isLocked === true || user.isSuspended === true;
+          return !isSuspended;
+        }
+      } catch (e) {}
+    }
+    return true;
+  }
 }
 
 export const db = new DatabaseManager();
