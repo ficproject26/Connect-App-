@@ -3675,11 +3675,9 @@ export default function CustomerDashboard({
               onClick={() => setIsProfileModalOpen(true)}
               className="flex items-center gap-2.5 cursor-pointer select-none pl-4 border-l border-slate-200 dark:border-slate-800/60"
             >
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
-                alt="User Profile" 
-                className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800/60 shadow-xs"
-              />
+              <div className="w-8 h-8 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-xs border border-amber-300 shadow-xs shrink-0">
+                {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+              </div>
               <div className="flex flex-col text-left leading-tight">
                 <span className="text-xs font-black text-slate-800 dark:text-white">
                   Hi, {(currentUser?.name || profileName).split(' ')[0]}
@@ -7251,7 +7249,6 @@ export default function CustomerDashboard({
               <div className="space-y-2.5 text-xs"><div className="flex justify-between"><span className="text-slate-400 font-bold">Service</span><span className="font-extrabold text-slate-800 dark:text-white text-right">Gym Membership</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Gym</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedProduct.name}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Membership Plan</span><span className="font-extrabold text-slate-800 dark:text-white">{selectedPlan.name}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Timing</span><span className="font-extrabold text-slate-800 dark:text-white text-right">{selectedTiming.name} ({selectedTiming.time})</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Start Date</span><span className="font-extrabold text-slate-800 dark:text-white">Wed, 21 May 2025</span></div></div>
               <div className="border-t border-slate-100 dark:border-slate-900 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-400 font-bold">Plan Amount</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedPlan.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">GST (18%)</span><span className="font-extrabold text-slate-800 dark:text-white">₹{gst.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Convenience Fee</span><span className="font-extrabold text-slate-800 dark:text-white">₹{convFee}</span></div></div>
               <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><span className="text-sm font-black text-slate-900 dark:text-white">Total Amount</span><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalAmount.toLocaleString()}</span></div>
-              <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/20 rounded-xl px-3 py-2.5"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /><div><span className="text-[10px] font-black text-amber-700 dark:text-amber-400 block">Members get up to 15% OFF</span><span className="text-[8px] text-amber-600/70 font-bold">Join Silver / Gold / Diamond membership to save more.</span></div></div><button onClick={() => triggerNotification("Opening membership plans...")} className="text-[9px] text-blue-600 font-extrabold hover:underline bg-transparent border-none cursor-pointer mt-1">Explore Memberships →</button></div>
               <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 2 hrs before start time</span></div></div>
               <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate('Wednesday, 21 May 2025'); setSelectedModalTime(selectedTiming.time); setSelectedModalType(selectedPlan.name); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Book Membership <ArrowRight className="w-4 h-4" /></button>
               <button onClick={() => triggerNotification("1 Day Free Trial request submitted!")} className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all border border-slate-200 dark:border-slate-800 cursor-pointer">Book Free Trial</button>
@@ -9462,13 +9459,9 @@ wishlistProducts.forEach(item => addToCart(item));
                       >
                         <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                       </button>
-                      {profilePhoto ? (
-                        <img src={profilePhoto} alt="Profile" className="w-9 h-9 rounded-full object-cover border border-amber-300 shadow-sm shrink-0" />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-sm border border-amber-300 shadow-sm shrink-0">
-                          {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-                        </div>
-                      )}
+                      <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-sm border border-amber-300 shadow-sm shrink-0">
+                        {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+                      </div>
                       <div className="flex flex-col text-left min-w-0 truncate">
                         <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
                           {currentUser?.name || profileName}
@@ -9508,13 +9501,9 @@ wishlistProducts.forEach(item => addToCart(item));
                     <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                   </button>
 
-                  {profilePhoto ? (
-                    <img src={profilePhoto} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-amber-300 shadow-sm shrink-0 mt-2" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0 mt-2">
-                      {(currentUser?.name || profileName).charAt(0).toUpperCase() || 'D'}
-                    </div>
-                  )}
+                  <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0 mt-2">
+                    {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+                  </div>
                   <div className="w-full overflow-hidden flex flex-col items-center px-1">
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-words leading-tight">
                       {currentUser?.name || profileName}
@@ -9539,7 +9528,6 @@ wishlistProducts.forEach(item => addToCart(item));
                     { id: 'myjobs', label: 'My Jobs', icon: Briefcase },
                     { id: 'wallet', label: 'Connect Wallet', icon: Wallet },
                     { id: 'payments', label: 'Payments', icon: CreditCard },
-                    { id: 'card', label: 'Membership Card', icon: Sparkles },
                     { id: 'edit', label: 'Edit Profile', icon: User },
                     { id: 'settings', label: 'Settings', icon: Settings }
                   ].map(tab => {
@@ -10528,57 +10516,6 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
 
                       <div className="space-y-3">
-                        {/* Profile Photo Upload Box */}
-                        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-4">
-                          <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#fbb53c] text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 border-2 border-amber-300 shadow-xs">
-                            {profilePhoto ? (
-                              <img src={profilePhoto} alt="Profile Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                              <span>{(currentUser?.name || profileName).charAt(0).toUpperCase() || 'U'}</span>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">Profile Photo</label>
-                            <p className="text-[10px] text-slate-400">Upload a JPG, PNG or WEBP picture</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 text-[11px] font-black uppercase rounded-xl cursor-pointer transition-all shadow-2xs">
-                                <Upload className="w-3.5 h-3.5" />
-                                <span>Upload Photo</span>
-                                <input 
-                                  type="file" 
-                                  accept="image/*" 
-                                  className="hidden" 
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        const base64 = reader.result;
-                                        setProfilePhoto(base64);
-                                        localStorage.setItem('connect_profile_photo', base64);
-                                        triggerNotification("Profile photo uploaded successfully!");
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                              {profilePhoto && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setProfilePhoto('');
-                                    localStorage.removeItem('connect_profile_photo');
-                                    triggerNotification("Profile photo removed");
-                                  }}
-                                  className="px-2.5 py-1 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:underline bg-transparent border-none cursor-pointer"
-                                >
-                                  Remove Photo
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
 
                         <div>
                           <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
