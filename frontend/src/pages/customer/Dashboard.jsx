@@ -60,6 +60,87 @@ import phoneMockupDashboard from '../../assets/images/phone_mockup_dashboard.png
 
 const initialProducts = [];
 
+const getProductPrices = (product) => {
+  if (!product) return { price: 0, originalPrice: null, discountText: null };
+
+  let mainPrice = product.offerPrice || product.discountPrice || product.salePrice || product.price || 0;
+  let origPrice = product.mrp || product.originalPrice || (product.offerPrice && product.offerPrice < product.price ? product.price : null);
+  
+  if (typeof mainPrice === 'string') mainPrice = parseFloat(String(mainPrice).replace(/[^0-9.]/g, '')) || 0;
+  if (typeof origPrice === 'string') origPrice = parseFloat(String(origPrice).replace(/[^0-9.]/g, '')) || null;
+
+  if (origPrice && origPrice <= mainPrice) {
+    origPrice = null;
+  }
+
+  let discountText = product.discount || product.discountText || null;
+  if (!discountText && origPrice && origPrice > mainPrice) {
+    const pct = Math.round(((origPrice - mainPrice) / origPrice) * 100);
+    if (pct > 0) discountText = `${pct}% off`;
+  }
+
+  return {
+    price: mainPrice,
+    originalPrice: origPrice,
+    discountText
+  };
+};
+
+const getProductHighlights = (product) => {
+  if (!product) return [];
+  if (Array.isArray(product.highlights) && product.highlights.length > 0) {
+    return product.highlights;
+  }
+
+  const subCat = (product.subNavbarCategory || product.mainCategory || '').toLowerCase();
+  const cat = (product.category || '').toLowerCase();
+  const tag = (product.tag || '').toLowerCase();
+
+  const isFood = subCat === 'food' || cat === 'food' || cat.includes('biryani') || cat.includes('biriyani') || tag === 'food';
+  const isDailyNeeds = subCat === 'daily needs' || cat === 'daily needs' || cat.includes('grocery') || cat.includes('fruit') || cat.includes('veg');
+  const isService = subCat === 'services' || cat === 'services' || cat.includes('service') || cat.includes('doctor') || cat.includes('hospital');
+
+  if (isFood) {
+    return [
+      '100% Freshly Prepared & Served Hot',
+      'Authentic Gourmet Spices & Recipe',
+      'No Artificial Preservatives or Colors',
+      'Hygienically Cooked & Safely Packed',
+      'Quality Ingredients Sourced Daily',
+      'Instant Express Delivery Available'
+    ];
+  }
+
+  if (isDailyNeeds) {
+    return [
+      '100% Farm Fresh & Organically Grown',
+      'Rich in Natural Vitamins, Minerals & Fiber',
+      'No Artificial Preservatives or Harmful Sprays',
+      'Hygienically Cleaned & Carefully Packed',
+      'Directly Sourced from Certified Farmers',
+      'Ideal for Daily Household Cooking Needs'
+    ];
+  }
+
+  if (isService) {
+    return [
+      'Certified & Background-Verified Experts',
+      'Doorstep Service Available at Scheduled Time',
+      'Post-Service Warranty & Support Included',
+      'Transparent Pricing with No Hidden Charges',
+      'Use of Professional Grade Tools & Equipment'
+    ];
+  }
+
+  return [
+    '100% Genuine Brand Original Product',
+    'Hygienically Packed & Quality Checked',
+    'Easy 7-Day Replacement Policy',
+    'Fast Express Delivery Across India',
+    'Official Manufacturer Warranty Included'
+  ];
+};
+
 const getProductDescription = (product) => {
   if (!product) return '';
   if (product.description) return product.description;
@@ -521,7 +602,7 @@ export default function CustomerDashboard({
   useEffect(() => {
     const fetchAdminOffers = async () => {
       try {
-        const url = `${getAdminBackendUrl()}/api/public/exclusive-offers`;
+        const url = `${getAdminBackendUrl()}/api/admin/public/exclusive-offers`;
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
@@ -577,6 +658,7 @@ export default function CustomerDashboard({
   const [isArModalOpen, setIsArModalOpen] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [selectedSubNavbarCategory, setSelectedSubNavbarCategory] = useState(() => {
     try {
       return localStorage.getItem('connect_selected_sub_category') || 'All';
@@ -2643,6 +2725,7 @@ export default function CustomerDashboard({
             vendor_id: groupVendorId,
             customer_name: profileName || currentUser?.name || 'Customer',
             customer_phone: profilePhone || '+91 98765 43210',
+            customer_photo: profilePhoto || currentUser?.photo || currentUser?.avatar || '',
             customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
             customer_latitude: 12.9498,
             customer_longitude: 77.6289,
@@ -3675,9 +3758,17 @@ export default function CustomerDashboard({
               onClick={() => setIsProfileModalOpen(true)}
               className="flex items-center gap-2.5 cursor-pointer select-none pl-4 border-l border-slate-200 dark:border-slate-800/60"
             >
-              <div className="w-8 h-8 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-xs border border-amber-300 shadow-xs shrink-0">
-                {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
-              </div>
+              {profilePhoto ? (
+                <img 
+                  src={profilePhoto} 
+                  alt="User Profile" 
+                  className="w-8 h-8 rounded-full object-cover border border-amber-300 shadow-xs shrink-0" 
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-xs border border-amber-300 shadow-xs shrink-0">
+                  {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="flex flex-col text-left leading-tight">
                 <span className="text-xs font-black text-slate-800 dark:text-white">
                   Hi, {(currentUser?.name || profileName).split(' ')[0]}
@@ -5138,17 +5229,30 @@ export default function CustomerDashboard({
                   <div>
                     <h4 className="text-[12px] md:text-[13px] font-black text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight group-hover:text-amber-500 transition-colors">{product.name}</h4>
                     <div className="flex items-baseline gap-1.5 mt-2">
-                      <span className="text-[12.5px] font-black text-slate-800 dark:text-white">
-                        {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs' || product.category === 'Jobs' || (product.category || '').toLowerCase().includes('job'))
-                          ? formatJobSalary(product)
-                          : `₹${(product.price || 0).toLocaleString()}`}
-                      </span>
-                      {!(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs' || product.category === 'Jobs' || (product.category || '').toLowerCase().includes('job')) && product.originalPrice && product.originalPrice > product.price && (
-                        <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
-                      )}
-                      {!(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs' || product.category === 'Jobs' || (product.category || '').toLowerCase().includes('job')) && product.discount && (
-                        <span className="text-[9.5px] text-emerald-600 font-bold">{product.discount}</span>
-                      )}
+                      {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs' || product.category === 'Jobs' || (product.category || '').toLowerCase().includes('job')) ? (
+                        <span className="text-[12.5px] font-black text-slate-800 dark:text-white">
+                          {formatJobSalary(product)}
+                        </span>
+                      ) : (() => {
+                        const { price: tPrice, originalPrice: tOrigPrice, discountText: tDiscount } = getProductPrices(product);
+                        return (
+                          <>
+                            <span className="text-[12.5px] font-black text-slate-800 dark:text-white">
+                              ₹{tPrice.toLocaleString()}
+                            </span>
+                            {tOrigPrice && tOrigPrice > tPrice && (
+                              <span className="text-[10.5px] text-slate-400 dark:text-slate-500 line-through">
+                                ₹{tOrigPrice.toLocaleString()}
+                              </span>
+                            )}
+                            {tDiscount && (
+                              <span className="text-[9.5px] text-emerald-600 font-bold">
+                                {tDiscount}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   
@@ -7296,12 +7400,12 @@ export default function CustomerDashboard({
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => triggerNotification("Travel link copied to clipboard!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+            <button onClick={() => handleShareProduct(selectedProduct)} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
               <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               <span>Share</span>
             </button>
             <span className="text-slate-200 dark:text-slate-800">|</span>
-            <button onClick={() => triggerNotification("Added to comparison drawer!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+            <button onClick={() => setIsCompareModalOpen(true)} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
               <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               <span>Compare</span>
             </button>
@@ -8207,7 +8311,18 @@ export default function CustomerDashboard({
         }
       }
 
-      if (subCat.includes('daily') || cat.includes('veg') || cat.includes('fruit') || cat.includes('groc') || subCat.includes('food')) {
+      if (subCat.includes('food') || cat.includes('biryani') || cat.includes('biriyani') || cat.includes('meal') || cat.includes('dish') || cat.includes('food')) {
+        return [
+          "100% Freshly Prepared & Served Hot",
+          "Authentic Gourmet Spices & Master Chef Recipe",
+          "Hygienically Cooked & Safely Sealed Packaging",
+          "No Artificial Colors or Preservatives Added",
+          "Quality Ingredients Sourced Daily",
+          "Instant Express Hot Delivery Available"
+        ];
+      }
+
+      if (subCat.includes('daily') || cat.includes('veg') || cat.includes('fruit') || cat.includes('groc')) {
         return [
           "100% Farm Fresh & Organically Grown",
           unitOrWeight ? `Pack Size / Quantity: ${unitOrWeight}` : "Hygienically Cleaned & Carefully Packed",
@@ -8282,12 +8397,12 @@ export default function CustomerDashboard({
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => triggerNotification("Product link copied to clipboard!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+            <button onClick={() => handleShareProduct(selectedProduct)} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
               <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               <span>Share</span>
             </button>
             <span className="text-slate-200 dark:text-slate-800">|</span>
-            <button onClick={() => triggerNotification("Added to comparison drawer!")} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
+            <button onClick={() => setIsCompareModalOpen(true)} className="flex items-center gap-1.5 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
               <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
               <span>Compare</span>
             </button>
@@ -8405,9 +8520,31 @@ export default function CustomerDashboard({
                    selectedProduct.category || selectedProduct.department || 'General'}
                 </div>
                 <div className="text-[11.5px] text-slate-500 dark:text-slate-400 font-semibold">
-                  {selectedProduct.category === 'Smartphones' ? '128GB ROM, 8GB RAM' : 
-                   isMedicalService(selectedProduct) ? 'MBBS, MD - Cardiology' :
-                   'Verified Premium Tier'}
+                  {(() => {
+                    const subCat = (selectedProduct.subNavbarCategory || selectedProduct.mainCategory || '').toLowerCase();
+                    const cat = (selectedProduct.category || '').toLowerCase();
+                    if (subCat === 'food' || cat === 'food' || cat.includes('biryani') || cat.includes('biriyani')) {
+                      return selectedProduct.foodType ? `${selectedProduct.foodType} • Freshly Prepared` : 'Freshly Prepared • Hot & Delicious';
+                    }
+                    if (subCat === 'daily needs' || cat === 'daily needs' || cat.includes('grocery')) {
+                      return '100% Farm Fresh Produce';
+                    }
+                    if (subCat === 'services' || cat === 'services') {
+                      return 'Verified Service Specialist';
+                    }
+                    if (subCat === 'stay' || cat === 'stay') {
+                      return 'Verified Hotel & Stay';
+                    }
+                    if (subCat === 'travel' || cat === 'travel') {
+                      return 'Verified Travel Partner';
+                    }
+                    if (subCat === 'jobs' || cat === 'jobs') {
+                      return 'Verified Corporate Hiring';
+                    }
+                    if (selectedProduct.category === 'Smartphones') return '128GB ROM, 8GB RAM';
+                    if (isMedicalService(selectedProduct)) return 'MBBS, MD - Cardiology';
+                    return 'Verified Brand Item';
+                  })()}
                 </div>
               </div>
               
@@ -9459,9 +9596,13 @@ wishlistProducts.forEach(item => addToCart(item));
                       >
                         <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                       </button>
-                      <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-sm border border-amber-300 shadow-sm shrink-0">
-                        {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
-                      </div>
+                      {profilePhoto ? (
+                        <img src={profilePhoto} alt="Profile" className="w-9 h-9 rounded-full object-cover border border-amber-300 shadow-sm shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-sm border border-amber-300 shadow-sm shrink-0">
+                          {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex flex-col text-left min-w-0 truncate">
                         <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
                           {currentUser?.name || profileName}
@@ -9501,9 +9642,13 @@ wishlistProducts.forEach(item => addToCart(item));
                     <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-200" />
                   </button>
 
-                  <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0 mt-2">
-                    {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
-                  </div>
+                  {profilePhoto ? (
+                    <img src={profilePhoto} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-amber-300 shadow-sm shrink-0 mt-2" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-2xl border border-amber-300 shadow-sm shrink-0 mt-2">
+                      {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="w-full overflow-hidden flex flex-col items-center px-1">
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-words leading-tight">
                       {currentUser?.name || profileName}
@@ -9720,7 +9865,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               </div>
                               <div>
                                 <span className="text-slate-400 font-semibold block text-[10.5px]">Resume Attached</span>
-                                <span className="font-extrabold text-indigo-600 dark:text-indigo-400 block mt-0.5">{trackingOrder.candidateResume || 'Resume.pdf'}</span>
+                                <span className="font-extrabold text-indigo-600 dark:text-indigo-400 block mt-0.5">{trackingOrder.candidateResume || trackingOrder.resumeName || `${(trackingOrder.memberName || trackingOrder.customer_name || profileName || currentUser?.name || 'Applicant').split(' ')[0]}_Resume.pdf`}</span>
                               </div>
                               <div>
                                 <span className="text-slate-400 font-semibold block text-[10.5px]">Experience Level</span>
@@ -10516,6 +10661,58 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
 
                       <div className="space-y-3">
+
+                        {/* Profile Photo Upload Box */}
+                        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#fbb53c] text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 border-2 border-amber-300 shadow-xs">
+                            {profilePhoto ? (
+                              <img src={profilePhoto} alt="Profile Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <span>{(currentUser?.name || profileName).charAt(0).toUpperCase() || 'U'}</span>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">Profile Photo</label>
+                            <p className="text-[10px] text-slate-400">Upload a JPG, PNG or WEBP picture</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 text-[11px] font-black uppercase rounded-xl cursor-pointer transition-all shadow-2xs">
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Upload Photo</span>
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        const base64 = reader.result;
+                                        setProfilePhoto(base64);
+                                        localStorage.setItem('connect_profile_photo', base64);
+                                        triggerNotification("Profile photo uploaded successfully!");
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {profilePhoto && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProfilePhoto('');
+                                    localStorage.removeItem('connect_profile_photo');
+                                    triggerNotification("Profile photo removed");
+                                  }}
+                                  className="px-2.5 py-1 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:underline bg-transparent border-none cursor-pointer"
+                                >
+                                  Remove Photo
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
                         <div>
                           <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
@@ -12840,6 +13037,104 @@ wishlistProducts.forEach(item => addToCart(item));
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Support Hours: <strong className="text-slate-700 dark:text-slate-200">24/7 Available</strong></p>
                 <p className="text-[10px] text-slate-400">Average response time: <strong className="text-emerald-500">Under 2 minutes</strong></p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- COMPARE MODAL -------------------- */}
+      {isCompareModalOpen && selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200 select-none">
+          <div onClick={() => setIsCompareModalOpen(false)} className="absolute inset-0" />
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl w-full max-w-4xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10 animate-scale-up p-6 text-left space-y-5">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-3">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Compare Products & Options</h3>
+                <p className="text-xs text-slate-400 font-medium">Comparing {selectedProduct.name} with similar items in {selectedProduct.category || selectedProduct.subNavbarCategory || 'Category'}</p>
+              </div>
+              <button 
+                onClick={() => setIsCompareModalOpen(false)} 
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 cursor-pointer border-none bg-transparent"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
+                    <th className="py-3 px-4">Spec / Details</th>
+                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
+                      <th key={idx} className="py-3 px-4 min-w-[170px] text-slate-900 dark:text-white">
+                        <div className="font-extrabold text-sm line-clamp-1">{item.name}</div>
+                        {idx === 0 ? (
+                          <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider block w-fit mt-1">Current Item</span>
+                        ) : (
+                          <span className="text-[9px] text-slate-400 font-bold block mt-1">Similar Option</span>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium text-slate-700 dark:text-slate-200">
+                  <tr>
+                    <td className="py-3 px-4 font-bold text-slate-500">Price</td>
+                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => {
+                      const { price, originalPrice, discountText } = getProductPrices(item);
+                      return (
+                        <td key={idx} className="py-3 px-4">
+                          <span className="font-black text-amber-500 text-sm">₹{price.toLocaleString()}</span>
+                          {originalPrice && <span className="text-xs text-slate-400 line-through block">₹{originalPrice.toLocaleString()}</span>}
+                          {discountText && <span className="text-[9.5px] text-emerald-600 font-extrabold block">{discountText}</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-bold text-slate-500">Rating</td>
+                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
+                      <td key={idx} className="py-3 px-4 font-bold">
+                        ⭐ {item.rating || '4.5'} ({item.reviews || 120})
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-bold text-slate-500">Category</td>
+                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
+                      <td key={idx} className="py-3 px-4">{item.category || item.subNavbarCategory || 'General'}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-bold text-slate-500">Availability</td>
+                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
+                      <td key={idx} className="py-3 px-4">
+                        {isVendorProductUnavailable(item) ? (
+                          <span className="text-red-500 font-extrabold">Out of Stock</span>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">In Stock</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4 font-bold text-slate-500">Action</td>
+                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
+                      <td key={idx} className="py-3 px-4">
+                        <button 
+                          onClick={() => {
+                            addToCart(item);
+                            setIsCompareModalOpen(false);
+                          }}
+                          className="px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs cursor-pointer border-none shadow-2xs uppercase tracking-wider"
+                        >
+                          Add to Cart
+                        </button>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
