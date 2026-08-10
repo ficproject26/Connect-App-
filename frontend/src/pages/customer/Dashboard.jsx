@@ -849,6 +849,91 @@ export default function CustomerDashboard({
     return [];
   });
 
+  const sanitizeJobTitle = (title) => {
+    if (!title) return 'Job Opening';
+    return String(title).trim();
+  };
+
+  const sanitizeJobLocation = (loc) => {
+    if (!loc) return 'Bangalore, India';
+    return String(loc).trim();
+  };
+
+  const inferJobType = (p) => {
+    if (!p) return 'Full Time';
+    const str = `${p.jobType || ''} ${p.type || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+    if (str.includes('part time') || str.includes('part-time')) return 'Part Time';
+    if (str.includes('contract') || str.includes('freelance')) return 'Contract';
+    if (str.includes('intern')) return 'Internship';
+    if (str.includes('remote') || str.includes('work from home')) return 'Remote';
+    return 'Full Time';
+  };
+
+  const inferExperience = (desc, name, exp) => {
+    if (exp) return String(exp);
+    const str = `${desc || ''} ${name || ''}`.toLowerCase();
+    if (str.includes('fresher') || str.includes('entry') || str.includes('0-1')) return 'Fresher / 0-1 Yr';
+    if (str.includes('senior') || str.includes('5+')) return '5+ Years';
+    if (str.includes('lead') || str.includes('manager')) return '5+ Years';
+    return '1-3 Years';
+  };
+
+  const isJobCardItem = (item) => {
+    if (!item) return false;
+    const subCat = String(item.subNavbarCategory || '').toLowerCase().trim();
+    const tag = String(item.tag || '').toLowerCase().trim();
+    const cat = String(item.category || '').toLowerCase().trim();
+    const mainCat = String(item.mainCategory || '').toLowerCase().trim();
+    const subSub = String(item.subSubcategory || '').toLowerCase().trim();
+    const name = String(item.name || item.title || item.jobTitle || '').toLowerCase().trim();
+
+    if (subCat === 'jobs' || subCat === 'job' || tag === 'jobs' || tag === 'job' || cat === 'jobs' || cat === 'job' || mainCat === 'jobs' || mainCat === 'job' || cat.includes('it jobs') || subSub.includes('it jobs') || item.jobTitle || item.salary || item.jobLocation || item.jobType) {
+      return true;
+    }
+    return false;
+  };
+
+  const isBookingCartItem = (item) => {
+    if (!item) return false;
+    const subCat = String(item.subNavbarCategory || '');
+    const tag = String(item.tag || '');
+    const cat = String(item.category || '');
+    const mainCat = String(item.mainCategory || '');
+    const type = String(item.type || '');
+
+    const bookingCategories = ['Services', 'Stay', 'Travel', 'Hospitals', 'Hospital', 'Doctors', 'Doctor', 'Appointments', 'Appointment'];
+    if (bookingCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
+    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking) return true;
+    return false;
+  };
+
+  const isJobCartItem = (item) => {
+    if (!item) return false;
+    if (isJobCardItem(item)) return true;
+    const subCat = String(item.subNavbarCategory || '');
+    const tag = String(item.tag || '');
+    const cat = String(item.category || '');
+    const mainCat = String(item.mainCategory || '');
+    const type = String(item.type || '');
+
+    const jobCategories = ['Jobs', 'Job', 'Careers', 'Career'];
+    if (jobCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
+    return false;
+  };
+
+  const isProductOrderCartItem = (item) => {
+    if (!item) return false;
+    const subCat = String(item.subNavbarCategory || item.mainCategory || item.tag || item.category || '').toLowerCase().trim();
+
+    const noQtyCategories = ['services', 'service', 'stay', 'stays', 'travel', 'travels', 'jobs', 'job', 'hospitals', 'hospital', 'doctors', 'doctor', 'appointment'];
+    const isExcluded = noQtyCategories.some(c => subCat === c || subCat.startsWith(c + ' ') || subCat.endsWith(' ' + c) || subCat.includes(c + ' booking'));
+    if (isExcluded) return false;
+
+    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.isBooking) return false;
+
+    return true;
+  };
+
   const normalizeMainCatName = (rawName) => {
     if (!rawName) return '';
     const n = rawName.trim().toLowerCase();
@@ -2559,48 +2644,6 @@ export default function CustomerDashboard({
     });
   };
 
-  const isBookingCartItem = (item) => {
-    if (!item) return false;
-    const subCat = String(item.subNavbarCategory || '');
-    const tag = String(item.tag || '');
-    const cat = String(item.category || '');
-    const mainCat = String(item.mainCategory || '');
-    const type = String(item.type || '');
-
-    const bookingCategories = ['Services', 'Stay', 'Travel', 'Hospitals', 'Hospital', 'Doctors', 'Doctor', 'Appointments', 'Appointment'];
-    if (bookingCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
-    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking) return true;
-    return false;
-  };
-
-  const isJobCardItem = (item) => {
-    if (!item) return false;
-    const subCat = String(item.subNavbarCategory || '').toLowerCase().trim();
-    const tag = String(item.tag || '').toLowerCase().trim();
-    const cat = String(item.category || '').toLowerCase().trim();
-    const mainCat = String(item.mainCategory || '').toLowerCase().trim();
-    const subSub = String(item.subSubcategory || '').toLowerCase().trim();
-
-    if (subCat === 'jobs' || subCat === 'job' || tag === 'jobs' || tag === 'job' || cat === 'jobs' || cat === 'job' || mainCat === 'jobs' || mainCat === 'job' || cat.includes('it jobs') || subSub.includes('it jobs')) {
-      return true;
-    }
-    return false;
-  };
-
-  const isJobCartItem = (item) => {
-    if (!item) return false;
-    if (isJobCardItem(item)) return true;
-    const subCat = String(item.subNavbarCategory || '');
-    const tag = String(item.tag || '');
-    const cat = String(item.category || '');
-    const mainCat = String(item.mainCategory || '');
-    const type = String(item.type || '');
-
-    const jobCategories = ['Jobs', 'Job', 'Careers', 'Career'];
-    if (jobCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
-    return false;
-  };
-
   const isPastTimeForSelectedDate = (timeStr, dateStr) => {
     if (!timeStr || !dateStr) return false;
     const now = new Date();
@@ -2648,21 +2691,7 @@ export default function CustomerDashboard({
     return false;
   };
 
-  const isProductOrderCartItem = (item) => {
-    if (!item) return false;
-    const subCat = String(item.subNavbarCategory || item.mainCategory || item.tag || item.category || '').toLowerCase().trim();
 
-    // Explicitly exclude Services, Stay, Travel, Hospitals, and Jobs
-    const noQtyCategories = ['services', 'service', 'stay', 'stays', 'travel', 'travels', 'jobs', 'job', 'hospitals', 'hospital', 'doctors', 'doctor', 'appointment'];
-    const isExcluded = noQtyCategories.some(c => subCat === c || subCat.startsWith(c + ' ') || subCat.endsWith(' ' + c) || subCat.includes(c + ' booking'));
-    if (isExcluded) return false;
-
-    // Explicitly check for booking specific flags
-    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.isBooking) return false;
-
-    // Default to true for physical order items (Products, Daily Needs, Food, Electronics, Accessories, Meals, etc.)
-    return true;
-  };
 
   const getCartCheckoutButtonText = () => {
     const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
