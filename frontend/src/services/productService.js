@@ -178,36 +178,13 @@ export const productService = {
   },
 
   getCachedProducts: () => {
-    try {
-      const cached = localStorage.getItem('connect_cached_products');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const sanitized = parsed.map(sanitizeProduct);
-          return sanitized.filter(isRealVendorProduct);
-        }
-      }
-    } catch (e) {}
     return [];
   },
 
-  getProducts: async (forceLive = true) => {
+  getProducts: async () => {
     const filterVendorAddedOnly = (fetchedList) => {
       const sanitized = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
       return sanitized.filter(isRealVendorProduct);
-    };
-
-    const getLocalCache = () => {
-      try {
-        const cached = localStorage.getItem('connect_cached_products');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return filterVendorAddedOnly(parsed);
-          }
-        }
-      } catch (e) {}
-      return [];
     };
 
     try {
@@ -228,7 +205,7 @@ export const productService = {
         if (Array.isArray(rawList)) {
           const vendorProducts = filterVendorAddedOnly(rawList);
           try {
-            localStorage.setItem('connect_cached_products', JSON.stringify(vendorProducts));
+            localStorage.removeItem('connect_cached_products');
           } catch(e) {}
           return { success: true, products: vendorProducts, source: 'live' };
         }
@@ -237,11 +214,6 @@ export const productService = {
       if (err && err.name !== 'AbortError') {
         console.warn("Failed to fetch products from vendor backend:", err);
       }
-    }
-
-    const localCached = getLocalCache();
-    if (localCached && localCached.length > 0) {
-      return { success: true, products: localCached, source: 'cache' };
     }
 
     return { success: true, products: [], source: 'empty' };

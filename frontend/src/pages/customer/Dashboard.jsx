@@ -467,26 +467,8 @@ export default function CustomerDashboard({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const [products, setProducts] = useState(() => {
-    try {
-      const cached = localStorage.getItem('connect_cached_products');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {}
-    return [];
-  });
-  const [isLoadingProducts, setIsLoadingProducts] = useState(() => {
-    try {
-      const cached = localStorage.getItem('connect_cached_products');
-      return !(cached && JSON.parse(cached).length > 0);
-    } catch (e) {
-      return true;
-    }
-  });
+  const [products, setProducts] = useState([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [selectedColor, setSelectedColor] = useState('Red');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -853,18 +835,7 @@ export default function CustomerDashboard({
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-  const [dbCategories, setDbCategories] = useState(() => {
-    try {
-      const cached = localStorage.getItem('connect_cached_db_categories');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {}
-    return [];
-  });
+  const [dbCategories, setDbCategories] = useState([]);
 
   const sanitizeJobTitle = (title) => {
     if (!title) return 'Job Opening';
