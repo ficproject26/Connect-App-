@@ -605,14 +605,15 @@ export default function CustomerDashboard({
   }, []);
 
   const [adminOffers, setAdminOffers] = useState([]);
+  const [adminAds, setAdminAds] = useState([]);
 
   useEffect(() => {
-    const fetchAdminOffers = async () => {
+    const fetchAdminPromotions = async () => {
       try {
-        const url = `${getAdminBackendUrl()}/api/admin/public/exclusive-offers`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
+        const urlOffers = `${getAdminBackendUrl()}/api/admin/public/exclusive-offers`;
+        const resOffers = await fetch(urlOffers);
+        if (resOffers.ok) {
+          const data = await resOffers.json();
           if (Array.isArray(data) && data.length > 0) {
             setAdminOffers(data);
           }
@@ -620,8 +621,21 @@ export default function CustomerDashboard({
       } catch (err) {
         console.warn("Could not fetch live admin offers:", err);
       }
+
+      try {
+        const urlAds = `${getAdminBackendUrl()}/api/admin/public/ads`;
+        const resAds = await fetch(urlAds);
+        if (resAds.ok) {
+          const dataAds = await resAds.json();
+          if (Array.isArray(dataAds) && dataAds.length > 0) {
+            setAdminAds(dataAds);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch live admin ads:", err);
+      }
     };
-    fetchAdminOffers();
+    fetchAdminPromotions();
   }, []);
 
   useEffect(() => {
@@ -4933,7 +4947,12 @@ export default function CustomerDashboard({
       setIsLoginModalOpen(true);
       return;
     }
-    if (navigator.clipboard) {
+    if (offer.redirectLink) {
+      window.open(offer.redirectLink, '_blank', 'noopener,noreferrer');
+      triggerNotification(`Opening sponsored deal: ${offer.desc || offer.title}`);
+      return;
+    }
+    if (navigator.clipboard && offer.code) {
       navigator.clipboard.writeText(offer.code);
     }
     const cat = offer.brand;
@@ -4993,11 +5012,21 @@ export default function CustomerDashboard({
       }
     ];
 
-    const liveOffers = (typeof adminExclusiveOffers !== 'undefined' && Array.isArray(adminExclusiveOffers) && adminExclusiveOffers.length > 0) 
-      ? adminExclusiveOffers 
-      : [];
+    const livePromos = [
+      ...(Array.isArray(adminOffers) ? adminOffers : []),
+      ...(Array.isArray(adminAds) ? adminAds.map(ad => ({
+        _id: ad._id,
+        category: 'Sponsored Ad',
+        discount: ad.discount || (ad.mediaType === 'video' ? 'VIDEO AD' : 'SPONSORED'),
+        title: ad.title,
+        desc: ad.title || 'Paid Advertisement Campaign',
+        code: 'ADPROMO',
+        redirectLink: ad.redirectLink || '',
+        imageUrl: ad.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=250&auto=format&fit=crop&q=80'
+      })) : [])
+    ];
 
-    let formattedOffers = liveOffers.map((o, idx) => {
+    let formattedOffers = livePromos.map((o, idx) => {
       const bgs = [
         'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50',
         'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50',
@@ -5023,6 +5052,7 @@ export default function CustomerDashboard({
         discount: o.discount || 'SPECIAL OFFER',
         desc: o.title || o.desc || 'Exclusive discount deal',
         code: o.code || 'CONNECT',
+        redirectLink: o.redirectLink || '',
         bg: bgs[idx % bgs.length],
         tagColor: tagColors[idx % tagColors.length],
         btnColor: btnColors[idx % btnColors.length],
