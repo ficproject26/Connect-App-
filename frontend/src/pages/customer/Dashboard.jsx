@@ -6826,7 +6826,7 @@ export default function CustomerDashboard({
                                     );
                                   })()}
 
-                                  {/* Member Tag */}
+                                   {/* Member Tag */}
                                   <div className="mt-3.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/30 rounded-xl px-3 py-1.5 flex items-center gap-1.5 shadow-2xs">
                                     <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                     <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-400 leading-none">
@@ -6838,7 +6838,7 @@ export default function CustomerDashboard({
                             </div>
                             
                             {/* Action Buttons based on category type */}
-                            <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full flex flex-col xs:flex-row items-center gap-1.5 sm:gap-2">
+                            <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full flex flex-row items-center gap-1.5 sm:gap-2">
                               {(() => {
                                 const isUnavail = isVendorProductUnavailable(product);
                                 if (isUnavail) {
@@ -6863,7 +6863,7 @@ export default function CustomerDashboard({
                                       {inCartQty > 0 ? (
                                         <div 
                                           onClick={(e) => e.stopPropagation()}
-                                          className="w-full xs:flex-1 py-1 px-1.5 bg-emerald-600 text-white font-black text-xs rounded-xl flex items-center justify-between shadow-sm h-8.5 sm:h-9 select-none"
+                                          className="flex-1 py-1 px-1.5 bg-emerald-600 text-white font-black text-xs rounded-xl flex items-center justify-between shadow-sm h-8.5 sm:h-9 select-none"
                                         >
                                           <button 
                                             type="button"
@@ -6897,7 +6897,7 @@ export default function CustomerDashboard({
                                             e.stopPropagation(); 
                                             addToCart(product); 
                                           }} 
-                                          className="px-2.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center border border-amber-500/20 leading-none h-8.5 sm:h-9 shrink-0"
+                                          className="px-3 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center border border-amber-500/20 leading-none h-8.5 sm:h-9 shrink-0"
                                           title="Add to Cart"
                                         >
                                           <ShoppingCart className="w-4 h-4 shrink-0 text-slate-950" />
@@ -6913,7 +6913,7 @@ export default function CustomerDashboard({
                                             setIsCartOpen(true);
                                           }
                                         }} 
-                                        className="w-full xs:flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9"
+                                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9"
                                       >
                                         <span>Order Now</span>
                                       </button>
@@ -9024,7 +9024,7 @@ export default function CustomerDashboard({
                           }
 
                           return (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5 w-full">
                               <button 
                                 onClick={(e) => { 
                                   e.stopPropagation(); 
@@ -9045,7 +9045,7 @@ export default function CustomerDashboard({
                                     setIsCartOpen(true);
                                   }
                                 }} 
-                                className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white text-[9.5px] font-black px-2.5 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border-none shrink-0"
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-[9.5px] font-black px-2.5 py-1.5 rounded-lg transition-colors uppercase cursor-pointer shadow-sm border-none flex items-center justify-center"
                               >
                                 Order Now
                               </button>
