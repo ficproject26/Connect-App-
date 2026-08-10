@@ -11,12 +11,13 @@ class SocketServiceClient {
     }
 
     try {
-      // Connect to the Node/Express backend server
+      // Connect to the Node/Express backend server — websocket only to avoid 404 polling noise
       this.socket = io(getBackendUrl(), {
-        transports: ['polling', 'websocket'],
-        reconnectionAttempts: 3,
-        reconnectionDelay: 5000,
-        timeout: 8000
+        transports: ['websocket'],
+        reconnectionAttempts: 2,
+        reconnectionDelay: 10000,
+        timeout: 8000,
+        autoConnect: true
       });
 
       this.socket.on('connect', () => {
@@ -25,7 +26,7 @@ class SocketServiceClient {
         this.socket.emit('register', { userId, role });
       });
 
-      this.socket.on('connect_error', (err) => {
+      this.socket.on('connect_error', () => {
         // Silently operate in local emulation mode if socket backend is offline/unreachable
       });
 

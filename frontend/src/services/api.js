@@ -171,7 +171,7 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
   const body = options.body ? JSON.parse(options.body) : null;
   const urlPath = endpoint.split('?')[0];
 
-  console.log(`[Mock DB Fallback]: Processing ${method} ${endpoint} (path: ${urlPath})`);
+  // Silent fallback — no console spam when backend is offline
 
   // 1. Auth routes
   if (urlPath.startsWith('/auth/login')) {
@@ -613,7 +613,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     return await res.json();
   } catch (error) {
     // If backend is down, connection is refused, or any network/API error occurs, run fallback emulation!
-    console.warn(`[API] Fallback to Mock DB due to error:`, error);
+    // Silently fall back to local mock DB when backend is unavailable
     return await handleFallbackRequest(endpoint, options);
   }
 };

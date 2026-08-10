@@ -233,13 +233,13 @@ export default function Navbar({
     let socket;
     try {
       socket = io(getAdminBackendUrl(), { 
-        transports: ['polling', 'websocket'],
-        reconnectionAttempts: 3,
-        reconnectionDelay: 5000,
+        transports: ['websocket'],
+        reconnectionAttempts: 2,
+        reconnectionDelay: 10000,
         timeout: 8000
       });
       socket.on('categories:updated', () => {
-        console.log('⚡ Real-time category update received in Navbar via Socket.IO');
+        // Real-time category update received
         loadCategories();
       });
     } catch (err) {}
