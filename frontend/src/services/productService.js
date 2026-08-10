@@ -216,8 +216,9 @@ export const productService = {
 
       if (res.ok) {
         const data = await res.json();
-        if (data && Array.isArray(data.products)) {
-          const vendorProducts = filterVendorAddedOnly(data.products);
+        const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
+        if (rawList) {
+          const vendorProducts = filterVendorAddedOnly(rawList);
           try {
             localStorage.setItem('connect_cached_products', JSON.stringify(vendorProducts));
           } catch(e) {}
