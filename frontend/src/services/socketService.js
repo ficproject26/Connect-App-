@@ -21,7 +21,6 @@ class SocketServiceClient {
       });
 
       this.socket.on('connect', () => {
-        console.log(`[Socket Client]: Connected to server. Socket ID: ${this.socket.id}`);
         // Register client details
         this.socket.emit('register', { userId, role });
       });
@@ -37,7 +36,7 @@ class SocketServiceClient {
         });
       });
     } catch (e) {
-      console.warn('[Socket Client]: Socket connection failed. Operating in local emulation mode.', e);
+      // Socket connection failed; operate in local emulation mode
     }
   }
 
@@ -45,21 +44,18 @@ class SocketServiceClient {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      console.log('[Socket Client]: Disconnected from server.');
     }
   }
 
   joinOrder(orderId) {
     if (this.socket && this.socket.connected) {
       this.socket.emit('join_order', { orderId });
-      console.log(`[Socket Client]: Joined order channel order:${orderId}`);
     }
   }
 
   leaveOrder(orderId) {
     if (this.socket && this.socket.connected) {
       this.socket.emit('leave_order', { orderId });
-      console.log(`[Socket Client]: Left order channel order:${orderId}`);
     }
   }
 
