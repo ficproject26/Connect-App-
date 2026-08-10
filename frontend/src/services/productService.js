@@ -183,7 +183,8 @@ export const productService = {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          const sanitized = parsed.map(sanitizeProduct);
+          return sanitized.filter(isRealVendorProduct);
         }
       }
     } catch (e) {}
