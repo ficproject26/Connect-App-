@@ -3026,7 +3026,7 @@ export default function CustomerDashboard({
           (product.category || '').toLowerCase() === 'food' || 
           (product.subNavbarCategory || '').toLowerCase().includes('food') ||
           (product.mainCategory || '').toLowerCase().includes('food') ||
-          product.foodType !== undefined;
+          Boolean(product.foodType && String(product.foodType).trim());
 
         if (!isFood) return false;
 
