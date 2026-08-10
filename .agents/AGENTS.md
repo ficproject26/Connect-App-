@@ -19,3 +19,16 @@
 4. **Consistency Across Customer Touchpoints**:
    - All customer interface components — including Top Navbar mega menus, category dropdowns, sub-navbar filter pills, Dashboard category cards, and `CategoryDetails` pages — MUST strictly consume the dynamic category tree built by `buildActiveCategoryTree` / `mergeDbCategories`.
    - Never re-introduce hardcoded fallback subcategories when database subcategory records exist for a main category.
+
+## Vendor Product Display & Response Parsing Flow
+
+### Mandatory Principles (NEVER CHANGE THIS FLOW)
+1. **Direct Array Response Parsing**:
+   - `productService.getProducts()` MUST support direct array responses `Array.isArray(data)` returned by backend `/api/public/products` as well as `{ products: [...] }` formats.
+   - All live products added by vendors MUST be parsed by `sanitizeProduct` and retained by `isRealVendorProduct` so every newly added item displays immediately on the customer dashboard.
+
+2. **Category Isolation & SubNavbar Preservation**:
+   - Vendor products added under any main category (`Products`, `Services`, `Daily Needs`, `Food`, `Stay`, `Travel`, `Jobs`) MUST display strictly under their respective `activeTab` and sub-navbar filters.
+   - In `Dashboard.jsx`, `matchesSubNavbar` MUST check `product.subNavbarCategory` and `product.mainCategory` in addition to `category`, `subcategory`, `subSubcategory`, `tag`, and `name`.
+   - Mongoose default schema properties (such as `jobType: "Full-time"` or `foodType: "Veg"`) MUST NEVER be used to misclassify physical products into Jobs or Food.
+
