@@ -41,8 +41,10 @@ export const isRealVendorProduct = (p) => {
   // Exclude hardcoded demo/dump ID formats from initial seed data
   if (vId.includes('mqg7ni') || pId.includes('mqg7ni') || vId.includes('mqhms') || pId.includes('mqhms') || vId.includes('mqhn3') || pId.includes('mqhn3') || vId.includes('mqkqu') || pId.includes('mqkqu')) return false;
 
-  // Exclude static baseline/dump item IDs
+  // Exclude static baseline/dump item IDs and test mock vendor items
   if (pId.startsWith('base-') || pId === 'p1' || pId === 'p2' || pId === 'p3' || pId === 'p4') return false;
+  const pName = String(p.name || p.title || p.jobTitle || '').toLowerCase().trim();
+  if (pName.startsWith('vendor a') || pName.startsWith('vendor b') || pName.startsWith('vendor c')) return false;
 
   // Real vendor products with valid ID or vendor name are valid
   if (pId || vId || p.vendorName || p.name) return true;
