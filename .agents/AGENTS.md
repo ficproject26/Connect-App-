@@ -19,3 +19,14 @@
 4. **Consistency Across Customer Touchpoints**:
    - All customer interface components — including Top Navbar mega menus, category dropdowns, sub-navbar filter pills, Dashboard category cards, and `CategoryDetails` pages — MUST strictly consume the dynamic category tree built by `buildActiveCategoryTree` / `mergeDbCategories`.
    - Never re-introduce hardcoded fallback subcategories when database subcategory records exist for a main category.
+
+## Vendor to Customer Product & Listing Synchronization Workflow (IMMUTABLE)
+
+### Core Rules
+1. **Universal Item Display**:
+   - ANY product, service, food item, stay accommodation, travel booking, daily needs item, or job posting created by ANY vendor MUST be immediately visible on the Customer Dashboard under its respective Level 1 Main Category tab (`Services`, `Products`, `Daily Needs`, `Food`, `Stay`, `Travel`, `Jobs`).
+   - Category filtering (`matchesSubNavbar`, `filteredProducts`, `jobsList`) MUST ALWAYS check `product.subNavbarCategory` and `product.mainCategory` alongside `product.category`, `product.subcategory`, `product.subSubcategory`, `product.tag`, and `product.name`.
+
+2. **Schema Default Field Isolation**:
+   - Backend database default schema properties (such as default `foodType: "Veg"` or default `jobType: "Full-time"`) MUST NEVER be used in isolation to misclassify physical products (mobiles, sarees, toothbrushes, electronics) as Food or Jobs.
+   - Physical products belong strictly under `Products` or `Daily Needs`, while `Food` and `Jobs` display only items explicitly assigned to those categories.
