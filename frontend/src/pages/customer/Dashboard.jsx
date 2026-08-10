@@ -4889,7 +4889,9 @@ export default function CustomerDashboard({
         bg: bgs[idx % bgs.length],
         tagColor: tagColors[idx % tagColors.length],
         btnColor: btnColors[idx % btnColors.length],
-        image: o.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=250&auto=format&fit=crop&q=80'
+        image: (o.imageUrl && (!o.imageUrl.startsWith('data:image') || o.imageUrl.length >= 2500)) 
+          ? o.imageUrl 
+          : 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=250&auto=format&fit=crop&q=80'
       };
     });
 
