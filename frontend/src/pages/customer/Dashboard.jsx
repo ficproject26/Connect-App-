@@ -504,7 +504,10 @@ export default function CustomerDashboard({
 
   useEffect(() => {
     let isMounted = true;
+    let isFetching = false;
     const loadVendorProducts = async () => {
+      if (isFetching) return;
+      isFetching = true;
       try {
         const res = await productService.getProducts(true);
         if (isMounted) {
@@ -572,14 +575,15 @@ export default function CustomerDashboard({
         }
       } catch (err) {
         if (isMounted) setIsLoadingProducts(false);
-        console.warn("Failed to load vendor products dynamically:", err);
+      } finally {
+        isFetching = false;
       }
     };
 
     loadVendorProducts();
 
-    // Poll every 3 seconds for real-time vendor updates
-    const intervalId = setInterval(loadVendorProducts, 3000);
+    // Poll every 10 seconds for real-time vendor updates
+    const intervalId = setInterval(loadVendorProducts, 10000);
 
     // Refetch immediately when customer switches back to window/tab
     const handleFocus = () => loadVendorProducts();
@@ -1354,14 +1358,17 @@ export default function CustomerDashboard({
     // Socket.IO Real-time synchronization
     let socket;
     try {
-      socket = io(getAdminBackendUrl(), { transports: ['websocket', 'polling'] });
+      socket = io(getAdminBackendUrl(), { 
+        transports: ['polling', 'websocket'],
+        reconnectionAttempts: 3,
+        reconnectionDelay: 5000,
+        timeout: 8000
+      });
       socket.on('categories:updated', () => {
         console.log('⚡ Real-time category update received in Dashboard via Socket.IO');
         fetchDbCategories();
       });
-    } catch (err) {
-      console.warn('Socket connection error in Dashboard:', err);
-    }
+    } catch (err) {}
 
     return () => {
       if (socket) socket.disconnect();

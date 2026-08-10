@@ -13,9 +13,10 @@ class SocketServiceClient {
     try {
       // Connect to the Node/Express backend server
       this.socket = io(getBackendUrl(), {
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         reconnectionAttempts: 3,
-        timeout: 5000
+        reconnectionDelay: 5000,
+        timeout: 8000
       });
 
       this.socket.on('connect', () => {
@@ -25,7 +26,7 @@ class SocketServiceClient {
       });
 
       this.socket.on('connect_error', (err) => {
-        console.warn('[Socket Client]: Connection to backend failed. Emulating Socket updates locally.', err.message);
+        // Silently operate in local emulation mode if socket backend is offline/unreachable
       });
 
       // Bind all registered event listeners to the new socket

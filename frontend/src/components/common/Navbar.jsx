@@ -232,14 +232,17 @@ export default function Navbar({
     // Socket.IO Real-time synchronization
     let socket;
     try {
-      socket = io(getAdminBackendUrl(), { transports: ['websocket', 'polling'] });
+      socket = io(getAdminBackendUrl(), { 
+        transports: ['polling', 'websocket'],
+        reconnectionAttempts: 3,
+        reconnectionDelay: 5000,
+        timeout: 8000
+      });
       socket.on('categories:updated', () => {
         console.log('⚡ Real-time category update received in Navbar via Socket.IO');
         loadCategories();
       });
-    } catch (err) {
-      console.warn('Socket connection error in Navbar:', err);
-    }
+    } catch (err) {}
 
     return () => {
       if (socket) socket.disconnect();

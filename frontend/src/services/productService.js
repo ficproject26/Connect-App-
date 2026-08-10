@@ -170,7 +170,7 @@ export const productService = {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
 
       const res = await fetch(`${getVendorBackendUrl()}/api/public/products?t=${Date.now()}`, { 
         signal: controller.signal,
@@ -194,7 +194,9 @@ export const productService = {
         }
       }
     } catch (err) {
-      console.warn("Failed to fetch products from vendor backend:", err);
+      if (err.name !== 'AbortError') {
+        console.warn("Failed to fetch products from vendor backend:", err);
+      }
     }
 
     const localCached = getLocalCache();
