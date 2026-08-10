@@ -3505,9 +3505,9 @@ export default function CustomerDashboard({
               <>
                 <div 
                   onClick={() => setIsLocationDropdownOpen(false)}
-                  className="fixed inset-0 z-40 bg-black/10 backdrop-blur-2xs" 
+                  className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-xs" 
                 />
-                <div className="absolute left-0 mt-2 w-[280px] sm:w-80 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl p-4 z-[100] text-slate-800 dark:text-slate-200 animate-fade-in space-y-3">
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:absolute sm:top-full sm:left-0 sm:translate-x-0 sm:translate-y-0 sm:mt-2 w-[90vw] max-w-[340px] sm:w-80 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl p-4 z-[100] text-slate-800 dark:text-slate-200 animate-fade-in space-y-3">
                   
                   {/* Header Title & Close Button */}
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
