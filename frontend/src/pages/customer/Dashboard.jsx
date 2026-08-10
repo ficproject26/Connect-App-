@@ -4433,7 +4433,7 @@ export default function CustomerDashboard({
   };
 
   const renderHeroBanner = () => {
-    const slides = [
+    const realDbSlides = [
       ...dbBanners.map((banner, index) => ({
         id: `db-banner-${banner._id || index}`,
         isDb: true,
@@ -4443,11 +4443,25 @@ export default function CustomerDashboard({
         targetAudience: banner.targetAudience || 'all',
         description: banner.redirectLink || 'Special Promotion Offer'
       })),
-      { id: 'static-0', isDb: false, idx: 0 },
-      { id: 'static-1', isDb: false, idx: 1 },
-      { id: 'static-2', isDb: false, idx: 2 },
-      { id: 'static-3', isDb: false, idx: 3 }
+      ...(Array.isArray(adminAds) ? adminAds.map((ad, idx) => ({
+        id: `admin-ad-${ad._id || idx}`,
+        isDb: true,
+        title: ad.title || 'Special Sponsored Deal',
+        imageUrl: ad.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600',
+        redirectLink: ad.redirectLink || '',
+        targetAudience: 'all',
+        description: ad.discount ? `${ad.discount} - Limited Offer` : 'Sponsored Advertisement'
+      })) : [])
     ];
+
+    const fallbackCatSlides = [
+      { id: 'cat-services', isCategorySlide: true, title: 'Services & Home Care', discount: 'LOCAL EXPERTS', desc: 'Plumbing, Electrician, Salon & Repairs', icon: Settings, bg: 'bg-[#0e0717]', category: 'Services', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80' },
+      { id: 'cat-products', isCategorySlide: true, title: 'Connect Marketplace', discount: 'TOP TRENDING PRODUCTS', desc: 'Explore Deals & Everyday Items', icon: ShoppingBag, bg: 'bg-[#0b1329]', category: 'Products', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=80' },
+      { id: 'cat-food', isCategorySlide: true, title: 'Food & Dining Deals', discount: 'FRESH MEALS DELIVERED', desc: 'Order Biryani, Desserts & Snacks', icon: Utensils, bg: 'bg-[#0e0e0e]', category: 'Food', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80' },
+      { id: 'cat-stay', isCategorySlide: true, title: 'Hotel Stays & Suites', discount: 'VERIFIED ACCOMMODATION', desc: 'Book Stays & Resorts at Best Rates', icon: BedDouble, bg: 'bg-[#07111e]', category: 'Stay', image: hotelActual }
+    ];
+
+    const slides = realDbSlides.length > 0 ? realDbSlides : fallbackCatSlides;
 
     const totalSlides = slides.length;
     const currentSlideIdx = activeHeroSlide % totalSlides;
@@ -4469,44 +4483,27 @@ export default function CustomerDashboard({
         setIsLoginModalOpen(true);
         return;
       }
-      if (slide.isDb) {
-        const link = (slide.redirectLink || '').toLowerCase();
-        if (link.includes('food')) {
-          setActiveTab('Food');
-          setSelectedSubNavbarCategory('Food');
-        } else if (link.includes('service')) {
-          setActiveTab('Services');
-          setSelectedSubNavbarCategory('Services');
-        } else if (link.includes('stay')) {
-          setActiveTab('Stay');
-          setSelectedSubNavbarCategory('Stay');
-        } else if (link.includes('travel')) {
-          setActiveTab('Travel');
-          setSelectedSubNavbarCategory('Travel');
+      if (slide.redirectLink) {
+        if (slide.redirectLink.startsWith('http://') || slide.redirectLink.startsWith('https://')) {
+          window.open(slide.redirectLink, '_blank', 'noopener,noreferrer');
         } else {
-          setActiveTab('Products');
-          setSelectedSubNavbarCategory('Products');
+          const cat = slide.redirectLink.replace('/', '');
+          if (cat) {
+            setActiveTab(cat);
+            setSelectedSubNavbarCategory(cat);
+          }
         }
         triggerNotification(`Exploring: ${slide.title}`);
-      } else {
-        if (slide.idx === 0) {
-          setActiveTab('Food');
-          setSelectedSubNavbarCategory('Food');
-          triggerNotification("Welcome to Domino's! Explore our pizza catalog.");
-        } else if (slide.idx === 1) {
-          setActiveTab('Stay');
-          setSelectedSubNavbarCategory('Stay');
-          triggerNotification("Explore partner hotels and luxury stays.");
-        } else if (slide.idx === 2) {
-          setActiveTab('Travel');
-          setSelectedSubNavbarCategory('Travel');
-          triggerNotification("Search and book flights at member rates.");
-        } else if (slide.idx === 3) {
-          setActiveTab('Services');
-          setSelectedSubNavbarCategory('Services');
-          triggerNotification("Book cleaning, salon, plumbing services.");
-        }
+        return;
       }
+      if (slide.category) {
+        setActiveTab(slide.category);
+        setSelectedSubNavbarCategory(slide.category);
+        triggerNotification(`Exploring ${slide.category} catalog`);
+        return;
+      }
+      setActiveTab('Products');
+      setSelectedSubNavbarCategory('Products');
     };
 
     return (
@@ -4549,7 +4546,7 @@ export default function CustomerDashboard({
           </div>
         </div>
 
-        {/* Right Side Graphics: Slider Carousel with Hover Pause & Prev/Next Overlay */}
+        {/* Right Side Graphics: Slider Carousel */}
         <div 
           onMouseEnter={() => setIsHeroBannerHovered(true)}
           onMouseLeave={() => setIsHeroBannerHovered(false)}
@@ -4580,10 +4577,9 @@ export default function CustomerDashboard({
             onClick={() => handleBannerAction(activeSlideObj)}
             className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
           >
-            {/* Dynamic DB Banners */}
-            {activeSlideObj?.isDb && (
+            {/* Dynamic DB Banners / Admin Ads */}
+            {activeSlideObj?.isDb ? (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-
                 <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1 sm:space-y-1.5">
                     <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
@@ -4634,103 +4630,36 @@ export default function CustomerDashboard({
                   />
                 </div>
               </div>
-            )}
-
-            {/* Slide 0: Domino's Pizza Offer */}
-            {!activeSlideObj?.isDb && activeSlideObj?.idx === 0 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
-
-                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1 sm:space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold tracking-tight text-white font-sans text-[11px] sm:text-xs">
-                      <div className="flex gap-[1px] rotate-[-20deg] scale-90 origin-center shrink-0">
-                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-red-600 rounded-sm relative flex items-center justify-center shadow-xs">
-                          <div className="w-1 h-1 bg-white rounded-full absolute top-1 left-1" />
-                          <div className="w-1 h-1 bg-white rounded-full absolute bottom-1 right-1" />
-                        </div>
-                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-blue-600 rounded-sm relative flex items-center justify-center shadow-xs">
-                          <div className="w-1 h-1 bg-white rounded-full" />
-                        </div>
-                      </div>
-                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Domino's</span>
-                    </div>
-
-                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
-                      ★ Exclusive Offer
-                    </div>
-
-                    <div className="pt-1 sm:pt-2 leading-tight">
-                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
-                        Flat <span className="text-[#FFC107]">50% OFF</span>
-                      </h3>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On all Pizza Orders</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Free Delivery</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
-                      <ShoppingBag className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">No Minimum Order</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBannerAction(activeSlideObj);
-                    }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
-                  >
-                    <span>Order Now</span>
-                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
-                </div>
-
-                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0e0e]">
-                  <img 
-                    src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" 
-                    alt="Pizza Special Offer" 
-                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Slide 1: Radisson Blu Hotel Stay */}
-            {!activeSlideObj?.isDb && activeSlideObj?.idx === 1 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
-
+            ) : (
+              /* Dynamic Category Fallback Banners (Zero Mock Brands) */
+              <div className={`w-full h-full rounded-2xl overflow-hidden border border-slate-800 ${activeSlideObj?.bg || 'bg-[#0e0717]'} text-white flex flex-row items-stretch animate-fade-in relative`}>
                 <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1 sm:space-y-1.5">
                     <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
-                      <BedDouble className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />
-                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Radisson Blu</span>
+                      {activeSlideObj?.icon ? (() => { const CatIcon = activeSlideObj.icon; return <CatIcon className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />; })() : <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />}
+                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">{activeSlideObj?.title || 'Connect Catalog'}</span>
                     </div>
 
                     <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
-                      ★ Member Privilege
+                      ★ {activeSlideObj?.discount || 'FEATURED'}
                     </div>
 
                     <div className="pt-1 sm:pt-2 leading-tight">
-                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
-                        Extra <span className="text-[#FFC107]">30% OFF</span>
+                      <h3 className="text-sm sm:text-lg font-black text-white leading-tight truncate">
+                        {activeSlideObj?.title}
                       </h3>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On Luxury Suites & Stays</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">{activeSlideObj?.desc}</p>
                     </div>
                   </div>
 
                   <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
                     <div className="flex items-center gap-1.5">
                       <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Free Welcome Drinks</span>
+                      <span className="truncate">Direct Vendor Pricing</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
                       <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Complimentary Breakfast</span>
+                      <span className="truncate">100% Verified Quality</span>
                     </div>
                   </div>
 
@@ -4741,126 +4670,15 @@ export default function CustomerDashboard({
                     }}
                     className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
                   >
-                    <span>Book Now</span>
+                    <span>Explore Now</span>
                     <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </button>
                 </div>
 
-                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#07111e]">
+                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-950">
                   <img 
-                    src={hotelActual} 
-                    alt="Radisson Suite Stay" 
-                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Slide 2: Air India Travels */}
-            {!activeSlideObj?.isDb && activeSlideObj?.idx === 2 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#160608] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1 sm:space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
-                      <Plane className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
-                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Air India</span>
-                    </div>
-
-                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
-                      ★ Flight Special
-                    </div>
-
-                    <div className="pt-1 sm:pt-2 leading-tight">
-                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
-                        Save <span className="text-[#FFC107]">₹2,000</span>
-                      </h3>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On International Bookings</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Extra Baggage Allowance</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Free Preferred Seat Select</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBannerAction(activeSlideObj);
-                    }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
-                  >
-                    <span>Claim Now</span>
-                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
-                </div>
-
-                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#160608]">
-                  <img 
-                    src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80" 
-                    alt="Flight Travel Offer" 
-                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Slide 3: Urban Connect Services */}
-            {!activeSlideObj?.isDb && activeSlideObj?.idx === 3 && (
-              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-
-                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1 sm:space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
-                      <Settings className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />
-                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Urban Connect</span>
-                    </div>
-
-                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
-                      ★ Partner Deal
-                    </div>
-
-                    <div className="pt-1 sm:pt-2 leading-tight">
-                      <h3 className="text-sm sm:text-lg font-black text-white leading-none">
-                        Flat <span className="text-[#FFC107]">25% OFF</span>
-                      </h3>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">On all Home Services</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Verified Industry Experts</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">100% Insured Deliveries</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBannerAction(activeSlideObj);
-                    }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
-                  >
-                    <span>Book Now</span>
-                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
-                </div>
-
-                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
-                  <img 
-                    src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80" 
-                    alt="Home Services Special" 
+                    src={activeSlideObj?.image} 
+                    alt={activeSlideObj?.title} 
                     className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
                   />
                 </div>
