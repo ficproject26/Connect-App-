@@ -596,8 +596,15 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
 };
 
 export const apiFetch = async (endpoint, options = {}) => {
+  const token = localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('vendor_token') || localStorage.getItem('admin_token');
+  const method = (options.method || 'GET').toUpperCase();
+
+  // If unauthenticated (no token) for protected GET endpoints like /orders, serve from fallback DB directly
+  if (!token && (endpoint === '/orders' || endpoint.startsWith('/orders/')) && method === 'GET') {
+    return await handleFallbackRequest(endpoint, options);
+  }
+
   try {
-    const token = localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('vendor_token') || localStorage.getItem('admin_token');
     const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
 
     const res = await fetch(`${BACKEND_URL}${endpoint}`, {
