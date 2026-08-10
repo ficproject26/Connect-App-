@@ -13,7 +13,7 @@ export const getBackendUrl = () => {
   }
   
   // If running in production, connect to deployed Render backend URL
-  return import.meta.env.VITE_BACKEND_URL || 'https://connect-vendor.onrender.com';
+  return import.meta.env.VITE_BACKEND_URL || 'https://connect-admin-96pc.onrender.com';
 };
 
 export const getVendorBackendUrl = () => {
@@ -29,7 +29,7 @@ export const getVendorBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8001`;
   }
   
-  return import.meta.env.VITE_VENDOR_BACKEND_URL || 'https://connect-vendor.onrender.com';
+  return import.meta.env.VITE_VENDOR_BACKEND_URL || 'https://connect-admin-96pc.onrender.com';
 };
 
 export const getAdminBackendUrl = () => {
