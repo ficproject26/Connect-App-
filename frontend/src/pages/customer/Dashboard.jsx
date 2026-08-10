@@ -2753,7 +2753,11 @@ export default function CustomerDashboard({
       for (const group of orderGroups) {
         const groupVendorId = group.items[0]?.vendorId || 'v1';
         const groupAmount = group.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-        const groupProductDetails = group.items.map(item => `${item.name} (Qty: ${item.quantity || 1})`).join(', ');
+        const groupProductDetails = group.items.map(item => {
+          const isBookingOrJob = group.type === 'Booking' || group.type === 'Job' || isBookingCartItem(item) || isJobCartItem(item);
+          if (isBookingOrJob) return item.name;
+          return (item.quantity && item.quantity > 1) ? `${item.name} (Qty: ${item.quantity})` : item.name;
+        }).join(', ');
         const itemsList = group.items.map(item => ({
           productId: item.id,
           name: item.name,
@@ -4565,10 +4569,6 @@ export default function CustomerDashboard({
             {/* Dynamic DB Banners */}
             {activeSlideObj?.isDb && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                  <span>Limited Time</span>
-                </div>
 
                 <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1 sm:space-y-1.5">
@@ -4625,10 +4625,6 @@ export default function CustomerDashboard({
             {/* Slide 0: Domino's Pizza Offer */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 0 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0e0e] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                  <span>Limited Time</span>
-                </div>
 
                 <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1 sm:space-y-1.5">
@@ -4693,10 +4689,6 @@ export default function CustomerDashboard({
             {/* Slide 1: Radisson Blu Hotel Stay */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 1 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#07111e] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                  <span>Limited Time</span>
-                </div>
 
                 <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1 sm:space-y-1.5">
@@ -4808,10 +4800,6 @@ export default function CustomerDashboard({
             {/* Slide 3: Urban Connect Services */}
             {!activeSlideObj?.isDb && activeSlideObj?.idx === 3 && (
               <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-rose-600 text-white text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 z-20 shadow-sm border border-rose-500/20">
-                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                  <span>Limited Time</span>
-                </div>
 
                 <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
                   <div className="space-y-1 sm:space-y-1.5">
@@ -9886,7 +9874,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                 </div>
                                 <div>
                                   <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
-                                    {trackingOrder.product_details || 'Job Application'}
+                                    {(trackingOrder.product_details || 'Job Application').replace(/\s*\(Qty:\s*\d+\)/gi, '')}
                                   </h3>
                                   <p className="text-xs text-slate-500 font-semibold mt-0.5">
                                     Application No: <strong className="text-slate-800 dark:text-slate-200">#{trackingOrder.order_number}</strong>
@@ -10113,7 +10101,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
                               <h4 className="font-bold text-slate-900 dark:text-white">Order #{trackingOrder.order_number}</h4>
                               <p className="text-slate-500 dark:text-slate-400">Address: <strong>{trackingOrder.customer_address}</strong></p>
-                              <p className="text-slate-500 dark:text-slate-400">Items: <strong>{trackingOrder.product_details}</strong></p>
+                              <p className="text-slate-500 dark:text-slate-400">Items: <strong>{(trackingOrder.type === 'Booking' || trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs' || ['Stay', 'Travel', 'Services', 'Appointment'].includes(trackingOrder.type)) ? (trackingOrder.product_details || '').replace(/\s*\(Qty:\s*\d+\)/gi, '') : trackingOrder.product_details}</strong></p>
                               <p className="text-slate-500 dark:text-slate-400">Total Amount: <strong className="text-[#f43397] font-extrabold">₹{trackingOrder.amount}</strong></p>
                             </div>
                             
@@ -10498,7 +10486,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                           </div>
                                           <div>
                                             <h4 className="text-sm font-black text-slate-900 dark:text-white leading-tight group-hover:text-amber-500 transition-colors">
-                                              {ord.product_details}
+                                              {(ord.product_details || 'Job Application').replace(/\s*\(Qty:\s*\d+\)/gi, '')}
                                             </h4>
                                             <span className="text-[10px] font-bold text-slate-400 block mt-1">
                                               App No: <strong className="text-slate-600 dark:text-slate-300">#{ord.order_number}</strong>
@@ -10560,7 +10548,9 @@ wishlistProducts.forEach(item => addToCart(item));
                                         )}
                                       </div>
                                       <div className="text-left">
-                                        <h4 className="text-xs font-bold text-slate-800 dark:text-white line-clamp-1">{ord.product_details}</h4>
+                                        <h4 className="text-xs font-bold text-slate-800 dark:text-white line-clamp-1">
+                                          {(ord.type === 'Job' || ord.type === 'Jobs' || ord.type === 'Booking' || ['Stay', 'Travel', 'Services', 'Appointment'].includes(ord.type)) ? (ord.product_details || '').replace(/\s*\(Qty:\s*\d+\)/gi, '') : ord.product_details}
+                                        </h4>
                                         <span className="text-[9px] text-slate-400 block mt-0.5">
                                           {ord.type === 'Job' || ord.type === 'Jobs' ? 'Application No: ' : 
                                            ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? 'Booking Ref: ' : 
