@@ -209,12 +209,7 @@ export const productService = {
 
       const res = await fetch(`${getVendorBackendUrl()}/api/public/products?t=${Date.now()}`, { 
         signal: controller.signal,
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+        cache: 'no-store'
       }).catch(err => {
         return null;
       });
