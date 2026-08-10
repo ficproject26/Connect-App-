@@ -211,11 +211,13 @@ export const productService = {
           'Pragma': 'no-cache',
           'Expires': '0'
         }
+      }).catch(err => {
+        return null;
       });
       clearTimeout(timeoutId);
 
-      if (res.ok) {
-        const data = await res.json();
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
         const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
         if (rawList) {
           const vendorProducts = filterVendorAddedOnly(rawList);
@@ -226,7 +228,7 @@ export const productService = {
         }
       }
     } catch (err) {
-      if (err.name !== 'AbortError') {
+      if (err && err.name !== 'AbortError') {
         console.warn("Failed to fetch products from vendor backend:", err);
       }
     }
