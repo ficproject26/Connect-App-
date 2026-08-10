@@ -137,14 +137,19 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       const res = await fetch(`${getApiBase()}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobileOrEmail: target })
+        body: JSON.stringify({
+          phone: target,
+          mobileNumber: target,
+          mobileOrEmail: target,
+          email: target
+        })
       });
 
       const data = await res.json();
 
-      if (res.ok && data.status === 'success') {
+      if (res.ok && (data.status === 'success' || data.success)) {
         setIsSubmitting(false);
-        const issuedCode = data.devOtpPreview || fallbackCode;
+        const issuedCode = data.devOtpPreview || data.otp || fallbackCode;
         setGeneratedOtpCode(issuedCode);
         setIsOtpSent(true);
         setResendCooldown(data.cooldownSeconds || 30);
@@ -163,7 +168,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
     const savedMobiles = JSON.parse(localStorage.getItem('connect_registered_mobiles') || '[]');
     const savedUser = JSON.parse(localStorage.getItem('connect_current_user') || '{}');
     const knownMobiles = [
-      '9876543210', '8220266311', '9176543210', '9443322110', '9876543211', '9988776655',
+      '9876543210', '8220266311', '9176543210', '9443322110', '9876543211', '9988776655', '6379068721',
       ...(savedUser.phone ? [savedUser.phone.replace(/\D/g, '')] : []),
       ...savedMobiles.map(m => (typeof m === 'string' ? m.replace(/\D/g, '') : m))
     ];
@@ -208,7 +213,13 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       const res = await fetch(`${getApiBase()}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobileOrEmail: otpTarget, otp: otpInput })
+        body: JSON.stringify({
+          phone: otpTarget,
+          mobileNumber: otpTarget,
+          mobileOrEmail: otpTarget,
+          email: otpTarget,
+          otp: otpInput
+        })
       });
       const data = await res.json();
       if (res.ok && data.status === 'success' && data.user) {

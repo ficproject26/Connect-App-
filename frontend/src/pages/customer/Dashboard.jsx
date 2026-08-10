@@ -63,7 +63,7 @@ const initialProducts = [];
 const getProductPrices = (product) => {
   if (!product) return { price: 0, originalPrice: null, discountText: null };
 
-  let mainPrice = product.offerPrice || product.discountPrice || product.salePrice || product.price || 0;
+  let mainPrice = product.offerPrice || (product.discountPrice > 0 ? product.discountPrice : null) || product.salePrice || product.price || 0;
   let origPrice = product.mrp || product.originalPrice || (product.offerPrice && product.offerPrice < product.price ? product.price : null);
   
   if (typeof mainPrice === 'string') mainPrice = parseFloat(String(mainPrice).replace(/[^0-9.]/g, '')) || 0;
@@ -73,7 +73,10 @@ const getProductPrices = (product) => {
     origPrice = null;
   }
 
-  let discountText = product.discount || product.discountText || null;
+  let discountText = product.discount || product.discountText || product.offerPercentage || null;
+  if (typeof discountText === 'number' || (typeof discountText === 'string' && discountText.trim() !== '' && !isNaN(Number(discountText)))) {
+    discountText = `${discountText}% off`;
+  }
   if (!discountText && origPrice && origPrice > mainPrice) {
     const pct = Math.round(((origPrice - mainPrice) / origPrice) * 100);
     if (pct > 0) discountText = `${pct}% off`;
@@ -2991,7 +2994,8 @@ export default function CustomerDashboard({
           pName.includes(targetSub) || pName.includes(targetSingular);
       }
 
-      const currentTab = normalizeMainCatName(activeTab) || normalizeMainCatName(selectedSubNavbarCategory);
+      const isHomeTab = !activeTab || activeTab === 'Home' || selectedSubNavbarCategory === 'Home' || selectedSubNavbarCategory === 'All';
+      const currentTab = isHomeTab ? 'home' : (normalizeMainCatName(activeTab) || normalizeMainCatName(selectedSubNavbarCategory));
 
       // Services Filter Checks
       if (currentTab === 'services' || activeTab === 'Services') {
