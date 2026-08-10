@@ -2991,8 +2991,10 @@ export default function CustomerDashboard({
           pName.includes(targetSub) || pName.includes(targetSingular);
       }
 
+      const currentTab = normalizeMainCatName(activeTab) || normalizeMainCatName(selectedSubNavbarCategory);
+
       // Services Filter Checks
-      if (activeTab === 'Services') {
+      if (currentTab === 'services' || activeTab === 'Services') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
         const pCat = normalizeMainCatName(product.category);
@@ -3023,14 +3025,19 @@ export default function CustomerDashboard({
       }
 
       // Food Filter Checks
-      if (activeTab === 'Food') {
+      if (currentTab === 'food' || activeTab === 'Food') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
         const pCat = normalizeMainCatName(product.category);
-        const isFood = pMainCat === 'food' || pMain === 'food' || pCat === 'food' || 
+        const pSubCat = normalizeMainCatName(product.subcategory);
+        const pSubSubCat = normalizeMainCatName(product.subSubcategory);
+        const pTag = normalizeMainCatName(product.tag);
+
+        const isFood = pMainCat === 'food' || pMain === 'food' || pCat === 'food' || pSubCat === 'food' || pSubSubCat === 'food' || pTag === 'food' ||
           (product.category || '').toLowerCase() === 'food' || 
           (product.subNavbarCategory || '').toLowerCase().includes('food') ||
-          (product.mainCategory || '').toLowerCase().includes('food');
+          (product.mainCategory || '').toLowerCase().includes('food') ||
+          (product.tag || '').toLowerCase().includes('food');
 
         if (!isFood) return false;
 
@@ -3073,7 +3080,7 @@ export default function CustomerDashboard({
       }
 
       // Stay Filter Checks
-      if (activeTab === 'Stay') {
+      if (currentTab === 'stay' || activeTab === 'Stay') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
         const pCat = normalizeMainCatName(product.category);
@@ -3111,7 +3118,7 @@ export default function CustomerDashboard({
       }
 
       // Travel Filter Checks
-      if (activeTab === 'Travel') {
+      if (currentTab === 'travel' || activeTab === 'Travel') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
         const pCat = normalizeMainCatName(product.category);
@@ -3160,7 +3167,7 @@ export default function CustomerDashboard({
       }
 
       // Daily Needs Filter Checks
-      if (activeTab === 'Daily Needs') {
+      if (currentTab === 'daily needs' || activeTab === 'Daily Needs') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
         const pCat = normalizeMainCatName(product.category);
@@ -3198,11 +3205,11 @@ export default function CustomerDashboard({
 
       // Default Products / Other tabs Filter Checks
       const isJob = isJobCardItem(product);
-      if (activeTab === 'Products') {
+      if (currentTab === 'products' || activeTab === 'Products') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
         const isOtherTab = pMainCat === 'services' || pMainCat === 'food' || pMainCat === 'stay' || pMainCat === 'travel' || pMainCat === 'jobs' || pMainCat === 'daily needs' ||
-          pMain === 'services' || pMain === 'food' || pMain === 'stay' || pMain === 'travel' || pMain === 'jobs' || pMain === 'daily needs' ||
+          pMain === 'services' || pMain === 'food' || pMain === 'stay' || pMain === 'travel' || pMain === 'jobs' || pMainCat === 'daily needs' ||
           isJob;
         if (isOtherTab) return false;
       }
@@ -6003,7 +6010,7 @@ export default function CustomerDashboard({
               )}
 
               {/* Food Tab Filters */}
-              {activeTab === 'Food' && (
+              {(activeTab === 'Food' || normalizeMainCatName(activeTab) === 'food' || normalizeMainCatName(selectedSubNavbarCategory) === 'food') && (
                 <>
                   <select
                     value={selectedCuisines[0] || ""}
