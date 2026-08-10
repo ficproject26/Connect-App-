@@ -3030,8 +3030,7 @@ export default function CustomerDashboard({
         const isFood = pMainCat === 'food' || pMain === 'food' || pCat === 'food' || 
           (product.category || '').toLowerCase() === 'food' || 
           (product.subNavbarCategory || '').toLowerCase().includes('food') ||
-          (product.mainCategory || '').toLowerCase().includes('food') ||
-          Boolean(product.foodType && String(product.foodType).trim());
+          (product.mainCategory || '').toLowerCase().includes('food');
 
         if (!isFood) return false;
 
