@@ -45,41 +45,72 @@ const DEFAULT_BASELINE_PRODUCTS = [];
 const inferSubNavbarCategory = (p) => {
   if (!p) return 'Products';
 
-  const catStr = `${p.name || ''} ${p.category || ''} ${p.subcategory || ''} ${p.subSubcategory || ''} ${p.tag || ''}`.toLowerCase();
+  const rawSubNav = String(p.subNavbarCategory || '').trim();
+  const rawMainCat = String(p.mainCategory || p.main_category || '').trim();
+  const rawCat = String(p.category || '').trim();
+  const rawSubCat = String(p.subcategory || '').trim();
+  const rawSubSubCat = String(p.subSubcategory || '').trim();
+  const rawTag = String(p.tag || '').trim();
+  const rawType = String(p.type || p.jobType || p.workType || '').trim();
+  const rawName = String(p.name || p.title || p.jobTitle || '').trim();
 
-  // 1. Check for Jobs keywords
-  if (['full time', 'part time', 'full stack', 'developer', 'software engineer', 'it jobs', 'non-it jobs', 'bpo jobs', 'jobs', 'job', 'opening', 'talent', 'operator', 'specialist', 'recruiter', 'manager', 'analyst'].some(k => catStr.includes(k))) {
+  const matchMainCat = (str) => {
+    if (!str) return null;
+    const lower = str.toLowerCase();
+
+    // Exact or direct main category matches
+    if (['services', 'service'].includes(lower)) return 'Services';
+    if (['food', 'foods', 'dining', 'restaurant', 'restaurants'].includes(lower)) return 'Food';
+    if (['stay', 'stays', 'hotel', 'hotels', 'homestay', 'resort', 'resorts'].includes(lower)) return 'Stay';
+    if (['travel', 'travels', 'cab', 'cabs', 'bus', 'flight'].includes(lower)) return 'Travel';
+    if (['jobs', 'job', 'hiring', 'career', 'recruitment'].includes(lower)) return 'Jobs';
+    if (['daily needs', 'daily need', 'daily-needs', 'dailyneeds', 'grocery', 'groceries'].includes(lower)) return 'Daily Needs';
+    if (['products', 'product'].includes(lower)) return 'Products';
+
+    // Subcategory matches
+    if (['doctor', 'clinic', 'hospital', 'physiotherapy', 'home service', 'repair', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'fitness', 'gym', 'automobile', 'car service', 'recharge', 'education', 'tutoring', 'photography', 'event management', 'laundry', 'carpentry', 'painter', 'pest control', 'legal', 'financial', 'insurance', 'maintenance'].some(k => lower === k || lower.includes(k))) return 'Services';
+    if (['parotta', 'biryani', 'biriyani', 'dosa', 'idli', 'thali', 'pizza', 'burger', 'fast food', 'south indian', 'north indian', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'cafe', 'salad', 'sweets', 'ice cream', 'dessert', 'snack'].some(k => lower === k || lower.includes(k))) return 'Food';
+    if (['villa', 'pg', 'hostel', 'apartment', 'lodge', 'room', 'accommodation', 'suite'].some(k => lower === k || lower.includes(k))) return 'Stay';
+    if (['taxi', 'sleeper', 'train', 'car rental', 'bike rental', 'tour package', 'ticket', 'transport'].some(k => lower === k || lower.includes(k))) return 'Travel';
+    if (['full time', 'part time', 'full stack', 'developer', 'software engineer', 'it jobs', 'non-it jobs', 'bpo jobs', 'opening', 'vacancy', 'employment'].some(k => lower === k || lower.includes(k))) return 'Jobs';
+    if (['rice', 'egg', 'eggs', 'fruits', 'vegetables', 'dairy', 'milk', 'supermarket', 'pharmacy', 'medicine', 'organic', 'staples', 'provisions'].some(k => lower === k || lower.includes(k))) return 'Daily Needs';
+    if (['saree', 'fashion', 'electronics', 'mobile', 'mobiles', 'smartphone', 'laptop', 'watch', 'jewellery', 'jewelry', 'furniture', 'appliance', 'jean', 'jeans', 'shoes', 'footwear', 'clothing', 'shirt', 'headphone', 'phone'].some(k => lower === k || lower.includes(k))) return 'Products';
+
+    return null;
+  };
+
+  // 1. Check explicit fields first
+  const subNavMatch = matchMainCat(rawSubNav);
+  if (subNavMatch) return subNavMatch;
+
+  const mainCatMatch = matchMainCat(rawMainCat);
+  if (mainCatMatch) return mainCatMatch;
+
+  const catMatch = matchMainCat(rawCat);
+  if (catMatch) return catMatch;
+
+  const subCatMatch = matchMainCat(rawSubCat);
+  if (subCatMatch) return subCatMatch;
+
+  const subSubCatMatch = matchMainCat(rawSubSubCat);
+  if (subSubCatMatch) return subSubCatMatch;
+
+  const tagMatch = matchMainCat(rawTag);
+  if (tagMatch) return tagMatch;
+
+  const typeMatch = matchMainCat(rawType);
+  if (typeMatch) return typeMatch;
+
+  // 2. Check for Jobs specific indicators
+  if (p.jobTitle || p.salary || p.jobLocation || p.jobType || p.experienceRequired || p.minExperience) {
     return 'Jobs';
   }
-  // 2. Check for Services keywords
-  if (['doctor', 'clinic', 'hospital', 'physiotherapy', 'home service', 'repair', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'gym', 'fitness', 'automobile', 'car service', 'recharge'].some(k => catStr.includes(k))) {
-    return 'Services';
-  }
-  // 3. Check for Food keywords
-  if (['parotta', 'biryani', 'biriyani', 'dosa', 'idli', 'thali', 'pizza', 'burger', 'fast food', 'south indian', 'north indian', 'bakery', 'beverages', 'catering', 'home food', 'tiramisu', 'restaurant', 'cafe', 'salad'].some(k => catStr.includes(k))) {
-    return 'Food';
-  }
-  // 4. Check for Stay keywords
-  if (['hotel', 'resort', 'homestay', 'suite', 'deluxe room', 'lodge', 'accommodation', 'stay'].some(k => catStr.includes(k))) {
-    return 'Stay';
-  }
-  // 5. Check for Travel keywords
-  if (['cab', 'taxi', 'bus', 'sleeper', 'flight', 'train', 'car rental', 'bike rental', 'tour package', 'travel'].some(k => catStr.includes(k))) {
-    return 'Travel';
-  }
-  // 6. Check for Daily Needs keywords
-  if (['rice', 'egg', 'eggs', 'fruits', 'vegetables', 'dairy', 'milk', 'supermarket', 'daily needs', 'pharmacy', 'tomato', 'onions', 'urad dal'].some(k => catStr.includes(k))) {
-    return 'Daily Needs';
-  }
-  // 7. Check for Products keywords
-  if (['saree', 'fashion', 'electronics', 'mobile', 'mobiles', 'smartphone', 'smartphones', 'laptop', 'watch', 'jewellery', 'jewelry', 'furniture', 'appliance', 'jean', 'jeans', 'shoes', 'footwear', 'clothing', 'shirt', 'headphone', 'phone'].some(k => catStr.includes(k))) {
-    return 'Products';
-  }
 
-  if (p.subNavbarCategory && p.subNavbarCategory !== 'Products') return p.subNavbarCategory;
-  if (p.mainCategory && p.mainCategory !== 'Products') return p.mainCategory;
+  // 3. Check product name/title
+  const nameMatch = matchMainCat(rawName);
+  if (nameMatch) return nameMatch;
 
-  return p.subNavbarCategory || p.mainCategory || 'Products';
+  return rawSubNav || rawMainCat || 'Products';
 };
 
 const sanitizeProduct = (p) => {

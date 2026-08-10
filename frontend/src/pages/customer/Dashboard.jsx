@@ -852,26 +852,35 @@ export default function CustomerDashboard({
   const normalizeMainCatName = (rawName) => {
     if (!rawName) return '';
     const n = rawName.trim().toLowerCase();
-    
+
+    // Exact or direct main category matches first
+    if (n === 'stay' || n === 'stays') return 'stay';
+    if (n === 'food' || n === 'foods') return 'food';
+    if (n === 'daily needs' || n === 'daily need' || n === 'daily-needs' || n === 'dailyneeds') return 'daily needs';
+    if (n === 'jobs' || n === 'job') return 'jobs';
+    if (n === 'services' || n === 'service') return 'services';
+    if (n === 'travel' || n === 'travels') return 'travel';
+    if (n === 'products' || n === 'product') return 'products';
+
     // Stay
-    if (['stay', 'stays', 'hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'rooms', 'accommodation'].some(k => n === k || n.includes(k))) return 'stay';
+    if (['hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'rooms', 'accommodation', 'villa', 'villas', 'pg', 'hostel', 'hostels', 'apartment', 'apartments', 'guest house', 'suite', 'suites'].some(k => n === k || n.includes(k))) return 'stay';
     
     // Food
-    if (['food', 'foods', 'restaurant', 'restaurants', 'dining', 'bakery', 'cafe', 'cafes', 'biryani', 'biriyani', 'catering'].some(k => n === k || n.includes(k))) return 'food';
+    if (['food', 'foods', 'restaurant', 'restaurants', 'dining', 'bakery', 'bakeries', 'cafe', 'cafes', 'biryani', 'biriyani', 'catering', 'sweets', 'sweet', 'ice cream', 'fast food', 'beverages', 'beverage', 'juice', 'juices', 'south indian', 'north indian', 'chinese', 'continental', 'dessert', 'desserts', 'snack', 'snacks', 'meal', 'meals', 'thali', 'dosa', 'parotta', 'pizza', 'burger'].some(k => n === k || n.includes(k))) return 'food';
     
     // Daily Needs
-    if (['daily need', 'daily needs', 'daily-needs', 'dailyneeds', 'grocery', 'groceries', 'supermarket', 'vegetable', 'vegetables', 'fruits', 'rice', 'eggs', 'milk', 'dairy'].some(k => n === k || n.includes(k))) return 'daily needs';
+    if (['daily need', 'daily needs', 'daily-needs', 'dailyneeds', 'grocery', 'groceries', 'supermarket', 'vegetable', 'vegetables', 'fruits', 'fruit', 'rice', 'eggs', 'egg', 'milk', 'dairy', 'pharmacy', 'medicine', 'medicines', 'organic', 'staples', 'personal care', 'provisions'].some(k => n === k || n.includes(k))) return 'daily needs';
     
     // Jobs
-    if (['job', 'jobs', 'hiring', 'recruitment', 'career', 'careers', 'it jobs', 'it domain', 'full time', 'part time'].some(k => n === k || n.includes(k))) return 'jobs';
+    if (['job', 'jobs', 'hiring', 'recruitment', 'career', 'careers', 'it jobs', 'it domain', 'full time', 'part time', 'opening', 'openings', 'vacancy', 'vacancies', 'employment', 'work'].some(k => n === k || n.includes(k))) return 'jobs';
     
     // Services
-    if (['service', 'services', 'hospital', 'hospitals', 'doctor', 'doctors', 'clinic', 'healthcare', 'repair', 'plumbing', 'cleaning', 'salon'].some(k => n === k || n.includes(k))) return 'services';
+    if (['service', 'services', 'hospital', 'hospitals', 'doctor', 'doctors', 'clinic', 'clinics', 'healthcare', 'repair', 'repairs', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'consultant', 'fitness', 'gym', 'education', 'tutoring', 'photography', 'event management', 'maintenance', 'home care', 'pest control', 'laundry', 'carpentry', 'painter', 'legal', 'financial', 'insurance', 'it services', 'developer', 'design'].some(k => n === k || n.includes(k))) return 'services';
     
     // Travel
-    if (['travel', 'travels', 'tour', 'tours', 'cab', 'cabs', 'taxi', 'bus', 'flight'].some(k => n === k || n.includes(k))) return 'travel';
+    if (['travel', 'travels', 'tour', 'tours', 'cab', 'cabs', 'taxi', 'taxis', 'bus', 'buses', 'flight', 'flights', 'train', 'trains', 'car rental', 'bike rental', 'tour package', 'ticket', 'tickets', 'transport'].some(k => n === k || n.includes(k))) return 'travel';
 
-    // Products (Default for all physical goods, clothing, dress, jeans, shoes, electronics, etc.)
+    // Products (Default for physical goods, clothing, dress, jeans, shoes, electronics, etc.)
     return 'products';
   };
 
@@ -1703,7 +1712,7 @@ export default function CustomerDashboard({
 
   const jobsList = [
     ...staticJobsList,
-    ...products.filter(p => p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs' || p.category === 'Jobs' || p.category === 'IT Jobs' || p.category === 'Full Time').map(p => {
+    ...products.filter(p => isJobCardItem(p) || p.subNavbarCategory === 'Jobs' || p.mainCategory === 'Jobs' || p.tag === 'Jobs' || p.category === 'Jobs' || (p.category || '').toLowerCase().includes('job')).map(p => {
       const vendorJobType = p.jobType || p.type || p.job_type || p.employmentType || p.workType;
       const vendorExp = p.experience || p.exp || p.jobExperience || p.experience_required || p.experienceRequired || p.minExperience;
       const vendorDept = p.department || p.category || p.jobCategory || p.specialization || p.subCategory;
@@ -2951,7 +2960,15 @@ export default function CustomerDashboard({
       // Services Filter Checks
       if (activeTab === 'Services') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
-        if (pMainCat !== 'services' && (product.category || '').toLowerCase() !== 'services') return false;
+        const pMain = normalizeMainCatName(product.mainCategory);
+        const pCat = normalizeMainCatName(product.category);
+        const isService = pMainCat === 'services' || pMain === 'services' || pCat === 'services' || 
+          (product.category || '').toLowerCase() === 'services' || 
+          (product.subNavbarCategory || '').toLowerCase().includes('service') ||
+          (product.mainCategory || '').toLowerCase().includes('service') ||
+          (product.type || '').toLowerCase().includes('service');
+
+        if (!isService) return false;
 
         const matchesServiceType = selectedServiceTypes.length === 0 ||
           selectedServiceTypes.some(st => 
@@ -2974,7 +2991,15 @@ export default function CustomerDashboard({
       // Food Filter Checks
       if (activeTab === 'Food') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
-        if (pMainCat !== 'food' && (product.category || '').toLowerCase() !== 'food') return false;
+        const pMain = normalizeMainCatName(product.mainCategory);
+        const pCat = normalizeMainCatName(product.category);
+        const isFood = pMainCat === 'food' || pMain === 'food' || pCat === 'food' || 
+          (product.category || '').toLowerCase() === 'food' || 
+          (product.subNavbarCategory || '').toLowerCase().includes('food') ||
+          (product.mainCategory || '').toLowerCase().includes('food') ||
+          product.foodType !== undefined;
+
+        if (!isFood) return false;
 
         const matchesCuisine = selectedCuisines.length === 0 ||
           selectedCuisines.some(c => 
@@ -3017,7 +3042,14 @@ export default function CustomerDashboard({
       // Stay Filter Checks
       if (activeTab === 'Stay') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
-        if (pMainCat !== 'stay' && (product.category || '').toLowerCase() !== 'stay') return false;
+        const pMain = normalizeMainCatName(product.mainCategory);
+        const pCat = normalizeMainCatName(product.category);
+        const isStay = pMainCat === 'stay' || pMain === 'stay' || pCat === 'stay' || 
+          (product.category || '').toLowerCase() === 'stay' || 
+          (product.subNavbarCategory || '').toLowerCase().includes('stay') ||
+          (product.mainCategory || '').toLowerCase().includes('stay');
+
+        if (!isStay) return false;
 
         const matchesAccom = selectedAccomTypes.length === 0 ||
           selectedAccomTypes.some(acc => 
@@ -3048,7 +3080,14 @@ export default function CustomerDashboard({
       // Travel Filter Checks
       if (activeTab === 'Travel') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
-        if (pMainCat !== 'travel' && (product.category || '').toLowerCase() !== 'travel') return false;
+        const pMain = normalizeMainCatName(product.mainCategory);
+        const pCat = normalizeMainCatName(product.category);
+        const isTravel = pMainCat === 'travel' || pMain === 'travel' || pCat === 'travel' || 
+          (product.category || '').toLowerCase() === 'travel' || 
+          (product.subNavbarCategory || '').toLowerCase().includes('travel') ||
+          (product.mainCategory || '').toLowerCase().includes('travel');
+
+        if (!isTravel) return false;
 
         const matchesTravelType = selectedTravelTypes.length === 0 ||
           selectedTravelTypes.some(tt => 
@@ -3090,7 +3129,14 @@ export default function CustomerDashboard({
       // Daily Needs Filter Checks
       if (activeTab === 'Daily Needs') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
-        if (pMainCat !== 'daily needs' && (product.category || '').toLowerCase() !== 'daily needs') return false;
+        const pMain = normalizeMainCatName(product.mainCategory);
+        const pCat = normalizeMainCatName(product.category);
+        const isDailyNeeds = pMainCat === 'daily needs' || pMain === 'daily needs' || pCat === 'daily needs' || 
+          (product.category || '').toLowerCase() === 'daily needs' || 
+          (product.subNavbarCategory || '').toLowerCase().includes('daily') ||
+          (product.mainCategory || '').toLowerCase().includes('daily');
+
+        if (!isDailyNeeds) return false;
 
         const matchesDailyNeedsType = selectedDailyNeedsTypes.length === 0 ||
           selectedDailyNeedsTypes.some(type => 
@@ -3121,12 +3167,11 @@ export default function CustomerDashboard({
       const isJob = isJobCardItem(product);
       if (activeTab === 'Products') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
-        const pMain = (product.mainCategory || '').toLowerCase();
-        const pCat = (product.category || '').toLowerCase();
-        const pSubCat = (product.subcategory || '').toLowerCase();
-        const pName = (product.name || '').toLowerCase();
-        const isServiceItem = pMainCat === 'services' || pMain === 'services' || pCat === 'services' || pCat.includes('service') || pSubCat.includes('service') || pName.includes('service');
-        if (pMainCat !== 'products' || isJob || isServiceItem) return false;
+        const pMain = normalizeMainCatName(product.mainCategory);
+        const isOtherTab = pMainCat === 'services' || pMainCat === 'food' || pMainCat === 'stay' || pMainCat === 'travel' || pMainCat === 'jobs' || pMainCat === 'daily needs' ||
+          pMain === 'services' || pMain === 'food' || pMain === 'stay' || pMain === 'travel' || pMain === 'jobs' || pMain === 'daily needs' ||
+          isJob;
+        if (isOtherTab) return false;
       }
 
       if (selectedCategories.includes('Products')) {

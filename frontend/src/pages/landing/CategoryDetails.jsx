@@ -279,9 +279,13 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
       if (!isRealVendorProduct(p)) return false;
       const subNav = (p.subNavbarCategory || '').toLowerCase();
       const cat = (p.category || '').toLowerCase();
+      const subcat = (p.subcategory || '').toLowerCase();
       const mainCat = (p.mainCategory || '').toLowerCase();
       const tag = (p.tag || '').toLowerCase();
-      return subNav === catLower || cat === catLower || mainCat === catLower || tag === catLower;
+      const name = (p.name || '').toLowerCase();
+
+      return subNav === catLower || cat === catLower || subcat === catLower || mainCat === catLower || tag === catLower ||
+        subNav.includes(catLower) || cat.includes(catLower) || subcat.includes(catLower) || mainCat.includes(catLower) || tag.includes(catLower) || name.includes(catLower);
     });
 
     // If it's Products category or isProductGrid, return matching real vendor products only
