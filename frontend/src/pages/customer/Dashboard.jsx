@@ -3019,6 +3019,9 @@ export default function CustomerDashboard({
       if (currentTab === 'services' || activeTab === 'Services') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
+        const explicitMain = pMainCat || pMain;
+        if (explicitMain && explicitMain !== 'services') return false;
+
         const pCat = normalizeMainCatName(product.category);
         const isService = pMainCat === 'services' || pMain === 'services' || pCat === 'services' || 
           (product.category || '').toLowerCase() === 'services' || 
@@ -3050,6 +3053,9 @@ export default function CustomerDashboard({
       if (currentTab === 'food' || activeTab === 'Food') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
+        const explicitMain = pMainCat || pMain;
+        if (explicitMain && explicitMain !== 'food') return false;
+
         const pCat = normalizeMainCatName(product.category);
         const pSubCat = normalizeMainCatName(product.subcategory);
         const pSubSubCat = normalizeMainCatName(product.subSubcategory);
@@ -3105,6 +3111,9 @@ export default function CustomerDashboard({
       if (currentTab === 'stay' || activeTab === 'Stay') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
+        const explicitMain = pMainCat || pMain;
+        if (explicitMain && explicitMain !== 'stay') return false;
+
         const pCat = normalizeMainCatName(product.category);
         const isStay = pMainCat === 'stay' || pMain === 'stay' || pCat === 'stay' || 
           (product.category || '').toLowerCase() === 'stay' || 
@@ -3143,6 +3152,9 @@ export default function CustomerDashboard({
       if (currentTab === 'travel' || activeTab === 'Travel') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
+        const explicitMain = pMainCat || pMain;
+        if (explicitMain && explicitMain !== 'travel') return false;
+
         const pCat = normalizeMainCatName(product.category);
         const isTravel = pMainCat === 'travel' || pMain === 'travel' || pCat === 'travel' || 
           (product.category || '').toLowerCase() === 'travel' || 
@@ -3192,6 +3204,9 @@ export default function CustomerDashboard({
       if (currentTab === 'daily needs' || activeTab === 'Daily Needs') {
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
+        const explicitMain = pMainCat || pMain;
+        if (explicitMain && explicitMain !== 'daily needs') return false;
+
         const pCat = normalizeMainCatName(product.category);
         const isDailyNeeds = pMainCat === 'daily needs' || pMain === 'daily needs' || pCat === 'daily needs' || 
           (product.category || '').toLowerCase() === 'daily needs' || 
@@ -3231,7 +3246,7 @@ export default function CustomerDashboard({
         const pMainCat = normalizeMainCatName(product.subNavbarCategory);
         const pMain = normalizeMainCatName(product.mainCategory);
         const isOtherTab = pMainCat === 'services' || pMainCat === 'food' || pMainCat === 'stay' || pMainCat === 'travel' || pMainCat === 'jobs' || pMainCat === 'daily needs' ||
-          pMain === 'services' || pMain === 'food' || pMain === 'stay' || pMain === 'travel' || pMain === 'jobs' || pMainCat === 'daily needs' ||
+          pMain === 'services' || pMain === 'food' || pMain === 'stay' || pMain === 'travel' || pMain === 'jobs' || pMain === 'daily needs' ||
           isJob;
         if (isOtherTab) return false;
       }
