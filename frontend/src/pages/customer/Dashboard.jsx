@@ -2609,8 +2609,9 @@ export default function CustomerDashboard({
 
   const isVendorProductUnavailable = (product) => {
     if (!product) return false;
+    if (!isRealVendorProduct(product)) return true;
     if (product.status === 'Unavailable' || product.status === 'Out of Stock' || product.status === 'Out of stock' || product.status === 'Inactive') return true;
-    if (product.availability === false || product.isAvailable === false) return true;
+    if (product.availability === false || product.isAvailable === false || product.isActive === false) return true;
     if (product.stock !== undefined && product.stock !== null && (parseInt(product.stock) === 0 || String(product.stock).startsWith('0'))) return true;
     return false;
   };

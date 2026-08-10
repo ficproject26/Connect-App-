@@ -20,14 +20,20 @@ const sanitizeString = (str) => {
 export const isRealVendorProduct = (p) => {
   if (!p) return false;
 
-  if (p.isActive === false || p.isAvailable === false || p.isSuspended === true || p.isVendorSuspended === true || p.vendorIsActive === false) {
-    return false;
-  }
+  // 1. Check Vendor Status
+  if (p.vendorIsActive === false || p.isVendorSuspended === true || p.isSuspended === true) return false;
+  const vStatus = (p.vendorStatus || p.vendor_status || '').toString().toLowerCase().trim();
+  if (['suspended', 'inactive', 'rejected', 'deactivated', 'blocked'].includes(vStatus)) return false;
 
-  const status = (p.status || p.vendorStatus || p.vendor_status || '').toString().toLowerCase().trim();
-  if (['suspended', 'inactive', 'rejected', 'deactivated', 'blocked'].includes(status)) {
-    return false;
-  }
+  // 2. Check Business Outlet Status
+  if (p.businessIsActive === false || p.business_is_active === false) return false;
+  const bStatus = (p.businessStatus || p.business_status || '').toString().toLowerCase().trim();
+  if (['suspended', 'inactive', 'rejected', 'deactivated', 'blocked'].includes(bStatus)) return false;
+
+  // 3. Check Listing Status
+  if (p.isActive === false || p.isAvailable === false || p.listingIsActive === false) return false;
+  const lStatus = (p.status || p.listingStatus || '').toString().toLowerCase().trim();
+  if (['suspended', 'inactive', 'rejected', 'deactivated', 'blocked'].includes(lStatus)) return false;
 
   const vId = String(p.vendorId || p.vendor_id || '');
   const pId = String(p.id || p._id || '');
