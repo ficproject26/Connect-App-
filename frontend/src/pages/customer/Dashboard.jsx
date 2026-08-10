@@ -2967,6 +2967,8 @@ export default function CustomerDashboard({
       if (selectedSubNavbarCategory && !isMainCategoryTabName(selectedSubNavbarCategory)) {
         const targetSub = selectedSubNavbarCategory.toLowerCase().trim();
         const targetSingular = targetSub.endsWith('s') && targetSub.length > 3 ? targetSub.slice(0, -1) : targetSub;
+        const pSubNav = (product.subNavbarCategory || '').toLowerCase().trim();
+        const pMain = (product.mainCategory || '').toLowerCase().trim();
         const pCat = (product.category || '').toLowerCase().trim();
         const pSubCat = (product.subcategory || '').toLowerCase().trim();
         const pSubSubCat = (product.subSubcategory || '').toLowerCase().trim();
@@ -2974,10 +2976,14 @@ export default function CustomerDashboard({
         const pName = (product.name || '').toLowerCase().trim();
 
         matchesSubNavbar = 
+          pSubNav === targetSub || pSubNav === targetSingular ||
+          pMain === targetSub || pMain === targetSingular ||
           pCat === targetSub || pCat === targetSingular ||
           pSubCat === targetSub || pSubCat === targetSingular ||
           pSubSubCat === targetSub || pSubSubCat === targetSingular ||
           pTag === targetSub || pTag === targetSingular ||
+          pSubNav.includes(targetSub) || pSubNav.includes(targetSingular) ||
+          pMain.includes(targetSub) || pMain.includes(targetSingular) ||
           pCat.includes(targetSub) || pCat.includes(targetSingular) ||
           pSubCat.includes(targetSub) || pSubCat.includes(targetSingular) ||
           pSubSubCat.includes(targetSub) || pSubSubCat.includes(targetSingular) ||
