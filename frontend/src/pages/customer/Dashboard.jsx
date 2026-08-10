@@ -885,9 +885,8 @@ export default function CustomerDashboard({
     const cat = String(item.category || '').toLowerCase().trim();
     const mainCat = String(item.mainCategory || '').toLowerCase().trim();
     const subSub = String(item.subSubcategory || '').toLowerCase().trim();
-    const name = String(item.name || item.title || item.jobTitle || '').toLowerCase().trim();
 
-    if (subCat === 'jobs' || subCat === 'job' || tag === 'jobs' || tag === 'job' || cat === 'jobs' || cat === 'job' || mainCat === 'jobs' || mainCat === 'job' || cat.includes('it jobs') || subSub.includes('it jobs') || item.jobTitle || item.salary || item.jobLocation || item.jobType) {
+    if (subCat === 'jobs' || subCat === 'job' || tag === 'jobs' || tag === 'job' || cat === 'jobs' || cat === 'job' || mainCat === 'jobs' || mainCat === 'job' || cat.includes('it jobs') || subSub.includes('it jobs') || item.jobTitle || item.jobLocation) {
       return true;
     }
     return false;

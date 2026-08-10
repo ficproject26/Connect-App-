@@ -101,8 +101,8 @@ const inferSubNavbarCategory = (p) => {
   const typeMatch = matchMainCat(rawType);
   if (typeMatch) return typeMatch;
 
-  // 2. Check for Jobs specific indicators
-  if (p.jobTitle || p.salary || p.jobLocation || p.jobType || p.experienceRequired || p.minExperience) {
+  // 2. Check for Jobs specific indicators (jobTitle, jobLocation, salary)
+  if (p.jobTitle || p.jobLocation || p.experienceRequired || p.minExperience) {
     return 'Jobs';
   }
 
