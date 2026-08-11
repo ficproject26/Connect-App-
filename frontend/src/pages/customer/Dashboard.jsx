@@ -9593,6 +9593,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     { id: 'bookings', label: 'My Bookings', icon: Calendar },
                     { id: 'myjobs', label: 'My Jobs', icon: Briefcase },
                     { id: 'wallet', label: 'Connect Wallet', icon: Wallet },
+                    { id: 'card', label: 'Membership Card', icon: Crown },
                     { id: 'payments', label: 'Payments', icon: CreditCard },
                     { id: 'edit', label: 'Edit Profile', icon: User },
                     { id: 'settings', label: 'Settings', icon: Settings }
