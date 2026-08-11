@@ -33,59 +33,7 @@ export default function Offers() {
     });
   };
 
-  const defaultOffers = [
-    { 
-      title: 'Summer Festival Sale', 
-      discount: 'Flat 20% OFF', 
-      code: 'CONN-SUMMER20', 
-      desc: 'Active at all ABC Electronics stores and select lifestyle boutiques.',
-      icon: Tag,
-      lightBg: 'bg-[#fffbeb] dark:bg-[#1a1208]/40',
-      borderColor: 'border-[#fde68a] dark:border-[#38260e]/50',
-      tagBg: 'bg-gradient-to-r from-orange-500 to-orange-600',
-      iconBg: 'bg-[#ffedd5] dark:bg-[#341a0b] text-[#f97316]',
-      illustration: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="absolute -right-2 -bottom-2 w-32 h-32 text-orange-200/25 dark:text-orange-500/5 pointer-events-none select-none">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M6 5h12" />
-        </svg>
-      )
-    },
-    { 
-      title: 'Priority Dine-In Privilege', 
-      discount: 'Flat 15% OFF', 
-      code: 'CONN-DINEOUT15', 
-      desc: 'Valid at Celeste Dining Skylounge and partner restaurants.',
-      icon: Utensils,
-      lightBg: 'bg-[#f5f3ff] dark:bg-[#110c22]/40',
-      borderColor: 'border-[#ddd6fe] dark:border-[#22174d]/50',
-      tagBg: 'bg-gradient-to-r from-violet-500 to-indigo-600',
-      iconBg: 'bg-[#e0e7ff] dark:bg-[#1a1738] text-[#6366f1]',
-      illustration: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="absolute -right-2 -bottom-2 w-32 h-32 text-purple-200/25 dark:text-purple-500/5 pointer-events-none select-none">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2M4 22h16M12 4a8 8 0 00-8 8h16a8 8 0 00-8-8zM2 18h20" />
-        </svg>
-      )
-    },
-    { 
-      title: 'Helicopter Transfer Deal', 
-      discount: 'Flat 25% OFF', 
-      code: 'CONN-CHARTER25', 
-      desc: 'Valid for private airport transfers and yacht cruises.',
-      icon: Plane,
-      lightBg: 'bg-[#eff6ff] dark:bg-[#0c1228]/40',
-      borderColor: 'border-[#bfdbfe] dark:border-[#101d3f]/50',
-      tagBg: 'bg-gradient-to-r from-blue-500 to-blue-600',
-      iconBg: 'bg-[#e0f2fe] dark:bg-[#132845] text-[#3b82f6]',
-      illustration: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="absolute -right-2 -bottom-2 w-32 h-32 text-blue-200/25 dark:text-blue-500/5 pointer-events-none select-none">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M12 6v4M5 10c0-3 3-5 7-5s7 2 7 5m-14 4h14M9 14v4M7 18h10" />
-        </svg>
-      )
-    }
-  ];
-
-  const displayOffers = liveOffers.length > 0 ? liveOffers.map((off, idx) => {
+  const displayOffers = liveOffers.map((off, idx) => {
     const icons = [Tag, Utensils, Plane, ShieldCheck, Gift];
     const lightBgs = [
       'bg-[#fffbeb] dark:bg-[#1a1208]/40',
@@ -127,7 +75,7 @@ export default function Offers() {
       tagBg: tagBgs[idx % tagBgs.length],
       iconBg: iconBgs[idx % iconBgs.length]
     };
-  }) : defaultOffers;
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 text-left animate-fade-in text-slate-800 dark:text-slate-100">
@@ -167,8 +115,15 @@ export default function Offers() {
       </div>
 
       {/* Offers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {displayOffers.map((off, idx) => {
+      {displayOffers.length === 0 ? (
+        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl col-span-2">
+          <Gift className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="text-sm font-black text-slate-700 dark:text-slate-300">No Exclusive Offers Available</p>
+          <p className="text-xs text-slate-400 mt-1 font-semibold">Check back later for new promotional deals and discounts.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {displayOffers.map((off, idx) => {
           const Icon = off.icon;
           const isCopied = copiedCode === off.code;
           return (
@@ -221,7 +176,8 @@ export default function Offers() {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Footer Note */}
       <div className="bg-blue-50/20 dark:bg-slate-900/40 border border-blue-100/50 dark:border-slate-800 rounded-2xl py-3.5 px-6 flex items-center justify-center gap-2.5 shadow-3xs text-center">

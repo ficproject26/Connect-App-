@@ -3340,9 +3340,11 @@ export default function CustomerDashboard({
         >
           <div className="relative">
             <Tag className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
-            <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
-              {adminOffers.length > 0 ? adminOffers.length : 3}
-            </span>
+            {adminOffers.length > 0 && (
+              <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+                {adminOffers.length}
+              </span>
+            )}
           </div>
           {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Offers</span>}
         </button>
@@ -3761,7 +3763,7 @@ export default function CustomerDashboard({
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs font-black text-slate-900 dark:text-slate-100">Offers</span>
-                      <span className="text-[9px] font-extrabold text-red-500">{adminOffers.length > 0 ? adminOffers.length : 3} Active Deals</span>
+                      <span className="text-[9px] font-extrabold text-red-500">{adminOffers.length} Active Deals</span>
                     </div>
                   </button>
 
@@ -4770,53 +4772,6 @@ export default function CustomerDashboard({
   };
 
   const renderExclusiveOffers = () => {
-    const defaultOffers = [
-      { 
-        id: 'o1', 
-        brand: 'Food', 
-        discount: 'FLAT 20% OFF', 
-        desc: 'On all food orders', 
-        code: 'FOOD20', 
-        bg: 'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50', 
-        tagColor: 'bg-rose-500 text-white font-black', 
-        btnColor: 'bg-rose-500 hover:bg-rose-600 text-white font-black',
-        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=250&auto=format&fit=crop&q=80' 
-      },
-      { 
-        id: 'o2', 
-        brand: 'Services', 
-        discount: '15% OFF', 
-        desc: 'On all services', 
-        code: 'SERV15', 
-        bg: 'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50', 
-        tagColor: 'bg-blue-500 text-white font-black', 
-        btnColor: 'bg-blue-500 hover:bg-blue-600 text-white font-black',
-        image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=250&auto=format&fit=crop&q=80' 
-      },
-      { 
-        id: 'o3', 
-        brand: 'Stay', 
-        discount: 'UP TO 30% OFF', 
-        desc: 'On hotel bookings', 
-        code: 'STAY30', 
-        bg: 'bg-emerald-50/70 dark:bg-[#041c12] border-emerald-100 dark:border-[#0e3a24]/50', 
-        tagColor: 'bg-emerald-500 text-white font-black', 
-        btnColor: 'bg-emerald-500 hover:bg-emerald-600 text-white font-black',
-        image: hotelActual 
-      },
-      { 
-        id: 'o4', 
-        brand: 'Travel', 
-        discount: 'FLAT ₹500 OFF', 
-        desc: 'On bus & cab bookings', 
-        code: 'TRAVEL500', 
-        bg: 'bg-amber-50/70 dark:bg-[#1e1707] border-amber-100 dark:border-amber-900/50', 
-        tagColor: 'bg-amber-500 text-slate-950 font-black', 
-        btnColor: 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black',
-        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=250&auto=format&fit=crop&q=80' 
-      }
-    ];
-
     const livePromos = [
       ...(Array.isArray(adminOffers) ? adminOffers : []),
       ...(Array.isArray(adminAds) ? adminAds.map(ad => ({
@@ -4831,7 +4786,7 @@ export default function CustomerDashboard({
       })) : [])
     ];
 
-    let formattedOffers = livePromos.map((o, idx) => {
+    const formattedOffers = livePromos.map((o, idx) => {
       const bgs = [
         'bg-rose-50/70 dark:bg-[#1a0914] border-rose-100 dark:border-[#3e1422]/50',
         'bg-blue-50/70 dark:bg-[#06122c] border-blue-100 dark:border-[#11244d]/50',
@@ -4867,9 +4822,7 @@ export default function CustomerDashboard({
       };
     });
 
-    if (formattedOffers.length < 4) {
-      formattedOffers = [...formattedOffers, ...defaultOffers.slice(formattedOffers.length, 4)];
-    }
+    if (formattedOffers.length === 0) return null;
 
     const displayOffers = formattedOffers;
 
