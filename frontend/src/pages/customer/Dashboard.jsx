@@ -18,6 +18,13 @@ import AdminDashboardView from '../dashboards/AdminDashboardView';
 import OrdersBookingsView from '../dashboards/OrdersBookingsView';
 import ProfileView from '../dashboards/ProfileView';
 import { sanitizeMobileInput } from '../../utils/validation';
+import { getOrGenerateCustomerId } from '../../context/AuthContext';
+
+const getUserStorageKey = (user) => {
+  if (!user) return 'default';
+  const idStr = (user.email || user.phone || user.customerId || user.name || 'default').toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return idStr || 'default';
+};
 
 const LiveClock = React.memo(({ prefix = '' }) => {
   const [time, setTime] = useState(() => new Date());
@@ -1004,40 +1011,26 @@ export default function CustomerDashboard({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState('orders'); // 'orders' | 'settings' | 'card' | 'edit'
   const [profileName, setProfileName] = useState(() => {
+    if (currentUser?.name && !/^\d+$/.test(currentUser.name) && currentUser.name !== 'Connect Member') {
+      return currentUser.name;
+    }
     try {
       const savedUser = localStorage.getItem('connect_current_user');
       if (savedUser) {
         const u = JSON.parse(savedUser);
-        // If name is valid (not digits-only), use it
         if (u.name && !/^\d+$/.test(u.name) && u.name !== 'Connect Member') return u.name;
-        // Otherwise, try to find the registered user by phone or email
-        const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-        const phone = (u.phone || '').replace(/\D/g, '');
-        const email = (u.email || '').toLowerCase();
-        const match = registeredUsers.find(r =>
-          (phone && r.phone && r.phone.replace(/\D/g, '') === phone) ||
-          (email && r.email && r.email.toLowerCase() === email)
-        );
-        if (match && match.name && !/^\d+$/.test(match.name)) return match.name;
       }
     } catch (e) {}
-    if (currentUser?.name && !/^\d+$/.test(currentUser.name)) return currentUser.name;
-    return '';
+    return currentUser?.name || '';
   });
   const [profileEmail, setProfileEmail] = useState(() => {
+    if (currentUser?.email && !currentUser.email.match(/^\d+@connect\.app$/)) {
+      return currentUser.email;
+    }
     try {
       const savedUser = localStorage.getItem('connect_current_user');
       if (savedUser) {
         const u = JSON.parse(savedUser);
-        // Prefer real email (not auto-generated digits@connect.app)
-        if (u.email && !u.email.match(/^\d+@connect\.app$/)) return u.email;
-        // Otherwise look up registered user
-        const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-        const phone = (u.phone || '').replace(/\D/g, '');
-        const match = registeredUsers.find(r =>
-          phone && r.phone && r.phone.replace(/\D/g, '') === phone
-        );
-        if (match && match.email) return match.email;
         if (u.email) return u.email;
       }
     } catch (e) {}
@@ -1045,25 +1038,29 @@ export default function CustomerDashboard({
   });
 
   const activeCustomerId = useMemo(() => {
-    if (currentUser?.customerId && currentUser.customerId !== 'FIC-CUST-849201') return currentUser.customerId;
+    if (currentUser?.customerId && currentUser.customerId !== 'FIC-CUST-750684' && currentUser.customerId !== 'FIC-CUST-849201') {
+      return currentUser.customerId;
+    }
     const savedUser = localStorage.getItem('connect_current_user');
     if (savedUser) {
       try {
         const u = JSON.parse(savedUser);
-        if (u.customerId && u.customerId !== 'FIC-CUST-849201') return u.customerId;
+        if (u.customerId && u.customerId !== 'FIC-CUST-750684' && u.customerId !== 'FIC-CUST-849201') {
+          return u.customerId;
+        }
       } catch (e) {}
     }
-    return 'FIC-CUST-750684';
+    return getOrGenerateCustomerId(currentUser || 'customer');
   }, [currentUser]);
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
   const [profilePhone, setProfilePhone] = useState(() => {
-    const savedPhone = localStorage.getItem('connect_profile_phone');
-    if (savedPhone && savedPhone !== '+91 98765 43210') return savedPhone;
-    try {
-      const u = JSON.parse(localStorage.getItem('connect_current_user') || '{}');
-      if (u.phone) return u.phone;
-    } catch (e) {}
-    return currentUser?.phone || '';
+    if (currentUser?.phone) return currentUser.phone;
+    if (currentUser) {
+      const userKey = getUserStorageKey(currentUser);
+      const savedPhone = localStorage.getItem(`connect_profile_phone_${userKey}`);
+      if (savedPhone) return savedPhone;
+    }
+    return '';
   });
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
@@ -1072,8 +1069,8 @@ export default function CustomerDashboard({
   const [settingsSecurity, setSettingsSecurity] = useState(true);
 
   const [addresses, setAddresses] = useState(() => {
-    const emailKey = currentUser?.email ? `connect_addresses_${currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'connect_customer_addresses';
-    const saved = localStorage.getItem(emailKey);
+    const userKey = getUserStorageKey(currentUser);
+    const saved = localStorage.getItem(`connect_addresses_${userKey}`);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -1098,8 +1095,10 @@ export default function CustomerDashboard({
   });
 
   useEffect(() => {
-    const emailKey = currentUser?.email ? `connect_addresses_${currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'connect_customer_addresses';
-    localStorage.setItem(emailKey, JSON.stringify(addresses));
+    if (currentUser) {
+      const userKey = getUserStorageKey(currentUser);
+      localStorage.setItem(`connect_addresses_${userKey}`, JSON.stringify(addresses));
+    }
   }, [addresses, currentUser]);
 
   useEffect(() => {
@@ -1139,7 +1138,7 @@ export default function CustomerDashboard({
 
   useEffect(() => {
     if (currentUser) {
-      // Try to find the full registered profile if current user has digit-only name or auto-generated email
+      const userKey = getUserStorageKey(currentUser);
       let resolvedUser = { ...currentUser };
       const hasDigitName = !currentUser.name || /^\d+$/.test(currentUser.name) || currentUser.name === 'Connect Member';
       const hasAutoEmail = !currentUser.email || currentUser.email.match(/^\d+@connect\.app$/);
@@ -1159,26 +1158,37 @@ export default function CustomerDashboard({
         } catch (e) {}
       }
 
-      if (resolvedUser.name && !/^\d+$/.test(resolvedUser.name) && resolvedUser.name !== 'Connect Member') {
-        setProfileName(resolvedUser.name);
+      setProfileName(resolvedUser.name || currentUser.name || '');
+      setProfileEmail(resolvedUser.email || currentUser.email || '');
+      setProfilePhone(resolvedUser.phone || currentUser.phone || localStorage.getItem(`connect_profile_phone_${userKey}`) || '');
+
+      const userPhotoKey = `connect_profile_photo_${userKey}`;
+      const savedPhoto = localStorage.getItem(userPhotoKey) || currentUser?.avatar || currentUser?.photo || '';
+      setProfilePhoto(savedPhoto);
+
+      const savedAddr = localStorage.getItem(`connect_addresses_${userKey}`);
+      if (savedAddr) {
+        try {
+          setAddresses(JSON.parse(savedAddr));
+        } catch (e) {}
+      } else {
+        setAddresses([]);
       }
-      if (resolvedUser.email && !resolvedUser.email.match(/^\d+@connect\.app$/)) {
-        setProfileEmail(resolvedUser.email);
-      } else if (resolvedUser.email) {
-        setProfileEmail(resolvedUser.email);
-      }
-      if (resolvedUser.phone) {
-        setProfilePhone(resolvedUser.phone);
-      }
+    } else {
+      setProfileName('');
+      setProfileEmail('');
+      setProfilePhone('');
+      setProfilePhoto('');
+      setAddresses([]);
     }
   }, [currentUser]);
 
   const [profilePhoto, setProfilePhoto] = useState(() => {
-    try {
-      return localStorage.getItem('connect_profile_photo') || currentUser?.avatar || currentUser?.photo || '';
-    } catch (e) {
-      return '';
+    if (currentUser) {
+      const userKey = getUserStorageKey(currentUser);
+      return localStorage.getItem(`connect_profile_photo_${userKey}`) || currentUser?.avatar || currentUser?.photo || '';
     }
+    return '';
   });
 
   const [selectedServicePlanId, setSelectedServicePlanId] = useState('1month');
@@ -10515,8 +10525,11 @@ wishlistProducts.forEach(item => addToCart(item));
                           setProfileConfirmPassword('');
                         }
 
-                        // Persist contact options
-                        localStorage.setItem('connect_profile_phone', profilePhone);
+                        // Persist contact options per user
+                        const userKey = getUserStorageKey(currentUser);
+                        if (profilePhone) {
+                          localStorage.setItem(`connect_profile_phone_${userKey}`, profilePhone);
+                        }
                         
                         const savedUserStr = localStorage.getItem('connect_current_user');
                         if (savedUserStr) {
@@ -10524,6 +10537,11 @@ wishlistProducts.forEach(item => addToCart(item));
                             const u = JSON.parse(savedUserStr);
                             u.name = profileName;
                             u.email = profileEmail;
+                            u.phone = profilePhone;
+                            if (profilePhoto) {
+                              u.avatar = profilePhoto;
+                              u.photo = profilePhoto;
+                            }
                             localStorage.setItem('connect_current_user', JSON.stringify(u));
                           } catch (err) {}
                         }
@@ -10566,7 +10584,17 @@ wishlistProducts.forEach(item => addToCart(item));
                                       reader.onloadend = () => {
                                         const base64 = reader.result;
                                         setProfilePhoto(base64);
-                                        localStorage.setItem('connect_profile_photo', base64);
+                                        const userKey = getUserStorageKey(currentUser);
+                                        localStorage.setItem(`connect_profile_photo_${userKey}`, base64);
+                                        const savedUserStr = localStorage.getItem('connect_current_user');
+                                        if (savedUserStr) {
+                                          try {
+                                            const u = JSON.parse(savedUserStr);
+                                            u.avatar = base64;
+                                            u.photo = base64;
+                                            localStorage.setItem('connect_current_user', JSON.stringify(u));
+                                          } catch (err) {}
+                                        }
                                         triggerNotification("Profile photo uploaded successfully!");
                                       };
                                       reader.readAsDataURL(file);
@@ -10579,7 +10607,17 @@ wishlistProducts.forEach(item => addToCart(item));
                                   type="button"
                                   onClick={() => {
                                     setProfilePhoto('');
-                                    localStorage.removeItem('connect_profile_photo');
+                                    const userKey = getUserStorageKey(currentUser);
+                                    localStorage.removeItem(`connect_profile_photo_${userKey}`);
+                                    const savedUserStr = localStorage.getItem('connect_current_user');
+                                    if (savedUserStr) {
+                                      try {
+                                        const u = JSON.parse(savedUserStr);
+                                        delete u.avatar;
+                                        delete u.photo;
+                                        localStorage.setItem('connect_current_user', JSON.stringify(u));
+                                      } catch (err) {}
+                                    }
                                     triggerNotification("Profile photo removed");
                                   }}
                                   className="px-2.5 py-1 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:underline bg-transparent border-none cursor-pointer"

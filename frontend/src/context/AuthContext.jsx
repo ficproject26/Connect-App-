@@ -2,18 +2,43 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const getOrGenerateCustomerId = (email) => {
-    return 'FIC-CUST-750684';
-  };
+export const getOrGenerateCustomerId = (userOrId) => {
+  if (!userOrId) {
+    return `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+  let target = '';
+  if (typeof userOrId === 'object' && userOrId !== null) {
+    if (userOrId.customerId && userOrId.customerId !== 'FIC-CUST-750684' && userOrId.customerId !== 'FIC-CUST-849201') {
+      return userOrId.customerId;
+    }
+    target = userOrId.email || userOrId.phone || userOrId.name || userOrId.id || '';
+  } else {
+    target = String(userOrId).trim();
+  }
 
+  const clean = target.trim().toLowerCase();
+  if (!clean) {
+    return `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+
+  // Hash clean target deterministically to a unique 6-digit number per customer
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) {
+    hash = ((hash << 5) - hash) + clean.charCodeAt(i);
+    hash |= 0;
+  }
+  const num = Math.abs(hash % 900000) + 100000;
+  return `FIC-CUST-${num}`;
+};
+
+export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('connect_current_user');
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        if (!u.customerId) {
-          u.customerId = getOrGenerateCustomerId(u.email);
+        if (!u.customerId || u.customerId === 'FIC-CUST-750684' || u.customerId === 'FIC-CUST-849201') {
+          u.customerId = getOrGenerateCustomerId(u);
           localStorage.setItem('connect_current_user', JSON.stringify(u));
         }
         return u;
@@ -47,7 +72,6 @@ export function AuthProvider({ children }) {
       if (registeredMatch && registeredMatch.name && !/^\d+$/.test(registeredMatch.name)) {
         finalName = registeredMatch.name;
       } else {
-        // Try to extract a readable name from email, but skip if prefix is all digits
         const emailPrefix = inputUser.email ? inputUser.email.split('@')[0] : '';
         if (emailPrefix && !/^\d+$/.test(emailPrefix)) {
           finalName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
@@ -68,7 +92,9 @@ export function AuthProvider({ children }) {
       pincode: inputUser.pincode || registeredMatch?.pincode || '',
       state: inputUser.state || registeredMatch?.state || '',
       role: role || inputUser.role || 'customer',
-      customerId: inputUser.customerId || registeredMatch?.customerId || getOrGenerateCustomerId(inputUser.email || cleanDigits)
+      customerId: (inputUser.customerId && inputUser.customerId !== 'FIC-CUST-750684' && inputUser.customerId !== 'FIC-CUST-849201')
+        ? inputUser.customerId 
+        : getOrGenerateCustomerId(inputUser.email || cleanDigits || finalName)
     };
 
     setCurrentUser(finalUser);
@@ -98,7 +124,7 @@ export function AuthProvider({ children }) {
       aadhaar: formData.aadhaarNumber || '',
       pan: formData.panNumber || '',
       role: role || 'customer',
-      customerId: getOrGenerateCustomerId(formData.email)
+      customerId: getOrGenerateCustomerId(formData.email || formData.phone || displayName)
     };
 
     try {
@@ -122,3 +148,4 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
