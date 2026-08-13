@@ -17,7 +17,7 @@ import { helmetSecurityMiddleware, sanitizeInputsMiddleware } from './security/m
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT) || 8000;
+const PORT = process.env.PORT || 8000;
 
 // OWASP Security Headers (Helmet) & Input Sanitization
 app.use(helmetSecurityMiddleware);
@@ -57,8 +57,8 @@ socketManager.init(server);
 // Connect to Database and start Server
 db.connect()
   .then(() => {
-    server.listen(PORT, "0.0.0.0", () => {
-      console.log(`[Server]: Connect App Backend running on port ${PORT}`);
+    server.listen(PORT, () => {
+      console.log(`[Server]: Connect App Backend running on http://localhost:${PORT} with DevSecOps Security`);
     });
   })
   .catch((err) => {

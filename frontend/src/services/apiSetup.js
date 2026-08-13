@@ -1,49 +1,61 @@
 export const getBackendUrl = () => {
-  const hostname = window.location.hostname;
-  
-  // If running locally, connect to local backend on port 8000
-  if (
-    !hostname || 
-    hostname === 'localhost' || 
-    hostname === '127.0.0.1' || 
-    hostname.startsWith('192.168.') || 
-    hostname.startsWith('10.')
-  ) {
-    return `http://${hostname || 'localhost'}:8000`;
-  }
-  
-  // If running in production, connect to deployed Render backend URL
-  return import.meta.env.VITE_BACKEND_URL || 'https://connect-admin-96pc.onrender.com';
-};
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (import.meta.env.VITE_BACKEND_URL) return import.meta.env.VITE_BACKEND_URL;
 
-export const getVendorBackendUrl = () => {
-  const hostname = window.location.hostname;
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
+  // If running locally, connect to local backend on port 8001
   if (
     !hostname || 
     hostname === 'localhost' || 
     hostname === '127.0.0.1' || 
     hostname.startsWith('192.168.') || 
-    hostname.startsWith('10.')
+    hostname.startsWith('10.') ||
+    hostname.startsWith('172.')
   ) {
     return `http://${hostname || 'localhost'}:8001`;
   }
   
-  return import.meta.env.VITE_VENDOR_BACKEND_URL || 'https://connect-admin-96pc.onrender.com';
+  // If running in production, connect to deployed backend URL
+  return 'https://connect-admin-96pc.onrender.com';
 };
 
-export const getAdminBackendUrl = () => {
-  const hostname = window.location.hostname;
+export const getVendorBackendUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (import.meta.env.VITE_VENDOR_BACKEND_URL) return import.meta.env.VITE_VENDOR_BACKEND_URL;
+
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
   if (
     !hostname || 
     hostname === 'localhost' || 
     hostname === '127.0.0.1' || 
     hostname.startsWith('192.168.') || 
-    hostname.startsWith('10.')
+    hostname.startsWith('10.') ||
+    hostname.startsWith('172.')
+  ) {
+    return `http://${hostname || 'localhost'}:8001`;
+  }
+  
+  return 'https://connect-admin-96pc.onrender.com';
+};
+
+export const getAdminBackendUrl = () => {
+  if (import.meta.env.VITE_ADMIN_BACKEND_URL) return import.meta.env.VITE_ADMIN_BACKEND_URL;
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  
+  if (
+    !hostname || 
+    hostname === 'localhost' || 
+    hostname === '127.0.0.1' || 
+    hostname.startsWith('192.168.') || 
+    hostname.startsWith('10.') ||
+    hostname.startsWith('172.')
   ) {
     return `http://${hostname || 'localhost'}:5001`;
   }
   
-  return import.meta.env.VITE_ADMIN_BACKEND_URL || 'https://connect-admin-96pc.onrender.com';
+  return 'https://connect-admin-96pc.onrender.com';
 };
