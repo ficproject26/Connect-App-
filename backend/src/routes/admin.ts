@@ -51,6 +51,21 @@ router.get('/public/banners', async (req: Request, res: Response) => {
   }
 });
 
+// GET: /api/admin/public/ads OR /api/admin/ads
+router.get(['/public/ads', '/ads'], async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const ads = await mongoDb.collection('ads').find({ isActive: true }).toArray();
+      return res.json(ads);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching public ads in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
 // GET: /api/admin/banners
 router.get('/banners', async (req: Request, res: Response) => {
   try {

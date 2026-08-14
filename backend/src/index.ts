@@ -50,6 +50,34 @@ app.use('/api/delivery-partners', deliveryRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/maps', mapsRouter);
 
+// Public Products Endpoints (Customer & Vendor products)
+app.get(['/api/public/products', '/api/products'], async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const products = await mongoDb.collection('products').find({ isActive: { $ne: false } }).toArray();
+      return res.json(products);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching public products in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+app.delete('/api/public/products/delete-all', async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      await mongoDb.collection('products').deleteMany({});
+      return res.json({ success: true, message: 'All products deleted successfully.' });
+    }
+    return res.status(500).json({ error: 'Database unavailable' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
 socketManager.init(server);
