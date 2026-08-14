@@ -232,16 +232,20 @@ export default function Navbar({
     // Socket.IO Real-time synchronization
     let socket;
     try {
-      socket = io(getAdminBackendUrl(), { 
-        transports: ['websocket'],
-        reconnectionAttempts: 2,
-        reconnectionDelay: 10000,
-        timeout: 8000
-      });
-      socket.on('categories:updated', () => {
-        // Real-time category update received
-        loadCategories();
-      });
+      const url = getAdminBackendUrl();
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      if (!(isHttps && url.startsWith('http://'))) {
+        socket = io(url, { 
+          transports: ['websocket'],
+          reconnectionAttempts: 2,
+          reconnectionDelay: 10000,
+          timeout: 8000
+        });
+        socket.on('categories:updated', () => {
+          // Real-time category update received
+          loadCategories();
+        });
+      }
     } catch (err) {}
 
     return () => {
