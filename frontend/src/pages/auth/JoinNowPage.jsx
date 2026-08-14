@@ -117,7 +117,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
         hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
       return `http://${hostname || 'localhost'}:8001/api`;
     }
-    return 'http://13.201.132.46:8001/api';
+    return 'https://api.ficapp.in/api';
   };
 
   const handleSignupSubmit = async (e) => {

@@ -17,7 +17,7 @@ export const getBackendUrl = () => {
   }
   
   // Production server URL
-  return 'http://13.201.132.46:8001';
+  return 'https://api.ficapp.in';
 };
 
 export const getVendorBackendUrl = () => {
@@ -37,7 +37,7 @@ export const getVendorBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8001`;
   }
   
-  return 'http://13.201.132.46:8001';
+  return 'https://api.ficapp.in';
 };
 
 export const getAdminBackendUrl = () => {
@@ -57,5 +57,5 @@ export const getAdminBackendUrl = () => {
     return `http://${hostname || 'localhost'}:5001`;
   }
   
-  return 'http://13.201.132.46:8001';
+  return 'https://api.ficapp.in';
 };

@@ -22,7 +22,7 @@ export const helmetSecurityMiddleware = helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.google.com', 'https://www.gstatic.com'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com', 'https://*.openstreetmap.org', 'https://*.cloudinary.com'],
-      connectSrc: ["'self'", 'http://localhost:*', 'http://13.201.132.46:*', 'wss://*'],
+      connectSrc: ["'self'", 'http://localhost:*', 'https://api.ficapp.in', 'wss://api.ficapp.in', 'http://13.201.132.46:*', 'wss://*'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"], // X-Frame-Options DENY against clickjacking
