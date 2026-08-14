@@ -66,6 +66,21 @@ router.get(['/public/ads', '/ads'], async (req: Request, res: Response) => {
   }
 });
 
+// GET: /api/admin/public/products OR /api/admin/products
+router.get(['/public/products', '/products'], async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const products = await mongoDb.collection('products').find({ isActive: { $ne: false } }).toArray();
+      return res.json(products);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching public products in admin router:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
 // GET: /api/admin/banners
 router.get('/banners', async (req: Request, res: Response) => {
   try {

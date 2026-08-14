@@ -187,33 +187,37 @@ export const productService = {
       return sanitized.filter(isRealVendorProduct);
     };
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const baseUrl = getVendorBackendUrl();
+    const endpoints = [
+      `${baseUrl}/api/public/products`,
+      `${baseUrl}/api/admin/public/products`,
+      `${baseUrl}/api/products`,
+      `${baseUrl}/api/admin/products`
+    ];
 
-      const res = await fetch(`${getVendorBackendUrl()}/api/public/products?t=${Date.now()}`, { 
-        signal: controller.signal,
-        cache: 'no-store'
-      }).catch(err => {
-        return null;
-      });
-      clearTimeout(timeoutId);
+    for (const endpoint of endpoints) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-      if (res && res.ok) {
-        const data = await res.json().catch(() => null);
-        const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
-        if (Array.isArray(rawList)) {
-          const vendorProducts = filterVendorAddedOnly(rawList);
-          try {
-            localStorage.removeItem('connect_cached_products');
-          } catch(e) {}
-          return { success: true, products: vendorProducts, source: 'live' };
+        const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
+          signal: controller.signal,
+          cache: 'no-store'
+        }).catch(() => null);
+        clearTimeout(timeoutId);
+
+        if (res && res.ok) {
+          const data = await res.json().catch(() => null);
+          const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
+          if (Array.isArray(rawList)) {
+            const vendorProducts = filterVendorAddedOnly(rawList);
+            try {
+              localStorage.removeItem('connect_cached_products');
+            } catch(e) {}
+            return { success: true, products: vendorProducts, source: 'live' };
+          }
         }
-      }
-    } catch (err) {
-      if (err && err.name !== 'AbortError') {
-        console.warn("Failed to fetch products from vendor backend:", err);
-      }
+      } catch (err) {}
     }
 
     return { success: true, products: [], source: 'empty' };
