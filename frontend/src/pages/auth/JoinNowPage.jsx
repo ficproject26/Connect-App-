@@ -117,7 +117,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
         hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
       return `http://${hostname || 'localhost'}:8001/api`;
     }
-    return 'https://connect-admin-96pc.onrender.com/api';
+    return 'http://13.201.132.46:8001/api';
   };
 
   const handleSignupSubmit = async (e) => {

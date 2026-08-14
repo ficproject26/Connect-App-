@@ -1,7 +1,6 @@
 const printRaw = async () => {
     const urls = [
-        'https://connect-admin-backend.onrender.com/',
-        'https://connect-vendor.onrender.com/'
+        'http://13.201.132.46:8001/'
     ];
     for (const url of urls) {
         try {

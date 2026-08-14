@@ -17,7 +17,7 @@ export const getBackendUrl = () => {
   }
   
   // If running in production, connect to deployed backend URL
-  return 'https://connect-admin-96pc.onrender.com';
+  return 'http://13.201.132.46:8001';
 };
 
 export const getVendorBackendUrl = () => {
@@ -37,7 +37,7 @@ export const getVendorBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8001`;
   }
   
-  return 'https://connect-admin-96pc.onrender.com';
+  return 'http://13.201.132.46:8001';
 };
 
 export const getAdminBackendUrl = () => {
@@ -57,5 +57,5 @@ export const getAdminBackendUrl = () => {
     return `http://${hostname || 'localhost'}:5001`;
   }
   
-  return 'https://connect-admin-96pc.onrender.com';
+  return 'http://13.201.132.46:8001';
 };

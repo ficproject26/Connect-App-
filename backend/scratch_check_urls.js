@@ -1,8 +1,7 @@
 const testUrls = async () => {
     const urls = [
-        'https://connect-vendor.onrender.com/',
-        'https://connect-admin-backend.onrender.com/',
-        'https://connect-admin-backend.onrender.com/api/admin/categories'
+        'http://13.201.132.46:8001/',
+        'http://13.201.132.46:8001/api/admin/categories'
     ];
     
     for (const url of urls) {
