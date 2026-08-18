@@ -55,8 +55,122 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {
-      const products = await mongoDb.collection('products').find({ isActive: { $ne: false } }).toArray();
-      return res.json(products);
+      const suspendedUsers = await mongoDb.collection('users').find({
+        $or: [
+          { status: { $in: ['suspended', 'Suspended', 'rejected', 'Rejected', 'inactive', 'Inactive', 'deactivated', 'Deactivated', 'blocked', 'Blocked'] } },
+          { isActive: false }
+        ]
+      }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, name: 1, registrationId: 1, vendorId: 1, primaryBusinessId: 1, businesses: 1 } }).toArray();
+
+      const suspendedVendorsCol = await mongoDb.collection('vendors').find({
+        $or: [
+          { status: { $in: ['suspended', 'Suspended', 'rejected', 'Rejected', 'inactive', 'Inactive', 'deactivated', 'Deactivated', 'blocked', 'Blocked'] } },
+          { isActive: false }
+        ]
+      }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, registrationId: 1, vendorId: 1 } }).toArray();
+
+      const suspendedVendorIds = new Set<string>();
+      const suspendedVendorEmails = new Set<string>();
+      const suspendedVendorPhones = new Set<string>();
+      const suspendedVendorNames = new Set<string>();
+      const suspendedVendorPrefixes = new Set<string>();
+
+      [...suspendedUsers, ...suspendedVendorsCol].forEach((v: any) => {
+        if (v._id) {
+          const idStr = v._id.toString();
+          suspendedVendorIds.add(idStr);
+          if (idStr.length >= 16) suspendedVendorPrefixes.add(idStr.substring(0, 16));
+        }
+        if (v.registrationId) suspendedVendorIds.add(v.registrationId.toString());
+        if (v.vendorId) suspendedVendorIds.add(v.vendorId.toString());
+        if (v.primaryBusinessId) suspendedVendorIds.add(v.primaryBusinessId.toString());
+        if (Array.isArray(v.businesses)) {
+          v.businesses.forEach((b: any) => {
+            if (b._id) suspendedVendorIds.add(b._id.toString());
+          });
+        }
+        if (v.email) suspendedVendorEmails.add(v.email.toLowerCase().trim());
+        const phone = (v.phone || v.mobileNumber || '').replace(/\D/g, '');
+        if (phone) suspendedVendorPhones.add(phone);
+        if (v.businessName) suspendedVendorNames.add(v.businessName.toLowerCase().trim());
+        if (v.name) suspendedVendorNames.add(v.name.toLowerCase().trim());
+      });
+
+      const allVendorUsers = await mongoDb.collection('users').find({
+        $or: [
+          { role: { $in: ['vendor', 'Vendor', 'merchant', 'Merchant'] } },
+          { vendorType: { $exists: true } },
+          { businesses: { $exists: true, $not: { $size: 0 } } }
+        ]
+      }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, name: 1, registrationId: 1, vendorId: 1, businesses: 1 } }).toArray();
+
+      const suspendedVendorBizKeys = new Set<string>();
+      allVendorUsers.forEach((v: any) => {
+        const vKeys = [
+          v._id ? v._id.toString() : '',
+          v.registrationId ? v.registrationId.toString() : '',
+          v.vendorId ? v.vendorId.toString() : '',
+          v.email ? v.email.toLowerCase().trim() : '',
+          (v.phone || v.mobileNumber || '').replace(/\D/g, ''),
+          v.businessName ? v.businessName.toLowerCase().trim() : '',
+          v.name ? v.name.toLowerCase().trim() : ''
+        ].filter(Boolean);
+
+        if (Array.isArray(v.businesses)) {
+          v.businesses.forEach((b: any) => {
+            const bStatus = (b.status || '').toLowerCase().trim();
+            const isBActive = (bStatus === 'active' || bStatus === 'approved') && b.isActive !== false;
+            if (!isBActive) {
+              const bId = b._id ? b._id.toString() : '';
+              const bName = (b.businessName || b.name || '').toLowerCase().trim();
+              vKeys.forEach(vKey => {
+                if (bId) suspendedVendorBizKeys.add(`${vKey}:${bId}`);
+                if (bName) suspendedVendorBizKeys.add(`${vKey}:${bName}`);
+              });
+            }
+          });
+        }
+      });
+
+      const allProducts = await mongoDb.collection('products').find({ isActive: { $ne: false }, isAvailable: { $ne: false } }).sort({ createdAt: -1 }).toArray();
+
+      const activeProducts = allProducts.filter((p: any) => {
+        if (p.isActive === false || p.isAvailable === false) return false;
+        if (p.isVendorSuspended === true || p.isSuspended === true) return false;
+        const pVendorStatus = (p.vendorStatus || p.status || '').toLowerCase().trim();
+        if (['suspended', 'inactive', 'rejected', 'blocked', 'deactivated'].includes(pVendorStatus)) return false;
+
+        const vId = p.vendorId ? p.vendorId.toString() : '';
+        const vEmail = (p.vendorEmail || '').toLowerCase().trim();
+        const vPhone = (p.vendorPhone || '').replace(/\D/g, '');
+        const vName = (p.vendorName || p.brand || '').toLowerCase().trim();
+
+        if (vId && suspendedVendorIds.has(vId)) return false;
+        if (vEmail && suspendedVendorEmails.has(vEmail)) return false;
+        if (vPhone && suspendedVendorPhones.has(vPhone)) return false;
+        if (vName && suspendedVendorNames.has(vName)) return false;
+        if (vId && Array.from(suspendedVendorPrefixes).some(prefix => vId.startsWith(prefix))) return false;
+
+        if (p.businessIsActive === false) return false;
+        const pBizStatus = (p.businessStatus || '').toLowerCase().trim();
+        if (['suspended', 'inactive', 'rejected', 'blocked', 'deactivated'].includes(pBizStatus)) return false;
+
+        const pBizId = p.businessId ? p.businessId.toString() : (p.business ? (p.business._id?.toString() || p.business.id?.toString()) : '');
+        const pBizName = (p.businessName || p.business?.businessName || p.business?.name || p.subNavbarCategory || '').toLowerCase().trim();
+
+        const productVendorKeys = [vId, vEmail, vPhone, vName].filter(Boolean);
+        const isThisVendorBizSuspended = productVendorKeys.some(vKey => {
+          if (pBizId && suspendedVendorBizKeys.has(`${vKey}:${pBizId}`)) return true;
+          if (pBizName && suspendedVendorBizKeys.has(`${vKey}:${pBizName}`)) return true;
+          return false;
+        });
+
+        if (isThisVendorBizSuspended) return false;
+
+        return true;
+      });
+
+      return res.json(activeProducts);
     }
     return res.json([]);
   } catch (err: any) {
