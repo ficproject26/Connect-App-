@@ -29,6 +29,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
   const [requireCaptcha, setRequireCaptcha] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isNotRegistered, setIsNotRegistered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -61,9 +62,15 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
   const handlePasswordSubmit = async (e) => {
     e?.preventDefault();
     setErrorMsg('');
+    setIsNotRegistered(false);
 
     if (requireCaptcha && !captchaVerified) {
       setErrorMsg('Please complete the Captcha security check to continue.');
+      return;
+    }
+
+    if (!email.trim() || !password) {
+      setErrorMsg('Please enter both email/phone and password.');
       return;
     }
 
@@ -75,22 +82,34 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim(),
+          phone: email.trim(),
           password,
-          role: 'customer',
-          captchaToken: captchaVerified ? 'verified_captcha_token_2026' : null
+          role: 'customer'
         })
-      });
+      }).catch(() => null);
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (!res) {
         setIsSubmitting(false);
-        setErrorMsg(data.message || 'Authentication failed.');
-        if (data.requireCaptcha) setRequireCaptcha(true);
+        setErrorMsg('Unable to connect to server. Please check your internet connection.');
         return;
       }
 
-      // Success
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setIsSubmitting(false);
+        if (res.status === 404 || data.notRegistered || data.code === 'ACCOUNT_NOT_FOUND' || (data.message && data.message.toLowerCase().includes('not found'))) {
+          setIsNotRegistered(true);
+          setErrorMsg('Account not found. Please register to continue.');
+        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
+          setErrorMsg(data.message || 'Your account is inactive or suspended. Please contact support.');
+        } else {
+          setErrorMsg(data.message || 'Invalid password. Please try again.');
+        }
+        return;
+      }
+
+      // Success authenticated strictly by backend DB
       setIsSubmitting(false);
       setSuccess(true);
 
@@ -104,21 +123,12 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       });
 
     } catch (err) {
-      console.warn('Backend offline, proceeding with local authenticated session:', err);
       setIsSubmitting(false);
-      setSuccess(true);
-      const userObj = { email: email.trim() || 'customer@connect.app', role: 'customer' };
-      login(userObj, 'customer', (finalUser) => {
-        setTimeout(() => {
-          setSuccess(false);
-          if (onLoginSuccess) onLoginSuccess(finalUser);
-          onClose();
-        }, 600);
-      });
+      setErrorMsg('Authentication error. Please try again.');
     }
   };
 
-  // Handler for OTP Generation with Registration Check
+  // Handler for OTP Generation with Database Registration Check
   const handleSendOtp = async () => {
     const target = otpTarget.trim();
     if (!target) {
@@ -126,13 +136,10 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       return;
     }
 
-    const cleanTargetDigits = target.replace(/\D/g, '');
-
     setErrorMsg('');
+    setIsNotRegistered(false);
     setOtpSuccessMsg('');
     setIsSubmitting(true);
-
-    const fallbackCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     try {
       const res = await fetch(`${getApiBase()}/auth/send-otp`, {
@@ -141,53 +148,42 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
         body: JSON.stringify({
           phone: target,
           mobileNumber: target,
-          mobileOrEmail: target,
-          email: target
+          mobileOrEmail: target
         })
-      });
+      }).catch(() => null);
 
-      const data = await res.json();
+      if (!res) {
+        setIsSubmitting(false);
+        setErrorMsg('Unable to connect to server. Please check your internet connection.');
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok && (data.status === 'success' || data.success)) {
         setIsSubmitting(false);
-        const issuedCode = data.devOtpPreview || data.otp || fallbackCode;
+        const issuedCode = data.devOtpPreview || data.otp || '';
         setGeneratedOtpCode(issuedCode);
         setIsOtpSent(true);
         setResendCooldown(data.cooldownSeconds || 30);
-        setOtpSuccessMsg(`OTP Sent Successfully! Security Code: ${issuedCode}`);
+        setOtpSuccessMsg(issuedCode ? `OTP Sent Successfully! Security Code: ${issuedCode}` : `OTP Sent Successfully to ${target}!`);
         return;
-      } else if (res.status === 404 || data.notRegistered || (data.message && data.message.toLowerCase().includes('not registered'))) {
+      } else {
         setIsSubmitting(false);
-        setErrorMsg('Your mobile number is not registered. Please sign up first.');
+        if (res.status === 404 || data.notRegistered || data.code === 'MOBILE_NOT_REGISTERED' || (data.message && data.message.toLowerCase().includes('not registered'))) {
+          setIsNotRegistered(true);
+          setErrorMsg('This mobile number is not registered. Please register to continue.');
+        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
+          setErrorMsg(data.message || 'Your account is inactive or suspended. Please contact support.');
+        } else {
+          setErrorMsg(data.message || 'Failed to send OTP. Please try again.');
+        }
         return;
       }
     } catch (err) {
-      console.warn('Backend server check:', err);
+      setIsSubmitting(false);
+      setErrorMsg('Network error requesting OTP. Please try again.');
     }
-
-    // Check locally saved registered users & known mobile numbers
-    const savedMobiles = JSON.parse(localStorage.getItem('connect_registered_mobiles') || '[]');
-    const savedUser = JSON.parse(localStorage.getItem('connect_current_user') || '{}');
-    const knownMobiles = [
-      '9876543210', '8220266311', '9176543210', '9443322110', '9876543211', '9988776655', '6379068721',
-      ...(savedUser.phone ? [savedUser.phone.replace(/\D/g, '')] : []),
-      ...savedMobiles.map(m => (typeof m === 'string' ? m.replace(/\D/g, '') : m))
-    ];
-
-    const isRegistered = knownMobiles.includes(cleanTargetDigits);
-
-    setIsSubmitting(false);
-
-    if (!isRegistered) {
-      setErrorMsg('Your mobile number is not registered. Please sign up first.');
-      return;
-    }
-
-    // Mobile is registered: Proceed to send OTP
-    setGeneratedOtpCode(fallbackCode);
-    setIsOtpSent(true);
-    setResendCooldown(30);
-    setOtpSuccessMsg(`OTP Sent Successfully to ${target}! Security Code: ${fallbackCode}`);
   };
 
   // Handler for OTP Verification
@@ -198,18 +194,10 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       return;
     }
 
-    if (generatedOtpCode && otpInput !== generatedOtpCode) {
-      setErrorMsg('Invalid OTP code. Please enter the correct 6-digit code shown above.');
-      return;
-    }
-
     setErrorMsg('');
     setOtpSuccessMsg('');
     setIsSubmitting(true);
 
-    const cleanDigits = otpTarget.replace(/\D/g, '');
-
-    // Try backend verify first to get real user profile
     try {
       const res = await fetch(`${getApiBase()}/auth/verify-otp`, {
         method: 'POST',
@@ -218,36 +206,22 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
           phone: otpTarget,
           mobileNumber: otpTarget,
           mobileOrEmail: otpTarget,
-          email: otpTarget,
           otp: otpInput
         })
-      });
-      const data = await res.json();
-      if (res.ok && data.status === 'success' && data.user) {
+      }).catch(() => null);
+
+      if (!res) {
+        setIsSubmitting(false);
+        setErrorMsg('Unable to connect to server. Please check your internet connection.');
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && (data.status === 'success' || data.success) && data.user) {
         setIsSubmitting(false);
         setSuccess(true);
-        // Merge backend user with local registered data for completeness
-        const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-        const localMatch = registeredUsers.find(u =>
-          cleanDigits && u.phone && u.phone.replace(/\D/g, '') === cleanDigits
-        );
-        const mergedUser = {
-          ...(localMatch || {}),
-          ...data.user,
-          // Prefer local name/email if backend returned placeholder
-          name: (data.user.name && data.user.name !== 'OTP Verified Member' && data.user.name !== 'Connect Member')
-            ? data.user.name
-            : (localMatch?.name || data.user.name),
-          email: (data.user.email && !data.user.email.match(/^\d+@connect\.app$/))
-            ? data.user.email
-            : (localMatch?.email || data.user.email),
-          phone: data.user.phone || localMatch?.phone || cleanDigits,
-          address: data.user.address || localMatch?.address || '',
-          city: data.user.city || localMatch?.city || '',
-          pincode: data.user.pincode || localMatch?.pincode || '',
-          role: 'customer'
-        };
-        login(mergedUser, 'customer', (finalUser) => {
+        login(data.user, 'customer', (finalUser) => {
           setTimeout(() => {
             setSuccess(false);
             if (onLoginSuccess) onLoginSuccess(finalUser);
@@ -255,35 +229,20 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
           }, 600);
         });
         return;
+      } else {
+        setIsSubmitting(false);
+        if (res.status === 404 || data.notRegistered) {
+          setIsNotRegistered(true);
+          setErrorMsg('This mobile number is not registered. Please register to continue.');
+        } else {
+          setErrorMsg(data.message || 'Invalid OTP code. Please enter the correct 6-digit code.');
+        }
+        return;
       }
     } catch (err) {
-      console.warn('Backend verify-otp failed, using local verification:', err);
-    }
-
-    // Fallback: local OTP already verified above, use local registered data
-    setTimeout(() => {
       setIsSubmitting(false);
-      setSuccess(true);
-      const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-      const registeredMatch = registeredUsers.find(u =>
-        (cleanDigits && u.phone && u.phone.replace(/\D/g, '') === cleanDigits) ||
-        (otpTarget && u.email && u.email.toLowerCase() === otpTarget.toLowerCase())
-      );
-
-      const loggedUser = registeredMatch || {
-        phone: cleanDigits || otpTarget,
-        email: otpTarget.includes('@') ? otpTarget : `${cleanDigits}@connect.app`,
-        role: 'customer'
-      };
-
-      login(loggedUser, 'customer', (finalUser) => {
-        setTimeout(() => {
-          setSuccess(false);
-          if (onLoginSuccess) onLoginSuccess(finalUser);
-          onClose();
-        }, 600);
-      });
-    }, 600);
+      setErrorMsg('Verification error. Please try again.');
+    }
   };
 
   return (
@@ -358,9 +317,24 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
 
             {/* Error Alert Box */}
             {errorMsg && (
-              <div className="mb-3.5 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold rounded-xl flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-                <span>{errorMsg}</span>
+              <div className="mb-3.5 p-3.5 bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold rounded-2xl flex flex-col gap-2.5">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                  <span className="flex-1">{errorMsg}</span>
+                </div>
+                {isNotRegistered && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      if (onNavigateToJoinNow) onNavigateToJoinNow();
+                    }}
+                    className="w-full py-2.5 px-4 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 border-none active:scale-[0.98]"
+                  >
+                    <span>Register Now</span>
+                    <span className="text-sm">→</span>
+                  </button>
+                )}
               </div>
             )}
 

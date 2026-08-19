@@ -1,9 +1,32 @@
 import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { db } from '../db';
 import { securityManager } from '../security/securityManager';
 import { authRateLimiter, authenticateToken, AuthenticatedRequest } from '../security/middleware';
 
 const router = Router();
+
+const findCustomerInMongo = async (identifier: string) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb || !identifier) return null;
+    const lower = identifier.toLowerCase().trim();
+    const cleanDigits = identifier.replace(/\D/g, '');
+
+    const orConds: any[] = [{ email: lower }, { phone: lower }];
+    if (cleanDigits) {
+      orConds.push({ phone: cleanDigits });
+      orConds.push({ phone: `+91${cleanDigits}` });
+      orConds.push({ phone: `91${cleanDigits}` });
+      orConds.push({ phone: new RegExp(cleanDigits + '$') });
+    }
+
+    return await mongoDb.collection('users').findOne({ $or: orConds });
+  } catch (err) {
+    console.error("MongoDB customer lookup error:", err);
+    return null;
+  }
+};
 
 // Strict Indian Mobile Number Regex: ^[6-9][0-9]{9}$
 const INDIAN_MOBILE_REGEX = /^[6-9][0-9]{9}$/;
@@ -155,9 +178,52 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
     } else if (role === 'admin') {
       userDetails = { id: 'admin_1', name: 'System Admin', email: identifier, role: 'admin' };
     } else {
-      let displayName = identifier.split('@')[0];
-      displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-      userDetails = { id: 'cust_' + displayName.toLowerCase(), name: displayName || 'Connect Member', email: identifier, role: 'customer' };
+      const dbUser = await findCustomerInMongo(identifier);
+
+      if (!dbUser) {
+        return res.status(404).json({
+          status: 'error',
+          notRegistered: true,
+          code: 'ACCOUNT_NOT_FOUND',
+          message: 'Account not found. Please register to continue.',
+          msg: 'Account not found. Please register to continue.'
+        });
+      }
+
+      const uStatus = (dbUser.status || '').toLowerCase().trim();
+      const isUserActive = dbUser.isActive !== false && uStatus !== 'suspended' && uStatus !== 'inactive' && uStatus !== 'rejected';
+      if (!isUserActive) {
+        return res.status(403).json({
+          status: 'error',
+          code: 'ACCOUNT_INACTIVE',
+          message: 'Your account is inactive or suspended. Please contact support.',
+          msg: 'Your account is inactive or suspended. Please contact support.'
+        });
+      }
+
+      if (password) {
+        const isMatch = await bcrypt.compare(password, dbUser.password).catch(() => false);
+        if (!isMatch && dbUser.password !== password) {
+          return res.status(401).json({
+            status: 'error',
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid password. Please try again.',
+            msg: 'Invalid password. Please try again.'
+          });
+        }
+      }
+
+      userDetails = {
+        id: dbUser._id ? dbUser._id.toString() : (dbUser.id || 'cust_' + Date.now()),
+        name: dbUser.name || 'Connect Member',
+        email: dbUser.email || identifier,
+        phone: dbUser.phone || '',
+        role: dbUser.role || 'customer',
+        address: dbUser.address || '',
+        city: dbUser.city || '',
+        pincode: dbUser.pincode || '',
+        registrationId: dbUser.registrationId || ''
+      };
     }
 
     // Reset Failed Attempts on Successful Login
@@ -234,16 +300,17 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
 
 // 2. POST: /api/auth/send-otp (6-Digit OTP, 5-Min Expiry, 30s Cooldown)
 router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) => {
-  const { mobileOrEmail } = req.body;
+  const { mobileOrEmail, phone, mobileNumber } = req.body;
+  const target = (phone || mobileNumber || mobileOrEmail || '').toString().trim();
   const ip = req.ip || '127.0.0.1';
 
-  if (!mobileOrEmail) {
+  if (!target) {
     return res.status(400).json({ status: 'error', message: 'Mobile number is required.' });
   }
 
   // Server-side Indian Mobile Validation (bypass protection)
-  const cleaned = mobileOrEmail.trim().replace(/\D/g, '');
-  const isNumericInput = /^\d+$/.test(mobileOrEmail.trim());
+  const cleaned = target.replace(/\D/g, '');
+  const isNumericInput = /^\d+$/.test(target);
   if (isNumericInput) {
     const mobileCheck = validateIndianMobile(cleaned);
     if (!mobileCheck.valid) {
@@ -256,11 +323,35 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
   }
 
   try {
-    const { otp, cooldownSeconds } = securityManager.generateOTP(mobileOrEmail);
+    // Database Verification: Check if user exists in MongoDB database
+    const dbUser = await findCustomerInMongo(target);
+
+    if (!dbUser) {
+      return res.status(404).json({
+        status: 'error',
+        notRegistered: true,
+        code: 'MOBILE_NOT_REGISTERED',
+        message: 'This mobile number is not registered. Please register to continue.',
+        msg: 'This mobile number is not registered. Please register to continue.'
+      });
+    }
+
+    const uStatus = (dbUser.status || '').toLowerCase().trim();
+    const isUserActive = dbUser.isActive !== false && uStatus !== 'suspended' && uStatus !== 'inactive' && uStatus !== 'rejected';
+    if (!isUserActive) {
+      return res.status(403).json({
+        status: 'error',
+        code: 'ACCOUNT_INACTIVE',
+        message: 'Your account is inactive or suspended. Please contact support.',
+        msg: 'Your account is inactive or suspended. Please contact support.'
+      });
+    }
+
+    const { otp, cooldownSeconds } = securityManager.generateOTP(target);
 
     securityManager.logEvent({
       action: 'OTP_REQUESTED',
-      email: mobileOrEmail,
+      email: target,
       ip,
       device: req.headers['user-agent'] || 'Unknown',
       country: 'India',
@@ -270,9 +361,8 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
 
     return res.json({
       status: 'success',
-      message: `OTP sent successfully to ${mobileOrEmail}. Valid for 5 minutes.`,
+      message: `OTP sent successfully to ${target}. Valid for 5 minutes.`,
       cooldownSeconds,
-      // For development convenience, return preview OTP
       devOtpPreview: otp
     });
   } catch (err: any) {
@@ -282,19 +372,44 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
 
 // 3. POST: /api/auth/verify-otp (3 Attempts Limit)
 router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) => {
-  const { mobileOrEmail, otp } = req.body;
+  const { mobileOrEmail, phone, mobileNumber, otp } = req.body;
+  const target = (phone || mobileNumber || mobileOrEmail || '').toString().trim();
   const ip = req.ip || '127.0.0.1';
 
-  if (!mobileOrEmail || !otp) {
-    return res.status(400).json({ status: 'error', message: 'Mobile/Email and OTP are required.' });
+  if (!target || !otp) {
+    return res.status(400).json({ status: 'error', message: 'Mobile number and OTP are required.' });
   }
 
-  const result = securityManager.verifyOTP(mobileOrEmail, otp);
+  // Database Verification: Verify user exists in MongoDB database
+  const dbUser = await findCustomerInMongo(target);
+
+  if (!dbUser) {
+    return res.status(404).json({
+      status: 'error',
+      notRegistered: true,
+      code: 'MOBILE_NOT_REGISTERED',
+      message: 'This mobile number is not registered. Please register to continue.',
+      msg: 'This mobile number is not registered. Please register to continue.'
+    });
+  }
+
+  const uStatus = (dbUser.status || '').toLowerCase().trim();
+  const isUserActive = dbUser.isActive !== false && uStatus !== 'suspended' && uStatus !== 'inactive' && uStatus !== 'rejected';
+  if (!isUserActive) {
+    return res.status(403).json({
+      status: 'error',
+      code: 'ACCOUNT_INACTIVE',
+      message: 'Your account is inactive or suspended. Please contact support.',
+      msg: 'Your account is inactive or suspended. Please contact support.'
+    });
+  }
+
+  const result = securityManager.verifyOTP(target, otp);
 
   if (!result.valid) {
     securityManager.logEvent({
       action: 'OTP_VERIFICATION_FAILED',
-      email: mobileOrEmail,
+      email: target,
       ip,
       device: req.headers['user-agent'] || 'Unknown',
       country: 'India',
@@ -306,17 +421,19 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
 
   // OTP Verified Successfully -> Issue Session
   const sessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-  const cleanPhone = mobileOrEmail.replace(/\D/g, '');
-  const userPayload = { userId: 'cust_' + cleanPhone, email: mobileOrEmail, role: 'customer', sessionId };
+  const cleanPhone = target.replace(/\D/g, '');
+  const userId = dbUser._id ? dbUser._id.toString() : (dbUser.id || 'cust_' + cleanPhone);
+
+  const userPayload = { userId, email: dbUser.email || target, role: dbUser.role || 'customer', sessionId };
 
   const accessToken = securityManager.generateAccessToken(userPayload);
   const refreshToken = securityManager.generateRefreshToken(userPayload);
 
   securityManager.createSession({
     sessionId,
-    userId: userPayload.userId,
-    email: mobileOrEmail,
-    role: 'customer',
+    userId,
+    email: dbUser.email || target,
+    role: dbUser.role || 'customer',
     tokenHash: refreshToken.slice(-10),
     deviceName: 'Mobile Web / OTP Device',
     os: 'Mobile',
@@ -326,31 +443,24 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     city: 'Bangalore'
   });
 
-  // Look up real registered customer profile from DB
-  let userProfile: any = null;
-  try {
-    userProfile = await db.findCustomerByPhone(cleanPhone);
-  } catch (e) {}
-
-  const responseUser = userProfile
-    ? {
-        id: userPayload.userId,
-        name: userProfile.name || 'Connect Member',
-        email: userProfile.email || mobileOrEmail,
-        phone: userProfile.phone || cleanPhone,
-        address: userProfile.address || '',
-        city: userProfile.city || '',
-        pincode: userProfile.pincode || '',
-        state: userProfile.state || '',
-        role: 'customer'
-      }
-    : { id: userPayload.userId, email: mobileOrEmail, phone: cleanPhone, role: 'customer' };
+  const responseUser = {
+    id: userId,
+    name: dbUser.name || 'Connect Member',
+    email: dbUser.email || target,
+    phone: dbUser.phone || cleanPhone,
+    address: dbUser.address || '',
+    city: dbUser.city || '',
+    pincode: dbUser.pincode || '',
+    role: dbUser.role || 'customer',
+    customerId: dbUser.registrationId || dbUser.customerId || `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`
+  };
 
   return res.json({
     status: 'success',
-    message: 'OTP verified successfully.',
+    message: 'OTP verification successful.',
     accessToken,
     refreshToken,
+    expiresIn: 900,
     user: responseUser
   });
 });
