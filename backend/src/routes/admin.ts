@@ -96,19 +96,48 @@ router.get('/banners', async (req: Request, res: Response) => {
   }
 });
 
-// Helper to handle offers collection
-async function getOffersCollection() {
+// Helper to get all exclusive offers from Mongo collections
+async function getOffersFromMongo(onlyActive = true) {
   const mongoDb = db.getDb();
-  if (mongoDb) {
-    const col = mongoDb.collection('exclusive_offers');
-    // Purge legacy hardcoded mock initial offers from DB
-    await col.deleteMany({
+  if (!mongoDb) return [];
+  try {
+    const col1 = mongoDb.collection('exclusive_offers');
+    const col2 = mongoDb.collection('exclusiveoffers');
+
+    // Purge legacy hardcoded mock initial offers
+    const purgeQuery = {
       $or: [
         { title: { $in: ['Summer Festival Sale', 'Priority Dine-In Privilege', 'Helicopter Transfer Deal'] } },
         { code: { $in: ['CONN-SUMMER20', 'CONN-DINEOUT15', 'CONN-CHARTER25'] } }
       ]
-    }).catch(() => {});
-    return col;
+    };
+    await col1.deleteMany(purgeQuery).catch(() => {});
+    await col2.deleteMany(purgeQuery).catch(() => {});
+
+    const filter = onlyActive ? { isActive: { $ne: false } } : {};
+
+    const offers1 = await col1.find(filter).sort({ createdAt: -1 }).toArray();
+    const offers2 = await col2.find(filter).sort({ createdAt: -1 }).toArray();
+
+    const combinedMap = new Map();
+    [...offers1, ...offers2].forEach((off: any) => {
+      const key = (off._id ? off._id.toString() : '') || `${off.title}_${off.code}`;
+      if (!combinedMap.has(key)) {
+        combinedMap.set(key, off);
+      }
+    });
+
+    return Array.from(combinedMap.values());
+  } catch (err) {
+    console.error("Error fetching exclusive offers from Mongo:", err);
+    return [];
+  }
+}
+
+async function getOffersCollection() {
+  const mongoDb = db.getDb();
+  if (mongoDb) {
+    return mongoDb.collection('exclusive_offers');
   }
   return null;
 }
@@ -116,12 +145,8 @@ async function getOffersCollection() {
 // GET: /api/admin/public/exclusive-offers OR /api/admin/exclusive-offers
 router.get(['/public/exclusive-offers', '/exclusive-offers'], async (req: Request, res: Response) => {
   try {
-    const col = await getOffersCollection();
-    if (col) {
-      const offers = await col.find({ isActive: true }).toArray();
-      return res.json(offers);
-    }
-    return res.json([]);
+    const offers = await getOffersFromMongo(true);
+    return res.json(offers);
   } catch (err: any) {
     console.error("Error fetching public exclusive offers:", err);
     res.status(500).json({ error: err.message || 'Server error' });
@@ -131,12 +156,8 @@ router.get(['/public/exclusive-offers', '/exclusive-offers'], async (req: Reques
 // GET: /api/admin/exclusive-offers/all (All active + inactive for Admin)
 router.get('/exclusive-offers/all', async (req: Request, res: Response) => {
   try {
-    const col = await getOffersCollection();
-    if (col) {
-      const offers = await col.find().sort({ createdAt: -1 }).toArray();
-      return res.json(offers);
-    }
-    return res.json([]);
+    const offers = await getOffersFromMongo(false);
+    return res.json(offers);
   } catch (err: any) {
     console.error("Error fetching all exclusive offers for admin:", err);
     res.status(500).json({ error: err.message || 'Server error' });

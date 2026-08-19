@@ -599,11 +599,13 @@ export default function CustomerDashboard({
   useEffect(() => {
     const fetchAdminPromotions = async () => {
       try {
-        const urlOffers = `${getAdminBackendUrl()}/api/admin/public/exclusive-offers`;
-        const resOffers = await fetch(urlOffers);
-        if (resOffers.ok) {
+        let resOffers = await fetch(`${getAdminBackendUrl()}/api/admin/public/exclusive-offers`).catch(() => null);
+        if (!resOffers || !resOffers.ok) {
+          resOffers = await fetch(`/api/admin/public/exclusive-offers`).catch(() => null);
+        }
+        if (resOffers && resOffers.ok) {
           const data = await resOffers.json();
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             setAdminOffers(data);
           }
         }

@@ -9,10 +9,13 @@ export default function Offers() {
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const res = await fetch(`${getAdminBackendUrl()}/api/admin/public/exclusive-offers`);
-        if (res.ok) {
+        let res = await fetch(`${getAdminBackendUrl()}/api/admin/public/exclusive-offers`).catch(() => null);
+        if (!res || !res.ok) {
+          res = await fetch(`/api/admin/public/exclusive-offers`).catch(() => null);
+        }
+        if (res && res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             setLiveOffers(data);
           }
         }
@@ -65,10 +68,12 @@ export default function Offers() {
     ];
 
     return {
+      id: off._id || idx,
       title: off.title,
       discount: off.discount || 'Special Discount',
       code: off.code || 'CONNECT',
-      desc: off.desc || 'Exclusive offer for active Connect members.',
+      desc: off.desc || off.description || 'Exclusive offer for active Connect members.',
+      imageUrl: off.imageUrl || '',
       icon: icons[idx % icons.length],
       lightBg: lightBgs[idx % lightBgs.length],
       borderColor: borderColors[idx % borderColors.length],
@@ -137,9 +142,18 @@ export default function Offers() {
               
               {/* Top Section */}
               <div className="relative z-10 flex items-start gap-4">
-                <div className={`w-14 h-14 rounded-full ${off.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
-                  <Icon className="w-6.5 h-6.5" />
-                </div>
+                {off.imageUrl ? (
+                  <img
+                    src={off.imageUrl}
+                    alt={off.title}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                    className="w-14 h-14 object-cover rounded-2xl shrink-0 border border-slate-200 dark:border-slate-800 shadow-2xs"
+                  />
+                ) : (
+                  <div className={`w-14 h-14 rounded-full ${off.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
+                    <Icon className="w-6.5 h-6.5" />
+                  </div>
+                )}
                 <div>
                   <h4 className="text-base font-black text-slate-900 dark:text-white leading-tight">{off.title}</h4>
                   <p className="text-xs text-slate-455 dark:text-slate-400 mt-1.5 leading-relaxed max-w-[280px] font-medium">{off.desc}</p>
