@@ -1726,13 +1726,9 @@ export default function CustomerDashboard({
   const setCurrentMembershipTier = updateTier;
 
   // Dynamic Notifications State
-  const [unreadCount, setUnreadCount] = useState(3);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notificationsList, setNotificationsList] = useState([
-    { text: "Welcome to Connect App! Your Gold Elite membership is now active.", time: "2 hours ago" },
-    { text: "Earn 2x reward points on your next purchase of Stay and Dining deals.", time: "1 day ago" },
-    { text: "Security alert: Your profile details were updated successfully.", time: "2 days ago" }
-  ]);
+  const [notificationsList, setNotificationsList] = useState([]);
 
   // Hover Mega Menu State & Handlers
   const [hoveredLink, setHoveredLink] = useState(null);

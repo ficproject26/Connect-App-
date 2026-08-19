@@ -96,48 +96,18 @@ router.get('/banners', async (req: Request, res: Response) => {
   }
 });
 
-const defaultInitialOffers = [
-  {
-    _id: 'off_1',
-    title: 'Summer Festival Sale',
-    discount: 'Flat 20% OFF',
-    code: 'CONN-SUMMER20',
-    desc: 'Active at all ABC Electronics stores and select lifestyle boutiques.',
-    category: 'Products',
-    isActive: true,
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: 'off_2',
-    title: 'Priority Dine-In Privilege',
-    discount: 'Flat 15% OFF',
-    code: 'CONN-DINEOUT15',
-    desc: 'Valid at Celeste Dining Skylounge and partner restaurants.',
-    category: 'Food',
-    isActive: true,
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: 'off_3',
-    title: 'Helicopter Transfer Deal',
-    discount: 'Flat 25% OFF',
-    code: 'CONN-CHARTER25',
-    desc: 'Valid for private airport transfers and yacht cruises.',
-    category: 'Travel',
-    isActive: true,
-    createdAt: new Date().toISOString()
-  }
-];
-
 // Helper to handle offers collection
 async function getOffersCollection() {
   const mongoDb = db.getDb();
   if (mongoDb) {
     const col = mongoDb.collection('exclusive_offers');
-    const count = await col.countDocuments();
-    if (count === 0) {
-      await col.insertMany(defaultInitialOffers as any);
-    }
+    // Purge legacy hardcoded mock initial offers from DB
+    await col.deleteMany({
+      $or: [
+        { title: { $in: ['Summer Festival Sale', 'Priority Dine-In Privilege', 'Helicopter Transfer Deal'] } },
+        { code: { $in: ['CONN-SUMMER20', 'CONN-DINEOUT15', 'CONN-CHARTER25'] } }
+      ]
+    }).catch(() => {});
     return col;
   }
   return null;
@@ -151,7 +121,7 @@ router.get(['/public/exclusive-offers', '/exclusive-offers'], async (req: Reques
       const offers = await col.find({ isActive: true }).toArray();
       return res.json(offers);
     }
-    return res.json(defaultInitialOffers.filter(o => o.isActive));
+    return res.json([]);
   } catch (err: any) {
     console.error("Error fetching public exclusive offers:", err);
     res.status(500).json({ error: err.message || 'Server error' });
@@ -166,7 +136,7 @@ router.get('/exclusive-offers/all', async (req: Request, res: Response) => {
       const offers = await col.find().sort({ createdAt: -1 }).toArray();
       return res.json(offers);
     }
-    return res.json(defaultInitialOffers);
+    return res.json([]);
   } catch (err: any) {
     console.error("Error fetching all exclusive offers for admin:", err);
     res.status(500).json({ error: err.message || 'Server error' });
