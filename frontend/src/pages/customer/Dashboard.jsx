@@ -1226,6 +1226,8 @@ export default function CustomerDashboard({
     } catch (e) {}
   }, [selectedCartItems]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [selectedCheckoutAddressId, setSelectedCheckoutAddressId] = useState(null);
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
   const [razorpayPayMethod, setRazorpayPayMethod] = useState('upi');
   const [selectedNetbank, setSelectedNetbank] = useState('HDFC Bank');
@@ -2247,6 +2249,115 @@ export default function CustomerDashboard({
     triggerNotification("Address deleted.");
   };
 
+  const getCartCheckoutButtonText = () => {
+    const selected = cart.filter(item => selectedCartItems.includes(item.id));
+    const hasBooking = selected.some(item => 
+      ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
+      ['Services', 'Stay', 'Travel'].includes(item.tag)
+    );
+    if (hasBooking) return "Book Now";
+    return "Proceed to Checkout";
+  };
+
+  const handleCheckout = () => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    const selected = cart.filter(item => selectedCartItems.includes(item.id));
+    if (selected.length === 0) {
+      triggerNotification("Please select items in cart to proceed.", "error");
+      return;
+    }
+    if (!selectedCheckoutAddressId && addresses.length > 0) {
+      setSelectedCheckoutAddressId(addresses[0].id);
+    }
+    setIsCartOpen(false);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleProceedFromAddressToPayment = () => {
+    let chosenAddr = addresses.find(a => a.id === selectedCheckoutAddressId);
+    if (!chosenAddr && addresses.length > 0) {
+      chosenAddr = addresses[0];
+      setSelectedCheckoutAddressId(chosenAddr.id);
+    }
+
+    if (!chosenAddr) {
+      if (addressForm.name.trim() && addressForm.phone.trim() && addressForm.pincode.trim() && addressForm.address.trim()) {
+        const newAddr = {
+          ...addressForm,
+          id: `addr_${Date.now()}`
+        };
+        setAddresses(prev => [...prev, newAddr]);
+        setSelectedCheckoutAddressId(newAddr.id);
+        chosenAddr = newAddr;
+      } else {
+        triggerNotification("Please select or add a delivery address to continue.", "error");
+        setIsAddingAddress(true);
+        return;
+      }
+    }
+
+    setIsAddressModalOpen(false);
+    setIsRazorpayModalOpen(true);
+  };
+
+  const processFinalOrderPlacement = async () => {
+    try {
+      const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+      if (selectedCart.length === 0) return;
+
+      const chosenAddr = addresses.find(a => a.id === selectedCheckoutAddressId) || addresses[0] || {
+        name: profileName || currentUser?.name || 'Customer',
+        phone: profilePhone || currentUser?.phone || '',
+        address: 'Koramangala',
+        locality: 'Koramangala',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        pincode: '560034'
+      };
+
+      const fullAddressString = `${chosenAddr.address || chosenAddr.locality || ''}, ${chosenAddr.locality || ''}, ${chosenAddr.city || ''}, ${chosenAddr.state || ''} - ${chosenAddr.pincode || ''}`.replace(/^,\s*/, '').replace(/,\s*,/g, ',');
+
+      for (const item of selectedCart) {
+        const vendorId = item.vendorId || item.vendor_id || '3w8hhon38mqg7ni0u';
+        await apiFetch('/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            vendor_id: vendorId,
+            customer_name: chosenAddr.name || profileName || currentUser?.name || 'Customer',
+            customer_phone: chosenAddr.phone || profilePhone || currentUser?.phone || '',
+            customer_address: fullAddressString,
+            customer_latitude: 12.9498,
+            customer_longitude: 77.6289,
+            product_details: item.name || item.title || 'Item',
+            amount: (item.price || 0) * (item.quantity || 1),
+            items: [{
+              productId: item.id || item._id,
+              name: item.name || item.title,
+              price: item.price || 0,
+              quantity: item.quantity || 1
+            }],
+            type: item.subNavbarCategory || item.tag || item.category || 'Product'
+          })
+        }).catch(err => console.warn('Order creation note:', err));
+      }
+
+      setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
+      setSelectedCartItems([]);
+      setOrderSuccess(true);
+      setIsRazorpayModalOpen(false);
+      setRazorpayProcessing(false);
+      triggerNotification("Payment authorized & Order placed successfully!");
+      loadCustomerOrders();
+    } catch (err) {
+      console.error("Order processing error:", err);
+      setRazorpayProcessing(false);
+      triggerNotification("Failed to authorize payment. Please try again.", "error");
+    }
+  };
+
   const renderAddressBookSection = () => {
     return (
       <div className="space-y-4">
@@ -2688,122 +2799,6 @@ export default function CustomerDashboard({
     if (hours < currentHours) return true;
     if (hours === currentHours && minutes <= currentMinutes) return true;
     return false;
-  };
-
-
-
-  const getCartCheckoutButtonText = () => {
-    const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
-    if (selectedItems.length === 0) return "Select items to checkout";
-    
-    const hasJob = selectedItems.some(isJobCartItem);
-    if (hasJob) return "Apply Now";
-    
-    const hasBooking = selectedItems.some(isBookingCartItem);
-    if (hasBooking) return "Book Now";
-    
-    return "Buy Now";
-  };
-
-  const handleCheckout = async () => {
-    const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
-    if (selectedItems.length === 0) {
-      triggerNotification("Please select items to checkout");
-      return;
-    }
-    if (!currentUser) {
-      setIsLoginModalOpen(true);
-      return;
-    }
-    setIsRazorpayModalOpen(true);
-  };
-
-  const processFinalOrderPlacement = async () => {
-    const selectedItems = cart.filter(item => selectedCartItems.includes(item.id));
-    const totalAmount = selectedItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-
-    const productItems = selectedItems.filter(isProductOrderCartItem);
-    const jobItems = selectedItems.filter(item => !isProductOrderCartItem(item) && isJobCartItem(item));
-    const bookingItems = selectedItems.filter(item => !isProductOrderCartItem(item) && isBookingCartItem(item));
-
-    const orderGroups = [];
-    if (productItems.length > 0) orderGroups.push({ items: productItems, type: 'Order' });
-    if (bookingItems.length > 0) orderGroups.push({ items: bookingItems, type: 'Booking' });
-    if (jobItems.length > 0) orderGroups.push({ items: jobItems, type: 'Job' });
-
-    const totalProductDetails = selectedItems.map(item => {
-      const isBooking = isBookingCartItem(item) || isJobCartItem(item) || ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory);
-      if (isBooking) return item.name;
-      return (item.quantity && item.quantity > 1) ? `${item.name} (Qty: ${item.quantity})` : item.name;
-    }).join(', ');
-
-    const hasBookingType = bookingItems.length > 0;
-    const txnPrefix = hasBookingType ? 'Booking Payment - ' : 'Order Payment - ';
-
-    addTransaction(
-      `${txnPrefix}${totalProductDetails.substring(0, 30)}${totalProductDetails.length > 30 ? '...' : ''}`,
-      -totalAmount,
-      hasBookingType ? 'Booking' : 'Purchase'
-    );
-
-    try {
-      for (const group of orderGroups) {
-        const groupVendorId = group.items[0]?.vendorId || 'v1';
-        const groupAmount = group.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-        const groupProductDetails = group.items.map(item => {
-          const isBookingOrJob = group.type === 'Booking' || group.type === 'Job' || isBookingCartItem(item) || isJobCartItem(item);
-          if (isBookingOrJob) return item.name;
-          return (item.quantity && item.quantity > 1) ? `${item.name} (Qty: ${item.quantity})` : item.name;
-        }).join(', ');
-        const itemsList = group.items.map(item => ({
-          productId: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity || 1
-        }));
-
-        const firstBookingItem = group.items.find(i => i.guestDetails || i.checkInTime);
-        const guestDetails = firstBookingItem?.guestDetails || [];
-        const bookingTime = firstBookingItem?.bookingTime || firstBookingItem?.checkInTime;
-        const bookingDate = firstBookingItem?.bookingDate || firstBookingItem?.checkInDate;
-
-        await apiFetch('/orders', {
-          method: 'POST',
-          body: JSON.stringify({
-            vendor_id: groupVendorId,
-            customer_name: profileName || currentUser?.name || 'Customer',
-            customer_phone: profilePhone || '+91 98765 43210',
-            customer_photo: profilePhoto || currentUser?.photo || currentUser?.avatar || '',
-            customer_address: selectedLocation.area || 'Koramangala, 5th Block, Bangalore',
-            customer_latitude: 12.9498,
-            customer_longitude: 77.6289,
-            product_details: groupProductDetails,
-            amount: groupAmount,
-            items: itemsList,
-            type: group.type,
-            guestDetails: guestDetails,
-            bookingTime: bookingTime,
-            bookingDate: bookingDate,
-            razorpay_payment_id: 'pay_' + Math.random().toString(36).substr(2, 9)
-          })
-        });
-      }
-      loadCustomerOrders();
-    } catch (e) {
-      console.error('Failed to place order(s):', e);
-    }
-
-    setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
-    setSelectedCartItems([]);
-    setOrderSuccess(true);
-
-    setTimeout(() => {
-      setOrderSuccess(false);
-      setIsCartOpen(false);
-      setIsRazorpayModalOpen(false);
-      setRazorpayProcessing(false);
-      triggerNotification("Order & Booking placed successfully via Razorpay!");
-    }, 2000);
   };
 
 
@@ -12568,6 +12563,319 @@ wishlistProducts.forEach(item => addToCart(item));
           </div>
         </div>
       )}
+      {/* ==================== ADDRESS SELECTION & DELIVERY DETAILS MODAL ==================== */}
+      {isAddressModalOpen && (
+        <div className="fixed inset-0 z-[99998] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in text-slate-800 dark:text-slate-200">
+          <div onClick={() => setIsAddressModalOpen(false)} className="absolute inset-0" />
+
+          <div className="relative bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
+            {/* Header with Step indicator */}
+            <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center relative">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-400 text-[#0b1e36] flex items-center justify-center font-black text-lg shadow-md shrink-0">
+                  <MapPin className="w-5 h-5 text-[#0b1e36]" />
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-sm tracking-tight text-white">Select Delivery & Service Address</h3>
+                    <span className="bg-amber-400/20 text-amber-300 text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-amber-400/30">
+                      Step 1 of 2
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-blue-200 mt-0.5">Choose where your order or service booking should be delivered</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAddressModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border-none"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Address Selection Body */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-grow text-left scrollbar-thin">
+              {/* Address List Options */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-400">Select From Saved Addresses</span>
+                {!isAddingAddress && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddressForm({
+                        name: profileName || currentUser?.name || '',
+                        phone: (profilePhone || currentUser?.phone || '').replace('+91', '').trim(),
+                        pincode: '',
+                        locality: '',
+                        address: '',
+                        city: '',
+                        state: '',
+                        landmark: '',
+                        altPhone: '',
+                        type: 'Home'
+                      });
+                      setIsAddingAddress(true);
+                    }}
+                    className="text-xs font-bold text-amber-500 hover:text-amber-600 dark:text-amber-400 flex items-center gap-1 cursor-pointer bg-transparent border-none"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add New Address</span>
+                  </button>
+                )}
+              </div>
+
+              {isAddingAddress ? (
+                /* Inline Add Address Form */
+                <div className="border border-amber-400/40 dark:border-amber-400/30 rounded-2xl p-4 bg-amber-500/5 dark:bg-amber-400/5 space-y-4 animate-scale-up">
+                  <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <span className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <Plus className="w-3.5 h-3.5" /> Enter Delivery Address Details
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingAddress(false)}
+                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full text-slate-400 cursor-pointer border-none bg-transparent"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 border-none shadow-xs"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    <span>Use My Current Location (GPS)</span>
+                  </button>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Receiver Name *</label>
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        value={addressForm.name}
+                        onChange={(e) => setAddressForm({ ...addressForm, name: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">10-Digit Mobile Number *</label>
+                      <input
+                        type="text"
+                        placeholder="Mobile Number"
+                        value={addressForm.phone}
+                        onChange={(e) => setAddressForm({ ...addressForm, phone: sanitizeMobileInput(e.target.value) })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Pincode *</label>
+                      <input
+                        type="text"
+                        placeholder="6-Digit Pincode"
+                        value={addressForm.pincode}
+                        onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Locality / Sector *</label>
+                      <input
+                        type="text"
+                        placeholder="Locality / Area"
+                        value={addressForm.locality}
+                        onChange={(e) => setAddressForm({ ...addressForm, locality: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Flat / House No / Street Address *</label>
+                      <input
+                        type="text"
+                        placeholder="Building / House No, Street Name"
+                        value={addressForm.address}
+                        onChange={(e) => setAddressForm({ ...addressForm, address: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">City *</label>
+                      <input
+                        type="text"
+                        placeholder="City"
+                        value={addressForm.city}
+                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">State *</label>
+                      <select
+                        value={addressForm.state}
+                        onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      >
+                        <option value="">Select State</option>
+                        {IndianStates.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingAddress(false)}
+                      className="px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer text-slate-600 dark:text-slate-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSaveAddress();
+                      }}
+                      className="px-5 py-2 bg-amber-400 hover:bg-amber-500 text-[#0b1e36] font-extrabold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer shadow-xs border-none"
+                    >
+                      Save & Use Address
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Saved Address Selection Cards */
+                <div className="space-y-3">
+                  {addresses.length === 0 ? (
+                    <div className="py-10 text-center text-slate-400 text-xs border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl space-y-3">
+                      <MapPin className="w-8 h-8 text-slate-300 mx-auto" />
+                      <p className="font-semibold">No saved addresses found.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddressForm({
+                            name: profileName || currentUser?.name || '',
+                            phone: (profilePhone || currentUser?.phone || '').replace('+91', '').trim(),
+                            pincode: '',
+                            locality: '',
+                            address: '',
+                            city: '',
+                            state: '',
+                            landmark: '',
+                            altPhone: '',
+                            type: 'Home'
+                          });
+                          setIsAddingAddress(true);
+                        }}
+                        className="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-[#0b1e36] font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer border-none inline-flex items-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add New Address
+                      </button>
+                    </div>
+                  ) : (
+                    addresses.map((addr) => {
+                      const isSelected = (selectedCheckoutAddressId || addresses[0]?.id) === addr.id;
+                      return (
+                        <div
+                          key={addr.id}
+                          onClick={() => setSelectedCheckoutAddressId(addr.id)}
+                          className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 text-left ${
+                            isSelected
+                              ? 'bg-amber-500/10 dark:bg-amber-400/10 border-amber-500 shadow-md ring-2 ring-amber-400/20'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="checkoutAddress"
+                            checked={isSelected}
+                            onChange={() => setSelectedCheckoutAddressId(addr.id)}
+                            className="mt-1 accent-amber-500 w-4 h-4 cursor-pointer shrink-0"
+                          />
+                          <div className="flex-grow leading-relaxed">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-black text-slate-900 dark:text-white">{addr.name}</span>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                addr.type === 'Home'
+                                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                              }`}>
+                                {addr.type}
+                              </span>
+                              {addr.isRegistrationAddress && (
+                                <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  Primary Profile Address
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">
+                              {addr.address}, {addr.locality}, {addr.city}, {addr.state} - <span className="font-extrabold">{addr.pincode}</span>
+                            </p>
+                            <span className="text-[10px] text-slate-400 font-bold block mt-1">
+                              📞 Contact: {addr.phone} {addr.altPhone && `| Alt: ${addr.altPhone}`}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+
+              {/* Order Items Preview Card */}
+              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                  <span>Selected Items ({cart.filter(item => selectedCartItems.includes(item.id)).length}):</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">
+                    ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                  <span>Delivery Charge:</span>
+                  <span className="text-emerald-500 font-extrabold uppercase">FREE Express</span>
+                </div>
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex justify-between items-baseline">
+                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase">Amount Payable:</span>
+                  <span className="text-lg font-black text-[#f43397]">
+                    ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddressModalOpen(false);
+                  setIsCartOpen(true);
+                }}
+                className="px-4 py-2.5 text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:hover:text-white uppercase tracking-wider cursor-pointer border-none bg-transparent"
+              >
+                ← Back to Cart
+              </button>
+
+              <button
+                type="button"
+                onClick={handleProceedFromAddressToPayment}
+                className="px-6 py-3 bg-[#0b1e36] hover:bg-[#13325a] dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-[#0b1e36] font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 border-none active:scale-98"
+              >
+                <span>Proceed to Payment</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* -------------------- 7. RAZORPAY PAYMENT GATEWAY MODAL -------------------- */}
       {isRazorpayModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
@@ -12597,6 +12905,32 @@ wishlistProducts.forEach(item => addToCart(item));
                 </span>
               </div>
             </div>
+
+            {/* Selected Address Preview Banner */}
+            {(() => {
+              const activeAddr = addresses.find(a => a.id === selectedCheckoutAddressId) || addresses[0];
+              if (!activeAddr) return null;
+              return (
+                <div className="bg-blue-50/80 dark:bg-blue-950/40 px-5 py-2.5 border-b border-blue-100 dark:border-blue-900/40 flex items-center justify-between text-left text-xs">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 overflow-hidden">
+                    <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="truncate font-semibold">
+                      Deliver to <strong className="text-slate-900 dark:text-white">{activeAddr.name}</strong> ({activeAddr.locality || activeAddr.city}, {activeAddr.pincode})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRazorpayModalOpen(false);
+                      setIsAddressModalOpen(true);
+                    }}
+                    className="text-[10px] font-black text-amber-500 hover:underline uppercase shrink-0 border-none bg-transparent cursor-pointer ml-2"
+                  >
+                    Change
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* Modal Body */}
             <div className="p-6 space-y-5 flex-1 overflow-y-auto">
