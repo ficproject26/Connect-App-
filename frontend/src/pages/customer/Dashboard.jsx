@@ -2205,43 +2205,52 @@ export default function CustomerDashboard({
   };
 
   const handleSaveAddress = () => {
-    if (!addressForm.name.trim()) {
-      triggerNotification("Please enter a receiver name.");
-      return;
+    const name = (addressForm.name || profileName || currentUser?.name || '').trim();
+    if (!name) {
+      triggerNotification("Please enter a receiver name.", "error");
+      return null;
     }
-    if (!/^\d{10}$/.test(addressForm.phone.trim())) {
-      triggerNotification("Please enter a valid 10-digit mobile number.");
-      return;
+
+    const phoneRaw = (addressForm.phone || profilePhone || currentUser?.phone || '').replace(/\D/g, '');
+    const phone = phoneRaw.length >= 10 ? phoneRaw.slice(-10) : phoneRaw;
+    if (phone.length < 10) {
+      triggerNotification("Please enter a valid 10-digit mobile number.", "error");
+      return null;
     }
-    if (!/^\d{6}$/.test(addressForm.pincode.trim())) {
-      triggerNotification("Please enter a valid 6-digit Pincode.");
-      return;
+
+    const pincode = (addressForm.pincode || '').replace(/\D/g, '').slice(0, 6);
+    if (pincode.length < 6) {
+      triggerNotification("Please enter a valid 6-digit Pincode.", "error");
+      return null;
     }
-    if (!addressForm.locality.trim()) {
-      triggerNotification("Please enter the locality.");
-      return;
+
+    const streetAddress = (addressForm.address || '').trim();
+    if (!streetAddress) {
+      triggerNotification("Please enter street/flat address.", "error");
+      return null;
     }
-    if (!addressForm.address.trim()) {
-      triggerNotification("Please enter the street address.");
-      return;
-    }
-    if (!addressForm.city.trim()) {
-      triggerNotification("Please enter the city.");
-      return;
-    }
-    if (!addressForm.state) {
-      triggerNotification("Please select a state.");
-      return;
-    }
+
+    const city = (addressForm.city || 'Bangalore').trim();
+    const locality = (addressForm.locality || '').trim() || city || streetAddress.split(',')[0] || 'Locality';
+    const state = (addressForm.state || 'Karnataka').trim();
 
     const newAddress = {
       ...addressForm,
+      name,
+      phone,
+      pincode,
+      locality,
+      address: streetAddress,
+      city,
+      state,
       id: `addr_${Date.now()}`
     };
 
-    setAddresses(prev => [...prev, newAddress]);
+    setAddresses(prev => [newAddress, ...prev]);
+    setSelectedCheckoutAddressId(newAddress.id);
     setIsAddingAddress(false);
-    triggerNotification("Address saved successfully!");
+    triggerNotification("Address saved & selected for delivery!");
+    return newAddress;
   };
 
   const handleDeleteAddress = (id) => {
@@ -2277,26 +2286,28 @@ export default function CustomerDashboard({
   };
 
   const handleProceedFromAddressToPayment = () => {
-    let chosenAddr = addresses.find(a => a.id === selectedCheckoutAddressId);
+    let chosenAddr = null;
+
+    if (isAddingAddress || (addressForm.address.trim() && addressForm.pincode.trim())) {
+      chosenAddr = handleSaveAddress();
+      if (!chosenAddr && isAddingAddress) {
+        return;
+      }
+    }
+
+    if (!chosenAddr) {
+      chosenAddr = addresses.find(a => a.id === selectedCheckoutAddressId);
+    }
+
     if (!chosenAddr && addresses.length > 0) {
       chosenAddr = addresses[0];
       setSelectedCheckoutAddressId(chosenAddr.id);
     }
 
     if (!chosenAddr) {
-      if (addressForm.name.trim() && addressForm.phone.trim() && addressForm.pincode.trim() && addressForm.address.trim()) {
-        const newAddr = {
-          ...addressForm,
-          id: `addr_${Date.now()}`
-        };
-        setAddresses(prev => [...prev, newAddr]);
-        setSelectedCheckoutAddressId(newAddr.id);
-        chosenAddr = newAddr;
-      } else {
-        triggerNotification("Please select or add a delivery address to continue.", "error");
-        setIsAddingAddress(true);
-        return;
-      }
+      triggerNotification("Please fill in and save your delivery address to continue.", "error");
+      setIsAddingAddress(true);
+      return;
     }
 
     setIsAddressModalOpen(false);
