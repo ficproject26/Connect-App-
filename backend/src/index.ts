@@ -22,6 +22,26 @@ const PORT = process.env.PORT || 8000;
 // OWASP Security Headers (Helmet) & Input Sanitization
 app.use(helmetSecurityMiddleware);
 
+// Universal CORS Header Middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  const reqHeaders = req.headers['access-control-request-headers'];
+  res.setHeader('Access-Control-Allow-Headers', (Array.isArray(reqHeaders) ? reqHeaders.join(',') : reqHeaders) || 'x-auth-token, Content-Type, Authorization, Cache-Control, Pragma, Expires, expires, x-requested-with, Accept, Origin');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
 // Enable CORS with Credentials
 app.use(cors({
   origin: true,
@@ -190,6 +210,33 @@ app.delete('/api/public/products/delete-all', async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Server error' });
   }
+});
+
+// Catch-all 404 handler for non-existent API routes with CORS headers
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.status(404).json({ status: 'error', message: `Route ${req.method} ${req.url} not found` });
+});
+
+// Global Express Error Handler with CORS headers
+app.use((err: any, req: any, res: any, next: any) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  console.error('Server Error:', err);
+  res.status(err.status || 500).json({ status: 'error', message: err.message || 'Internal Server Error' });
 });
 
 // Create HTTP server and attach Socket.IO
