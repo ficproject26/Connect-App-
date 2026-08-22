@@ -1,4 +1,4 @@
-import { getAdminBackendUrl } from './apiSetup';
+import { getBackendUrl, getAdminBackendUrl } from './apiSetup';
 
 export const BASE_TAXONOMY = {
   "Services": {},

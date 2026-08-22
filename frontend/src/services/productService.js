@@ -1,4 +1,4 @@
-import { getVendorBackendUrl } from './apiSetup';
+import { getBackendUrl, getVendorBackendUrl } from './apiSetup';
 
 const sanitizeString = (str) => {
   if (typeof str !== 'string') return str;
@@ -187,15 +187,20 @@ export const productService = {
       return sanitized.filter(isRealVendorProduct);
     };
 
-    const baseUrl = getVendorBackendUrl();
+    const baseVendorUrl = getVendorBackendUrl();
+    const baseUrl = getBackendUrl();
     const endpoints = [
-      `${baseUrl}/api/public/products`,
-      `${baseUrl}/api/admin/public/products`,
-      `${baseUrl}/api/products`,
-      `${baseUrl}/api/admin/products`
+      baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
+      baseVendorUrl ? `${baseVendorUrl}/api/admin/public/products` : null,
+      baseVendorUrl ? `${baseVendorUrl}/api/products` : null,
+      baseUrl ? `${baseUrl}/api/public/products` : null,
+      baseUrl ? `${baseUrl}/api/products` : null,
+      '/api/public/products',
+      '/api/products'
     ];
+    const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
 
-    for (const endpoint of endpoints) {
+    for (const endpoint of uniqueEndpoints) {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 6000);
