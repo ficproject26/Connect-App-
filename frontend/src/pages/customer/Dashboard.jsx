@@ -3905,22 +3905,30 @@ export default function CustomerDashboard({
 
     if (activeCat === 'ALL') {
       title = "All Items";
+      const allSubAndChildItems = [];
       validCategories.forEach((cat) => {
+        allSubAndChildItems.push(cat);
         const catData = dataDict[cat];
         const catItems = catData ? (catData.items || catData) : [];
         if (Array.isArray(catItems)) {
-          const validChildItems = catItems.filter(item => !isDeletedSubCategory(item));
-          items = [...items, ...validChildItems];
+          const validChildItems = catItems.filter(item => typeof item === 'string' ? !isDeletedSubCategory(item) : (item && !isDeletedSubCategory(item.name || item.title)));
+          validChildItems.forEach(ch => {
+            const chName = typeof ch === 'string' ? ch : (ch.name || ch.title || '');
+            if (chName) allSubAndChildItems.push(chName);
+          });
         }
       });
-      items = Array.from(new Set(items));
+      items = Array.from(new Set(allSubAndChildItems.filter(Boolean)));
     } else {
       if (!isDeletedSubCategory(activeCat)) {
         const activeData = dataDict[activeCat];
+        title = `${activeCat}`;
         if (activeData) {
           const rawItems = activeData.items || activeData;
-          items = Array.isArray(rawItems) ? rawItems.filter(item => !isDeletedSubCategory(item)) : [];
-          title = activeData.title || `${activeCat}`;
+          const childItems = Array.isArray(rawItems) ? rawItems.map(ch => typeof ch === 'string' ? ch : (ch?.name || ch?.title || '')).filter(Boolean) : [];
+          items = Array.from(new Set([activeCat, ...childItems]));
+        } else {
+          items = [activeCat];
         }
       }
     }
