@@ -4954,7 +4954,7 @@ export default function CustomerDashboard({
                       <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                     </div>
                   ) : (
-                    <img src={item.image} alt={item.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                    <img src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'} alt={item.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
                   )}
                   
                   {/* Rating star on left top */}

@@ -123,17 +123,33 @@ const inferSubNavbarCategory = (p) => {
   return rawSubNav || rawMainCat || 'Products';
 };
 
-const sanitizeImageUrl = (imgUrl) => {
-  if (!imgUrl || typeof imgUrl !== 'string') return '';
-  let url = imgUrl.trim();
+const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80';
 
-  // Extract relative /uploads/... if present to avoid invalid host ports and mixed content errors
+const sanitizeImageUrl = (imgUrl) => {
+  if (!imgUrl || typeof imgUrl !== 'string') return DEFAULT_FALLBACK_IMAGE;
+  let url = imgUrl.trim();
+  if (!url || url === 'null' || url === 'undefined') return DEFAULT_FALLBACK_IMAGE;
+
   if (url.includes('/uploads/')) {
-    return url.substring(url.indexOf('/uploads/'));
+    const relativePath = url.substring(url.indexOf('/uploads/'));
+    const backendUrl = getBackendUrl();
+    if (backendUrl && backendUrl.startsWith('http')) {
+      return `${backendUrl}${relativePath}`;
+    }
+    return relativePath;
+  }
+
+  if (url.includes('connect-vendor.vercel.app')) {
+    const backendUrl = getBackendUrl();
+    if (url.includes('/uploads/')) {
+      const rel = url.substring(url.indexOf('/uploads/'));
+      return `${backendUrl}${rel}`;
+    }
+    return DEFAULT_FALLBACK_IMAGE;
   }
 
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-  if (isHttps && url.startsWith('http://')) {
+  if (isHttps && url.startsWith('http://') && !url.includes('13.203.197.69')) {
     url = url.replace(/^http:\/\//i, 'https://');
   }
 
