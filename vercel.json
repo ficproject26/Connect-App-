@@ -3,6 +3,14 @@
     {
       "source": "/api/:path*",
       "destination": "http://13.203.197.69:8004/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "http://13.203.197.69:8004/uploads/:path*"
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": "http://13.203.197.69:8004/socket.io/:path*"
     }
   ]
 }

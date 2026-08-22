@@ -123,6 +123,23 @@ const inferSubNavbarCategory = (p) => {
   return rawSubNav || rawMainCat || 'Products';
 };
 
+const sanitizeImageUrl = (imgUrl) => {
+  if (!imgUrl || typeof imgUrl !== 'string') return '';
+  let url = imgUrl.trim();
+
+  // Extract relative /uploads/... if present to avoid invalid host ports and mixed content errors
+  if (url.includes('/uploads/')) {
+    return url.substring(url.indexOf('/uploads/'));
+  }
+
+  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  if (isHttps && url.startsWith('http://')) {
+    url = url.replace(/^http:\/\//i, 'https://');
+  }
+
+  return url;
+};
+
 const sanitizeProduct = (p) => {
   if (!p) return p;
   const updated = { ...p };
@@ -152,9 +169,10 @@ const sanitizeProduct = (p) => {
   updated.reviews = p.reviews ? Number(p.reviews) : 12;
 
   // Standardize Image
-  updated.image = p.image || p.imageUrl || (p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : '') || p.img || '';
+  const rawImg = p.image || p.imageUrl || (p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : '') || p.img || '';
+  updated.image = sanitizeImageUrl(rawImg);
   if (Array.isArray(p.images) && p.images.length > 0) {
-    updated.images = p.images;
+    updated.images = p.images.map(sanitizeImageUrl);
   } else if (updated.image) {
     updated.images = [updated.image];
   }
