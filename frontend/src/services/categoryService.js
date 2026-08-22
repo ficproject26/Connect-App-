@@ -53,96 +53,103 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     return catTree;
   }
 
-  // 2. Handle 3-Tier Hierarchical Array (ONLY if children array is populated)
+  // 2. Identify all main categories present in DB records
+  const dbMainNames = new Set();
+  dbCategories.forEach(c => {
+    if (!c) return;
+    const mName = c.name ? normalizeCategoryName(c.name) : (c.mainCategory ? normalizeCategoryName(c.mainCategory) : '');
+    if (mName) dbMainNames.add(mName);
+  });
+
+  // 3. Database Authority Rule: If DB has subcategory records for a main category, clear baseline subcategories
+  dbMainNames.forEach(mainName => {
+    const hasDbSubRecs = dbCategories.some(c => {
+      const match = c && (c.name ? normalizeCategoryName(c.name) === mainName : (c.mainCategory ? normalizeCategoryName(c.mainCategory) === mainName : false));
+      return match && (c.subcategory || (c.level === 'main' && Array.isArray(c.children) && c.children.length > 0));
+    });
+
+    if (hasDbSubRecs) {
+      if (!catTree[mainName]) {
+        catTree[mainName] = { name: mainName, isActive: true, subcategories: {} };
+      } else {
+        catTree[mainName].subcategories = {};
+      }
+    }
+  });
+
+  // 4. Handle 3-Tier Hierarchical Array (if level === 'main' and .children is populated)
   const hierarchicalMains = dbCategories.filter(c => c && c.level === 'main' && Array.isArray(c.children) && c.children.length > 0);
-  if (hierarchicalMains.length > 0) {
-    hierarchicalMains.forEach(mainCat => {
-      const mainName = normalizeCategoryName(mainCat.name);
-      if (mainCat.isActive === false || mainCat.isDeleted) {
-        delete catTree[mainName];
-        return;
-      }
+  hierarchicalMains.forEach(mainCat => {
+    const mainName = normalizeCategoryName(mainCat.name);
+    if (mainCat.isActive === false || mainCat.isDeleted) {
+      delete catTree[mainName];
+      return;
+    }
 
-      catTree[mainName] = {
-        name: mainName,
-        isActive: true,
-        subcategories: {}
-      };
+    if (!catTree[mainName]) {
+      catTree[mainName] = { name: mainName, isActive: true, subcategories: {} };
+    }
 
-      if (Array.isArray(mainCat.children)) {
-        mainCat.children.forEach(subCat => {
-          if (!subCat || !subCat.name) return;
-          const subName = subCat.name.trim();
-          if (subCat.isActive === false || subCat.isDeleted || subCat.description === 'DELETED_HIERARCHY_MARKER') return;
+    if (Array.isArray(mainCat.children)) {
+      mainCat.children.forEach(subCat => {
+        if (!subCat || !subCat.name) return;
+        const subName = subCat.name.trim();
+        if (subCat.isActive === false || subCat.isDeleted || subCat.description === 'DELETED_HIERARCHY_MARKER') return;
 
-          const childItems = [];
-          if (Array.isArray(subCat.children)) {
-            subCat.children.forEach(childCat => {
-              if (!childCat || !childCat.name) return;
-              if (childCat.isActive === false || childCat.isDeleted || childCat.description === 'DELETED_HIERARCHY_MARKER') return;
-              childItems.push(childCat.name.trim());
-            });
-          }
+        const childItems = [];
+        if (Array.isArray(subCat.children)) {
+          subCat.children.forEach(childCat => {
+            if (!childCat || !childCat.name) return;
+            if (childCat.isActive === false || childCat.isDeleted || childCat.description === 'DELETED_HIERARCHY_MARKER') return;
+            childItems.push(childCat.name.trim());
+          });
+        }
 
-          catTree[mainName].subcategories[subName] = {
-            name: subName,
-            isActive: true,
-            childCategories: childItems
-          };
-        });
-      }
-    });
-  }
-
-  // 3. Handle Flat DB Records
-  const flatSubs = dbCategories.filter(c => c && c.subcategory);
-  if (flatSubs.length > 0) {
-    const flatByMain = {};
-    dbCategories.forEach(c => {
-      if (!c || !c.name) return;
-      const mainName = normalizeCategoryName(c.name);
-      if (!flatByMain[mainName]) flatByMain[mainName] = [];
-      flatByMain[mainName].push(c);
-    });
-
-    Object.keys(flatByMain).forEach(mainName => {
-      const records = flatByMain[mainName];
-      const activeSubs = records.filter(c => 
-        c.subcategory && 
-        c.subcategory !== 'ALL_SUBCATEGORIES_DELETED_MARKER' && 
-        c.isActive !== false && 
-        !c.isDeleted && 
-        c.description !== 'DELETED_HIERARCHY_MARKER'
-      );
-      const hasAllDeleted = records.some(c => 
-        c.subcategory === 'ALL_SUBCATEGORIES_DELETED_MARKER' || c.description === 'DELETED_HIERARCHY_MARKER'
-      );
-
-      if (activeSubs.length > 0 || hasAllDeleted) {
-        catTree[mainName] = {
-          name: mainName,
+        catTree[mainName].subcategories[subName] = {
+          name: subName,
           isActive: true,
-          subcategories: {}
+          childCategories: childItems
         };
-        activeSubs.forEach(c => {
-          const subName = c.subcategory.trim();
-          if (!catTree[mainName].subcategories[subName]) {
-            catTree[mainName].subcategories[subName] = {
-              name: subName,
-              isActive: true,
-              childCategories: []
-            };
-          }
-          if (c.subSubcategory && c.subSubcategory.trim()) {
-            const childName = c.subSubcategory.trim();
-            if (!catTree[mainName].subcategories[subName].childCategories.includes(childName)) {
-              catTree[mainName].subcategories[subName].childCategories.push(childName);
-            }
-          }
-        });
+      });
+    }
+  });
+
+  // 5. Process Flat DB Records & Custom Main/Sub/Child Categories
+  dbCategories.forEach(c => {
+    if (!c) return;
+    const mainName = c.name ? normalizeCategoryName(c.name) : (c.mainCategory ? normalizeCategoryName(c.mainCategory) : '');
+    if (!mainName) return;
+
+    if (c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') {
+      if (c.level === 'main' && !c.subcategory) {
+        delete catTree[mainName];
+      } else if (c.subcategory && catTree[mainName]?.subcategories[c.subcategory.trim()]) {
+        delete catTree[mainName].subcategories[c.subcategory.trim()];
       }
-    });
-  }
+      return;
+    }
+
+    if (!catTree[mainName]) {
+      catTree[mainName] = { name: mainName, isActive: true, subcategories: {} };
+    }
+
+    if (c.subcategory && c.subcategory.trim() && c.subcategory !== 'ALL_SUBCATEGORIES_DELETED_MARKER') {
+      const subName = c.subcategory.trim();
+      if (!catTree[mainName].subcategories[subName]) {
+        catTree[mainName].subcategories[subName] = {
+          name: subName,
+          isActive: true,
+          childCategories: []
+        };
+      }
+      if (c.subSubcategory && c.subSubcategory.trim()) {
+        const childName = c.subSubcategory.trim();
+        if (!catTree[mainName].subcategories[subName].childCategories.includes(childName)) {
+          catTree[mainName].subcategories[subName].childCategories.push(childName);
+        }
+      }
+    }
+  });
 
   return catTree;
 };
@@ -165,43 +172,59 @@ export const getDynamicMenuData = (dbCategories = []) => {
 };
 
 export const getActiveMainCategories = (dbCategories = []) => {
-  const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-
-  // If hierarchical API response is passed
-  if (Array.isArray(dbCategories) && dbCategories.length > 0 && dbCategories[0]?.level) {
-    const activeMains = dbCategories
-      .filter(c => c.level === 'main' && c.isActive !== false)
-      .map(c => normalizeCategoryName(c.name));
-
-    const sorted = [];
-    canonicalMains.forEach(m => {
-      if (activeMains.includes(m)) sorted.push(m);
-    });
-    activeMains.forEach(k => {
-      if (!sorted.includes(k) && k) sorted.push(k);
-    });
-    return sorted.length > 0 ? sorted : canonicalMains;
-  }
-
   const catTree = buildActiveCategoryTree(dbCategories);
-  const activeKeys = Object.keys(catTree).filter(k => canonicalMains.includes(k));
+  const activeKeys = Object.keys(catTree).filter(k => catTree[k] && catTree[k].isActive !== false);
+
+  const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
   
   const sorted = [];
   canonicalMains.forEach(m => {
     if (activeKeys.includes(m)) sorted.push(m);
   });
+  
+  // Include any custom main categories added by Admin
+  activeKeys.forEach(k => {
+    if (!sorted.includes(k) && k) sorted.push(k);
+  });
+
   return sorted.length > 0 ? sorted : canonicalMains;
 };
 
 export const fetchAdminCategories = async () => {
-  try {
-    const res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) return data;
-    }
-  } catch (err) {
-    console.warn("Failed to fetch admin categories:", err);
+  const urlsToTry = [
+    `${getBackendUrl()}/api/admin/categories`,
+    `${getBackendUrl()}/api/public/categories`,
+    `${getBackendUrl()}/api/categories`,
+    `${getAdminBackendUrl()}/api/admin/categories`,
+    '/api/admin/categories',
+    '/api/public/categories',
+    '/api/categories'
+  ];
+
+  const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
+
+  for (const url of uniqueUrls) {
+    try {
+      const res = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } }).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        if (Array.isArray(data) && data.length > 0) {
+          try {
+            localStorage.setItem('connect_cached_db_categories', JSON.stringify(data));
+          } catch (e) {}
+          return data;
+        }
+      }
+    } catch (e) {}
   }
+
+  try {
+    const cached = localStorage.getItem('connect_cached_db_categories');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+
   return [];
 };

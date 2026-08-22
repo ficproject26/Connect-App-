@@ -6,7 +6,7 @@ import { apiFetch } from '../../services/api';
 import { getAdminBackendUrl } from '../../services/apiSetup';
 import { productService, isRealVendorProduct } from '../../services/productService';
 import { socketService } from '../../services/socketService';
-import { getActiveMainCategories } from '../../services/categoryService';
+import { getActiveMainCategories, fetchAdminCategories } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
 import WalletPage from './Wallet';
 import Offers from './Offers';
@@ -1404,18 +1404,9 @@ export default function CustomerDashboard({
   useEffect(() => {
     const fetchDbCategories = async () => {
       try {
-        let res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
-        if (!res.ok) {
-          res = await fetch(`${getAdminBackendUrl()}/api/admin/categories`);
-        }
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setDbCategories(data);
-            try {
-              localStorage.setItem('connect_cached_db_categories', JSON.stringify(data));
-            } catch (e) {}
-          }
+        const data = await fetchAdminCategories();
+        if (Array.isArray(data) && data.length > 0) {
+          setDbCategories(data);
         }
       } catch (err) {
         console.warn("Failed to fetch dynamic categories in customer dashboard", err);
