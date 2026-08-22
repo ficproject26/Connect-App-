@@ -4889,7 +4889,7 @@ export default function CustomerDashboard({
               </div>
 
               <div className="w-[110px] sm:w-[125px] h-full rounded-2xl overflow-hidden relative shadow-3xs shrink-0 bg-slate-100 flex items-center justify-center">
-                <img src={offer.image} alt={offer.brand} className="w-full h-full object-cover" />
+                <img src={offer.image} alt={offer.brand} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/5" />
               </div>
             </div>
@@ -4954,7 +4954,7 @@ export default function CustomerDashboard({
                       <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                     </div>
                   ) : (
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                    <img src={item.image} alt={item.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
                   )}
                   
                   {/* Rating star on left top */}
@@ -5107,7 +5107,7 @@ export default function CustomerDashboard({
                       </div>
                     </div>
                   )}
-                  <img src={product.image} alt={product.name} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
+                  <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                   {!isVendorProductUnavailable(product) && product.tag && (
                     <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
                   )}
@@ -5253,7 +5253,7 @@ export default function CustomerDashboard({
           {stays.map((stay, idx) => (
             <div key={idx} onClick={() => { setActiveProductImage(stay.image); setActiveThumbnailIndex(0); setSelectedProduct(stay); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={stay.image} alt={stay.name} className="w-full h-full object-cover" />
+                <img src={stay.image} alt={stay.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">15% SAVINGS</span>
               </div>
               <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
@@ -5294,7 +5294,7 @@ export default function CustomerDashboard({
           {restaurants.map((rest, idx) => (
             <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={rest.image} alt={rest.name} className="w-full h-full object-cover" />
+                <img src={rest.image} alt={rest.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-rose-500 text-white text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
               </div>
               <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
@@ -6620,7 +6620,7 @@ export default function CustomerDashboard({
                                 <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                               </div>
                             ) : (
-                              <img src={product.image} alt={product.name} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
+                              <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                             )}
                             {product.subNavbarCategory === 'Food' && (
                               <div className="absolute top-0 left-0 z-10 w-16 h-16 overflow-hidden pointer-events-none">
