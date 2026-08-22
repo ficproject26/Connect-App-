@@ -210,10 +210,11 @@ export const productService = {
     const endpoints = [
       baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
       baseVendorUrl ? `${baseVendorUrl}/api/admin/public/products` : null,
-      baseVendorUrl ? `${baseVendorUrl}/api/products` : null,
       baseUrl ? `${baseUrl}/api/public/products` : null,
-      baseUrl ? `${baseUrl}/api/products` : null,
       '/api/public/products',
+      '/api/admin/public/products',
+      baseVendorUrl ? `${baseVendorUrl}/api/products` : null,
+      baseUrl ? `${baseUrl}/api/products` : null,
       '/api/products'
     ];
     const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
@@ -228,6 +229,10 @@ export const productService = {
           cache: 'no-store'
         }).catch(() => null);
         clearTimeout(timeoutId);
+
+        if (res && res.status === 401) {
+          continue;
+        }
 
         if (res && res.ok) {
           const data = await res.json().catch(() => null);

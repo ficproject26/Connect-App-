@@ -1445,9 +1445,10 @@ export default function CustomerDashboard({
     try {
       const url = getAdminBackendUrl();
       const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-      if (!(isHttps && url.startsWith('http://'))) {
+      const isValidSecureUrl = url && (url.startsWith('https://') || url.startsWith('wss://'));
+      if (isValidSecureUrl || (!isHttps && url && !url.startsWith('http://'))) {
         socket = io(url, { 
-          transports: ['websocket'],
+          transports: ['websocket', 'polling'],
           reconnectionAttempts: 2,
           reconnectionDelay: 10000,
           timeout: 8000
