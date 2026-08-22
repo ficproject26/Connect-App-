@@ -212,6 +212,15 @@ export const productService = {
   },
 
   getCachedProducts: () => {
+    try {
+      const cached = localStorage.getItem('connect_cached_products');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
     return [];
   },
 
@@ -224,16 +233,16 @@ export const productService = {
     const baseVendorUrl = getVendorBackendUrl();
     const baseUrl = getBackendUrl();
     const endpoints = [
+      '/api/public/products',
       baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
-      baseUrl ? `${baseUrl}/api/public/products` : null,
-      '/api/public/products'
+      baseUrl ? `${baseUrl}/api/public/products` : null
     ];
     const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
 
     for (const endpoint of uniqueEndpoints) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
 
         const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
           signal: controller.signal,
@@ -251,12 +260,19 @@ export const productService = {
           if (Array.isArray(rawList)) {
             const vendorProducts = filterVendorAddedOnly(rawList);
             try {
-              localStorage.removeItem('connect_cached_products');
+              if (vendorProducts.length > 0) {
+                localStorage.setItem('connect_cached_products', JSON.stringify(vendorProducts));
+              }
             } catch(e) {}
             return { success: true, products: vendorProducts, source: 'live' };
           }
         }
       } catch (err) {}
+    }
+
+    const cached = productService.getCachedProducts();
+    if (cached.length > 0) {
+      return { success: true, products: cached, source: 'cache' };
     }
 
     return { success: true, products: [], source: 'empty' };

@@ -220,13 +220,12 @@ export const getActiveMainCategories = (dbCategories = []) => {
 
 export const fetchAdminCategories = async () => {
   const urlsToTry = [
-    `${getBackendUrl()}/api/admin/categories`,
-    `${getBackendUrl()}/api/public/categories`,
-    `${getBackendUrl()}/api/categories`,
-    `${getAdminBackendUrl()}/api/admin/categories`,
-    '/api/admin/categories',
     '/api/public/categories',
-    '/api/categories'
+    '/api/admin/categories',
+    '/api/categories',
+    `${getBackendUrl()}/api/public/categories`,
+    `${getBackendUrl()}/api/admin/categories`,
+    `${getAdminBackendUrl()}/api/admin/categories`
   ];
 
   const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
