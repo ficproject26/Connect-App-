@@ -27,6 +27,25 @@ export const normalizeCategoryName = (rawName) => {
  * Builds the active category tree STRICTLY based on Admin Category Management API records (dbCategories).
  * Removes hardcoded category memory override when admin deletes or deactivates categories/subcategories.
  */
+const resolveMainCategoryName = (c) => {
+  if (!c) return '';
+  if (c.mainCategory) return normalizeCategoryName(c.mainCategory);
+  if (c.main_category) return normalizeCategoryName(c.main_category);
+
+  const normName = c.name ? normalizeCategoryName(c.name) : '';
+  const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+
+  if (canonicalMains.includes(normName) || c.level === 'main' || c.isMainCategory === true) {
+    return normName;
+  }
+
+  if (c.level === 'sub' || c.subcategory) {
+    return 'Products';
+  }
+
+  return normName;
+};
+
 export const buildActiveCategoryTree = (dbCategories = []) => {
   const catTree = {};
 
@@ -57,15 +76,15 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
   const dbMainNames = new Set();
   dbCategories.forEach(c => {
     if (!c) return;
-    const mName = c.name ? normalizeCategoryName(c.name) : (c.mainCategory ? normalizeCategoryName(c.mainCategory) : '');
+    const mName = resolveMainCategoryName(c);
     if (mName) dbMainNames.add(mName);
   });
 
   // 3. Database Authority Rule: If DB has subcategory records for a main category, clear baseline subcategories
   dbMainNames.forEach(mainName => {
     const hasDbSubRecs = dbCategories.some(c => {
-      const match = c && (c.name ? normalizeCategoryName(c.name) === mainName : (c.mainCategory ? normalizeCategoryName(c.mainCategory) === mainName : false));
-      return match && (c.subcategory || (c.level === 'main' && Array.isArray(c.children) && c.children.length > 0));
+      const match = c && resolveMainCategoryName(c) === mainName;
+      return match && (c.subcategory || c.mainCategory || (c.level === 'main' && Array.isArray(c.children) && c.children.length > 0));
     });
 
     if (hasDbSubRecs) {
@@ -117,7 +136,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
   // 5. Process Flat DB Records & Custom Main/Sub/Child Categories
   dbCategories.forEach(c => {
     if (!c) return;
-    const mainName = c.name ? normalizeCategoryName(c.name) : (c.mainCategory ? normalizeCategoryName(c.mainCategory) : '');
+    const mainName = resolveMainCategoryName(c);
     if (!mainName) return;
 
     if (c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') {
@@ -133,8 +152,12 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       catTree[mainName] = { name: mainName, isActive: true, subcategories: {} };
     }
 
-    if (c.subcategory && c.subcategory.trim() && c.subcategory !== 'ALL_SUBCATEGORIES_DELETED_MARKER') {
-      const subName = c.subcategory.trim();
+    let subName = (c.subcategory || '').trim();
+    if (!subName && c.name && c.mainCategory && normalizeCategoryName(c.mainCategory) !== normalizeCategoryName(c.name)) {
+      subName = c.name.trim();
+    }
+
+    if (subName && subName !== 'ALL_SUBCATEGORIES_DELETED_MARKER') {
       if (!catTree[mainName].subcategories[subName]) {
         catTree[mainName].subcategories[subName] = {
           name: subName,
@@ -182,9 +205,14 @@ export const getActiveMainCategories = (dbCategories = []) => {
     if (activeKeys.includes(m)) sorted.push(m);
   });
   
-  // Include any custom main categories added by Admin
+  // Include any custom Level 1 main categories explicitly created by Admin
   activeKeys.forEach(k => {
-    if (!sorted.includes(k) && k) sorted.push(k);
+    if (!sorted.includes(k) && k) {
+      const isExplicitMain = Array.isArray(dbCategories) && dbCategories.some(c => 
+        c && (c.level === 'main' || c.isMainCategory === true) && normalizeCategoryName(c.name) === k
+      );
+      if (isExplicitMain) sorted.push(k);
+    }
   });
 
   return sorted.length > 0 ? sorted : canonicalMains;
