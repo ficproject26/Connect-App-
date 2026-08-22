@@ -33,7 +33,22 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
   // Dynamic API Base URL
   const getApiBase = () => {
-    if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return `${import.meta.env.VITE_API_URL}/api`;
+    const formatApiUrl = (raw) => {
+      if (!raw) return '';
+      let clean = raw.trim().replace(/\/+$/, '');
+      if (!clean.startsWith('http://') && !clean.startsWith('https://')) clean = `http://${clean}`;
+      return `${clean}/api`;
+    };
+
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    if (isHttps) {
+      if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
+        return formatApiUrl(import.meta.env.VITE_API_URL);
+      }
+      return '/api';
+    }
+
+    if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return formatApiUrl(import.meta.env.VITE_API_URL);
     if (typeof window === 'undefined') return 'http://localhost:8001/api';
     const hostname = window.location.hostname;
     if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' ||
