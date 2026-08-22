@@ -13,14 +13,12 @@ class SocketServiceClient {
     try {
       const backendUrl = getBackendUrl();
       const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      const isRelativeOrOrigin = !backendUrl || backendUrl.startsWith('/') || backendUrl.startsWith('http://') || (typeof window !== 'undefined' && backendUrl === window.location.origin);
       
-      // If frontend is loaded over HTTPS but backend is insecure HTTP (e.g. raw IP), skip WS to avoid browser Mixed Content block
-      if (isHttps && backendUrl.startsWith('http://')) {
-        console.warn('[SocketService] Bypassing raw HTTP WebSocket connection on HTTPS origin to prevent Mixed Content security blocking.');
+      if (isHttps && isRelativeOrOrigin) {
         return;
       }
 
-      // Connect to the Node/Express backend server — websocket only to avoid 404 polling noise
       this.socket = io(backendUrl, {
         transports: ['websocket'],
         reconnectionAttempts: 2,

@@ -209,13 +209,8 @@ export const productService = {
     const baseUrl = getBackendUrl();
     const endpoints = [
       baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
-      baseVendorUrl ? `${baseVendorUrl}/api/admin/public/products` : null,
       baseUrl ? `${baseUrl}/api/public/products` : null,
-      '/api/public/products',
-      '/api/admin/public/products',
-      baseVendorUrl ? `${baseVendorUrl}/api/products` : null,
-      baseUrl ? `${baseUrl}/api/products` : null,
-      '/api/products'
+      '/api/public/products'
     ];
     const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
 
