@@ -174,6 +174,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       }
 
       const data = await res.json().catch(() => ({}));
+      const errMsg = data.message || data.msg || data.error || data.details || '';
 
       if (res.ok && (data.status === 'success' || data.success)) {
         setIsSubmitting(false);
@@ -185,13 +186,19 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
         return;
       } else {
         setIsSubmitting(false);
-        if (res.status === 404 || data.notRegistered || data.code === 'MOBILE_NOT_REGISTERED' || (data.message && data.message.toLowerCase().includes('not registered'))) {
+        const isNotReg = res.status === 404 || 
+                         data.notRegistered || 
+                         data.code === 'MOBILE_NOT_REGISTERED' || 
+                         data.code === 'ACCOUNT_NOT_FOUND' || 
+                         (errMsg && (errMsg.toLowerCase().includes('not registered') || errMsg.toLowerCase().includes('not found')));
+
+        if (isNotReg) {
           setIsNotRegistered(true);
           setErrorMsg('This mobile number is not registered. Please register to continue.');
         } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
-          setErrorMsg(data.message || 'Your account is inactive or suspended. Please contact support.');
+          setErrorMsg(errMsg || 'Your account is inactive or suspended. Please contact support.');
         } else {
-          setErrorMsg(data.message || 'Failed to send OTP. Please try again.');
+          setErrorMsg(errMsg || 'Failed to send OTP. Please try again.');
         }
         return;
       }
