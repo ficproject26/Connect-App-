@@ -3458,15 +3458,15 @@ export default function CustomerDashboard({
 
   const renderDashboardHeader = () => {
     return (
-      <header className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-2.5 sm:px-6 py-2 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
+      <header className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-2.5 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
         {/* Row 1 for Mobile / Left Section for Desktop */}
-        <div className="flex items-center justify-between gap-1 sm:gap-4 w-full md:w-auto overflow-visible">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 w-full md:w-auto overflow-visible">
           {/* Logo */}
-          <div className="flex items-center gap-1.5 select-none cursor-pointer shrink-0" onClick={clearAllFilters}>
-            <div className="w-6.5 h-6.5 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60 shrink-0">
+          <div className="flex items-center gap-2 select-none cursor-pointer shrink-0" onClick={clearAllFilters}>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60 shrink-0 shadow-3xs">
               <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
             </div>
-            <span className="text-[11px] sm:text-sm font-black tracking-tight text-slate-900 dark:text-white font-sans whitespace-nowrap hidden min-[340px]:inline">Connect App</span>
+            <span className="text-xs sm:text-base font-black tracking-tight text-slate-900 dark:text-white font-sans whitespace-nowrap hidden min-[320px]:inline">Connect App</span>
           </div>
 
           {/* Location Selector */}
@@ -3477,11 +3477,11 @@ export default function CustomerDashboard({
                 e.stopPropagation();
                 setIsLocationDropdownOpen(prev => !prev);
               }}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 transition-all shadow-3xs"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 transition-all shadow-3xs"
             >
-              <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="truncate max-w-[65px] sm:max-w-[100px]">{selectedLocation.city || 'Bangalore'}</span>
-              <ChevronDown className={`w-3 h-3 text-slate-400 shrink-0 transition-transform duration-200 ${isLocationDropdownOpen ? 'rotate-180' : ''}`} />
+              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="truncate max-w-[85px] sm:max-w-[120px]">{selectedLocation.city || 'Bangalore'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${isLocationDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isLocationDropdownOpen && (
@@ -3495,7 +3495,7 @@ export default function CustomerDashboard({
                   {/* Header Title & Close Button */}
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                      <MapPin className="w-4 h-4 text-amber-500" />
                       Select Location
                     </span>
                     <button 
@@ -3636,13 +3636,13 @@ export default function CustomerDashboard({
           </div>
 
           {/* Mobile Right Action Group: Clean Menu Button & Profile Avatar */}
-          <div className="flex md:hidden items-center gap-2 shrink-0">
+          <div className="flex md:hidden items-center gap-2.5 shrink-0">
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="relative p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:text-amber-500 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/60 shadow-3xs flex items-center justify-center"
+              className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:text-amber-500 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/60 shadow-3xs flex items-center justify-center"
               title="Open Menu"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5 text-amber-500" /> : <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />}
+              {isMobileMenuOpen ? <X className="w-5.5 h-5.5 text-amber-500" /> : <Menu className="w-5.5 h-5.5 text-slate-800 dark:text-slate-100" />}
               {(cart.length > 0 || (currentUser && !hideProfile && unreadCount > 0) || favorites.length > 0) && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
               )}
@@ -3652,7 +3652,7 @@ export default function CustomerDashboard({
               <button
                 type="button"
                 onClick={() => setIsLoginModalOpen(true)}
-                className="px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none"
+                className="px-3.5 py-2 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none shrink-0"
               >
                 Login
               </button>
@@ -3665,11 +3665,17 @@ export default function CustomerDashboard({
                 className="cursor-pointer shrink-0 group relative"
                 title="Open Profile"
               >
-                <img 
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
-                  alt="Profile" 
-                  className="w-7.5 h-7.5 rounded-full object-cover border-2 border-amber-400 shadow-3xs group-hover:scale-105 transition-transform"
-                />
+                {profilePhoto ? (
+                  <img 
+                    src={profilePhoto} 
+                    alt="Profile" 
+                    className="w-8.5 h-8.5 rounded-full object-cover border-2 border-amber-400 shadow-3xs group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-8.5 h-8.5 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-xs border-2 border-amber-400 shadow-3xs group-hover:scale-105 transition-transform">
+                    {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -3681,7 +3687,7 @@ export default function CustomerDashboard({
                 className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
-              <div className="fixed top-14 left-3 right-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-50 p-4 space-y-3 md:hidden animate-scale-up text-left">
+              <div className="fixed top-16 left-3 right-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-50 p-4 space-y-3 md:hidden animate-scale-up text-left">
                 {/* Profile Header Card / Login Banner */}
                 {!currentUser || hideProfile ? (
                   <div className="flex items-center justify-between p-3 bg-[#FFC107]/10 dark:bg-amber-500/10 rounded-2xl border border-[#FFC107]/30">
@@ -3714,11 +3720,17 @@ export default function CustomerDashboard({
                       }}
                       className="flex items-center gap-3 cursor-pointer"
                     >
-                      <img 
-                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" 
-                        alt="User Profile" 
-                        className="w-9 h-9 rounded-full object-cover border-2 border-amber-400 shadow-xs"
-                      />
+                      {profilePhoto ? (
+                        <img 
+                          src={profilePhoto} 
+                          alt="User Profile" 
+                          className="w-9 h-9 rounded-full object-cover border-2 border-amber-400 shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-[#fbb53c] text-slate-900 flex items-center justify-center font-black text-xs border-2 border-amber-400 shadow-xs">
+                          {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex flex-col text-left">
                         <span className="text-xs font-black text-slate-900 dark:text-white">
                           Hi, {(currentUser?.name || profileName).split(' ')[0]}
@@ -3840,16 +3852,16 @@ export default function CustomerDashboard({
         </div>
 
         {/* Row 2 for Mobile / Middle Section for Desktop (Search) */}
-        <div className="relative w-full md:max-w-xl flex items-center border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50/50 dark:bg-slate-900/50 pl-4 py-1 pr-1 focus-within:border-[#FFC107] focus-within:ring-1 focus-within:ring-[#FFC107]/20 transition-all">
+        <div className="relative w-full md:max-w-xl flex items-center border border-slate-300 dark:border-slate-700 rounded-full bg-slate-50 dark:bg-slate-900 pl-4 py-2 pr-1.5 focus-within:border-[#FFC107] focus-within:ring-2 focus-within:ring-[#FFC107]/30 transition-all shadow-3xs">
           <input 
             type="text"
             placeholder="Search products, services, food, hotels..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs bg-transparent focus:outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-1"
+            className="w-full text-xs sm:text-sm font-medium bg-transparent focus:outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-1"
           />
-          <button className="w-7 h-7 rounded-full bg-[#FFC107] hover:bg-amber-500 text-slate-900 flex items-center justify-center shrink-0 cursor-pointer transition-colors shadow-xs">
-            <Search className="w-3 h-3" />
+          <button className="w-8 h-8 rounded-full bg-[#FFC107] hover:bg-amber-500 text-slate-900 flex items-center justify-center shrink-0 cursor-pointer transition-colors shadow-xs">
+            <Search className="w-4 h-4" />
           </button>
         </div>
 
