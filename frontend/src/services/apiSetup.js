@@ -62,7 +62,7 @@ export const getVendorBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8001`;
   }
   
-  return 'https://connect-admin-96pc.onrender.com';
+  return 'http://13.203.197.69:8002';
 };
 
 export const getAdminBackendUrl = () => {

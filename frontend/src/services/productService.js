@@ -130,27 +130,27 @@ const sanitizeImageUrl = (imgUrl) => {
   let url = imgUrl.trim();
   if (!url || url === 'null' || url === 'undefined') return DEFAULT_FALLBACK_IMAGE;
 
+  if (url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+
+  let backendUrl = getVendorBackendUrl() || getBackendUrl();
+  if (!backendUrl || !backendUrl.startsWith('http')) {
+    backendUrl = 'http://13.203.197.69:8002';
+  }
+
   if (url.includes('/uploads/')) {
     const relativePath = url.substring(url.indexOf('/uploads/'));
-    const backendUrl = getBackendUrl();
-    if (backendUrl && backendUrl.startsWith('http')) {
-      return `${backendUrl}${relativePath}`;
-    }
-    return relativePath;
+    return `${backendUrl}${relativePath}`;
   }
 
-  if (url.includes('connect-vendor.vercel.app')) {
-    const backendUrl = getBackendUrl();
-    if (url.includes('/uploads/')) {
-      const rel = url.substring(url.indexOf('/uploads/'));
-      return `${backendUrl}${rel}`;
-    }
-    return DEFAULT_FALLBACK_IMAGE;
+  if (url.includes('trycloudflare.com') || url.includes(':8000') || url.includes(':8001') || url.includes('43.204.141.105')) {
+    return url.replace(/^https?:\/\/[^/]+/, backendUrl);
   }
 
-  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-  if (isHttps && url.startsWith('http://') && !url.includes('13.203.197.69')) {
-    url = url.replace(/^http:\/\//i, 'https://');
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `${backendUrl}${cleanPath}`;
   }
 
   return url;
