@@ -236,22 +236,11 @@ export const fetchAdminCategories = async () => {
       if (res && res.ok) {
         const data = await res.json().catch(() => null);
         if (Array.isArray(data) && data.length > 0) {
-          try {
-            localStorage.setItem('connect_cached_db_categories', JSON.stringify(data));
-          } catch (e) {}
           return data;
         }
       }
     } catch (e) {}
   }
-
-  try {
-    const cached = localStorage.getItem('connect_cached_db_categories');
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (e) {}
 
   return [];
 };

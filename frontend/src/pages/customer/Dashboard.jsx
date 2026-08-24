@@ -1088,42 +1088,6 @@ export default function CustomerDashboard({
       locality = (user.locality || user.area || city || '').trim();
     }
 
-    // Check connect_registered_users in localStorage for matching user details
-    try {
-      const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-      const userPhoneClean = (phone || '').replace(/\D/g, '');
-      const userEmailClean = (user?.email || '').toLowerCase();
-      
-      const match = registeredUsers.find(r =>
-        (userPhoneClean && r.phone && r.phone.replace(/\D/g, '') === userPhoneClean) ||
-        (userEmailClean && r.email && r.email.toLowerCase() === userEmailClean) ||
-        (r.name && name && r.name.toLowerCase() === name.toLowerCase())
-      );
-
-      if (match) {
-        if (!addrStr && match.address) addrStr = match.address.trim();
-        if (!pincode && match.pincode) pincode = match.pincode.toString().trim();
-        if (!city && match.city) city = match.city.trim();
-        if (!state && match.state) state = match.state.trim();
-        if (!name && match.name) name = match.name.trim();
-        if (!phone && match.phone) phone = match.phone.trim();
-      }
-    } catch (e) {}
-
-    // Check connect_current_user in localStorage
-    try {
-      const savedUserStr = localStorage.getItem('connect_current_user');
-      if (savedUserStr) {
-        const su = JSON.parse(savedUserStr);
-        if (!addrStr && su.address) addrStr = su.address.trim();
-        if (!pincode && su.pincode) pincode = su.pincode.toString().trim();
-        if (!city && su.city) city = su.city.trim();
-        if (!state && su.state) state = su.state.trim();
-        if (!name && su.name) name = su.name.trim();
-        if (!phone && su.phone) phone = su.phone.trim();
-      }
-    } catch (e) {}
-
     if (!addrStr && !pincode && !city) {
       return null;
     }

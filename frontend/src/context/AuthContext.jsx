@@ -60,37 +60,25 @@ export function AuthProvider({ children }) {
     const rawTarget = (inputUser.phone || inputUser.email || (typeof userInfo === 'string' ? userInfo : '')).toString().trim();
     const cleanDigits = rawTarget.replace(/\D/g, '');
 
-    // Lookup local registered users list
-    const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-    const registeredMatch = registeredUsers.find(u => 
-      (cleanDigits && u.phone && u.phone.replace(/\D/g, '') === cleanDigits) ||
-      (rawTarget && u.email && u.email.toLowerCase() === rawTarget.toLowerCase())
-    );
-
     let finalName = inputUser.name;
     if (!finalName || finalName === 'OTP Verified Member' || /^\d+$/.test(finalName)) {
-      if (registeredMatch && registeredMatch.name && !/^\d+$/.test(registeredMatch.name)) {
-        finalName = registeredMatch.name;
+      const emailPrefix = inputUser.email ? inputUser.email.split('@')[0] : '';
+      if (emailPrefix && !/^\d+$/.test(emailPrefix)) {
+        finalName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
       } else {
-        const emailPrefix = inputUser.email ? inputUser.email.split('@')[0] : '';
-        if (emailPrefix && !/^\d+$/.test(emailPrefix)) {
-          finalName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
-        } else {
-          finalName = 'Connect Member';
-        }
+        finalName = 'Connect Member';
       }
     }
 
     const finalUser = {
-      ...(registeredMatch || {}),
       ...inputUser,
       name: finalName,
-      email: inputUser.email || registeredMatch?.email || (cleanDigits ? `${cleanDigits}@connect.app` : 'customer@connect.app'),
-      phone: inputUser.phone || registeredMatch?.phone || cleanDigits || '',
-      address: inputUser.address || registeredMatch?.address || '',
-      city: inputUser.city || registeredMatch?.city || '',
-      pincode: inputUser.pincode || registeredMatch?.pincode || '',
-      state: inputUser.state || registeredMatch?.state || '',
+      email: inputUser.email || (cleanDigits ? `${cleanDigits}@connect.app` : 'customer@connect.app'),
+      phone: inputUser.phone || cleanDigits || '',
+      address: inputUser.address || '',
+      city: inputUser.city || '',
+      pincode: inputUser.pincode || '',
+      state: inputUser.state || '',
       role: role || inputUser.role || 'customer',
       customerId: (inputUser.customerId && inputUser.customerId !== 'FIC-CUST-750684' && inputUser.customerId !== 'FIC-CUST-849201')
         ? inputUser.customerId 
@@ -126,16 +114,6 @@ export function AuthProvider({ children }) {
       role: role || 'customer',
       customerId: getOrGenerateCustomerId(formData.email || formData.phone || displayName)
     };
-
-    try {
-      const savedUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-      const filtered = savedUsers.filter(u => 
-        (user.phone && u.phone && u.phone.replace(/\D/g, '') !== user.phone.replace(/\D/g, '')) &&
-        (user.email && u.email && u.email.toLowerCase() !== user.email.toLowerCase())
-      );
-      filtered.unshift(user);
-      localStorage.setItem('connect_registered_users', JSON.stringify(filtered));
-    } catch (e) {}
 
     setCurrentUser(user);
     localStorage.setItem('connect_current_user', JSON.stringify(user));

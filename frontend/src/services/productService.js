@@ -226,21 +226,10 @@ const sanitizeProduct = (p) => {
 
 export const productService = {
   clearCache: () => {
-    try {
-      localStorage.removeItem('connect_cached_products');
-    } catch (e) {}
+    // No-op: localStorage caching disabled in favor of live MongoDB queries
   },
 
   getCachedProducts: () => {
-    try {
-      const cached = localStorage.getItem('connect_cached_products');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {}
     return [];
   },
 
@@ -279,20 +268,10 @@ export const productService = {
           const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
           if (Array.isArray(rawList)) {
             const vendorProducts = filterVendorAddedOnly(rawList);
-            try {
-              if (vendorProducts.length > 0) {
-                localStorage.setItem('connect_cached_products', JSON.stringify(vendorProducts));
-              }
-            } catch(e) {}
             return { success: true, products: vendorProducts, source: 'live' };
           }
         }
       } catch (err) {}
-    }
-
-    const cached = productService.getCachedProducts();
-    if (cached.length > 0) {
-      return { success: true, products: cached, source: 'cache' };
     }
 
     return { success: true, products: [], source: 'empty' };
@@ -304,14 +283,11 @@ export const productService = {
         method: 'DELETE'
       });
       if (res.ok) {
-        localStorage.removeItem('connect_cached_products');
         return await res.json();
       }
-      localStorage.removeItem('connect_cached_products');
       return { success: false, message: 'Failed to delete products' };
     } catch (err) {
       console.warn("Failed to delete products:", err);
-      localStorage.removeItem('connect_cached_products');
       return { success: false, message: 'Server error' };
     }
   }

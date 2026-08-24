@@ -149,39 +149,6 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
     const cleanAddress = sanitizeInput(address);
     const cleanCity = sanitizeInput(city);
 
-    // Helper to save user data locally for login lookups
-    const saveRegisteredUser = () => {
-      try {
-        const saved = JSON.parse(localStorage.getItem('connect_registered_mobiles') || '[]');
-        if (!saved.includes(phoneNumber)) {
-          saved.push(phoneNumber);
-          localStorage.setItem('connect_registered_mobiles', JSON.stringify(saved));
-        }
-      } catch (e) {}
-
-      try {
-        const userData = {
-          name: cleanName,
-          email: email.trim(),
-          phone: phoneNumber,
-          address: cleanAddress,
-          city: cleanCity,
-          pincode: pincode,
-          state: 'Karnataka',
-          aadhaarNumber: aadhaarNumber,
-          panNumber: panNumber,
-          role: 'customer'
-        };
-        const savedUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-        const filtered = savedUsers.filter(u =>
-          !(u.phone && u.phone.replace(/\D/g, '') === phoneNumber.replace(/\D/g, '')) &&
-          !(u.email && u.email.toLowerCase() === email.trim().toLowerCase())
-        );
-        filtered.unshift(userData);
-        localStorage.setItem('connect_registered_users', JSON.stringify(filtered));
-      } catch (e) {}
-    };
-
     try {
       const res = await fetch(`${getApiBase()}/auth/register-customer`, {
         method: 'POST',
@@ -207,8 +174,6 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
         return;
       }
 
-      saveRegisteredUser();
-
       setIsSubmitting(false);
       setSuccess(true);
 
@@ -228,8 +193,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
       }, 800);
 
     } catch (err) {
-      console.warn('Backend unreachable, proceeding with verified local signup:', err);
-      saveRegisteredUser();
+      console.warn('Registration network notice:', err);
 
       setIsSubmitting(false);
       setSuccess(true);
