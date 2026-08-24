@@ -9194,8 +9194,11 @@ export default function CustomerDashboard({
         }`}
       >
         <div 
-          onClick={() => { if (!orderSuccess) setIsCartOpen(false); }}
-          className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" 
+          onClick={() => {
+            setIsCartOpen(false);
+            setOrderSuccess(false);
+          }}
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs cursor-pointer" 
         />
 
         <div 
@@ -9207,9 +9210,13 @@ export default function CustomerDashboard({
               <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200">My Shop Cart</h3>
             </div>
             <button 
-              disabled={orderSuccess}
-              onClick={() => setIsCartOpen(false)}
-              className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-all cursor-pointer disabled:opacity-50"
+              type="button"
+              onClick={() => {
+                setIsCartOpen(false);
+                setOrderSuccess(false);
+              }}
+              className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all cursor-pointer"
+              title="Close Cart"
             >
               <X className="w-5 h-5" />
             </button>
@@ -9217,14 +9224,26 @@ export default function CustomerDashboard({
 
           <div className="flex-grow overflow-y-auto py-5 space-y-4 no-scrollbar">
             {orderSuccess ? (
-              <div className="text-center py-12 animate-scale-up space-y-4">
-                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200 shadow-sm">
+              <div className="text-center py-12 animate-scale-up space-y-6 flex flex-col items-center justify-center">
+                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-800 shadow-sm">
                   <Check className="w-8 h-8 animate-bounce" />
                 </div>
-                <h4 className="text-lg font-bold text-slate-800 dark:text-white">Order Placed Successfully!</h4>
-                <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-                  Your payment has been authorized, and items are now routing to shipping.
-                </p>
+                <div className="space-y-2">
+                  <h4 className="text-lg font-bold text-slate-800 dark:text-white">Order Placed Successfully!</h4>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">
+                    Your payment has been authorized, and items are now routing to shipping.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCartOpen(false);
+                    setOrderSuccess(false);
+                  }}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95"
+                >
+                  Continue Shopping
+                </button>
               </div>
             ) : cart.length === 0 ? (
               <div className="text-center py-16 space-y-3">
