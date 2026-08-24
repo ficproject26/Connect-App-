@@ -1070,17 +1070,98 @@ export default function CustomerDashboard({
   const [settingsSMS, setSettingsSMS] = useState(false);
   const [settingsSecurity, setSettingsSecurity] = useState(true);
 
+  // Helper to resolve primary registration / customer profile address
+  const resolveProfileAddress = useCallback((user, pName, pPhone) => {
+    let addrStr = '';
+    let pincode = '';
+    let city = '';
+    let state = '';
+    let locality = '';
+    let name = pName || user?.name || '';
+    let phone = pPhone || user?.phone || '';
+
+    if (user) {
+      addrStr = (user.address || user.registration_address || user.location || user.fullAddress || '').trim();
+      pincode = (user.pincode || '').toString().trim();
+      city = (user.city || '').trim();
+      state = (user.state || (city ? 'Karnataka' : '')).trim();
+      locality = (user.locality || user.area || city || '').trim();
+    }
+
+    // Check connect_registered_users in localStorage for matching user details
+    try {
+      const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
+      const userPhoneClean = (phone || '').replace(/\D/g, '');
+      const userEmailClean = (user?.email || '').toLowerCase();
+      
+      const match = registeredUsers.find(r =>
+        (userPhoneClean && r.phone && r.phone.replace(/\D/g, '') === userPhoneClean) ||
+        (userEmailClean && r.email && r.email.toLowerCase() === userEmailClean) ||
+        (r.name && name && r.name.toLowerCase() === name.toLowerCase())
+      );
+
+      if (match) {
+        if (!addrStr && match.address) addrStr = match.address.trim();
+        if (!pincode && match.pincode) pincode = match.pincode.toString().trim();
+        if (!city && match.city) city = match.city.trim();
+        if (!state && match.state) state = match.state.trim();
+        if (!name && match.name) name = match.name.trim();
+        if (!phone && match.phone) phone = match.phone.trim();
+      }
+    } catch (e) {}
+
+    // Check connect_current_user in localStorage
+    try {
+      const savedUserStr = localStorage.getItem('connect_current_user');
+      if (savedUserStr) {
+        const su = JSON.parse(savedUserStr);
+        if (!addrStr && su.address) addrStr = su.address.trim();
+        if (!pincode && su.pincode) pincode = su.pincode.toString().trim();
+        if (!city && su.city) city = su.city.trim();
+        if (!state && su.state) state = su.state.trim();
+        if (!name && su.name) name = su.name.trim();
+        if (!phone && su.phone) phone = su.phone.trim();
+      }
+    } catch (e) {}
+
+    if (!addrStr && !pincode && !city) {
+      return null;
+    }
+
+    const userKey = getUserStorageKey(user || { name, phone });
+    return {
+      id: 'addr_reg_' + userKey,
+      name: name || 'Customer',
+      phone: phone || '',
+      pincode: pincode || '560001',
+      locality: locality || city || 'Locality',
+      address: addrStr || `${city || 'Bangalore'} Central Address`,
+      city: city || 'Bangalore',
+      state: state || 'Karnataka',
+      landmark: '',
+      altPhone: '',
+      type: 'Home',
+      isRegistrationAddress: true
+    };
+  }, []);
+
   const [addresses, setAddresses] = useState(() => {
     const userKey = getUserStorageKey(currentUser);
     const saved = localStorage.getItem(`connect_addresses_${userKey}`);
+    let savedList = [];
     if (saved) {
       try {
-        return JSON.parse(saved);
+        savedList = JSON.parse(saved);
       } catch (err) {
         console.warn("Failed to parse addresses from localStorage:", err);
       }
     }
-    return [];
+    const prof = resolveProfileAddress(currentUser, '', '');
+    if (prof) {
+      const nonReg = savedList.filter(a => !a.isRegistrationAddress && a.id !== prof.id);
+      return [prof, ...nonReg];
+    }
+    return savedList;
   });
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [addressForm, setAddressForm] = useState({
@@ -1096,47 +1177,42 @@ export default function CustomerDashboard({
     type: 'Home'
   });
 
+  // Synchronize customer profile & saved addresses
+  useEffect(() => {
+    const userKey = getUserStorageKey(currentUser);
+    const savedAddrRaw = localStorage.getItem(`connect_addresses_${userKey}`);
+    let savedList = [];
+    if (savedAddrRaw) {
+      try {
+        savedList = JSON.parse(savedAddrRaw);
+      } catch (e) {}
+    }
+
+    const prof = resolveProfileAddress(currentUser, profileName, profilePhone);
+    let updatedList = [...savedList];
+
+    if (prof) {
+      const nonReg = savedList.filter(a => !a.isRegistrationAddress && a.id !== prof.id);
+      updatedList = [prof, ...nonReg];
+    }
+
+    setAddresses(updatedList);
+
+    if (updatedList.length > 0) {
+      setSelectedCheckoutAddressId(prev => {
+        if (prev && updatedList.some(a => a.id === prev)) return prev;
+        return updatedList[0].id;
+      });
+    }
+  }, [currentUser, profileName, profilePhone, resolveProfileAddress]);
+
+  // Persist addresses state updates to localStorage
   useEffect(() => {
     if (currentUser) {
       const userKey = getUserStorageKey(currentUser);
       localStorage.setItem(`connect_addresses_${userKey}`, JSON.stringify(addresses));
     }
   }, [addresses, currentUser]);
-
-  useEffect(() => {
-    if (currentUser) {
-      const realAddress = (currentUser.address || currentUser.registration_address || currentUser.location || '').trim();
-      const realPincode = currentUser.pincode || '';
-      const realCity = currentUser.city || '';
-      const realState = currentUser.state || (realCity ? 'Karnataka' : '');
-      const realName = currentUser.name || profileName || '';
-      const realPhone = currentUser.phone || profilePhone || '';
-
-      if (realAddress) {
-        const regAddressObj = {
-          id: 'addr_reg_' + (currentUser.email ? currentUser.email.replace(/[^a-z0-9]/g, '_') : 'default'),
-          name: realName,
-          phone: realPhone,
-          pincode: realPincode,
-          locality: currentUser.locality || currentUser.area || realCity,
-          address: realAddress,
-          city: realCity,
-          state: realState,
-          landmark: '',
-          altPhone: '',
-          type: 'Home',
-          isRegistrationAddress: true
-        };
-
-        setAddresses(prev => {
-          const nonReg = prev.filter(a => !a.isRegistrationAddress);
-          return [regAddressObj, ...nonReg];
-        });
-      } else {
-        setAddresses(prev => prev.filter(a => !a.isRegistrationAddress));
-      }
-    }
-  }, [currentUser, profileName, profilePhone]);
 
   useEffect(() => {
     if (currentUser) {
@@ -1167,21 +1243,11 @@ export default function CustomerDashboard({
       const userPhotoKey = `connect_profile_photo_${userKey}`;
       const savedPhoto = localStorage.getItem(userPhotoKey) || currentUser?.avatar || currentUser?.photo || '';
       setProfilePhoto(savedPhoto);
-
-      const savedAddr = localStorage.getItem(`connect_addresses_${userKey}`);
-      if (savedAddr) {
-        try {
-          setAddresses(JSON.parse(savedAddr));
-        } catch (e) {}
-      } else {
-        setAddresses([]);
-      }
     } else {
       setProfileName('');
       setProfileEmail('');
       setProfilePhone('');
       setProfilePhoto('');
-      setAddresses([]);
     }
   }, [currentUser]);
 
