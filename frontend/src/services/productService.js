@@ -134,22 +134,42 @@ const sanitizeImageUrl = (imgUrl) => {
     return url;
   }
 
-  let backendUrl = getVendorBackendUrl() || getBackendUrl();
-  if (!backendUrl || !backendUrl.startsWith('http')) {
-    backendUrl = 'http://13.203.197.69:8002';
-  }
+  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
   if (url.includes('/uploads/')) {
     const relativePath = url.substring(url.indexOf('/uploads/'));
+    if (isHttps) {
+      return relativePath;
+    }
+    let backendUrl = getVendorBackendUrl() || getBackendUrl();
+    if (!backendUrl || !backendUrl.startsWith('http')) {
+      backendUrl = 'http://13.203.197.69:8002';
+    }
     return `${backendUrl}${relativePath}`;
   }
 
-  if (url.includes('trycloudflare.com') || url.includes(':8000') || url.includes(':8001') || url.includes('43.204.141.105')) {
+  if (isHttps && url.startsWith('http://')) {
+    return url.replace('http://', 'https://');
+  }
+
+  let backendUrl = getVendorBackendUrl() || getBackendUrl();
+  if (!backendUrl || !backendUrl.startsWith('http')) {
+    backendUrl = isHttps ? '' : 'http://13.203.197.69:8002';
+  }
+
+  if (url.includes('trycloudflare.com') || url.includes(':8000') || url.includes(':8001') || url.includes('43.204.141.105') || url.includes('13.203.197.69')) {
+    if (isHttps) {
+      const pathIndex = url.indexOf('/', url.indexOf('://') + 3);
+      return pathIndex !== -1 ? url.substring(pathIndex) : url.replace('http://', 'https://');
+    }
     return url.replace(/^https?:\/\/[^/]+/, backendUrl);
   }
 
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    if (isHttps) {
+      return cleanPath;
+    }
     return `${backendUrl}${cleanPath}`;
   }
 
