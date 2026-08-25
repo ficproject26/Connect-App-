@@ -1,44 +1,13 @@
 import { getBackendUrl, getAdminBackendUrl } from './apiSetup';
 
 export const BASE_TAXONOMY = {
-  "Products": {
-    "Electronics": ["Mobiles", "Laptops", "Audio & Headphones", "Wearables"],
-    "Fashion": ["Men's Wear", "Women's Wear", "Footwear", "Watches"],
-    "Home & Kitchen": ["Furniture", "Cookware", "Decor", "Bedding"],
-    "Groceries": ["Atta & Rice", "Oil & Ghee", "Snacks", "Beverages"],
-    "Beauty & Personal Care": ["Skincare", "Haircare", "Fragrances"]
-  },
-  "Services": {
-    "Home Services": ["Plumbing", "Electrician", "Carpentry", "Cleaning"],
-    "Beauty & Wellness": ["Salon for Women", "Men Grooming", "Spa & Massage"],
-    "Appliance Repair": ["AC Service", "Washing Machine", "Refrigerator"]
-  },
-  "Daily Needs": {
-    "Dairy & Bakery": ["Milk & Curd", "Bread & Butter", "Paneer & Cheese"],
-    "Fruits & Vegetables": ["Fresh Vegetables", "Fresh Fruits", "Exotic Produce"],
-    "Water & Beverages": ["Mineral Water", "Juices & Soft Drinks"]
-  },
-  "Food": {
-    "North Indian": ["Thali", "Paneer Dishes", "Tandoori & Naan"],
-    "South Indian": ["Dosa & Idli", "Vada", "Uttapam"],
-    "Biryani": ["Chicken Biryani", "Mutton Biryani", "Veg Biryani"],
-    "Chinese & Fast Food": ["Noodles & Momos", "Burgers & Fries", "Pizzas"]
-  },
-  "Stay": {
-    "Hotels": ["Budget Hotels", "Luxury Hotels", "Business Hotels"],
-    "Resorts": ["Beach Resorts", "Hill Station Resorts"],
-    "Villas & Homestays": ["Private Villas", "Heritage Homestays"]
-  },
-  "Travel": {
-    "Bus Tickets": ["AC Sleeper", "Non-AC Seater", "Express Buses"],
-    "Flight Bookings": ["Domestic Flights", "International Flights"],
-    "Cabs & Rentals": ["Outstation Cabs", "Local Rentals"]
-  },
-  "Jobs": {
-    "IT & Software": ["Full Stack Developer", "Frontend Developer", "Backend Developer", "UI/UX Designer"],
-    "Sales & Marketing": ["Sales Executive", "Digital Marketing", "Business Development"],
-    "Customer Support": ["Telecaller", "Customer Care Executive", "Technical Support"]
-  }
+  "Services": {},
+  "Products": {},
+  "Daily Needs": {},
+  "Food": {},
+  "Stay": {},
+  "Travel": {},
+  "Jobs": {}
 };
 
 export const normalizeCategoryName = (rawName) => {
@@ -81,54 +50,21 @@ const resolveMainCategoryName = (c) => {
 export const buildActiveCategoryTree = (dbCategories = []) => {
   const catTree = {};
 
-  // 1. Initialize with BASE_TAXONOMY baseline
-  Object.keys(BASE_TAXONOMY).forEach(mainName => {
+  // 1. Initialize empty taxonomy structure for canonical main categories
+  const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+  canonicalMains.forEach(mainName => {
     catTree[mainName] = {
       name: mainName,
       isActive: true,
       subcategories: {}
     };
-    const subData = BASE_TAXONOMY[mainName];
-    if (subData && typeof subData === 'object') {
-      Object.keys(subData).forEach(subName => {
-        catTree[mainName].subcategories[subName] = {
-          name: subName,
-          isActive: true,
-          childCategories: [...(subData[subName] || [])]
-        };
-      });
-    }
   });
 
   if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
     return catTree;
   }
 
-  // 2. Identify all main categories present in DB records
-  const dbMainNames = new Set();
-  dbCategories.forEach(c => {
-    if (!c) return;
-    const mName = resolveMainCategoryName(c);
-    if (mName) dbMainNames.add(mName);
-  });
-
-  // 3. Database Authority Rule: If DB has subcategory records for a main category, clear baseline subcategories
-  dbMainNames.forEach(mainName => {
-    const hasDbSubRecs = dbCategories.some(c => {
-      const match = c && resolveMainCategoryName(c) === mainName;
-      return match && c.level !== 'main' && (c.subcategory || c.mainCategory || (c.level === 'main' && Array.isArray(c.children) && c.children.length > 0));
-    });
-
-    if (hasDbSubRecs) {
-      if (!catTree[mainName]) {
-        catTree[mainName] = { name: mainName, isActive: true, subcategories: {} };
-      } else {
-        catTree[mainName].subcategories = {};
-      }
-    }
-  });
-
-  // 4. Handle 3-Tier Hierarchical Array (if level === 'main' and .children is populated)
+  // 2. Handle 3-Tier Hierarchical Array (if level === 'main' and .children is populated)
   const hierarchicalMains = dbCategories.filter(c => c && c.level === 'main' && Array.isArray(c.children) && c.children.length > 0);
   hierarchicalMains.forEach(mainCat => {
     const mainName = normalizeCategoryName(mainCat.name);
@@ -168,7 +104,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     }
   });
 
-  // 5. Process Flat DB Records & Custom Main/Sub/Child Categories
+  // 3. Process Flat DB Records & Custom Main/Sub/Child Categories
   dbCategories.forEach(c => {
     if (!c || c.level === 'main') return;
     const mainName = resolveMainCategoryName(c);

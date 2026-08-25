@@ -1970,7 +1970,7 @@ export default function CustomerDashboard({
   const travelMegaMenuData = {};
   const serviceMegaMenuData = {};
 
-  const mergeDbCategories = (staticData = {}, mainCategoryName = '') => {
+  const mergeDbCategories = (mainCategoryName = '') => {
     let merged = {};
     const targetNorm = normalizeMainCatName(mainCategoryName);
 
@@ -2019,9 +2019,18 @@ export default function CustomerDashboard({
     if (Array.isArray(dbCategories) && dbCategories.length > 0) {
       const activeFlatSubs = dbCategories.filter(c => {
         if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return false;
-        if (c.level === 'main') return false; // Exclude main category records
+        if (c.level === 'main') return false; // Exclude main category root records
+
+        // Resolve main category of this record strictly
         const recMain = normalizeMainCatName(c.mainCategory || c.main_category || c.parentName || '');
-        if (recMain && recMain !== targetNorm) return false;
+        if (recMain) {
+          if (recMain !== targetNorm) return false;
+        } else {
+          // If no explicit main category on flat record, do NOT dump indiscriminately into targetNorm unless it matches
+          const subNameNorm = normalizeMainCatName(c.subcategory || c.name || '');
+          const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+          if (canonicalMains.includes(subNameNorm) && subNameNorm !== targetNorm) return false;
+        }
 
         const subName = (c.subcategory || c.name || '').trim();
         if (!subName || subName === 'ALL_SUBCATEGORIES_DELETED_MARKER') return false;
@@ -2077,77 +2086,29 @@ export default function CustomerDashboard({
       });
     }
 
-    // 4. Default baseline fallbacks per main category if DB and live products haven't defined subcategories yet
-    if (Object.keys(merged).length === 0) {
-      const baselineDefaults = {
-        'Products': {
-          'Electronics': { title: 'Electronics', items: ['Mobiles', 'Laptops', 'Audio & Headphones', 'Wearables'] },
-          'Fashion': { title: 'Fashion', items: ["Men's Wear", "Women's Wear", 'Footwear', 'Watches'] },
-          'Home & Kitchen': { title: 'Home & Kitchen', items: ['Furniture', 'Cookware', 'Decor', 'Bedding'] },
-          'Groceries': { title: 'Groceries', items: ['Atta & Rice', 'Oil & Ghee', 'Snacks', 'Beverages'] },
-          'Beauty & Personal Care': { title: 'Beauty & Personal Care', items: ['Skincare', 'Haircare', 'Fragrances'] }
-        },
-        'Services': {
-          'Home Services': { title: 'Home Services', items: ['Plumbing', 'Electrician', 'Carpentry', 'Cleaning'] },
-          'Beauty & Wellness': { title: 'Beauty & Wellness', items: ['Salon for Women', 'Men Grooming', 'Spa & Massage'] },
-          'Appliance Repair': { title: 'Appliance Repair', items: ['AC Service', 'Washing Machine', 'Refrigerator'] }
-        },
-        'Daily Needs': {
-          'Dairy & Bakery': { title: 'Dairy & Bakery', items: ['Milk & Curd', 'Bread & Butter', 'Paneer & Cheese'] },
-          'Fruits & Vegetables': { title: 'Fruits & Vegetables', items: ['Fresh Vegetables', 'Fresh Fruits', 'Exotic Produce'] },
-          'Water & Beverages': { title: 'Water & Beverages', items: ['Mineral Water', 'Juices & Soft Drinks'] }
-        },
-        'Food': {
-          'North Indian': { title: 'North Indian', items: ['Thali', 'Paneer Dishes', 'Tandoori & Naan'] },
-          'South Indian': { title: 'South Indian', items: ['Dosa & Idli', 'Vada', 'Uttapam'] },
-          'Biryani': { title: 'Biryani', items: ['Chicken Biryani', 'Mutton Biryani', 'Veg Biryani'] },
-          'Chinese & Fast Food': { title: 'Chinese & Fast Food', items: ['Noodles & Momos', 'Burgers & Fries', 'Pizzas'] }
-        },
-        'Stay': {
-          'Hotels': { title: 'Hotels', items: ['Budget Hotels', 'Luxury Hotels', 'Business Hotels'] },
-          'Resorts': { title: 'Resorts', items: ['Beach Resorts', 'Hill Station Resorts'] },
-          'Villas & Homestays': { title: 'Villas & Homestays', items: ['Private Villas', 'Heritage Homestays'] }
-        },
-        'Travel': {
-          'Bus Tickets': { title: 'Bus Tickets', items: ['AC Sleeper', 'Non-AC Seater', 'Express Buses'] },
-          'Flight Bookings': { title: 'Flight Bookings', items: ['Domestic Flights', 'International Flights'] },
-          'Cabs & Rentals': { title: 'Cabs & Rentals', items: ['Outstation Cabs', 'Local Rentals'] }
-        },
-        'Jobs': {
-          'IT & Software': { title: 'IT & Software', items: ['Full Stack Developer', 'Frontend Developer', 'Backend Developer', 'UI/UX Designer'] },
-          'Sales & Marketing': { title: 'Sales & Marketing', items: ['Sales Executive', 'Digital Marketing', 'Business Development'] },
-          'Customer Support': { title: 'Customer Support', items: ['Telecaller', 'Customer Care Executive', 'Technical Support'] }
-        }
-      };
-
-      if (baselineDefaults[mainCategoryName]) {
-        return baselineDefaults[mainCategoryName];
-      }
-    }
-
     return merged;
   };
 
   const allMegaMenus = useMemo(() => {
     const menus = {
-      'Services': mergeDbCategories(serviceMegaMenuData, 'Services'),
-      'Products': mergeDbCategories(productMegaMenuData, 'Products'),
-      'Daily Needs': mergeDbCategories(dailyNeedsMegaMenuData, 'Daily Needs'),
-      'Food': mergeDbCategories(foodMegaMenuData, 'Food'),
-      'Stay': mergeDbCategories(stayMegaMenuData, 'Stay'),
-      'Travel': mergeDbCategories(travelMegaMenuData, 'Travel'),
-      'Jobs': mergeDbCategories(jobMegaMenuData, 'Jobs')
+      'Services': mergeDbCategories('Services'),
+      'Products': mergeDbCategories('Products'),
+      'Daily Needs': mergeDbCategories('Daily Needs'),
+      'Food': mergeDbCategories('Food'),
+      'Stay': mergeDbCategories('Stay'),
+      'Travel': mergeDbCategories('Travel'),
+      'Jobs': mergeDbCategories('Jobs')
     };
 
     // Also add any custom main categories that are not default
     subNavbarCategories.forEach(cat => {
       if (cat !== 'Home' && !menus[cat]) {
-        menus[cat] = mergeDbCategories({}, cat);
+        menus[cat] = mergeDbCategories(cat);
       }
     });
 
     return menus;
-  }, [dbCategories, subNavbarCategories]);
+  }, [dbCategories, products, subNavbarCategories]);
 
   const getCategoriesForTab = (tabName) => {
     const menuData = allMegaMenus[tabName] || {};
