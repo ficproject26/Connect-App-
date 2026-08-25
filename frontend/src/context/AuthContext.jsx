@@ -39,8 +39,25 @@ export function AuthProvider({ children }) {
         const u = JSON.parse(saved);
         if (!u.customerId || u.customerId === 'FIC-CUST-750684' || u.customerId === 'FIC-CUST-849201') {
           u.customerId = getOrGenerateCustomerId(u);
-          localStorage.setItem('connect_current_user', JSON.stringify(u));
         }
+        const regAddressStr = u.address || u.registeredAddress || '';
+        if ((!u.addresses || !Array.isArray(u.addresses) || u.addresses.length === 0) && regAddressStr.trim()) {
+          u.addresses = [{
+            id: 'addr_reg_' + (u.id || Date.now()),
+            name: u.name || 'Connect Member',
+            phone: (u.phone || '').replace('+91', '').trim(),
+            pincode: u.pincode || '',
+            locality: u.city || '',
+            address: regAddressStr,
+            city: u.city || '',
+            state: u.state || 'Karnataka',
+            landmark: '',
+            altPhone: '',
+            type: 'Home',
+            isRegistrationAddress: true
+          }];
+        }
+        localStorage.setItem('connect_current_user', JSON.stringify(u));
         return u;
       } catch (err) {
         console.warn("Failed to parse connect_current_user from localStorage:", err);
@@ -70,6 +87,24 @@ export function AuthProvider({ children }) {
       }
     }
 
+    const regAddressStr = inputUser.address || inputUser.registeredAddress || '';
+    const initialAddresses = Array.isArray(inputUser.addresses) && inputUser.addresses.length > 0
+      ? inputUser.addresses
+      : (regAddressStr.trim() ? [{
+          id: 'addr_reg_' + Date.now(),
+          name: finalName,
+          phone: (inputUser.phone || cleanDigits || '').replace('+91', '').trim(),
+          pincode: inputUser.pincode || '',
+          locality: inputUser.city || '',
+          address: regAddressStr,
+          city: inputUser.city || '',
+          state: inputUser.state || 'Karnataka',
+          landmark: '',
+          altPhone: '',
+          type: 'Home',
+          isRegistrationAddress: true
+        }] : []);
+
     const finalUser = {
       ...inputUser,
       name: finalName,
@@ -82,7 +117,8 @@ export function AuthProvider({ children }) {
       role: role || inputUser.role || 'customer',
       customerId: (inputUser.customerId && inputUser.customerId !== 'FIC-CUST-750684' && inputUser.customerId !== 'FIC-CUST-849201')
         ? inputUser.customerId 
-        : getOrGenerateCustomerId(inputUser.email || cleanDigits || finalName)
+        : getOrGenerateCustomerId(inputUser.email || cleanDigits || finalName),
+      addresses: initialAddresses
     };
 
     setCurrentUser(finalUser);
@@ -101,6 +137,22 @@ export function AuthProvider({ children }) {
       displayName = formData.businessName || 'Elite Vendor';
     }
 
+    const regAddressStr = formData.address || '';
+    const initialAddresses = regAddressStr.trim() ? [{
+      id: 'addr_reg_' + Date.now(),
+      name: displayName || 'Connect Member',
+      phone: (formData.phone || formData.phoneNumber || '').replace('+91', '').trim(),
+      pincode: formData.pincode || '',
+      locality: formData.city || '',
+      address: regAddressStr,
+      city: formData.city || '',
+      state: formData.state || 'Karnataka',
+      landmark: '',
+      altPhone: '',
+      type: 'Home',
+      isRegistrationAddress: true
+    }] : [];
+
     const user = {
       name: displayName || 'Connect Member',
       email: formData.email,
@@ -112,7 +164,8 @@ export function AuthProvider({ children }) {
       aadhaar: formData.aadhaarNumber || '',
       pan: formData.panNumber || '',
       role: role || 'customer',
-      customerId: getOrGenerateCustomerId(formData.email || formData.phone || displayName)
+      customerId: getOrGenerateCustomerId(formData.email || formData.phone || displayName),
+      addresses: initialAddresses
     };
 
     setCurrentUser(user);

@@ -1040,12 +1040,33 @@ export default function CustomerDashboard({
   });
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState('');
   const [settingsNotify, setSettingsNotify] = useState(true);
   const [settingsSMS, setSettingsSMS] = useState(false);
   const [settingsSecurity, setSettingsSecurity] = useState(true);
 
-  const [addresses, setAddresses] = useState([]);
+  const [addresses, setAddresses] = useState(() => {
+    if (currentUser?.addresses && Array.isArray(currentUser.addresses) && currentUser.addresses.length > 0) {
+      return currentUser.addresses;
+    }
+    const regAddrStr = currentUser?.address || currentUser?.registeredAddress || '';
+    if (regAddrStr.trim()) {
+      return [{
+        id: 'addr_reg_' + (currentUser?.id || 'reg'),
+        name: currentUser?.name || 'Connect Member',
+        phone: (currentUser?.phone || '').replace('+91', '').trim(),
+        pincode: currentUser?.pincode || '',
+        locality: currentUser?.city || '',
+        address: regAddrStr,
+        city: currentUser?.city || '',
+        state: currentUser?.state || 'Karnataka',
+        landmark: '',
+        altPhone: '',
+        type: 'Home',
+        isRegistrationAddress: true
+      }];
+    }
+    return [];
+  });
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [addressForm, setAddressForm] = useState({
     name: '',
@@ -1074,16 +1095,59 @@ export default function CustomerDashboard({
               setProfileEmail(u.email || currentUser.email || '');
               setProfilePhone(u.phone || currentUser.phone || '');
               setProfilePhoto(u.avatar || u.photo || currentUser?.avatar || '');
-              setAddresses(Array.isArray(u.addresses) ? u.addresses : []);
-              if (Array.isArray(u.addresses) && u.addresses.length > 0) {
-                setSelectedCheckoutAddressId(u.addresses[0].id);
+
+              let dbAddrs = Array.isArray(u.addresses) ? u.addresses : [];
+              if (dbAddrs.length === 0) {
+                const regAddressStr = u.address || u.registeredAddress || currentUser?.address || currentUser?.registeredAddress || '';
+                if (regAddressStr.trim()) {
+                  dbAddrs = [{
+                    id: 'addr_reg_' + (u.id || currentUser?.id || 'reg'),
+                    name: u.name || currentUser?.name || 'Connect Member',
+                    phone: (u.phone || currentUser?.phone || '').replace('+91', '').trim(),
+                    pincode: u.pincode || currentUser?.pincode || '',
+                    locality: u.city || currentUser?.city || '',
+                    address: regAddressStr,
+                    city: u.city || currentUser?.city || '',
+                    state: u.state || currentUser?.state || 'Karnataka',
+                    landmark: '',
+                    altPhone: '',
+                    type: 'Home',
+                    isRegistrationAddress: true
+                  }];
+                }
+              }
+
+              setAddresses(dbAddrs);
+              if (dbAddrs.length > 0) {
+                setSelectedCheckoutAddressId(dbAddrs[0].id);
               }
             } else {
               setProfileName(currentUser.name || '');
               setProfileEmail(currentUser.email || '');
               setProfilePhone(currentUser.phone || '');
               setProfilePhoto(currentUser.avatar || currentUser.photo || '');
-              setAddresses([]);
+
+              const regAddressStr = currentUser?.address || currentUser?.registeredAddress || '';
+              if (regAddressStr.trim()) {
+                const defaultRegAddr = {
+                  id: 'addr_reg_' + (currentUser?.id || 'reg'),
+                  name: currentUser?.name || 'Connect Member',
+                  phone: (currentUser?.phone || '').replace('+91', '').trim(),
+                  pincode: currentUser?.pincode || '',
+                  locality: currentUser?.city || '',
+                  address: regAddressStr,
+                  city: currentUser?.city || '',
+                  state: currentUser?.state || 'Karnataka',
+                  landmark: '',
+                  altPhone: '',
+                  type: 'Home',
+                  isRegistrationAddress: true
+                };
+                setAddresses([defaultRegAddr]);
+                setSelectedCheckoutAddressId(defaultRegAddr.id);
+              } else {
+                setAddresses([]);
+              }
             }
           })
           .catch(() => {
@@ -1091,7 +1155,28 @@ export default function CustomerDashboard({
             setProfileEmail(currentUser.email || '');
             setProfilePhone(currentUser.phone || '');
             setProfilePhoto(currentUser.avatar || currentUser.photo || '');
-            setAddresses([]);
+
+            const regAddressStr = currentUser?.address || currentUser?.registeredAddress || '';
+            if (regAddressStr.trim()) {
+              const defaultRegAddr = {
+                id: 'addr_reg_' + (currentUser?.id || 'reg'),
+                name: currentUser?.name || 'Connect Member',
+                phone: (currentUser?.phone || '').replace('+91', '').trim(),
+                pincode: currentUser?.pincode || '',
+                locality: currentUser?.city || '',
+                address: regAddressStr,
+                city: currentUser?.city || '',
+                state: currentUser?.state || 'Karnataka',
+                landmark: '',
+                altPhone: '',
+                type: 'Home',
+                isRegistrationAddress: true
+              };
+              setAddresses([defaultRegAddr]);
+              setSelectedCheckoutAddressId(defaultRegAddr.id);
+            } else {
+              setAddresses([]);
+            }
           });
       }
     } else {

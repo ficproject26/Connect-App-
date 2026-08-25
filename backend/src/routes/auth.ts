@@ -605,7 +605,8 @@ router.post('/register-customer', async (req: Request, res: Response) => {
       state: 'Karnataka',
       landmark: '',
       altPhone: '',
-      type: 'Home'
+      type: 'Home',
+      isRegistrationAddress: true
     }] : [];
 
     const createdUser = {
@@ -677,6 +678,34 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
     }
 
     const { password: _, ...safeProfile } = dbUser;
+    
+    let profileAddresses: any[] = Array.isArray(safeProfile.addresses) ? safeProfile.addresses : [];
+
+    if (profileAddresses.length === 0) {
+      const regAddressStr = safeProfile.address || safeProfile.registeredAddress || safeProfile.fullAddress || '';
+      if (regAddressStr && regAddressStr.trim()) {
+        const regAddrObj = {
+          id: 'addr_reg_' + (safeProfile.id || safeProfile._id?.toString() || Date.now()),
+          name: safeProfile.name || 'Connect Member',
+          phone: (safeProfile.phone || '').replace('+91', '').trim(),
+          pincode: safeProfile.pincode || '',
+          locality: safeProfile.city || '',
+          address: regAddressStr,
+          city: safeProfile.city || '',
+          state: safeProfile.state || 'Karnataka',
+          landmark: safeProfile.landmark || '',
+          altPhone: safeProfile.altPhone || '',
+          type: 'Home',
+          isRegistrationAddress: true
+        };
+        profileAddresses = [regAddrObj];
+
+        // Persist back to database so future calls have addresses array populated
+        await mongoDb.collection('users').updateOne(filter, { $set: { addresses: profileAddresses } }).catch(() => {});
+        await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: profileAddresses } }).catch(() => {});
+      }
+    }
+
     return res.json({
       status: 'success',
       user: {
@@ -686,11 +715,13 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         phone: safeProfile.phone || '',
         avatar: safeProfile.avatar || safeProfile.photo || '',
         photo: safeProfile.avatar || safeProfile.photo || '',
+        address: safeProfile.address || safeProfile.registeredAddress || '',
         city: safeProfile.city || '',
         pincode: safeProfile.pincode || '',
+        state: safeProfile.state || '',
         role: safeProfile.role || 'customer',
         customerId: safeProfile.registrationId || safeProfile.customerId || `FIC-CUST-100000`,
-        addresses: Array.isArray(safeProfile.addresses) ? safeProfile.addresses : []
+        addresses: profileAddresses
       }
     });
   } catch (err: any) {
