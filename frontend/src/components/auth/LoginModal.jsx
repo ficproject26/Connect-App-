@@ -57,7 +57,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
         hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
       return `http://${hostname || 'localhost'}:8001/api`;
     }
-    return 'https://connect-admin-96pc.onrender.com/api';
+    return 'https://connect-app-7s6g.onrender.com/api';
   };
 
   // OTP Resend Cooldown Countdown Timer

@@ -143,7 +143,7 @@ const sanitizeImageUrl = (imgUrl) => {
     }
     let backendUrl = getVendorBackendUrl() || getBackendUrl();
     if (!backendUrl || !backendUrl.startsWith('http')) {
-      backendUrl = 'http://13.203.197.69:8002';
+      backendUrl = 'https://connect-app-7s6g.onrender.com';
     }
     return `${backendUrl}${relativePath}`;
   }
@@ -154,7 +154,7 @@ const sanitizeImageUrl = (imgUrl) => {
 
   let backendUrl = getVendorBackendUrl() || getBackendUrl();
   if (!backendUrl || !backendUrl.startsWith('http')) {
-    backendUrl = isHttps ? '' : 'http://13.203.197.69:8002';
+    backendUrl = isHttps ? '' : 'https://connect-app-7s6g.onrender.com';
   }
 
   if (url.includes('trycloudflare.com') || url.includes(':8000') || url.includes(':8001') || url.includes('43.204.141.105') || url.includes('13.203.197.69')) {

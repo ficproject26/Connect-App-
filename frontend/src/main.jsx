@@ -3,6 +3,27 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+// Clear legacy/mock local storage data on initialization to ensure fresh live backend data sync
+try {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const keysToPurge = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith('connect_fallback_') ||
+        key.startsWith('connect_vendor_') ||
+        key.startsWith('connect_products_') ||
+        key.startsWith('connect_deleted_')
+      )) {
+        keysToPurge.push(key);
+      }
+    }
+    keysToPurge.forEach(k => localStorage.removeItem(k));
+  }
+} catch (err) {
+  // Ignore storage access errors
+}
+
 // Automatically reload page on new deployment bundle update (fixes 404 old chunk errors)
 window.addEventListener('vite:preloadError', () => {
   window.location.reload();

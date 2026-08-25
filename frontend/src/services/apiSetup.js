@@ -33,7 +33,7 @@ export const getBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8001`;
   }
   
-  return 'https://connect-admin-96pc.onrender.com';
+  return 'https://connect-app-7s6g.onrender.com';
 };
 
 export const getVendorBackendUrl = () => {
@@ -62,7 +62,7 @@ export const getVendorBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8001`;
   }
   
-  return 'http://13.203.197.69:8002';
+  return 'https://connect-app-7s6g.onrender.com';
 };
 
 export const getAdminBackendUrl = () => {
@@ -91,5 +91,5 @@ export const getAdminBackendUrl = () => {
     return `http://${hostname || 'localhost'}:5001`;
   }
   
-  return 'https://connect-admin-96pc.onrender.com';
+  return 'https://connect-app-7s6g.onrender.com';
 };
