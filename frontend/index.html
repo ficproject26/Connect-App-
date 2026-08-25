@@ -4,31 +4,40 @@
     <meta charset="UTF-8" />
     <script>
       (function () {
-        const isExtensionError = (msg) => {
+        const isIgnorableNoise = (msg) => {
           if (!msg) return false;
-          const str = typeof msg === 'string' ? msg : (msg.message || '');
+          const str = typeof msg === 'string' ? msg : (msg.message || msg.stack || '');
           return (
             str.includes('A listener indicated an asynchronous response') ||
             str.includes('message channel closed') ||
-            str.includes('runtime.lastError')
+            str.includes('runtime.lastError') ||
+            str.includes('feature_collector.js') ||
+            str.includes('using deprecated parameters for the initialization function') ||
+            str.includes('preloaded using link preload but not used')
           );
         };
 
         const origConsoleError = console.error;
         console.error = function (...args) {
-          if (args.some(isExtensionError)) return;
+          if (args.some(isIgnorableNoise)) return;
           origConsoleError.apply(console, args);
         };
 
+        const origConsoleWarn = console.warn;
+        console.warn = function (...args) {
+          if (args.some(isIgnorableNoise)) return;
+          origConsoleWarn.apply(console, args);
+        };
+
         window.addEventListener('unhandledrejection', function (e) {
-          if (isExtensionError(e.reason)) {
+          if (isIgnorableNoise(e.reason)) {
             e.preventDefault();
             e.stopPropagation();
           }
         }, true);
 
         window.addEventListener('error', function (e) {
-          if (isExtensionError(e.error || e.message)) {
+          if (isIgnorableNoise(e.error || e.message)) {
             e.preventDefault();
             e.stopPropagation();
           }
@@ -40,7 +49,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Access Food, Travel, Stay, Services, Products, and Daily Needs through one powerful membership ecosystem." />
     <title>Connect - One Membership. Unlimited Benefits.</title>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
   </head>
   <body class="bg-slate-50">
     <div id="root"></div>
