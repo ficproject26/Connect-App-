@@ -1970,77 +1970,69 @@ export default function CustomerDashboard({
   const travelMegaMenuData = {};
   const serviceMegaMenuData = {};
 
-  const mergeDbCategories = (staticData, mainCategoryName) => {
+  const mergeDbCategories = (staticData = {}, mainCategoryName = '') => {
     let merged = {};
     const targetNorm = normalizeMainCatName(mainCategoryName);
 
-    if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
-      return merged;
-    }
+    // 1. Process 3-Tier Hierarchical Structure from DB (if children array is populated)
+    if (Array.isArray(dbCategories) && dbCategories.length > 0) {
+      const rootMain = dbCategories.find(m => m && m.level === 'main' && normalizeMainCatName(m.name) === targetNorm && Array.isArray(m.children) && m.children.length > 0);
+      if (rootMain && rootMain.isActive !== false && !rootMain.isDeleted) {
+        if (Array.isArray(rootMain.children)) {
+          rootMain.children.forEach(subNode => {
+            if (!subNode || !subNode.name) return;
+            const subName = subNode.name.trim();
 
-    // 1. Process 3-Tier Hierarchical Structure (ONLY if children array is populated)
-    const rootMain = dbCategories.find(m => m && m.level === 'main' && normalizeMainCatName(m.name) === targetNorm && Array.isArray(m.children) && m.children.length > 0);
-    if (rootMain) {
-      if (rootMain.isActive === false || rootMain.isDeleted) {
-        return {};
+            if (subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') {
+              return;
+            }
+
+            // Skip self-referential subcategory names (e.g. 'Products' under 'Products')
+            if (normalizeMainCatName(subName) === targetNorm) {
+              return;
+            }
+
+            const items = [];
+            if (Array.isArray(subNode.children)) {
+              subNode.children.forEach(childNode => {
+                if (!childNode || !childNode.name) return;
+                const childName = childNode.name.trim();
+                if (childNode.isActive === false || childNode.isDeleted || childNode.description === 'DELETED_HIERARCHY_MARKER') {
+                  return;
+                }
+                if (normalizeMainCatName(childName) !== targetNorm && !items.includes(childName)) {
+                  items.push(childName);
+                }
+              });
+            }
+
+            merged[subName] = {
+              title: subName,
+              items: items
+            };
+          });
+        }
       }
-
-      merged = {};
-      if (Array.isArray(rootMain.children)) {
-        rootMain.children.forEach(subNode => {
-          if (!subNode || !subNode.name) return;
-          const subName = subNode.name.trim();
-
-          if (subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') {
-            return;
-          }
-
-          const items = [];
-          if (Array.isArray(subNode.children)) {
-            subNode.children.forEach(childNode => {
-              if (!childNode || !childNode.name) return;
-              const childName = childNode.name.trim();
-
-              if (childNode.isActive === false || childNode.isDeleted || childNode.description === 'DELETED_HIERARCHY_MARKER') {
-                return;
-              }
-
-              if (!items.includes(childName)) {
-                items.push(childName);
-              }
-            });
-          }
-
-          merged[subName] = {
-            title: subName,
-            items: items
-          };
-        });
-      }
-      return merged;
     }
 
     // 2. Process Flat DB Records for this main category
-    const activeFlatSubs = dbCategories.filter(c => 
-      c && 
-      normalizeMainCatName(c.name || c.mainCategory || '') === targetNorm && 
-      c.subcategory && 
-      c.subcategory !== 'ALL_SUBCATEGORIES_DELETED_MARKER' && 
-      c.isActive !== false && 
-      !c.isDeleted && 
-      c.description !== 'DELETED_HIERARCHY_MARKER'
-    );
+    if (Array.isArray(dbCategories) && dbCategories.length > 0) {
+      const activeFlatSubs = dbCategories.filter(c => {
+        if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return false;
+        if (c.level === 'main') return false; // Exclude main category records
+        const recMain = normalizeMainCatName(c.mainCategory || c.main_category || c.parentName || '');
+        if (recMain && recMain !== targetNorm) return false;
 
-    const hasAllDeletedMarker = dbCategories.some(c => 
-      c && 
-      normalizeMainCatName(c.name || c.mainCategory || '') === targetNorm && 
-      (c.subcategory === 'ALL_SUBCATEGORIES_DELETED_MARKER' || c.description === 'DELETED_HIERARCHY_MARKER')
-    );
+        const subName = (c.subcategory || c.name || '').trim();
+        if (!subName || subName === 'ALL_SUBCATEGORIES_DELETED_MARKER') return false;
+        if (normalizeMainCatName(subName) === targetNorm) return false; // Exclude self-referential subcategory
+        return true;
+      });
 
-    if (activeFlatSubs.length > 0 || hasAllDeletedMarker) {
-      merged = {};
       activeFlatSubs.forEach(c => {
-        const subName = c.subcategory.trim();
+        const subName = (c.subcategory || c.name || '').trim();
+        if (normalizeMainCatName(subName) === targetNorm) return;
+
         const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
         if (!merged[existingKey]) {
           merged[existingKey] = {
@@ -2048,14 +2040,89 @@ export default function CustomerDashboard({
             items: []
           };
         }
+
         if (c.subSubcategory && c.subSubcategory.trim()) {
           const childName = c.subSubcategory.trim();
-          if (!merged[existingKey].items.includes(childName)) {
+          if (normalizeMainCatName(childName) !== targetNorm && !merged[existingKey].items.includes(childName)) {
             merged[existingKey].items.push(childName);
           }
         }
       });
-      return merged;
+    }
+
+    // 3. Supplement with categories extracted from live vendor products for this main category
+    if (Array.isArray(products) && products.length > 0) {
+      products.forEach(p => {
+        if (!p) return;
+        const pMain = normalizeMainCatName(p.subNavbarCategory || p.mainCategory || p.tag || '');
+        if (pMain !== targetNorm) return;
+
+        const subName = (p.category || p.subcategory || '').trim();
+        if (!subName || normalizeMainCatName(subName) === targetNorm) return;
+
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
+        if (!merged[existingKey]) {
+          merged[existingKey] = {
+            title: subName,
+            items: []
+          };
+        }
+
+        if (p.subSubcategory && p.subSubcategory.trim()) {
+          const childName = p.subSubcategory.trim();
+          if (normalizeMainCatName(childName) !== targetNorm && !merged[existingKey].items.includes(childName)) {
+            merged[existingKey].items.push(childName);
+          }
+        }
+      });
+    }
+
+    // 4. Default baseline fallbacks per main category if DB and live products haven't defined subcategories yet
+    if (Object.keys(merged).length === 0) {
+      const baselineDefaults = {
+        'Products': {
+          'Electronics': { title: 'Electronics', items: ['Mobiles', 'Laptops', 'Audio & Headphones', 'Wearables'] },
+          'Fashion': { title: 'Fashion', items: ["Men's Wear", "Women's Wear", 'Footwear', 'Watches'] },
+          'Home & Kitchen': { title: 'Home & Kitchen', items: ['Furniture', 'Cookware', 'Decor', 'Bedding'] },
+          'Groceries': { title: 'Groceries', items: ['Atta & Rice', 'Oil & Ghee', 'Snacks', 'Beverages'] },
+          'Beauty & Personal Care': { title: 'Beauty & Personal Care', items: ['Skincare', 'Haircare', 'Fragrances'] }
+        },
+        'Services': {
+          'Home Services': { title: 'Home Services', items: ['Plumbing', 'Electrician', 'Carpentry', 'Cleaning'] },
+          'Beauty & Wellness': { title: 'Beauty & Wellness', items: ['Salon for Women', 'Men Grooming', 'Spa & Massage'] },
+          'Appliance Repair': { title: 'Appliance Repair', items: ['AC Service', 'Washing Machine', 'Refrigerator'] }
+        },
+        'Daily Needs': {
+          'Dairy & Bakery': { title: 'Dairy & Bakery', items: ['Milk & Curd', 'Bread & Butter', 'Paneer & Cheese'] },
+          'Fruits & Vegetables': { title: 'Fruits & Vegetables', items: ['Fresh Vegetables', 'Fresh Fruits', 'Exotic Produce'] },
+          'Water & Beverages': { title: 'Water & Beverages', items: ['Mineral Water', 'Juices & Soft Drinks'] }
+        },
+        'Food': {
+          'North Indian': { title: 'North Indian', items: ['Thali', 'Paneer Dishes', 'Tandoori & Naan'] },
+          'South Indian': { title: 'South Indian', items: ['Dosa & Idli', 'Vada', 'Uttapam'] },
+          'Biryani': { title: 'Biryani', items: ['Chicken Biryani', 'Mutton Biryani', 'Veg Biryani'] },
+          'Chinese & Fast Food': { title: 'Chinese & Fast Food', items: ['Noodles & Momos', 'Burgers & Fries', 'Pizzas'] }
+        },
+        'Stay': {
+          'Hotels': { title: 'Hotels', items: ['Budget Hotels', 'Luxury Hotels', 'Business Hotels'] },
+          'Resorts': { title: 'Resorts', items: ['Beach Resorts', 'Hill Station Resorts'] },
+          'Villas & Homestays': { title: 'Villas & Homestays', items: ['Private Villas', 'Heritage Homestays'] }
+        },
+        'Travel': {
+          'Bus Tickets': { title: 'Bus Tickets', items: ['AC Sleeper', 'Non-AC Seater', 'Express Buses'] },
+          'Flight Bookings': { title: 'Flight Bookings', items: ['Domestic Flights', 'International Flights'] },
+          'Cabs & Rentals': { title: 'Cabs & Rentals', items: ['Outstation Cabs', 'Local Rentals'] }
+        },
+        'Jobs': {
+          'IT & Software': { title: 'IT & Software', items: ['Full Stack Developer', 'Frontend Developer', 'Backend Developer', 'UI/UX Designer'] },
+          'Sales & Marketing': { title: 'Sales & Marketing', items: ['Sales Executive', 'Digital Marketing', 'Business Development'] },
+          'Customer Support': { title: 'Customer Support', items: ['Telecaller', 'Customer Care Executive', 'Technical Support'] }
+        }
+      };
+
+      if (baselineDefaults[mainCategoryName]) {
+        return baselineDefaults[mainCategoryName];
+      }
     }
 
     return merged;

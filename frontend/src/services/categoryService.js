@@ -1,13 +1,44 @@
 import { getBackendUrl, getAdminBackendUrl } from './apiSetup';
 
 export const BASE_TAXONOMY = {
-  "Services": {},
-  "Products": {},
-  "Daily Needs": {},
-  "Food": {},
-  "Stay": {},
-  "Travel": {},
-  "Jobs": {}
+  "Products": {
+    "Electronics": ["Mobiles", "Laptops", "Audio & Headphones", "Wearables"],
+    "Fashion": ["Men's Wear", "Women's Wear", "Footwear", "Watches"],
+    "Home & Kitchen": ["Furniture", "Cookware", "Decor", "Bedding"],
+    "Groceries": ["Atta & Rice", "Oil & Ghee", "Snacks", "Beverages"],
+    "Beauty & Personal Care": ["Skincare", "Haircare", "Fragrances"]
+  },
+  "Services": {
+    "Home Services": ["Plumbing", "Electrician", "Carpentry", "Cleaning"],
+    "Beauty & Wellness": ["Salon for Women", "Men Grooming", "Spa & Massage"],
+    "Appliance Repair": ["AC Service", "Washing Machine", "Refrigerator"]
+  },
+  "Daily Needs": {
+    "Dairy & Bakery": ["Milk & Curd", "Bread & Butter", "Paneer & Cheese"],
+    "Fruits & Vegetables": ["Fresh Vegetables", "Fresh Fruits", "Exotic Produce"],
+    "Water & Beverages": ["Mineral Water", "Juices & Soft Drinks"]
+  },
+  "Food": {
+    "North Indian": ["Thali", "Paneer Dishes", "Tandoori & Naan"],
+    "South Indian": ["Dosa & Idli", "Vada", "Uttapam"],
+    "Biryani": ["Chicken Biryani", "Mutton Biryani", "Veg Biryani"],
+    "Chinese & Fast Food": ["Noodles & Momos", "Burgers & Fries", "Pizzas"]
+  },
+  "Stay": {
+    "Hotels": ["Budget Hotels", "Luxury Hotels", "Business Hotels"],
+    "Resorts": ["Beach Resorts", "Hill Station Resorts"],
+    "Villas & Homestays": ["Private Villas", "Heritage Homestays"]
+  },
+  "Travel": {
+    "Bus Tickets": ["AC Sleeper", "Non-AC Seater", "Express Buses"],
+    "Flight Bookings": ["Domestic Flights", "International Flights"],
+    "Cabs & Rentals": ["Outstation Cabs", "Local Rentals"]
+  },
+  "Jobs": {
+    "IT & Software": ["Full Stack Developer", "Frontend Developer", "Backend Developer", "UI/UX Designer"],
+    "Sales & Marketing": ["Sales Executive", "Digital Marketing", "Business Development"],
+    "Customer Support": ["Telecaller", "Customer Care Executive", "Technical Support"]
+  }
 };
 
 export const normalizeCategoryName = (rawName) => {
@@ -39,8 +70,9 @@ const resolveMainCategoryName = (c) => {
     return normName;
   }
 
-  if (c.level === 'sub' || c.subcategory) {
-    return 'Products';
+  if (c.parentName) {
+    const normParent = normalizeCategoryName(c.parentName);
+    if (canonicalMains.includes(normParent)) return normParent;
   }
 
   return normName;
@@ -84,7 +116,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
   dbMainNames.forEach(mainName => {
     const hasDbSubRecs = dbCategories.some(c => {
       const match = c && resolveMainCategoryName(c) === mainName;
-      return match && (c.subcategory || c.mainCategory || (c.level === 'main' && Array.isArray(c.children) && c.children.length > 0));
+      return match && c.level !== 'main' && (c.subcategory || c.mainCategory || (c.level === 'main' && Array.isArray(c.children) && c.children.length > 0));
     });
 
     if (hasDbSubRecs) {
@@ -114,13 +146,16 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
         if (!subCat || !subCat.name) return;
         const subName = subCat.name.trim();
         if (subCat.isActive === false || subCat.isDeleted || subCat.description === 'DELETED_HIERARCHY_MARKER') return;
+        if (normalizeCategoryName(subName) === normalizeCategoryName(mainName)) return;
 
         const childItems = [];
         if (Array.isArray(subCat.children)) {
           subCat.children.forEach(childCat => {
             if (!childCat || !childCat.name) return;
             if (childCat.isActive === false || childCat.isDeleted || childCat.description === 'DELETED_HIERARCHY_MARKER') return;
-            childItems.push(childCat.name.trim());
+            if (normalizeCategoryName(childCat.name) !== normalizeCategoryName(mainName)) {
+              childItems.push(childCat.name.trim());
+            }
           });
         }
 
@@ -135,14 +170,12 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
 
   // 5. Process Flat DB Records & Custom Main/Sub/Child Categories
   dbCategories.forEach(c => {
-    if (!c) return;
+    if (!c || c.level === 'main') return;
     const mainName = resolveMainCategoryName(c);
     if (!mainName) return;
 
     if (c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') {
-      if (c.level === 'main' && !c.subcategory) {
-        delete catTree[mainName];
-      } else if (c.subcategory && catTree[mainName]?.subcategories[c.subcategory.trim()]) {
+      if (c.subcategory && catTree[mainName]?.subcategories[c.subcategory.trim()]) {
         delete catTree[mainName].subcategories[c.subcategory.trim()];
       }
       return;
@@ -157,6 +190,8 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       subName = c.name.trim();
     }
 
+    if (normalizeCategoryName(subName) === normalizeCategoryName(mainName)) return;
+
     if (subName && subName !== 'ALL_SUBCATEGORIES_DELETED_MARKER') {
       if (!catTree[mainName].subcategories[subName]) {
         catTree[mainName].subcategories[subName] = {
@@ -167,7 +202,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       }
       if (c.subSubcategory && c.subSubcategory.trim()) {
         const childName = c.subSubcategory.trim();
-        if (!catTree[mainName].subcategories[subName].childCategories.includes(childName)) {
+        if (normalizeCategoryName(childName) !== normalizeCategoryName(mainName) && !catTree[mainName].subcategories[subName].childCategories.includes(childName)) {
           catTree[mainName].subcategories[subName].childCategories.push(childName);
         }
       }
