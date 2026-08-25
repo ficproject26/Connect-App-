@@ -986,18 +986,20 @@ export default function CustomerDashboard({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState('orders'); // 'orders' | 'settings' | 'card' | 'edit'
-  const [profileName, setProfileName] = useState(() => {
-    if (currentUser?.name && !/^\d+$/.test(currentUser.name) && currentUser.name !== 'Connect Member') {
-      return currentUser.name;
-    }
-    try {
-      const savedUser = localStorage.getItem('connect_current_user');
-      if (savedUser) {
-        const u = JSON.parse(savedUser);
-        if (u.name && !/^\d+$/.test(u.name) && u.name !== 'Connect Member') return u.name;
+  const resolveCustomerName = (uName, currentUserName, emailStr) => {
+    if (uName && uName !== 'Connect Member' && !/^\d+$/.test(uName)) return uName;
+    if (currentUserName && currentUserName !== 'Connect Member' && !/^\d+$/.test(currentUserName)) return currentUserName;
+    if (emailStr && emailStr.includes('@')) {
+      const prefix = emailStr.split('@')[0];
+      if (prefix && !/^\d+$/.test(prefix)) {
+        return prefix.charAt(0).toUpperCase() + prefix.slice(1);
       }
-    } catch (e) {}
-    return currentUser?.name || '';
+    }
+    return uName || currentUserName || 'Connect Member';
+  };
+
+  const [profileName, setProfileName] = useState(() => {
+    return resolveCustomerName(currentUser?.name, '', currentUser?.email);
   });
   const [profileEmail, setProfileEmail] = useState(() => {
     if (currentUser?.email && !currentUser.email.match(/^\d+@connect\.app$/)) {
@@ -1111,7 +1113,8 @@ export default function CustomerDashboard({
           .then(data => {
             if (data && data.status === 'success' && data.user) {
               const u = data.user;
-              setProfileName(u.name || currentUser.name || '');
+              const resolvedName = resolveCustomerName(u.name, currentUser?.name, u.email || currentUser?.email);
+              setProfileName(resolvedName);
               setProfileEmail(u.email || currentUser.email || '');
               setProfilePhone(sanitizePhoneInput(u.phone, u.pincode) || sanitizePhoneInput(currentUser?.phone, currentUser?.pincode));
               setProfilePhoto(u.avatar || u.photo || currentUser?.avatar || '');
@@ -1122,7 +1125,7 @@ export default function CustomerDashboard({
                 if (regAddressStr.trim()) {
                   dbAddrs = [{
                     id: 'addr_reg_' + (u.id || currentUser?.id || 'reg'),
-                    name: u.name || currentUser?.name || 'Connect Member',
+                    name: resolvedName,
                     phone: (u.phone || currentUser?.phone || '').replace('+91', '').trim(),
                     pincode: u.pincode || currentUser?.pincode || '',
                     locality: u.city || currentUser?.city || '',
@@ -1142,17 +1145,17 @@ export default function CustomerDashboard({
                 setSelectedCheckoutAddressId(dbAddrs[0].id);
               }
             } else {
-              setProfileName(currentUser.name || '');
+              const fallbackResolvedName = resolveCustomerName('', currentUser?.name, currentUser?.email);
+              setProfileName(fallbackResolvedName);
               setProfileEmail(currentUser.email || '');
               setProfilePhone(sanitizePhoneInput(currentUser.phone, currentUser.pincode));
-              setProfilePhoto(currentUser.avatar || currentUser.photo || '');
               setProfilePhoto(currentUser.avatar || currentUser.photo || '');
 
               const regAddressStr = currentUser?.address || currentUser?.registeredAddress || '';
               if (regAddressStr.trim()) {
                 const defaultRegAddr = {
                   id: 'addr_reg_' + (currentUser?.id || 'reg'),
-                  name: currentUser?.name || 'Connect Member',
+                  name: fallbackResolvedName,
                   phone: (currentUser?.phone || '').replace('+91', '').trim(),
                   pincode: currentUser?.pincode || '',
                   locality: currentUser?.city || '',
@@ -1172,7 +1175,8 @@ export default function CustomerDashboard({
             }
           })
           .catch(() => {
-            setProfileName(currentUser.name || '');
+            const fallbackResolvedName = resolveCustomerName('', currentUser?.name, currentUser?.email);
+            setProfileName(fallbackResolvedName);
             setProfileEmail(currentUser.email || '');
             setProfilePhone(currentUser.phone || '');
             setProfilePhoto(currentUser.avatar || currentUser.photo || '');
@@ -1181,7 +1185,7 @@ export default function CustomerDashboard({
             if (regAddressStr.trim()) {
               const defaultRegAddr = {
                 id: 'addr_reg_' + (currentUser?.id || 'reg'),
-                name: currentUser?.name || 'Connect Member',
+                name: fallbackResolvedName,
                 phone: (currentUser?.phone || '').replace('+91', '').trim(),
                 pincode: currentUser?.pincode || '',
                 locality: currentUser?.city || '',
@@ -10630,11 +10634,14 @@ wishlistProducts.forEach(item => addToCart(item));
                             })
                           }).then(res => res.ok ? res.json() : null)
                             .then(data => {
-                              if (data && data.user) {
-                                login(data.user, 'customer');
-                              }
+                              const updatedUser = data?.user || { ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto };
+                              login(updatedUser, 'customer');
                             })
-                            .catch(() => {});
+                            .catch(() => {
+                              login({ ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto }, 'customer');
+                            });
+                        } else {
+                          login({ ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto }, 'customer');
                         }
 
                         triggerNotification("Profile details saved successfully!");
@@ -10654,7 +10661,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             {profilePhoto ? (
                               <img src={profilePhoto} alt="Profile Avatar" className="w-full h-full object-cover" />
                             ) : (
-                              <span>{(currentUser?.name || profileName).charAt(0).toUpperCase() || 'U'}</span>
+                              <span>{(profileName || currentUser?.name || 'Connect').charAt(0).toUpperCase() || 'U'}</span>
                             )}
                           </div>
                           <div className="space-y-1">

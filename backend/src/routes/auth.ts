@@ -696,9 +696,16 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
     }
 
     if (!dbUser) {
+      let fallbackName = 'Connect Member';
+      if (target.includes('@')) {
+        const prefix = target.split('@')[0];
+        if (prefix && !/^\d+$/.test(prefix)) {
+          fallbackName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        }
+      }
       const defaultProfile = {
         id: target,
-        name: 'Connect Member',
+        name: fallbackName,
         email: target.includes('@') ? target : '',
         phone: isMobileTarget ? cleanDigits.slice(-10) : '',
         avatar: '',
