@@ -1407,18 +1407,21 @@ export default function CustomerDashboard({
   const [activeStayCategory, setActiveStayCategory] = useState('ALL');
   const [activeTravelCategory, setActiveTravelCategory] = useState('ALL');
 
-  useEffect(() => {
-    const fetchDbCategories = async () => {
-      try {
-        const data = await fetchAdminCategories();
-        if (Array.isArray(data) && data.length > 0) {
-          setDbCategories(data);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch dynamic categories in customer dashboard", err);
+  const fetchDbCategories = useCallback(async () => {
+    try {
+      const data = await fetchAdminCategories();
+      if (Array.isArray(data)) {
+        setDbCategories(data);
       }
-    };
+    } catch (err) {
+      console.warn("Failed to fetch dynamic categories in customer dashboard", err);
+    }
+  }, []);
 
+  // Poll dynamic categories every 3 seconds for instant real-time synchronization
+  useAutoRefresh(fetchDbCategories, 3000);
+
+  useEffect(() => {
     const fetchDbBanners = async () => {
       try {
         let res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
@@ -1469,7 +1472,7 @@ export default function CustomerDashboard({
     return () => {
       if (socket) socket.disconnect();
     };
-  }, []);
+  }, [fetchDbCategories]);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
@@ -1974,114 +1977,92 @@ export default function CustomerDashboard({
     let merged = {};
     const targetNorm = normalizeMainCatName(mainCategoryName);
 
-    // 1. Process 3-Tier Hierarchical Structure from DB (if children array is populated)
-    if (Array.isArray(dbCategories) && dbCategories.length > 0) {
-      const rootMain = dbCategories.find(m => m && m.level === 'main' && normalizeMainCatName(m.name) === targetNorm && Array.isArray(m.children) && m.children.length > 0);
-      if (rootMain && rootMain.isActive !== false && !rootMain.isDeleted) {
-        if (Array.isArray(rootMain.children)) {
-          rootMain.children.forEach(subNode => {
-            if (!subNode || !subNode.name) return;
-            const subName = subNode.name.trim();
+    if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
+      return merged;
+    }
 
-            if (subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') {
-              return;
-            }
+    // Helper to safely append a subcategory & children to merged
+    const addSubCategory = (subNameRaw, childItems = []) => {
+      if (!subNameRaw) return;
+      const subName = subNameRaw.trim();
+      if (!subName || subName === 'ALL_SUBCATEGORIES_DELETED_MARKER') return;
+      if (normalizeMainCatName(subName) === targetNorm) return;
 
-            // Skip self-referential subcategory names (e.g. 'Products' under 'Products')
-            if (normalizeMainCatName(subName) === targetNorm) {
-              return;
-            }
-
-            const items = [];
-            if (Array.isArray(subNode.children)) {
-              subNode.children.forEach(childNode => {
-                if (!childNode || !childNode.name) return;
-                const childName = childNode.name.trim();
-                if (childNode.isActive === false || childNode.isDeleted || childNode.description === 'DELETED_HIERARCHY_MARKER') {
-                  return;
-                }
-                if (normalizeMainCatName(childName) !== targetNorm && !items.includes(childName)) {
-                  items.push(childName);
-                }
-              });
-            }
-
-            merged[subName] = {
-              title: subName,
-              items: items
-            };
-          });
-        }
+      const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
+      if (!merged[existingKey]) {
+        merged[existingKey] = {
+          title: subName,
+          items: []
+        };
       }
-    }
 
-    // 2. Process Flat DB Records for this main category
-    if (Array.isArray(dbCategories) && dbCategories.length > 0) {
-      const activeFlatSubs = dbCategories.filter(c => {
-        if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return false;
-        if (c.level === 'main') return false; // Exclude main category root records
-
-        // Resolve main category of this record strictly
-        const recMain = normalizeMainCatName(c.mainCategory || c.main_category || c.parentName || '');
-        if (recMain) {
-          if (recMain !== targetNorm) return false;
-        } else {
-          // If no explicit main category on flat record, do NOT dump indiscriminately into targetNorm unless it matches
-          const subNameNorm = normalizeMainCatName(c.subcategory || c.name || '');
-          const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-          if (canonicalMains.includes(subNameNorm) && subNameNorm !== targetNorm) return false;
-        }
-
-        const subName = (c.subcategory || c.name || '').trim();
-        if (!subName || subName === 'ALL_SUBCATEGORIES_DELETED_MARKER') return false;
-        if (normalizeMainCatName(subName) === targetNorm) return false; // Exclude self-referential subcategory
-        return true;
-      });
-
-      activeFlatSubs.forEach(c => {
-        const subName = (c.subcategory || c.name || '').trim();
-        if (normalizeMainCatName(subName) === targetNorm) return;
-
-        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
-        if (!merged[existingKey]) {
-          merged[existingKey] = {
-            title: subName,
-            items: []
-          };
-        }
-
-        if (c.subSubcategory && c.subSubcategory.trim()) {
-          const childName = c.subSubcategory.trim();
-          if (normalizeMainCatName(childName) !== targetNorm && !merged[existingKey].items.includes(childName)) {
-            merged[existingKey].items.push(childName);
+      if (Array.isArray(childItems)) {
+        childItems.forEach(ch => {
+          if (!ch) return;
+          const chName = (typeof ch === 'string' ? ch : ch.name || ch.subSubcategory || '').trim();
+          if (chName && normalizeMainCatName(chName) !== targetNorm && !merged[existingKey].items.includes(chName)) {
+            merged[existingKey].items.push(chName);
           }
+        });
+      }
+    };
+
+    // 1. Process Root Main Category Nodes & their .children arrays
+    const rootMainNodes = dbCategories.filter(c => {
+      if (!c || c.isActive === false || c.isDeleted) return false;
+      const nameNorm = normalizeMainCatName(c.name || c.mainCategory || '');
+      if (nameNorm === targetNorm && (!c.parentId || c.level === 'main' || c.level === 1 || c.isMainCategory === true)) {
+        return true;
+      }
+      return false;
+    });
+
+    const rootMainIds = new Set(rootMainNodes.map(r => r._id ? r._id.toString() : null).filter(Boolean));
+
+    rootMainNodes.forEach(root => {
+      if (Array.isArray(root.children)) {
+        root.children.forEach(subNode => {
+          if (!subNode || subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') return;
+          const subName = (subNode.name || subNode.subcategory || '').trim();
+          addSubCategory(subName, subNode.children);
+        });
+      }
+    });
+
+    // 2. Process records with parentId matching Root Main Category Node IDs
+    if (rootMainIds.size > 0) {
+      dbCategories.forEach(c => {
+        if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
+        if (c.parentId && rootMainIds.has(c.parentId.toString())) {
+          const subName = (c.name || c.subcategory || '').trim();
+          const childrenOfSub = c._id ? dbCategories.filter(ch => ch && ch.parentId && ch.parentId.toString() === c._id.toString()) : [];
+          addSubCategory(subName, [...(c.children || []), ...childrenOfSub]);
         }
       });
     }
 
-    // 3. Supplement with categories extracted from live vendor products for this main category
+    // 3. Process Flat DB Records with explicit mainCategory or parentName matching targetNorm
+    dbCategories.forEach(c => {
+      if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
+      if (c.level === 'main' && (!c.subcategory || normalizeMainCatName(c.subcategory) === targetNorm)) return;
+
+      const recMain = normalizeMainCatName(c.mainCategory || c.main_category || c.parentName || '');
+      if (recMain === targetNorm) {
+        const subName = (c.subcategory || c.name || '').trim();
+        const childName = (c.subSubcategory || '').trim();
+        addSubCategory(subName, childName ? [childName] : (c.children || []));
+      }
+    });
+
+    // 4. Supplement with categories extracted from live vendor products for this main category
     if (Array.isArray(products) && products.length > 0) {
       products.forEach(p => {
         if (!p) return;
         const pMain = normalizeMainCatName(p.subNavbarCategory || p.mainCategory || p.tag || '');
-        if (pMain !== targetNorm) return;
-
-        const subName = (p.category || p.subcategory || '').trim();
-        if (!subName || normalizeMainCatName(subName) === targetNorm) return;
-
-        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
-        if (!merged[existingKey]) {
-          merged[existingKey] = {
-            title: subName,
-            items: []
-          };
-        }
-
-        if (p.subSubcategory && p.subSubcategory.trim()) {
-          const childName = p.subSubcategory.trim();
-          if (normalizeMainCatName(childName) !== targetNorm && !merged[existingKey].items.includes(childName)) {
-            merged[existingKey].items.push(childName);
-          }
+        if (pMain === targetNorm) {
+          const subName = (p.category || p.subcategory || '').trim();
+          const childName = (p.subSubcategory || '').trim();
+          addSubCategory(subName, childName ? [childName] : []);
         }
       });
     }
