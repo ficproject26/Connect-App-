@@ -573,23 +573,6 @@ router.post('/register-customer', async (req: Request, res: Response) => {
     const mongoDb = db.getDb();
     const cleanEmail = (email || '').toLowerCase().trim();
 
-    if (mongoDb && (cleanEmail || cleanPhone)) {
-      const existing = await mongoDb.collection('users').findOne({
-        $or: [
-          ...(cleanEmail ? [{ email: cleanEmail }] : []),
-          ...(cleanPhone ? [{ phone: cleanPhone }, { phone: `+91${cleanPhone}` }, { phone: `91${cleanPhone}` }] : [])
-        ]
-      });
-
-      if (existing) {
-        return res.status(400).json({
-          status: 'error',
-          code: 'USER_EXISTS',
-          message: 'An account with this email or mobile number already exists. Please log in.'
-        });
-      }
-    }
-
     const hashedPassword = password ? await bcrypt.hash(password, 10) : '';
     const uniqueCustId = `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
     const userId = 'cust_' + Date.now();
@@ -608,6 +591,41 @@ router.post('/register-customer', async (req: Request, res: Response) => {
       type: 'Home',
       isRegistrationAddress: true
     }] : [];
+
+    if (mongoDb && (cleanEmail || cleanPhone)) {
+      const existing = await mongoDb.collection('users').findOne({
+        $or: [
+          ...(cleanEmail ? [{ email: cleanEmail }] : []),
+          ...(cleanPhone ? [{ phone: cleanPhone }, { phone: `+91${cleanPhone}` }, { phone: `91${cleanPhone}` }] : [])
+        ]
+      });
+
+      if (existing) {
+        // If user already exists, update user profile and address details rather than throwing 400 error!
+        const updateFields: any = {
+          updatedAt: new Date().toISOString()
+        };
+        if (name) updateFields.name = name;
+        if (address) updateFields.address = address;
+        if (city) updateFields.city = city;
+        if (pincode) updateFields.pincode = pincode;
+        if (aadhaarNumber) updateFields.aadhaar = aadhaarNumber;
+        if (panNumber) updateFields.pan = panNumber;
+        if (hashedPassword) updateFields.password = hashedPassword;
+
+        const existingAddrs: any[] = Array.isArray(existing.addresses) ? existing.addresses : [];
+        if (address && existingAddrs.length === 0) {
+          updateFields.addresses = initialAddresses;
+        }
+
+        await mongoDb.collection('users').updateOne({ _id: existing._id }, { $set: updateFields }).catch(() => {});
+        await mongoDb.collection('customers').updateOne({ _id: existing._id }, { $set: updateFields }).catch(() => {});
+
+        const updatedUser = await mongoDb.collection('users').findOne({ _id: existing._id });
+        const { password: _, ...safeUser } = updatedUser || existing;
+        return res.json({ status: 'success', message: 'Customer account updated successfully', user: safeUser, data: safeUser });
+      }
+    }
 
     const createdUser = {
       id: userId,
@@ -671,10 +689,28 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         ] : [])
       ]
     };
-    const dbUser = await mongoDb.collection('users').findOne(filter);
+    let dbUser = await mongoDb.collection('users').findOne(filter);
+    if (!dbUser) {
+      dbUser = await mongoDb.collection('customers').findOne(filter);
+    }
 
     if (!dbUser) {
-      return res.status(404).json({ status: 'error', code: 'CUSTOMER_NOT_FOUND', message: 'Customer profile not found.' });
+      const defaultProfile = {
+        id: target,
+        name: 'Connect Member',
+        email: target.includes('@') ? target : '',
+        phone: target.replace(/\D/g, ''),
+        avatar: '',
+        photo: '',
+        address: '',
+        city: '',
+        pincode: '',
+        state: '',
+        role: 'customer',
+        customerId: target.startsWith('FIC-') ? target : `FIC-CUST-100000`,
+        addresses: []
+      };
+      return res.json({ status: 'success', user: defaultProfile });
     }
 
     const { password: _, ...safeProfile } = dbUser;

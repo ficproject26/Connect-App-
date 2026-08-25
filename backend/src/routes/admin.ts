@@ -4,8 +4,8 @@ import { securityManager } from '../security/securityManager';
 
 const router = Router();
 
-// GET: /api/admin/categories
-router.get('/categories', async (req: Request, res: Response) => {
+// GET: /api/admin/categories & /api/admin/public/categories
+router.get(['/categories', '/public/categories'], async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {

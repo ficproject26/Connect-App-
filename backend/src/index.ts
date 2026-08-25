@@ -70,6 +70,37 @@ app.use('/api/delivery-partners', deliveryRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/maps', mapsRouter);
 
+// Public Categories Endpoints
+app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const all = await mongoDb.collection('categories').find().sort({ sortOrder: 1, name: 1 }).toArray();
+      const map: Record<string, any> = {};
+      const roots: any[] = [];
+
+      all.forEach((c: any) => {
+        c.children = [];
+        map[c._id.toString()] = c;
+      });
+
+      all.forEach((c: any) => {
+        if (c.parentId && map[c.parentId.toString()]) {
+          map[c.parentId.toString()].children.push(c);
+        } else if (!c.parentId) {
+          roots.push(c);
+        }
+      });
+
+      return res.json(roots.length > 0 ? roots : all);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching categories in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
 // Public Products Endpoints (Customer & Vendor products)
 app.get(['/api/public/products', '/api/products'], async (req, res) => {
   try {
