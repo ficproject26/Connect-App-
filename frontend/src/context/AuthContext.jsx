@@ -74,8 +74,13 @@ export function AuthProvider({ children }) {
       inputUser = { email: userInfo };
     }
 
-    const rawTarget = (inputUser.phone || inputUser.email || (typeof userInfo === 'string' ? userInfo : '')).toString().trim();
-    const cleanDigits = rawTarget.replace(/\D/g, '');
+    const extractValidMobile = (val) => {
+      if (!val) return '';
+      const digits = String(val).replace(/\D/g, '');
+      return digits.length >= 10 ? digits.slice(-10) : '';
+    };
+
+    const validMobile = extractValidMobile(inputUser.phone) || extractValidMobile(typeof userInfo === 'string' ? userInfo : '');
 
     let finalName = inputUser.name;
     if (!finalName || finalName === 'OTP Verified Member' || /^\d+$/.test(finalName)) {
@@ -93,7 +98,7 @@ export function AuthProvider({ children }) {
       : (regAddressStr.trim() ? [{
           id: 'addr_reg_' + Date.now(),
           name: finalName,
-          phone: (inputUser.phone || cleanDigits || '').replace('+91', '').trim(),
+          phone: validMobile,
           pincode: inputUser.pincode || '',
           locality: inputUser.city || '',
           address: regAddressStr,
@@ -108,8 +113,8 @@ export function AuthProvider({ children }) {
     const finalUser = {
       ...inputUser,
       name: finalName,
-      email: inputUser.email || (cleanDigits ? `${cleanDigits}@connect.app` : 'customer@connect.app'),
-      phone: inputUser.phone || cleanDigits || '',
+      email: inputUser.email || (validMobile ? `${validMobile}@connect.app` : 'customer@connect.app'),
+      phone: validMobile,
       address: inputUser.address || '',
       city: inputUser.city || '',
       pincode: inputUser.pincode || '',
@@ -117,7 +122,7 @@ export function AuthProvider({ children }) {
       role: role || inputUser.role || 'customer',
       customerId: (inputUser.customerId && inputUser.customerId !== 'FIC-CUST-750684' && inputUser.customerId !== 'FIC-CUST-849201')
         ? inputUser.customerId 
-        : getOrGenerateCustomerId(inputUser.email || cleanDigits || finalName),
+        : getOrGenerateCustomerId(inputUser.email || validMobile || finalName),
       addresses: initialAddresses
     };
 

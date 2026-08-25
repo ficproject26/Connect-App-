@@ -676,13 +676,14 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
     }
 
     const cleanDigits = target.replace(/\D/g, '');
+    const isMobileTarget = cleanDigits.length >= 10;
     const filter: any = {
       $or: [
         { id: target },
         { customerId: target },
         { registrationId: target },
         { email: target.toLowerCase() },
-        ...(cleanDigits ? [
+        ...(isMobileTarget ? [
           { phone: cleanDigits },
           { phone: `+91${cleanDigits}` },
           { phone: `91${cleanDigits}` }
@@ -699,7 +700,7 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         id: target,
         name: 'Connect Member',
         email: target.includes('@') ? target : '',
-        phone: target.replace(/\D/g, ''),
+        phone: isMobileTarget ? cleanDigits.slice(-10) : '',
         avatar: '',
         photo: '',
         address: '',
@@ -714,6 +715,12 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
     }
 
     const { password: _, ...safeProfile } = dbUser;
+
+    // Sanitize returned phone so pincodes or IDs like 226312 are never exposed as phone number
+    const userPhoneDigits = (safeProfile.phone || '').toString().replace(/\D/g, '');
+    if (userPhoneDigits.length < 10 || userPhoneDigits === String(safeProfile.pincode)) {
+      safeProfile.phone = '';
+    }
     
     let profileAddresses: any[] = Array.isArray(safeProfile.addresses) ? safeProfile.addresses : [];
 

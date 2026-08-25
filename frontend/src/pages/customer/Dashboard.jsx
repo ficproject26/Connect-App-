@@ -1040,12 +1040,21 @@ export default function CustomerDashboard({
     return getOrGenerateCustomerId(currentUser || 'customer');
   }, [currentUser]);
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
+  const sanitizePhoneInput = (val, pincodeVal = '') => {
+    if (!val) return '';
+    const digits = String(val).replace(/\D/g, '');
+    if (digits.length < 10 || digits === String(pincodeVal)) return '';
+    return val;
+  };
+
   const [profilePhone, setProfilePhone] = useState(() => {
-    if (currentUser?.phone) return currentUser.phone;
+    const raw = currentUser?.phone || '';
+    const clean = raw.replace(/\D/g, '');
+    if (clean.length >= 10 && clean !== String(currentUser?.pincode)) return raw;
     if (currentUser) {
       const userKey = getUserStorageKey(currentUser);
       const savedPhone = localStorage.getItem(`connect_profile_phone_${userKey}`);
-      if (savedPhone) return savedPhone;
+      if (savedPhone && savedPhone.replace(/\D/g, '').length >= 10) return savedPhone;
     }
     return '';
   });
@@ -1104,7 +1113,7 @@ export default function CustomerDashboard({
               const u = data.user;
               setProfileName(u.name || currentUser.name || '');
               setProfileEmail(u.email || currentUser.email || '');
-              setProfilePhone(u.phone || currentUser.phone || '');
+              setProfilePhone(sanitizePhoneInput(u.phone, u.pincode) || sanitizePhoneInput(currentUser?.phone, currentUser?.pincode));
               setProfilePhoto(u.avatar || u.photo || currentUser?.avatar || '');
 
               let dbAddrs = Array.isArray(u.addresses) ? u.addresses : [];
@@ -1135,7 +1144,8 @@ export default function CustomerDashboard({
             } else {
               setProfileName(currentUser.name || '');
               setProfileEmail(currentUser.email || '');
-              setProfilePhone(currentUser.phone || '');
+              setProfilePhone(sanitizePhoneInput(currentUser.phone, currentUser.pincode));
+              setProfilePhoto(currentUser.avatar || currentUser.photo || '');
               setProfilePhoto(currentUser.avatar || currentUser.photo || '');
 
               const regAddressStr = currentUser?.address || currentUser?.registeredAddress || '';
@@ -10735,7 +10745,9 @@ wishlistProducts.forEach(item => addToCart(item));
                           <input 
                             type="text" 
                             value={profilePhone}
-                            onChange={(e) => setProfilePhone(e.target.value)}
+                            onChange={(e) => setProfilePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            placeholder="Enter 10-digit mobile number"
+                            maxLength={10}
                             className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 focus:outline-none focus:border-amber-500 font-medium text-slate-800 dark:text-slate-100"
                           />
                         </div>
