@@ -8,6 +8,7 @@ import { productService, isRealVendorProduct } from '../../services/productServi
 import { socketService } from '../../services/socketService';
 import { getActiveMainCategories, fetchAdminCategories } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import WalletPage from './Wallet';
 import Offers from './Offers';
 import LoginModal from '../../components/auth/LoginModal';
@@ -494,140 +495,113 @@ export default function CustomerDashboard({
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [isPreviewResumeOpen, setIsPreviewResumeOpen] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    let isFetching = false;
-    const loadVendorProducts = async () => {
-      if (isFetching) return;
-      isFetching = true;
-      try {
-        const res = await productService.getProducts(true);
-        if (isMounted) {
-          setIsLoadingProducts(false);
-          if (res && res.success && Array.isArray(res.products)) {
-            const patched = res.products.map(p => {
-              const updated = { ...p };
-              // Correct Eggs category
-              if (p.name && p.name.toLowerCase().includes('egg') && p.category === 'Rice') {
-                updated.category = 'Eggs';
-              }
-              // Correct doctor images
-              if (p.subNavbarCategory === 'Services' && (!p.image || p.image.includes('unsplash.com/photo-1523275335684-37898b6baf30'))) {
-                if (p.name && p.name.toLowerCase().includes('robert')) {
-                  updated.image = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60';
-                } else if (p.name && p.name.toLowerCase().includes('james')) {
-                  updated.image = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60';
-                } else if (p.name && p.name.toLowerCase().includes('emily')) {
-                  updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
-                } else {
-                  updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
-                }
-              }
-              // Assign foodType (Veg / Non-Veg) for Food items
-              if (p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani' || p.category === 'Biriyani' || p.tag === 'Food') {
-                const nameLower = (p.name || '').toLowerCase();
-                const descLower = (p.description || '').toLowerCase();
-                const catLower = (p.category || '').toLowerCase();
-                const ftLower = (p.foodType || p.dietary || '').toLowerCase();
-
-                const isExplicitlyNonVeg = ftLower.includes('non') || p.isVeg === false || p.veg === false;
-                const isNonVegKeyword = 
-                  nameLower.includes('chicken') || 
-                  nameLower.includes('mutton') || 
-                  nameLower.includes('egg') || 
-                  nameLower.includes('fish') || 
-                  nameLower.includes('meat') || 
-                  nameLower.includes('prawn') ||
-                  nameLower.includes('crab') ||
-                  nameLower.includes('non-veg') ||
-                  nameLower.includes('non veg') ||
-                  catLower.includes('non-veg') ||
-                  catLower.includes('non veg') ||
-                  descLower.includes('chicken') ||
-                  descLower.includes('mutton') ||
-                  ((nameLower.includes('biryani') || nameLower.includes('biriyani')) && !nameLower.includes('veg') && !descLower.includes('veg biryani') && !descLower.includes('veg biriyani'));
-
-                if (isExplicitlyNonVeg || isNonVegKeyword) {
-                  updated.foodType = 'Non-Veg';
-                } else {
-                  updated.foodType = 'Veg';
-                }
-              }
-              // Patch Travel (Bus) items with fromCity, toCity, busType, busClass
-              if (p.subNavbarCategory === 'Travel') {
-                updated.fromCity = p.fromCity || 'Bangalore';
-                updated.toCity = p.toCity || 'Chennai';
-                updated.busType = (p.description?.toLowerCase().includes('non-ac') || p.name?.toLowerCase().includes('non-ac')) ? 'Non-AC' : 'AC';
-                updated.busClass = (p.description?.toLowerCase().includes('seater') || p.name?.toLowerCase().includes('seater')) ? 'Seater' : 'Sleeper';
-              }
-              return updated;
-            });
-            setProducts(patched);
+  const loadVendorProducts = useCallback(async () => {
+    try {
+      const res = await productService.getProducts(true);
+      setIsLoadingProducts(false);
+      if (res && res.success && Array.isArray(res.products)) {
+        const patched = res.products.map(p => {
+          const updated = { ...p };
+          // Correct Eggs category
+          if (p.name && p.name.toLowerCase().includes('egg') && p.category === 'Rice') {
+            updated.category = 'Eggs';
           }
-        }
-      } catch (err) {
-        if (isMounted) setIsLoadingProducts(false);
-      } finally {
-        isFetching = false;
+          // Correct doctor images
+          if (p.subNavbarCategory === 'Services' && (!p.image || p.image.includes('unsplash.com/photo-1523275335684-37898b6baf30'))) {
+            if (p.name && p.name.toLowerCase().includes('robert')) {
+              updated.image = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60';
+            } else if (p.name && p.name.toLowerCase().includes('james')) {
+              updated.image = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60';
+            } else if (p.name && p.name.toLowerCase().includes('emily')) {
+              updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
+            } else {
+              updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
+            }
+          }
+          // Assign foodType (Veg / Non-Veg) for Food items
+          if (p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani' || p.category === 'Biriyani' || p.tag === 'Food') {
+            const nameLower = (p.name || '').toLowerCase();
+            const descLower = (p.description || '').toLowerCase();
+            const catLower = (p.category || '').toLowerCase();
+            const ftLower = (p.foodType || p.dietary || '').toLowerCase();
+
+            const isExplicitlyNonVeg = ftLower.includes('non') || p.isVeg === false || p.veg === false;
+            const isNonVegKeyword = 
+              nameLower.includes('chicken') || 
+              nameLower.includes('mutton') || 
+              nameLower.includes('egg') || 
+              nameLower.includes('fish') || 
+              nameLower.includes('meat') || 
+              nameLower.includes('prawn') ||
+              nameLower.includes('crab') ||
+              nameLower.includes('non-veg') ||
+              nameLower.includes('non veg') ||
+              catLower.includes('non-veg') ||
+              catLower.includes('non veg') ||
+              descLower.includes('chicken') ||
+              descLower.includes('mutton') ||
+              ((nameLower.includes('biryani') || nameLower.includes('biriyani')) && !nameLower.includes('veg') && !descLower.includes('veg biryani') && !descLower.includes('veg biriyani'));
+
+            if (isExplicitlyNonVeg || isNonVegKeyword) {
+              updated.foodType = 'Non-Veg';
+            } else {
+              updated.foodType = 'Veg';
+            }
+          }
+          // Patch Travel (Bus) items with fromCity, toCity, busType, busClass
+          if (p.subNavbarCategory === 'Travel') {
+            updated.fromCity = p.fromCity || 'Bangalore';
+            updated.toCity = p.toCity || 'Chennai';
+            updated.busType = (p.description?.toLowerCase().includes('non-ac') || p.name?.toLowerCase().includes('non-ac')) ? 'Non-AC' : 'AC';
+            updated.busClass = (p.description?.toLowerCase().includes('seater') || p.name?.toLowerCase().includes('seater')) ? 'Seater' : 'Sleeper';
+          }
+          return updated;
+        });
+        setProducts(patched);
       }
-    };
-
-    loadVendorProducts();
-
-    // Poll every 10 seconds for real-time vendor updates
-    const intervalId = setInterval(loadVendorProducts, 10000);
-
-    // Refetch immediately when customer switches back to window/tab
-    const handleFocus = () => loadVendorProducts();
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') loadVendorProducts();
-    };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
+    } catch (err) {
+      setIsLoadingProducts(false);
+    }
   }, []);
+
+  // Poll vendor products every 5 seconds with tab visibility tracking
+  useAutoRefresh(loadVendorProducts, 5000);
 
   const [adminOffers, setAdminOffers] = useState([]);
   const [adminAds, setAdminAds] = useState([]);
 
-  useEffect(() => {
-    const fetchAdminPromotions = async () => {
-      try {
-        let resOffers = await fetch(`${getAdminBackendUrl()}/api/admin/public/exclusive-offers`).catch(() => null);
-        if (!resOffers || !resOffers.ok) {
-          resOffers = await fetch(`/api/admin/public/exclusive-offers`).catch(() => null);
-        }
-        if (resOffers && resOffers.ok) {
-          const data = await resOffers.json();
-          if (Array.isArray(data)) {
-            setAdminOffers(data);
-          }
-        }
-      } catch (err) {
-        console.warn("Could not fetch live admin offers:", err);
+  const fetchAdminPromotions = useCallback(async () => {
+    try {
+      let resOffers = await fetch(`${getAdminBackendUrl()}/api/admin/public/exclusive-offers`).catch(() => null);
+      if (!resOffers || !resOffers.ok) {
+        resOffers = await fetch(`/api/admin/public/exclusive-offers`).catch(() => null);
       }
+      if (resOffers && resOffers.ok) {
+        const data = await resOffers.json();
+        if (Array.isArray(data)) {
+          setAdminOffers(data);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch live admin offers:", err);
+    }
 
-      try {
-        const urlAds = `${getAdminBackendUrl()}/api/admin/public/ads`;
-        const resAds = await fetch(urlAds);
-        if (resAds.ok) {
-          const dataAds = await resAds.json();
-          if (Array.isArray(dataAds) && dataAds.length > 0) {
-            setAdminAds(dataAds);
-          }
+    try {
+      const urlAds = `${getAdminBackendUrl()}/api/admin/public/ads`;
+      const resAds = await fetch(urlAds).catch(() => null);
+      if (resAds && resAds.ok) {
+        const dataAds = await resAds.json();
+        if (Array.isArray(dataAds) && dataAds.length > 0) {
+          setAdminAds(dataAds);
         }
-      } catch (err) {
-        console.warn("Could not fetch live admin ads:", err);
       }
-    };
-    fetchAdminPromotions();
+    } catch (err) {
+      console.warn("Could not fetch live admin ads:", err);
+    }
   }, []);
+
+  // Poll admin promotions every 5 seconds with tab visibility tracking
+  useAutoRefresh(fetchAdminPromotions, 5000);
 
   useEffect(() => {
     if (theme === 'dark') {

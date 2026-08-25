@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Shield, Layers, Users, ShoppingBag, BarChart3, Settings, 
   Plus, Edit3, Trash2, CheckCircle2, XCircle, Search, RefreshCw, Sparkles, Tag, Gift 
@@ -6,6 +6,7 @@ import {
 import ResponsiveTable from '../../components/common/ResponsiveTable';
 import { fetchAdminCategories } from '../../services/categoryService';
 import { getAdminBackendUrl } from '../../services/apiSetup';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function AdminDashboardView({ onNotification }) {
   const [activeTab, setActiveTab] = useState('categories'); // categories | offers | security | vendors | agents | settings
@@ -44,10 +45,11 @@ export default function AdminDashboardView({ onNotification }) {
     }
   };
 
-  useEffect(() => {
-    loadCategories();
-    loadOffers();
+  const refreshAdminData = useCallback(async () => {
+    await Promise.allSettled([loadCategories(), loadOffers()]);
   }, []);
+
+  useAutoRefresh(refreshAdminData, 5000);
 
   const handleCreateOffer = async (e) => {
     e.preventDefault();

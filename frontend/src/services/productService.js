@@ -224,9 +224,11 @@ const sanitizeProduct = (p) => {
   return updated;
 };
 
+let activeGetProductsPromise = null;
+
 export const productService = {
   clearCache: () => {
-    // No-op: localStorage caching disabled in favor of live MongoDB queries
+    activeGetProductsPromise = null;
   },
 
   getCachedProducts: () => {
@@ -234,47 +236,59 @@ export const productService = {
   },
 
   getProducts: async () => {
-    const filterVendorAddedOnly = (fetchedList) => {
-      const sanitized = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
-      return sanitized.filter(isRealVendorProduct);
-    };
-
-    const baseVendorUrl = getVendorBackendUrl();
-    const baseUrl = getBackendUrl();
-    const endpoints = [
-      '/api/public/products',
-      baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
-      baseUrl ? `${baseUrl}/api/public/products` : null
-    ];
-    const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
-
-    for (const endpoint of uniqueEndpoints) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-        const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
-          signal: controller.signal,
-          cache: 'no-store'
-        }).catch(() => null);
-        clearTimeout(timeoutId);
-
-        if (res && res.status === 401) {
-          continue;
-        }
-
-        if (res && res.ok) {
-          const data = await res.json().catch(() => null);
-          const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
-          if (Array.isArray(rawList)) {
-            const vendorProducts = filterVendorAddedOnly(rawList);
-            return { success: true, products: vendorProducts, source: 'live' };
-          }
-        }
-      } catch (err) {}
+    if (activeGetProductsPromise) {
+      return activeGetProductsPromise;
     }
 
-    return { success: true, products: [], source: 'empty' };
+    activeGetProductsPromise = (async () => {
+      try {
+        const filterVendorAddedOnly = (fetchedList) => {
+          const sanitized = Array.isArray(fetchedList) ? fetchedList.map(sanitizeProduct) : [];
+          return sanitized.filter(isRealVendorProduct);
+        };
+
+        const baseVendorUrl = getVendorBackendUrl();
+        const baseUrl = getBackendUrl();
+        const endpoints = [
+          '/api/public/products',
+          baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
+          baseUrl ? `${baseUrl}/api/public/products` : null
+        ];
+        const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
+
+        for (const endpoint of uniqueEndpoints) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+            const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
+              signal: controller.signal,
+              cache: 'no-store'
+            }).catch(() => null);
+            clearTimeout(timeoutId);
+
+            if (res && res.status === 401) {
+              continue;
+            }
+
+            if (res && res.ok) {
+              const data = await res.json().catch(() => null);
+              const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
+              if (Array.isArray(rawList)) {
+                const vendorProducts = filterVendorAddedOnly(rawList);
+                return { success: true, products: vendorProducts, source: 'live' };
+              }
+            }
+          } catch (err) {}
+        }
+
+        return { success: true, products: [], source: 'empty' };
+      } finally {
+        activeGetProductsPromise = null;
+      }
+    })();
+
+    return activeGetProductsPromise;
   },
 
   deleteAllProducts: async () => {

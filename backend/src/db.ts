@@ -225,25 +225,49 @@ class DatabaseManager {
   private async createIndexes() {
     if (!this.mongoDb) return;
     try {
-      await this.mongoDb.collection('vendors').createIndex({ id: 1 }, { unique: true });
-      await this.mongoDb.collection('delivery_partners').createIndex({ id: 1 }, { unique: true });
+      await this.mongoDb.collection('vendors').createIndex({ id: 1 }, { unique: true, sparse: true });
+      await this.mongoDb.collection('vendors').createIndex({ status: 1 });
+      await this.mongoDb.collection('vendors').createIndex({ email: 1 });
+      await this.mongoDb.collection('vendors').createIndex({ mobile: 1 });
+
+      await this.mongoDb.collection('delivery_partners').createIndex({ id: 1 }, { unique: true, sparse: true });
       await this.mongoDb.collection('delivery_partners').createIndex({ vendor_id: 1 });
       await this.mongoDb.collection('delivery_partners').createIndex({ status: 1, availability: 1 });
+
+      await this.mongoDb.collection('agents').createIndex({ id: 1 }, { unique: true, sparse: true });
+      await this.mongoDb.collection('agents').createIndex({ status: 1 });
+      await this.mongoDb.collection('agents').createIndex({ isApproved: 1 });
+      await this.mongoDb.collection('agents').createIndex({ assignedState: 1, assignedDistrict: 1, assignedArea: 1, pincode: 1 });
       
-      await this.mongoDb.collection('orders').createIndex({ id: 1 }, { unique: true });
-      await this.mongoDb.collection('orders').createIndex({ order_number: 1 }, { unique: true });
+      await this.mongoDb.collection('products').createIndex({ id: 1 });
+      await this.mongoDb.collection('products').createIndex({ vendorId: 1 });
+      await this.mongoDb.collection('products').createIndex({ vendorStatus: 1, businessStatus: 1, isActive: 1 });
+      await this.mongoDb.collection('products').createIndex({ mainCategory: 1, subcategory: 1, subSubcategory: 1 });
+      await this.mongoDb.collection('products').createIndex({ subNavbarCategory: 1 });
+
+      await this.mongoDb.collection('categories').createIndex({ id: 1 });
+      await this.mongoDb.collection('categories').createIndex({ level: 1, mainCategory: 1 });
+      await this.mongoDb.collection('categories').createIndex({ subcategory: 1 });
+      await this.mongoDb.collection('categories').createIndex({ isActive: 1 });
+
+      await this.mongoDb.collection('orders').createIndex({ id: 1 }, { unique: true, sparse: true });
+      await this.mongoDb.collection('orders').createIndex({ order_number: 1 }, { unique: true, sparse: true });
       await this.mongoDb.collection('orders').createIndex({ vendor_id: 1 });
       await this.mongoDb.collection('orders').createIndex({ status: 1 });
+      await this.mongoDb.collection('orders').createIndex({ createdAt: -1 });
+
+      await this.mongoDb.collection('onboarding_requests').createIndex({ status: 1 });
+      await this.mongoDb.collection('onboarding_requests').createIndex({ createdAt: -1 });
       
-      await this.mongoDb.collection('delivery_assignments').createIndex({ id: 1 }, { unique: true });
+      await this.mongoDb.collection('delivery_assignments').createIndex({ id: 1 }, { unique: true, sparse: true });
       await this.mongoDb.collection('delivery_assignments').createIndex({ order_id: 1 });
       await this.mongoDb.collection('delivery_assignments').createIndex({ delivery_partner_id: 1 });
       
       await this.mongoDb.collection('delivery_tracking').createIndex({ delivery_partner_id: 1, order_id: 1 });
       await this.mongoDb.collection('delivery_status_history').createIndex({ order_id: 1 });
-      await this.mongoDb.collection('delivery_earnings').createIndex({ id: 1 }, { unique: true });
+      await this.mongoDb.collection('delivery_earnings').createIndex({ id: 1 }, { unique: true, sparse: true });
       await this.mongoDb.collection('delivery_earnings').createIndex({ delivery_partner_id: 1 });
-      await this.mongoDb.collection('delivery_ratings').createIndex({ id: 1 }, { unique: true });
+      await this.mongoDb.collection('delivery_ratings').createIndex({ id: 1 }, { unique: true, sparse: true });
       await this.mongoDb.collection('delivery_ratings').createIndex({ target_partner_id: 1 });
       console.log(`[DB]: MongoDB indexes verified/created successfully.`);
     } catch (err: any) {
