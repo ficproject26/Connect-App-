@@ -13,10 +13,10 @@ import {
 } from '../../utils/validation';
 
 export default function ProfileView({ currentUser, onSave }) {
-  const [name, setName] = useState(currentUser?.name || 'Dhanush Tamilarasan');
-  const [email, setEmail] = useState(currentUser?.email || 'customer@connect.app');
-  const [phone, setPhone] = useState(currentUser?.phone || '9876543210');
-  const [city, setCity] = useState(currentUser?.city || 'Bangalore, Karnataka');
+  const [name, setName] = useState(currentUser?.name || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
+  const [phone, setPhone] = useState(currentUser?.phone || '');
+  const [city, setCity] = useState(currentUser?.city || '');
   
   // File Upload State with Preview
   const [avatarFile, setAvatarFile] = useState(null);

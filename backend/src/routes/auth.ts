@@ -185,8 +185,8 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
           status: 'error',
           notRegistered: true,
           code: 'ACCOUNT_NOT_FOUND',
-          message: 'Account not found. Please register to continue.',
-          msg: 'Account not found. Please register to continue.'
+          message: 'Please register first to access the Customer website.',
+          msg: 'Please register first to access the Customer website.'
         });
       }
 
@@ -331,8 +331,8 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
         status: 'error',
         notRegistered: true,
         code: 'MOBILE_NOT_REGISTERED',
-        message: 'This mobile number is not registered. Please register to continue.',
-        msg: 'This mobile number is not registered. Please register to continue.'
+        message: 'Please register first to access the Customer website.',
+        msg: 'Please register first to access the Customer website.'
       });
     }
 
@@ -388,8 +388,8 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
       status: 'error',
       notRegistered: true,
       code: 'MOBILE_NOT_REGISTERED',
-      message: 'This mobile number is not registered. Please register to continue.',
-      msg: 'This mobile number is not registered. Please register to continue.'
+      message: 'Please register first to access the Customer website.',
+      msg: 'Please register first to access the Customer website.'
     });
   }
 
@@ -552,13 +552,14 @@ router.post('/logout-all-devices', authenticateToken, (req: AuthenticatedRequest
   });
 });
 
-// Customer Registration
+// Customer Registration Persistence
 router.post('/register-customer', async (req: Request, res: Response) => {
-  const { name, email, phone, address, city, pincode, aadhaarNumber, panNumber } = req.body;
+  const { name, email, phone, password, address, city, pincode, aadhaarNumber, panNumber } = req.body;
 
   // Server-side Indian Mobile Number Validation (bypass protection)
-  if (phone) {
-    const mobileCheck = validateIndianMobile(phone);
+  const cleanPhone = (phone || '').replace(/\D/g, '');
+  if (cleanPhone) {
+    const mobileCheck = validateIndianMobile(cleanPhone);
     if (!mobileCheck.valid) {
       return res.status(400).json({
         status: 'error',
@@ -569,22 +570,295 @@ router.post('/register-customer', async (req: Request, res: Response) => {
   }
 
   try {
+    const mongoDb = db.getDb();
+    const cleanEmail = (email || '').toLowerCase().trim();
+
+    if (mongoDb && (cleanEmail || cleanPhone)) {
+      const existing = await mongoDb.collection('users').findOne({
+        $or: [
+          ...(cleanEmail ? [{ email: cleanEmail }] : []),
+          ...(cleanPhone ? [{ phone: cleanPhone }, { phone: `+91${cleanPhone}` }, { phone: `91${cleanPhone}` }] : [])
+        ]
+      });
+
+      if (existing) {
+        return res.status(400).json({
+          status: 'error',
+          code: 'USER_EXISTS',
+          message: 'An account with this email or mobile number already exists. Please log in.'
+        });
+      }
+    }
+
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : '';
+    const uniqueCustId = `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
+    const userId = 'cust_' + Date.now();
+
+    const initialAddresses = address ? [{
+      id: 'addr_1_' + Date.now(),
+      name: name || 'Connect Member',
+      phone: cleanPhone,
+      pincode: pincode || '',
+      locality: city || '',
+      address: address || '',
+      city: city || '',
+      state: 'Karnataka',
+      landmark: '',
+      altPhone: '',
+      type: 'Home'
+    }] : [];
+
     const createdUser = {
-      id: 'cust_' + Math.floor(1000 + Math.random() * 9000),
+      id: userId,
+      _id: userId,
+      registrationId: uniqueCustId,
+      customerId: uniqueCustId,
       name: name || 'Connect Customer',
-      email,
-      phone,
-      address,
-      city,
-      pincode,
-      aadhaar: aadhaarNumber,
-      pan: panNumber,
-      role: 'customer'
+      email: cleanEmail,
+      phone: cleanPhone,
+      password: hashedPassword,
+      address: address || '',
+      city: city || '',
+      pincode: pincode || '',
+      aadhaar: aadhaarNumber || '',
+      pan: panNumber || '',
+      role: 'customer',
+      status: 'Active',
+      isActive: true,
+      addresses: initialAddresses,
+      createdAt: new Date().toISOString()
     };
-    await db.createCustomerUser(createdUser).catch(() => {});
-    return res.json({ status: 'success', message: 'Customer registration successful', data: createdUser });
+
+    if (mongoDb) {
+      await mongoDb.collection('users').insertOne(createdUser as any).catch(() => {});
+      await mongoDb.collection('customers').insertOne(createdUser as any).catch(() => {});
+    }
+
+    const { password: _, ...safeUser } = createdUser;
+    return res.json({ status: 'success', message: 'Customer registration successful', user: safeUser, data: safeUser });
   } catch (error: any) {
     return res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// GET: /api/auth/customer-profile (Fetch authenticated customer profile & saved addresses from MongoDB)
+router.get('/customer-profile', async (req: Request, res: Response) => {
+  const { userId, customerId, phone, email } = req.query;
+  const target = ((userId || customerId || phone || email || '') as string).trim();
+
+  if (!target) {
+    return res.status(400).json({ status: 'error', message: 'User ID, Customer ID, Email or Phone is required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) {
+      return res.status(503).json({ status: 'error', message: 'Database not connected' });
+    }
+
+    const cleanDigits = target.replace(/\D/g, '');
+    const filter: any = {
+      $or: [
+        { id: target },
+        { customerId: target },
+        { registrationId: target },
+        { email: target.toLowerCase() },
+        ...(cleanDigits ? [
+          { phone: cleanDigits },
+          { phone: `+91${cleanDigits}` },
+          { phone: `91${cleanDigits}` }
+        ] : [])
+      ]
+    };
+    const dbUser = await mongoDb.collection('users').findOne(filter);
+
+    if (!dbUser) {
+      return res.status(404).json({ status: 'error', code: 'CUSTOMER_NOT_FOUND', message: 'Customer profile not found.' });
+    }
+
+    const { password: _, ...safeProfile } = dbUser;
+    return res.json({
+      status: 'success',
+      user: {
+        id: safeProfile.id || safeProfile._id?.toString(),
+        name: safeProfile.name || 'Connect Member',
+        email: safeProfile.email || '',
+        phone: safeProfile.phone || '',
+        avatar: safeProfile.avatar || safeProfile.photo || '',
+        photo: safeProfile.avatar || safeProfile.photo || '',
+        city: safeProfile.city || '',
+        pincode: safeProfile.pincode || '',
+        role: safeProfile.role || 'customer',
+        customerId: safeProfile.registrationId || safeProfile.customerId || `FIC-CUST-100000`,
+        addresses: Array.isArray(safeProfile.addresses) ? safeProfile.addresses : []
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// PUT: /api/auth/customer-profile (Update customer profile & photo in MongoDB)
+router.put('/customer-profile', async (req: Request, res: Response) => {
+  const { userId, customerId, phone, email, name, avatar, password } = req.body;
+  const target = (userId || customerId || phone || email || '').toString().trim();
+
+  if (!target) {
+    return res.status(400).json({ status: 'error', message: 'User ID or identifier is required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) {
+      return res.status(503).json({ status: 'error', message: 'Database not connected' });
+    }
+
+    const updateFields: any = { updatedAt: new Date().toISOString() };
+    if (name) updateFields.name = name.trim();
+    if (email) updateFields.email = email.toLowerCase().trim();
+    if (phone) updateFields.phone = phone.replace(/\D/g, '');
+    if (avatar !== undefined) {
+      updateFields.avatar = avatar;
+      updateFields.photo = avatar;
+    }
+    if (password) {
+      updateFields.password = await bcrypt.hash(password, 10);
+    }
+
+    const cleanDigits = target.replace(/\D/g, '');
+    const filter: any = {
+      $or: [
+        { id: target },
+        { customerId: target },
+        { registrationId: target },
+        { email: target.toLowerCase() },
+        ...(cleanDigits ? [
+          { phone: cleanDigits },
+          { phone: `+91${cleanDigits}` },
+          { phone: `91${cleanDigits}` }
+        ] : [])
+      ]
+    };
+
+    await mongoDb.collection('users').updateOne(filter, { $set: updateFields });
+    await mongoDb.collection('customers').updateOne(filter, { $set: updateFields }).catch(() => {});
+
+    const updatedUser = await mongoDb.collection('users').findOne(filter);
+    if (!updatedUser) {
+      return res.status(404).json({ status: 'error', message: 'Customer record not found.' });
+    }
+
+    const { password: _, ...safeUser } = updatedUser;
+    return res.json({ status: 'success', message: 'Profile updated successfully', user: safeUser });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// POST: /api/auth/customer-address (Add/Update customer saved address in MongoDB)
+router.post('/customer-address', async (req: Request, res: Response) => {
+  const { userId, customerId, phone, email, address } = req.body;
+  const target = (userId || customerId || phone || email || '').toString().trim();
+
+  if (!target || !address) {
+    return res.status(400).json({ status: 'error', message: 'User ID and address data are required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) {
+      return res.status(503).json({ status: 'error', message: 'Database not connected' });
+    }
+
+    const cleanDigits = target.replace(/\D/g, '');
+    const filter: any = {
+      $or: [
+        { id: target },
+        { customerId: target },
+        { registrationId: target },
+        { email: target.toLowerCase() },
+        ...(cleanDigits ? [
+          { phone: cleanDigits },
+          { phone: `+91${cleanDigits}` },
+          { phone: `91${cleanDigits}` }
+        ] : [])
+      ]
+    };
+
+    const user = await mongoDb.collection('users').findOne(filter);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'Customer not found.' });
+    }
+
+    const existingAddresses: any[] = Array.isArray(user.addresses) ? user.addresses : [];
+    let updatedAddresses: any[];
+
+    if (address.id) {
+      // Edit existing address
+      updatedAddresses = existingAddresses.map(a => a.id === address.id ? { ...a, ...address } : a);
+    } else {
+      // Add new address
+      const newAddr = {
+        ...address,
+        id: 'addr_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
+      };
+      updatedAddresses = [...existingAddresses, newAddr];
+    }
+
+    await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
+    await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});
+
+    return res.json({ status: 'success', message: 'Address saved successfully', addresses: updatedAddresses });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// DELETE: /api/auth/customer-address/:addressId (Delete saved address from MongoDB)
+router.delete('/customer-address/:addressId', async (req: Request, res: Response) => {
+  const { addressId } = req.params;
+  const { userId, customerId, phone, email } = req.query;
+  const target = ((userId || customerId || phone || email || '') as string).trim();
+
+  if (!target || !addressId) {
+    return res.status(400).json({ status: 'error', message: 'User ID and Address ID are required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) {
+      return res.status(503).json({ status: 'error', message: 'Database not connected' });
+    }
+
+    const cleanDigits = target.replace(/\D/g, '');
+    const filter: any = {
+      $or: [
+        { id: target },
+        { customerId: target },
+        { registrationId: target },
+        { email: target.toLowerCase() },
+        ...(cleanDigits ? [
+          { phone: cleanDigits },
+          { phone: `+91${cleanDigits}` },
+          { phone: `91${cleanDigits}` }
+        ] : [])
+      ]
+    };
+
+    const user = await mongoDb.collection('users').findOne(filter);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'Customer not found.' });
+    }
+
+    const existingAddresses: any[] = Array.isArray(user.addresses) ? user.addresses : [];
+    const updatedAddresses = existingAddresses.filter(a => a.id !== addressId);
+
+    await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
+    await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});
+
+    return res.json({ status: 'success', message: 'Address deleted successfully', addresses: updatedAddresses });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
   }
 });
 

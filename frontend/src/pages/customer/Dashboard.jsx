@@ -1044,63 +1044,7 @@ export default function CustomerDashboard({
   const [settingsSMS, setSettingsSMS] = useState(false);
   const [settingsSecurity, setSettingsSecurity] = useState(true);
 
-  // Helper to resolve primary registration / customer profile address
-  const resolveProfileAddress = useCallback((user, pName, pPhone) => {
-    let addrStr = '';
-    let pincode = '';
-    let city = '';
-    let state = '';
-    let locality = '';
-    let name = pName || user?.name || '';
-    let phone = pPhone || user?.phone || '';
-
-    if (user) {
-      addrStr = (user.address || user.registration_address || user.location || user.fullAddress || '').trim();
-      pincode = (user.pincode || '').toString().trim();
-      city = (user.city || '').trim();
-      state = (user.state || (city ? 'Karnataka' : '')).trim();
-      locality = (user.locality || user.area || city || '').trim();
-    }
-
-    if (!addrStr && !pincode && !city) {
-      return null;
-    }
-
-    const userKey = getUserStorageKey(user || { name, phone });
-    return {
-      id: 'addr_reg_' + userKey,
-      name: name || 'Customer',
-      phone: phone || '',
-      pincode: pincode || '560001',
-      locality: locality || city || 'Locality',
-      address: addrStr || `${city || 'Bangalore'} Central Address`,
-      city: city || 'Bangalore',
-      state: state || 'Karnataka',
-      landmark: '',
-      altPhone: '',
-      type: 'Home',
-      isRegistrationAddress: true
-    };
-  }, []);
-
-  const [addresses, setAddresses] = useState(() => {
-    const userKey = getUserStorageKey(currentUser);
-    const saved = localStorage.getItem(`connect_addresses_${userKey}`);
-    let savedList = [];
-    if (saved) {
-      try {
-        savedList = JSON.parse(saved);
-      } catch (err) {
-        console.warn("Failed to parse addresses from localStorage:", err);
-      }
-    }
-    const prof = resolveProfileAddress(currentUser, '', '');
-    if (prof) {
-      const nonReg = savedList.filter(a => !a.isRegistrationAddress && a.id !== prof.id);
-      return [prof, ...nonReg];
-    }
-    return savedList;
-  });
+  const [addresses, setAddresses] = useState([]);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [addressForm, setAddressForm] = useState({
     name: '',
@@ -1115,87 +1059,48 @@ export default function CustomerDashboard({
     type: 'Home'
   });
 
-  // Synchronize customer profile & saved addresses
+  // Fetch customer profile & saved addresses directly from MongoDB backend
   useEffect(() => {
-    const userKey = getUserStorageKey(currentUser);
-    const savedAddrRaw = localStorage.getItem(`connect_addresses_${userKey}`);
-    let savedList = [];
-    if (savedAddrRaw) {
-      try {
-        savedList = JSON.parse(savedAddrRaw);
-      } catch (e) {}
-    }
-
-    const prof = resolveProfileAddress(currentUser, profileName, profilePhone);
-    let updatedList = [...savedList];
-
-    if (prof) {
-      const nonReg = savedList.filter(a => !a.isRegistrationAddress && a.id !== prof.id);
-      updatedList = [prof, ...nonReg];
-    }
-
-    setAddresses(updatedList);
-
-    if (updatedList.length > 0) {
-      setSelectedCheckoutAddressId(prev => {
-        if (prev && updatedList.some(a => a.id === prev)) return prev;
-        return updatedList[0].id;
-      });
-    }
-  }, [currentUser, profileName, profilePhone, resolveProfileAddress]);
-
-  // Persist addresses state updates to localStorage
-  useEffect(() => {
-    if (currentUser) {
-      const userKey = getUserStorageKey(currentUser);
-      localStorage.setItem(`connect_addresses_${userKey}`, JSON.stringify(addresses));
-    }
-  }, [addresses, currentUser]);
-
-  useEffect(() => {
-    if (currentUser) {
-      const userKey = getUserStorageKey(currentUser);
-      let resolvedUser = { ...currentUser };
-      const hasDigitName = !currentUser.name || /^\d+$/.test(currentUser.name) || currentUser.name === 'Connect Member';
-      const hasAutoEmail = !currentUser.email || currentUser.email.match(/^\d+@connect\.app$/);
-
-      if (hasDigitName || hasAutoEmail) {
-        try {
-          const registeredUsers = JSON.parse(localStorage.getItem('connect_registered_users') || '[]');
-          const phone = (currentUser.phone || '').replace(/\D/g, '');
-          const email = (currentUser.email || '').toLowerCase();
-          const match = registeredUsers.find(r =>
-            (phone && r.phone && r.phone.replace(/\D/g, '') === phone) ||
-            (!hasAutoEmail && email && r.email && r.email.toLowerCase() === email)
-          );
-          if (match) {
-            resolvedUser = { ...match, ...currentUser, name: match.name || currentUser.name, email: match.email || currentUser.email };
-          }
-        } catch (e) {}
+    if (currentUser && (currentUser.role === 'customer' || !currentUser.role)) {
+      const userTarget = currentUser.id || currentUser.customerId || currentUser.phone || currentUser.email || '';
+      if (userTarget) {
+        fetch(`${getAdminBackendUrl()}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}`)
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && data.status === 'success' && data.user) {
+              const u = data.user;
+              setProfileName(u.name || currentUser.name || '');
+              setProfileEmail(u.email || currentUser.email || '');
+              setProfilePhone(u.phone || currentUser.phone || '');
+              setProfilePhoto(u.avatar || u.photo || currentUser?.avatar || '');
+              setAddresses(Array.isArray(u.addresses) ? u.addresses : []);
+              if (Array.isArray(u.addresses) && u.addresses.length > 0) {
+                setSelectedCheckoutAddressId(u.addresses[0].id);
+              }
+            } else {
+              setProfileName(currentUser.name || '');
+              setProfileEmail(currentUser.email || '');
+              setProfilePhone(currentUser.phone || '');
+              setProfilePhoto(currentUser.avatar || currentUser.photo || '');
+              setAddresses([]);
+            }
+          })
+          .catch(() => {
+            setProfileName(currentUser.name || '');
+            setProfileEmail(currentUser.email || '');
+            setProfilePhone(currentUser.phone || '');
+            setProfilePhoto(currentUser.avatar || currentUser.photo || '');
+            setAddresses([]);
+          });
       }
-
-      setProfileName(resolvedUser.name || currentUser.name || '');
-      setProfileEmail(resolvedUser.email || currentUser.email || '');
-      setProfilePhone(resolvedUser.phone || currentUser.phone || localStorage.getItem(`connect_profile_phone_${userKey}`) || '');
-
-      const userPhotoKey = `connect_profile_photo_${userKey}`;
-      const savedPhoto = localStorage.getItem(userPhotoKey) || currentUser?.avatar || currentUser?.photo || '';
-      setProfilePhoto(savedPhoto);
     } else {
       setProfileName('');
       setProfileEmail('');
       setProfilePhone('');
       setProfilePhoto('');
+      setAddresses([]);
     }
   }, [currentUser]);
-
-  const [profilePhoto, setProfilePhoto] = useState(() => {
-    if (currentUser) {
-      const userKey = getUserStorageKey(currentUser);
-      return localStorage.getItem(`connect_profile_photo_${userKey}`) || currentUser?.avatar || currentUser?.photo || '';
-    }
-    return '';
-  });
 
   const [selectedServicePlanId, setSelectedServicePlanId] = useState('1month');
   const [selectedServiceTimingName, setSelectedServiceTimingName] = useState('Morning');
@@ -2239,10 +2144,25 @@ export default function CustomerDashboard({
       address: streetAddress,
       city,
       state,
-      id: `addr_${Date.now()}`
+      id: addressForm.id || `addr_${Date.now()}`
     };
 
-    setAddresses(prev => [newAddress, ...prev]);
+    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || '';
+    if (userTarget) {
+      fetch(`${getAdminBackendUrl()}/api/auth/customer-address`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userTarget, address: newAddress })
+      }).then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && Array.isArray(data.addresses)) {
+            setAddresses(data.addresses);
+          }
+        })
+        .catch(() => {});
+    }
+
+    setAddresses(prev => [newAddress, ...prev.filter(a => a.id !== newAddress.id)]);
     setSelectedCheckoutAddressId(newAddress.id);
     setIsAddingAddress(false);
     triggerNotification("Address saved & selected for delivery!");
@@ -2251,6 +2171,18 @@ export default function CustomerDashboard({
 
   const handleDeleteAddress = (id) => {
     setAddresses(prev => prev.filter(addr => addr.id !== id));
+    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || '';
+    if (userTarget) {
+      fetch(`${getAdminBackendUrl()}/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}`, {
+        method: 'DELETE'
+      }).then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && Array.isArray(data.addresses)) {
+            setAddresses(data.addresses);
+          }
+        })
+        .catch(() => {});
+    }
     triggerNotification("Address deleted.");
   };
 
@@ -10567,25 +10499,26 @@ wishlistProducts.forEach(item => addToCart(item));
                           setProfileConfirmPassword('');
                         }
 
-                        // Persist contact options per user
-                        const userKey = getUserStorageKey(currentUser);
-                        if (profilePhone) {
-                          localStorage.setItem(`connect_profile_phone_${userKey}`, profilePhone);
-                        }
-                        
-                        const savedUserStr = localStorage.getItem('connect_current_user');
-                        if (savedUserStr) {
-                          try {
-                            const u = JSON.parse(savedUserStr);
-                            u.name = profileName;
-                            u.email = profileEmail;
-                            u.phone = profilePhone;
-                            if (profilePhoto) {
-                              u.avatar = profilePhoto;
-                              u.photo = profilePhoto;
-                            }
-                            localStorage.setItem('connect_current_user', JSON.stringify(u));
-                          } catch (err) {}
+                        const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || '';
+                        if (userTarget) {
+                          fetch(`${getAdminBackendUrl()}/api/auth/customer-profile`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              userId: userTarget,
+                              name: profileName,
+                              email: profileEmail,
+                              phone: profilePhone,
+                              avatar: profilePhoto,
+                              password: profilePassword || undefined
+                            })
+                          }).then(res => res.ok ? res.json() : null)
+                            .then(data => {
+                              if (data && data.user) {
+                                login(data.user, 'customer');
+                              }
+                            })
+                            .catch(() => {});
                         }
 
                         triggerNotification("Profile details saved successfully!");

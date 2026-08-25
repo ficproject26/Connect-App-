@@ -174,7 +174,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
         if (res && res.status === 404) {
           setIsSubmitting(false);
           setIsNotRegistered(true);
-          setErrorMsg('This mobile number is not registered. Please register to continue.');
+          setErrorMsg('Please register first to access the Customer website.');
           return;
         }
 
@@ -190,13 +190,8 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
           return;
         }
 
-        // Server offline / 503 Service Suspended / Network Error Fallback
-        const fallbackCode = Math.floor(100000 + Math.random() * 900000).toString();
-        setGeneratedOtpCode(fallbackCode);
-        setIsOtpSent(true);
-        setResendCooldown(30);
         setIsSubmitting(false);
-        setOtpSuccessMsg(`OTP Sent Successfully! Security Code: ${fallbackCode}`);
+        setErrorMsg(errMsg || 'Failed to send OTP. Please try again.');
         return;
       }
 
@@ -204,30 +199,26 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
 
       if (data.status === 'success' || data.success) {
         setIsSubmitting(false);
-        const issuedCode = data.devOtpPreview || data.otp || Math.floor(100000 + Math.random() * 900000).toString();
+        const issuedCode = data.devOtpPreview || data.otp || '';
         setGeneratedOtpCode(issuedCode);
         setIsOtpSent(true);
         setResendCooldown(data.cooldownSeconds || 30);
-        setOtpSuccessMsg(`OTP Sent Successfully! Security Code: ${issuedCode}`);
+        setOtpSuccessMsg(issuedCode ? `OTP Sent Successfully! Security Code: ${issuedCode}` : 'OTP Sent Successfully!');
         return;
       } else {
         setIsSubmitting(false);
         const errMsg = data.message || data.msg || data.error || '';
         if (res.status === 404 || data.notRegistered || data.code === 'MOBILE_NOT_REGISTERED') {
           setIsNotRegistered(true);
-          setErrorMsg('This mobile number is not registered. Please register to continue.');
+          setErrorMsg('Please register first to access the Customer website.');
         } else {
           setErrorMsg(errMsg || 'Failed to send OTP. Please try again.');
         }
         return;
       }
     } catch (err) {
-      const fallbackCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtpCode(fallbackCode);
-      setIsOtpSent(true);
-      setResendCooldown(30);
       setIsSubmitting(false);
-      setOtpSuccessMsg(`OTP Sent Successfully! Security Code: ${fallbackCode}`);
+      setErrorMsg('Network error. Please try again.');
     }
   };
 
@@ -244,24 +235,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
     setIsSubmitting(true);
 
     const inputClean = otpInput.trim();
-    if ((generatedOtpCode && inputClean === generatedOtpCode.trim()) || inputClean === '123456') {
-      setIsSubmitting(false);
-      setSuccess(true);
-      const userToLogin = {
-        mobileNumber: otpTarget,
-        phone: otpTarget,
-        name: `Customer (${otpTarget})`,
-        role: 'customer'
-      };
-      login(userToLogin, 'customer', (finalUser) => {
-        setTimeout(() => {
-          setSuccess(false);
-          if (onLoginSuccess) onLoginSuccess(finalUser);
-          onClose();
-        }, 600);
-      });
-      return;
-    }
 
     try {
       const res = await fetch(`${getApiBase()}/auth/verify-otp`, {
@@ -276,52 +249,35 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       }).catch(() => null);
 
       if (!res || !res.ok) {
-        if (inputClean === '123456') {
-          setIsSubmitting(false);
-          setSuccess(true);
-          login({ mobileNumber: otpTarget, phone: otpTarget, role: 'customer' }, 'customer', (finalUser) => {
-            setTimeout(() => {
-              setSuccess(false);
-              if (onLoginSuccess) onLoginSuccess(finalUser);
-              onClose();
-            }, 600);
-          });
-          return;
-        }
-
         const data = res ? await res.json().catch(() => ({})) : {};
         setIsSubmitting(false);
-        setErrorMsg(data.message || 'Invalid or expired OTP code. Please enter valid 6-digit code or 123456.');
+        if (res && res.status === 404 || data.notRegistered) {
+          setIsNotRegistered(true);
+          setErrorMsg('Please register first to access the Customer website.');
+        } else {
+          setErrorMsg(data.message || 'Invalid or expired OTP code. Please try again.');
+        }
         return;
       }
 
       const data = await res.json().catch(() => ({}));
-      setIsSubmitting(false);
-      setSuccess(true);
-
-      const loggedUser = data.user || { mobileNumber: otpTarget, phone: otpTarget, role: 'customer' };
-      login(loggedUser, 'customer', (finalUser) => {
-        setTimeout(() => {
-          setSuccess(false);
-          if (onLoginSuccess) onLoginSuccess(finalUser);
-          onClose();
-        }, 600);
-      });
-    } catch (err) {
-      if (inputClean === '123456') {
+      if (data.status === 'success' && data.user) {
         setIsSubmitting(false);
         setSuccess(true);
-        login({ mobileNumber: otpTarget, phone: otpTarget, role: 'customer' }, 'customer', (finalUser) => {
+        login(data.user, 'customer', (finalUser) => {
           setTimeout(() => {
             setSuccess(false);
             if (onLoginSuccess) onLoginSuccess(finalUser);
             onClose();
           }, 600);
         });
-        return;
+      } else {
+        setIsSubmitting(false);
+        setErrorMsg(data.message || 'Verification failed. Please register to continue.');
       }
+    } catch (err) {
       setIsSubmitting(false);
-      setErrorMsg('Verification error. Please try again.');
+      setErrorMsg('Network error verifying OTP. Please try again.');
     }
   };
 
