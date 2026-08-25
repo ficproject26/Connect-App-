@@ -1040,6 +1040,7 @@ export default function CustomerDashboard({
   });
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState('');
   const [settingsNotify, setSettingsNotify] = useState(true);
   const [settingsSMS, setSettingsSMS] = useState(false);
   const [settingsSecurity, setSettingsSecurity] = useState(true);
