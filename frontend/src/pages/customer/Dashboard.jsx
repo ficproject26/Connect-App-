@@ -1012,6 +1012,17 @@ export default function CustomerDashboard({
     } catch (e) {}
     return currentUser?.email || '';
   });
+  const [profilePhoto, setProfilePhoto] = useState(() => {
+    if (currentUser?.avatar || currentUser?.photo) return currentUser.avatar || currentUser.photo;
+    try {
+      const savedUser = localStorage.getItem('connect_current_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.avatar || u.photo) return u.avatar || u.photo;
+      }
+    } catch (e) {}
+    return '';
+  });
 
   const activeCustomerId = useMemo(() => {
     if (currentUser?.customerId && currentUser.customerId !== 'FIC-CUST-750684' && currentUser.customerId !== 'FIC-CUST-849201') {
