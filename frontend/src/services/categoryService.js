@@ -27,26 +27,6 @@ export const normalizeCategoryName = (rawName) => {
  * Builds the active category tree STRICTLY based on Admin Category Management API records (dbCategories).
  * Removes hardcoded category memory override when admin deletes or deactivates categories/subcategories.
  */
-const resolveMainCategoryName = (c) => {
-  if (!c) return '';
-  if (c.mainCategory) return normalizeCategoryName(c.mainCategory);
-  if (c.main_category) return normalizeCategoryName(c.main_category);
-
-  const normName = c.name ? normalizeCategoryName(c.name) : '';
-  const canonicalMains = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-
-  if (canonicalMains.includes(normName) || c.level === 'main' || c.isMainCategory === true) {
-    return normName;
-  }
-
-  if (c.parentName) {
-    const normParent = normalizeCategoryName(c.parentName);
-    if (canonicalMains.includes(normParent)) return normParent;
-  }
-
-  return normName;
-};
-
 export const buildActiveCategoryTree = (dbCategories = []) => {
   const catTree = {};
 
@@ -63,6 +43,14 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
   if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
     return catTree;
   }
+
+  // 1. Build an ID Map of all valid category records
+  const idMap = new Map();
+  dbCategories.forEach(c => {
+    if (c && c._id && c.isActive !== false && !c.isDeleted && c.description !== 'DELETED_HIERARCHY_MARKER') {
+      idMap.set(c._id.toString(), c);
+    }
+  });
 
   // Helper to safely append a subcategory & children to catTree
   const appendSub = (mainNameRaw, subNameRaw, childItems = []) => {
@@ -87,7 +75,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     if (Array.isArray(childItems)) {
       childItems.forEach(ch => {
         if (!ch) return;
-        const chName = (typeof ch === 'string' ? ch : ch.name || ch.subSubcategory || '').trim();
+        const chName = (typeof ch === 'string' ? ch : ch.name || ch.subSubcategory || ch.title || '').trim();
         if (chName && normalizeCategoryName(chName) !== mainName && !catTree[mainName].subcategories[subName].childCategories.includes(chName)) {
           catTree[mainName].subcategories[subName].childCategories.push(chName);
         }
@@ -95,51 +83,79 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     }
   };
 
-  // 1. Process Root Main Category Nodes & their .children arrays
-  const rootMains = dbCategories.filter(c => c && (c.isActive !== false) && !c.isDeleted && (!c.parentId || c.level === 'main' || c.level === 1 || c.isMainCategory === true));
-  const rootMainIds = new Map();
-
-  rootMains.forEach(root => {
-    const mainName = normalizeCategoryName(root.name || root.mainCategory);
-    if (!mainName) return;
-    if (root._id) rootMainIds.set(root._id.toString(), mainName);
-
-    if (Array.isArray(root.children)) {
-      root.children.forEach(subNode => {
-        if (!subNode || subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') return;
-        const subName = (subNode.subcategory || (subNode.name && normalizeCategoryName(subNode.name) !== mainName ? subNode.name : '')).trim();
-        appendSub(mainName, subName, subNode.children);
-      });
+  // Helper to resolve root main category name walking up parentId chain if necessary
+  const findMainCategoryName = (c) => {
+    if (!c) return '';
+    if (c.mainCategory) return normalizeCategoryName(c.mainCategory);
+    if (c.main_category) return normalizeCategoryName(c.main_category);
+    if (c.parentName && canonicalMains.includes(normalizeCategoryName(c.parentName))) {
+      return normalizeCategoryName(c.parentName);
     }
-  });
 
-  // 2. Process Nodes with parentId pointing to Root Main Category Node IDs
-  if (rootMainIds.size > 0) {
-    dbCategories.forEach(c => {
-      if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
-      if (c.parentId && rootMainIds.has(c.parentId.toString())) {
-        const mainName = rootMainIds.get(c.parentId.toString());
-        const subName = (c.subcategory || (c.name && normalizeCategoryName(c.name) !== mainName ? c.name : '')).trim();
-        const childName = (c.subSubcategory || '').trim();
-        const childrenOfSub = c._id ? dbCategories.filter(ch => ch && ch.parentId && ch.parentId.toString() === c._id.toString()) : [];
-        appendSub(mainName, subName, childName ? [childName, ...(c.children || []), ...childrenOfSub] : [...(c.children || []), ...childrenOfSub]);
+    // Walk up parentId chain
+    let curr = c;
+    let depth = 0;
+    while (curr && curr.parentId && depth < 5) {
+      const parent = idMap.get(curr.parentId.toString());
+      if (!parent) break;
+      if (parent.mainCategory) return normalizeCategoryName(parent.mainCategory);
+      if (parent.main_category) return normalizeCategoryName(parent.main_category);
+      const parentNorm = normalizeCategoryName(parent.name);
+      if (canonicalMains.includes(parentNorm) || parent.level === 'main' || parent.isMainCategory === true) {
+        return parentNorm;
       }
-    });
-  }
+      curr = parent;
+      depth++;
+    }
 
-  // 3. Process Flat DB Records with explicit mainCategory or parentName
+    const cNorm = normalizeCategoryName(c.name);
+    if (canonicalMains.includes(cNorm) || c.level === 'main' || c.isMainCategory === true) {
+      return cNorm;
+    }
+    return c.parentName ? normalizeCategoryName(c.parentName) : cNorm;
+  };
+
+  // 2. Process all DB Category records
   dbCategories.forEach(c => {
     if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
-    if (c.level === 'main' && (!c.subcategory || normalizeCategoryName(c.subcategory) === normalizeCategoryName(c.name))) return;
 
-    const mainName = resolveMainCategoryName(c);
-    if (!mainName) return;
-
-    let subName = (c.subcategory || (c.name && normalizeCategoryName(c.name) !== mainName ? c.name : '')).trim();
-    if (!subName || normalizeCategoryName(subName) === mainName) return;
-
+    const mainName = findMainCategoryName(c);
+    const subName = (c.subcategory || '').trim();
     const childName = (c.subSubcategory || '').trim();
-    appendSub(mainName, subName, childName ? [childName] : (c.children || []));
+
+    if (mainName && subName) {
+      appendSub(mainName, subName, childName ? [childName] : (c.children || []));
+    }
+
+    // Check nested .children array
+    if (Array.isArray(c.children) && c.children.length > 0) {
+      c.children.forEach(subNode => {
+        if (!subNode || subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') return;
+        const subNodeName = (subNode.subcategory || subNode.name || '').trim();
+        if (subNodeName && mainName && normalizeCategoryName(subNodeName) !== mainName) {
+          appendSub(mainName, subNodeName, subNode.children);
+        }
+      });
+    }
+
+    // Check parentId relationships
+    if (c.parentId && idMap.has(c.parentId.toString())) {
+      const parent = idMap.get(c.parentId.toString());
+      const parentMain = findMainCategoryName(parent);
+      const nodeName = (c.name || c.subcategory || '').trim();
+
+      if (parentMain && nodeName && normalizeCategoryName(nodeName) !== parentMain) {
+        const isParentMain = parent.level === 'main' || canonicalMains.includes(normalizeCategoryName(parent.name));
+        if (isParentMain) {
+          appendSub(parentMain, nodeName, c.children);
+        } else {
+          const parentSub = (parent.subcategory || parent.name || '').trim();
+          if (parentSub) {
+            appendSub(parentMain, parentSub, [nodeName, ...(c.children || [])]);
+          }
+        }
+      }
+    }
   });
 
   return catTree;

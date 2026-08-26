@@ -1991,85 +1991,23 @@ export default function CustomerDashboard({
     let merged = {};
     const targetNorm = normalizeMainCatName(mainCategoryName);
 
-    if (!Array.isArray(dbCategories) || dbCategories.length === 0) {
-      return merged;
-    }
+    const catTree = buildActiveCategoryTree(dbCategories);
+    const targetKey = Object.keys(catTree).find(k => normalizeMainCatName(k) === targetNorm) || mainCategoryName;
+    const mainObj = catTree[targetKey];
 
-    // Helper to safely append a subcategory & children to merged
-    const addSubCategory = (subNameRaw, childItems = []) => {
-      if (!subNameRaw) return;
-      const subName = subNameRaw.trim();
-      if (!subName || subName === 'ALL_SUBCATEGORIES_DELETED_MARKER') return;
-      if (normalizeMainCatName(subName) === targetNorm) return;
-
-      const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
-      if (!merged[existingKey]) {
-        merged[existingKey] = {
-          title: subName,
-          items: []
-        };
-      }
-
-      if (Array.isArray(childItems)) {
-        childItems.forEach(ch => {
-          if (!ch) return;
-          const chName = (typeof ch === 'string' ? ch : ch.name || ch.subSubcategory || '').trim();
-          if (chName && normalizeMainCatName(chName) !== targetNorm && !merged[existingKey].items.includes(chName)) {
-            merged[existingKey].items.push(chName);
-          }
-        });
-      }
-    };
-
-    // 1. Process Root Main Category Nodes & their .children arrays
-    const rootMainNodes = dbCategories.filter(c => {
-      if (!c || c.isActive === false || c.isDeleted) return false;
-      const nameNorm = normalizeMainCatName(c.name || c.mainCategory || '');
-      if (nameNorm === targetNorm && (!c.parentId || c.level === 'main' || c.level === 1 || c.isMainCategory === true)) {
-        return true;
-      }
-      return false;
-    });
-
-    const rootMainIds = new Set(rootMainNodes.map(r => r._id ? r._id.toString() : null).filter(Boolean));
-
-    rootMainNodes.forEach(root => {
-      if (Array.isArray(root.children)) {
-        root.children.forEach(subNode => {
-          if (!subNode || subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') return;
-          const subName = (subNode.subcategory || (subNode.name && normalizeMainCatName(subNode.name) !== targetNorm ? subNode.name : '')).trim();
-          addSubCategory(subName, subNode.children);
-        });
-      }
-    });
-
-    // 2. Process records with parentId matching Root Main Category Node IDs
-    if (rootMainIds.size > 0) {
-      dbCategories.forEach(c => {
-        if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
-        if (c.parentId && rootMainIds.has(c.parentId.toString())) {
-          const subName = (c.subcategory || (c.name && normalizeMainCatName(c.name) !== targetNorm ? c.name : '')).trim();
-          const childName = (c.subSubcategory || '').trim();
-          const childrenOfSub = c._id ? dbCategories.filter(ch => ch && ch.parentId && ch.parentId.toString() === c._id.toString()) : [];
-          addSubCategory(subName, childName ? [childName, ...(c.children || []), ...childrenOfSub] : [...(c.children || []), ...childrenOfSub]);
+    if (mainObj && mainObj.subcategories) {
+      Object.keys(mainObj.subcategories).forEach(subName => {
+        const subObj = mainObj.subcategories[subName];
+        if (subObj && subObj.isActive !== false) {
+          merged[subName] = {
+            title: subName,
+            items: [...(subObj.childCategories || [])]
+          };
         }
       });
     }
 
-    // 3. Process Flat DB Records with explicit mainCategory or parentName matching targetNorm
-    dbCategories.forEach(c => {
-      if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
-      if (c.level === 'main' && (!c.subcategory || normalizeMainCatName(c.subcategory) === targetNorm)) return;
-
-      const recMain = normalizeMainCatName(c.mainCategory || c.main_category || c.parentName || c.name || '');
-      if (recMain === targetNorm) {
-        const subName = (c.subcategory || (c.name && normalizeMainCatName(c.name) !== targetNorm ? c.name : '')).trim();
-        const childName = (c.subSubcategory || '').trim();
-        addSubCategory(subName, childName ? [childName] : (c.children || []));
-      }
-    });
-
-    // 4. Supplement with categories extracted from live vendor products for this main category
+    // Supplement with categories extracted from live vendor products for this main category
     if (Array.isArray(products) && products.length > 0) {
       products.forEach(p => {
         if (!p) return;
@@ -2077,7 +2015,15 @@ export default function CustomerDashboard({
         if (pMain === targetNorm) {
           const subName = (p.category || p.subcategory || '').trim();
           const childName = (p.subSubcategory || '').trim();
-          addSubCategory(subName, childName ? [childName] : []);
+          if (subName && normalizeMainCatName(subName) !== targetNorm) {
+            const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
+            if (!merged[existingKey]) {
+              merged[existingKey] = { title: subName, items: [] };
+            }
+            if (childName && normalizeMainCatName(childName) !== targetNorm && !merged[existingKey].items.includes(childName)) {
+              merged[existingKey].items.push(childName);
+            }
+          }
         }
       });
     }
