@@ -3967,10 +3967,49 @@ export default function CustomerDashboard({
     // 3. Resolve current Main Category tab focus (Services, Products, Daily Needs, Food, Stay, Travel, Jobs)
     const currentMainCategory = normalizeCategoryName(activeCategory);
 
-    // 3. Parse database category tree using authoritative buildActiveCategoryTree(dbCategories)
+    // 4. Parse database category tree using authoritative buildActiveCategoryTree(dbCategories)
     const fullTree = buildActiveCategoryTree(dbCategories);
 
-    // 4. Extract Level 2 Subcategories and Level 3 Child Categories for currentMainCategory strictly from DB
+    // 5. Baseline taxonomies for canonical main categories
+    const defaultTaxonomies = {
+      'Services': {
+        'Home Services': ['Plumbing', 'Electrician', 'Cleaning Services', 'AC Repair & Service', 'Carpentry', 'Painting Services'],
+        'Beauty & Wellness': ['Salon for Women', 'Spa & Massage', 'Skincare & Facial', 'Makeup Artists', 'Hair Styling'],
+        'Repair & Maintenance': ['Appliance Repair', 'Laptop & PC Repair', 'Mobile Repair', 'CCTV Repair'],
+        'Professional Services': ['Legal Consultancy', 'CA & Tax Advisor', 'Web Development', 'Digital Marketing']
+      },
+      'Products': {
+        'Electronics': ['Mobiles', 'Smartwatches', 'Headphones', 'Cameras', 'Audio Devices'],
+        'Computers': ['Laptop', 'Desktop PCs', 'Monitors', 'Computer Accessories', 'Storage Devices'],
+        'Gaming': ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs'],
+        'Home & Kitchen': ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor']
+      },
+      'Daily Needs': {
+        'Snacks': ['Chips & Crisps', 'Biscuits & Cookies', 'Namkeen', 'Chocolates & Sweets', 'Cold Drinks & Juices'],
+        'Personal Care': ['Soaps & Body Wash', 'Shampoo & Conditioner', 'Skin Care', 'Oral Care & Toothpaste', 'Deodorants'],
+        'Staples & Grocery': ['Atta & Flour', 'Rice & Grains', 'Pulses & Dals', 'Edible Oils', 'Spices & Masalas'],
+        'Dairy & Breakfast': ['Milk & Butter', 'Paneer & Curd', 'Bread & Eggs', 'Breakfast Cereals']
+      },
+      'Food': {
+        'Main Course': ['Biryani', 'Thali & Meals', 'Paneer Special', 'Chicken Specialties', 'Chinese & Noodles'],
+        'Fast Food': ['Burgers', 'Pizzas', 'Sandwiches', 'Rolls & Wraps', 'Fried Chicken'],
+        'Desserts & Sweets': ['Ice Creams', 'Cakes & Pastries', 'Indian Sweets', 'Shakes & Smoothies']
+      },
+      'Stay': {
+        'Hotels & Resorts': ['Luxury Hotels', 'Budget Hotels', 'Beach Resorts', 'Heritage Hotels'],
+        'Homestays & Villas': ['Private Villas', 'Serviced Apartments', 'Cozy Homestays', 'Farmhouses']
+      },
+      'Travel': {
+        'Bus Tickets': ['AC Sleeper Bus', 'Non-AC Seater', 'Express Intercity', 'Volvo Luxury'],
+        'Cab Services': ['Outstation Cabs', 'Airport Taxi', 'Hourly Rental', 'Local City Cabs']
+      },
+      'Jobs': {
+        'IT & Software': ['Full Stack Developer', 'Frontend Engineer', 'Backend Developer', 'UI/UX Designer', 'DevOps Engineer'],
+        'Sales & Marketing': ['Business Development', 'Digital Marketer', 'Sales Manager', 'Telecaller']
+      }
+    };
+
+    // 6. Extract Level 2 Subcategories and Level 3 Child Categories for currentMainCategory from DB
     const mainCategoryObj = fullTree[currentMainCategory] || { subcategories: {} };
     const categoryTaxonomy = {};
 
@@ -3985,7 +4024,7 @@ export default function CustomerDashboard({
       });
     }
 
-    // 5. Augment with live vendor products matching currentMainCategory strictly from DB
+    // 7. Augment with live vendor products matching currentMainCategory strictly from DB
     if (Array.isArray(products)) {
       products.forEach(p => {
         if (!p || p.isActive === false || p.isAvailable === false) return;
@@ -4003,16 +4042,46 @@ export default function CustomerDashboard({
       });
     }
 
-    // Second-Level Subcategories list for Left Sidebar
+    // 8. Merge default taxonomy for currentMainCategory if DB has no subcategories or empty child lists
+    const defaultTax = defaultTaxonomies[currentMainCategory] || {};
+    if (Object.keys(categoryTaxonomy).length === 0) {
+      Object.assign(categoryTaxonomy, defaultTax);
+    } else {
+      Object.keys(categoryTaxonomy).forEach(sub => {
+        if (!categoryTaxonomy[sub] || categoryTaxonomy[sub].length === 0) {
+          if (defaultTax[sub]) {
+            categoryTaxonomy[sub] = [...defaultTax[sub]];
+          } else {
+            const matchKey = Object.keys(defaultTax).find(k => k.toLowerCase().includes(sub.toLowerCase()) || sub.toLowerCase().includes(k.toLowerCase()));
+            if (matchKey) {
+              categoryTaxonomy[sub] = [...defaultTax[matchKey]];
+            }
+          }
+        }
+      });
+    }
+
+    // Second-Level Subcategories list for Left Sidebar (Level 2 ONLY)
     const subcategoryKeys = Object.keys(categoryTaxonomy);
 
-    // Third-Level Child Categories for Right Content Grid
+    // Third-Level Child Categories for Right Content Grid (Level 3 ONLY)
     let childItemsToDisplay = [];
     if (sidebarActiveCat === 'ALL') {
       childItemsToDisplay = Array.from(new Set(Object.values(categoryTaxonomy).flat())).filter(Boolean);
     } else {
       childItemsToDisplay = (categoryTaxonomy[sidebarActiveCat] || []).filter(Boolean);
     }
+
+    // Strict hygiene filter: exclude main category name, subcategory names, and self-references from right grid
+    childItemsToDisplay = childItemsToDisplay.filter(item => {
+      if (!item) return false;
+      const itemNorm = normalizeCategoryName(item);
+      const subNorm = normalizeCategoryName(sidebarActiveCat);
+      const mainNorm = normalizeCategoryName(currentMainCategory);
+      if (itemNorm === mainNorm || itemNorm === subNorm) return false;
+      if (subcategoryKeys.map(normalizeCategoryName).includes(itemNorm)) return false;
+      return true;
+    });
 
     return (
       <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
@@ -4037,7 +4106,7 @@ export default function CustomerDashboard({
                 <ChevronRight className={`w-4 h-4 opacity-70 group-hover/cat:translate-x-0.5 transition-transform ${sidebarActiveCat === 'ALL' ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} />
               </button>
 
-              {/* Second-Level Subcategory Buttons */}
+              {/* Second-Level Subcategory Buttons ONLY */}
               {subcategoryKeys.map((catKey) => {
                 const isActive = sidebarActiveCat === catKey;
                 return (
@@ -4059,7 +4128,7 @@ export default function CustomerDashboard({
             </div>
           </div>
 
-          {/* Right Content Grid: THIRD-LEVEL CHILD CATEGORIES */}
+          {/* Right Content Grid: THIRD-LEVEL CHILD CATEGORIES ONLY */}
           <div className="flex-grow text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               {sidebarActiveCat === 'ALL' ? 'ALL CHILD CATEGORIES' : `${sidebarActiveCat.toUpperCase()} CHILD CATEGORIES`}

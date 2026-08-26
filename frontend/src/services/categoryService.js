@@ -119,8 +119,23 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
 
     const mainName = findMainCategoryName(c);
-    let subName = (c.subcategory || (c.level === 'subcategory' ? c.name : '')).trim();
-    let childName = (c.subSubcategory || (c.level === 'child' || c.level === 'subSubcategory' ? c.name : '')).trim();
+    let subName = (c.subcategory || '').trim();
+    let childName = (c.subSubcategory || '').trim();
+
+    // If level is explicitly subcategory
+    if (!subName && c.level === 'subcategory' && c.name) {
+      subName = c.name.trim();
+    }
+
+    // If level is explicitly child or subSubcategory
+    if (!childName && (c.level === 'child' || c.level === 'subSubcategory' || c.level === 'L3') && c.name) {
+      childName = c.name.trim();
+    }
+
+    // If c has subcategory AND a distinct c.name, c.name is the child category
+    if (subName && !childName && c.name && c.name.trim() !== subName && normalizeCategoryName(c.name) !== mainName) {
+      childName = c.name.trim();
+    }
 
     // Check parentId mapping
     if (c.parentId && idMap.has(c.parentId.toString())) {
@@ -137,7 +152,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
         const parentSub = (parent.subcategory || parent.name || '').trim();
         if (parentSub) {
           subName = parentSub;
-          if (!childName && c.name && c.name !== parentSub) {
+          if (!childName && c.name && c.name.trim() !== parentSub) {
             childName = c.name.trim();
           }
         }
