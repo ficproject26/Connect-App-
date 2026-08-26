@@ -1436,24 +1436,35 @@ export default function CustomerDashboard({
     const adminUrl = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
     const mainUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const endpoints = [
+      adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
+      adminUrl ? `${adminUrl}/api/admin/public-banners` : '',
+      adminUrl ? `${adminUrl}/api/admin/banners/public` : '',
+      adminUrl ? `${adminUrl}/api/admin/banners` : '',
+      mainUrl ? `${mainUrl}/api/public/banners` : '',
       '/api/public/banners',
       '/api/admin/public/banners',
-      '/api/banners',
-      adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
-      mainUrl ? `${mainUrl}/api/public/banners` : ''
+      '/api/banners'
     ];
     const unique = [...new Set(endpoints.filter(Boolean))];
+    let foundBanners = null;
     for (const url of unique) {
       try {
         const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
-            setDbBanners(data);
-            return;
+            if (data.length > 0) {
+              setDbBanners(data);
+              return;
+            } else if (foundBanners === null) {
+              foundBanners = data;
+            }
           }
         }
       } catch (err) {}
+    }
+    if (foundBanners !== null) {
+      setDbBanners(foundBanners);
     }
   }, []);
 
@@ -4516,7 +4527,7 @@ export default function CustomerDashboard({
         ...defaultCategoryMeta[cat]
       }));
 
-    const slides = realDbSlides.length > 0 ? realDbSlides : (fallbackCatSlides.length > 0 ? fallbackCatSlides : [
+    const slides = realDbSlides.length > 0 ? [...realDbSlides, ...fallbackCatSlides] : (fallbackCatSlides.length > 0 ? fallbackCatSlides : [
       { id: 'cat-default', isCategorySlide: true, title: 'Connect Ecosystem', discount: 'VERIFIED PLATFORM', desc: 'Explore verified products and services', icon: ShoppingBag, bg: 'bg-[#0b1329]', category: 'Products', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=80' }
     ]);
 
