@@ -4524,8 +4524,8 @@ export default function CustomerDashboard({
         ...defaultCategoryMeta[cat]
       }));
 
-    const slides = realDbSlides.length > 0 ? [...realDbSlides, ...fallbackCatSlides] : (fallbackCatSlides.length > 0 ? fallbackCatSlides : [
-      { id: 'cat-default', isCategorySlide: true, title: 'Connect Ecosystem', discount: 'VERIFIED PLATFORM', desc: 'Explore verified products and services', icon: ShoppingBag, bg: 'bg-[#0b1329]', category: 'Products', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=80' }
+    const slides = realDbSlides.length > 0 ? realDbSlides : (fallbackCatSlides.length > 0 ? fallbackCatSlides : [
+      { id: 'cat-default', isCategorySlide: true, title: 'Connect Ecosystem', discount: 'VERIFIED PLATFORM', desc: 'Explore verified products and services', icon: ShoppingBag, bg: 'bg-[#0b1329]', category: 'Products', image: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=400&auto=format&fit=crop&q=80' }
     ]);
 
     const totalSlides = slides.length;
