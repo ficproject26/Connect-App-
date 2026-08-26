@@ -477,6 +477,7 @@ export default function CustomerDashboard({
 
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
   const [selectedColor, setSelectedColor] = useState('Red');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -3948,143 +3949,105 @@ export default function CustomerDashboard({
     );
   };
 
-  const renderSidebarMegaMenu = (activeCat, setActiveCat, dataDict, onItemClick) => {
-    const isDeletedSubCategory = (subName) => false;
-    const validCategories = Object.keys(dataDict || {}).filter(cat => !isDeletedSubCategory(cat));
-    const selectedSubCats = activeCat === 'ALL' ? validCategories : (validCategories.includes(activeCat) ? [activeCat] : []);
-
-    const handleCategoryClick = (categoryName, e) => {
-      if (onItemClick) {
-        onItemClick(categoryName, e);
-      } else {
-        const validTabs = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-        const tabForLink = hoveredLink || (validTabs.includes(activeTab) ? activeTab : 'Products');
-        setHoveredLink(null);
-
-        if (tabForLink === 'Jobs') {
-          setActiveTab('Jobs');
-          setSelectedSubNavbarCategory('Jobs');
-          setSelectedJobDepts(categoryName && categoryName !== 'ALL' ? [categoryName] : []);
-        } else {
-          setActiveTab(tabForLink);
-          setSelectedSubNavbarCategory(tabForLink);
-          
-          setSelectedCategories([]);
-          setSelectedServiceTypes([]);
-          setSelectedCuisines([]);
-          setSelectedAccomTypes([]);
-          setSelectedTravelTypes([]);
-          setSelectedDailyNeedsTypes([]);
-
-          if (tabForLink === 'Services') setSelectedServiceTypes([categoryName]);
-          else if (tabForLink === 'Food') setSelectedCuisines([categoryName]);
-          else if (tabForLink === 'Stay') setSelectedAccomTypes([categoryName]);
-          else if (tabForLink === 'Travel') setSelectedTravelTypes([categoryName]);
-          else if (tabForLink === 'Daily Needs') setSelectedDailyNeedsTypes([categoryName]);
-          else setSelectedCategories([categoryName]);
-        }
-      }
+  const renderCategoryExplorer = () => {
+    const allCategoryMap = {
+      'Gaming': ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs'],
+      'Home & Kitchen': ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor', 'Lighting Products'],
+      'Pet Care': ['Pet Food', 'Pet Toys', 'Pet Accessories', 'Pet Grooming Products', 'Pet Healthcare'],
+      'Gardening': ['Plants', 'Gardening Tools', 'Pots & Planters', 'Fertilizers', 'Watering Equipment'],
+      'Business Products': ['Office Supplies', 'Stationery', 'POS Terminals', 'Printer Ink', 'Desk Accessories'],
+      'Fashion': ['Sarees', 'Ethnic Wear', 'Western Wear', 'Footwear', 'Jewelry'],
+      'Electronics': ['Mobiles', 'Smartwatches', 'Headphones', 'Laptops', 'Cameras']
     };
 
+    // Dynamically populate from live products
+    if (Array.isArray(products)) {
+      products.forEach(p => {
+        const sub = p.subcategory || p.category;
+        const main = p.subNavbarCategory || p.mainCategory || 'Electronics';
+        if (sub && main) {
+          if (!allCategoryMap[main]) allCategoryMap[main] = [];
+          if (!allCategoryMap[main].includes(sub)) allCategoryMap[main].push(sub);
+        }
+      });
+    }
+
+    const mainCategoryKeys = Object.keys(allCategoryMap);
+
+    const itemsToDisplay = sidebarActiveCat === 'ALL'
+      ? Array.from(new Set(Object.values(allCategoryMap).flat()))
+      : (allCategoryMap[sidebarActiveCat] || []);
+
     return (
-      <div className="w-full flex flex-col md:flex-row gap-8">
-        {/* Sidebar: main categories */}
-        <div className="w-full md:w-1/4 flex flex-col gap-1 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 pb-4 md:pb-0 pr-0 md:pr-6 text-left shrink-0 max-h-[400px] overflow-y-auto scrollbar-thin">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3 block pl-2">
-            Main Categories
-          </span>
-          {/* ALL Button */}
-          <button
-            onClick={() => setActiveCat('ALL')}
-            className={`w-full text-left py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 ${
-              activeCat === 'ALL'
-                ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>All</span>
-            <svg className={`w-3.5 h-3.5 opacity-60 group-hover/cat:translate-x-0.5 transition-transform ${activeCat === 'ALL' ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          {validCategories.map((cat) => {
-            const isActive = activeCat === cat;
-            return (
+      <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
+        <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
+          {/* Left Sidebar: MAIN CATEGORIES */}
+          <div className="w-full md:w-1/4 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
+              MAIN CATEGORIES
+            </span>
+            <div className="flex flex-col gap-1.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
+              {/* ALL Button */}
               <button
-                key={cat}
-                onClick={() => setActiveCat(cat)}
-                className={`w-full text-left py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 ${
-                  isActive
+                type="button"
+                onClick={() => setSidebarActiveCat('ALL')}
+                className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
+                  sidebarActiveCat === 'ALL'
                     ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <span>{cat}</span>
-                <svg className={`w-3.5 h-3.5 opacity-60 group-hover/cat:translate-x-0.5 transition-transform ${isActive ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <span>ALL</span>
+                <ChevronRight className={`w-4 h-4 opacity-70 group-hover/cat:translate-x-0.5 transition-transform ${sidebarActiveCat === 'ALL' ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} />
               </button>
-            );
-          })}
-        </div>
 
-        {/* Details Area: Structured Level 2 Subcategories & Level 3 Child Categories */}
-        <div className="flex-grow pl-0 md:pl-6 text-left max-h-[400px] overflow-y-auto pr-2">
-          <div className="flex justify-between items-baseline mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-              {activeCat === 'ALL' ? 'All Subcategories & Child Categories' : activeCat}
-            </span>
+              {/* Category List */}
+              {mainCategoryKeys.map((catKey) => {
+                const isActive = sidebarActiveCat === catKey;
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => setSidebarActiveCat(catKey)}
+                    className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
+                      isActive
+                        ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span className="truncate">{catKey}</span>
+                    <ChevronRight className={`w-4 h-4 opacity-40 group-hover/cat:opacity-100 group-hover/cat:translate-x-0.5 transition-transform ${isActive ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} />
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {selectedSubCats.map((subName) => {
-              const catData = dataDict[subName];
-              const rawItems = catData ? (catData.items || catData) : [];
-              const childCategories = Array.isArray(rawItems)
-                ? Array.from(new Set(rawItems.map(ch => typeof ch === 'string' ? ch : (ch?.name || ch?.title || '')).filter(Boolean)))
-                : [];
+          {/* Right Content Grid: ALL ITEMS */}
+          <div className="flex-grow text-left">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
+              {sidebarActiveCat === 'ALL' ? 'ALL ITEMS' : `${sidebarActiveCat.toUpperCase()} ITEMS`}
+            </span>
 
-              return (
-                <div key={subName} className="bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 transition-all">
-                  {/* Level 2 Subcategory Header */}
-                  <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2.5 mb-3">
-                    <button
-                      onClick={(e) => handleCategoryClick(subName, e)}
-                      className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-amber-400 flex items-center gap-2 cursor-pointer border-none bg-transparent p-0 text-left"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                      <span>{subName}</span>
-                    </button>
-                    <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-md uppercase tracking-widest">
-                      Subcategory
-                    </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
+              {itemsToDisplay.map((itemTitle) => (
+                <div
+                  key={itemTitle}
+                  onClick={() => {
+                    setSearchQuery(itemTitle);
+                    triggerNotification(`Filtering catalog by "${itemTitle}"`);
+                  }}
+                  className="bg-[#f8fafc] dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl px-4 py-3.5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all cursor-pointer group select-none"
+                >
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors truncate">
+                    {itemTitle}
+                  </span>
+                  <div className="w-6 h-6 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 group-hover:bg-amber-400 group-hover:border-amber-400 text-slate-400 group-hover:text-slate-950 flex items-center justify-center transition-all shrink-0">
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                   </div>
-
-                  {/* Level 3 Child Categories */}
-                  {childCategories.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {childCategories.map((childName) => (
-                        <button
-                          key={childName}
-                          onClick={(e) => handleCategoryClick(childName, e)}
-                          className="py-1.5 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
-                        >
-                          <span>{childName}</span>
-                          <span className="text-[10px] text-slate-400">›</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={(e) => handleCategoryClick(subName, e)}
-                      className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-amber-500 transition-colors cursor-pointer border-none bg-transparent p-0 italic"
-                    >
-                      Explore {subName} items →
-                    </button>
-                  )}
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -9246,7 +9209,10 @@ export default function CustomerDashboard({
             {/* 1. Combined Hero Banner */}
             {renderHeroBanner()}
 
-            {/* 2. Top Categories Grid */}
+            {/* 2. Category Explorer Card (Matching Screenshot) */}
+            {renderCategoryExplorer()}
+
+            {/* 3. Top Categories Grid */}
             {renderTopCategoriesGrid()}
 
             {/* 3. Exclusive Offers for You */}
