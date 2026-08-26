@@ -4025,6 +4025,15 @@ export default function CustomerDashboard({
       return true;
     });
 
+    // Fallback: If no third-level child categories exist, display the active subcategory or subcategory list as actionable cards
+    if (childItemsToDisplay.length === 0) {
+      if (sidebarActiveCat === 'ALL') {
+        childItemsToDisplay = [...subcategoryKeys];
+      } else if (sidebarActiveCat) {
+        childItemsToDisplay = [sidebarActiveCat];
+      }
+    }
+
     return (
       <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
