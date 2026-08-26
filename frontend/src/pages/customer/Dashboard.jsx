@@ -4547,14 +4547,28 @@ export default function CustomerDashboard({
       })) : [])
     ];
 
-    const fallbackCatSlides = [
-      { id: 'cat-services', isCategorySlide: true, title: 'Services & Home Care', discount: 'LOCAL EXPERTS', desc: 'Plumbing, Electrician, Salon & Repairs', icon: Settings, bg: 'bg-[#0e0717]', category: 'Services', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80' },
-      { id: 'cat-products', isCategorySlide: true, title: 'Connect Marketplace', discount: 'TOP TRENDING PRODUCTS', desc: 'Explore Deals & Everyday Items', icon: ShoppingBag, bg: 'bg-[#0b1329]', category: 'Products', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=80' },
-      { id: 'cat-food', isCategorySlide: true, title: 'Food & Dining Deals', discount: 'FRESH MEALS DELIVERED', desc: 'Order Biryani, Desserts & Snacks', icon: Utensils, bg: 'bg-[#0e0e0e]', category: 'Food', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80' },
-      { id: 'cat-stay', isCategorySlide: true, title: 'Hotel Stays & Suites', discount: 'VERIFIED ACCOMMODATION', desc: 'Book Stays & Resorts at Best Rates', icon: BedDouble, bg: 'bg-[#07111e]', category: 'Stay', image: hotelActual }
-    ];
+    const defaultCategoryMeta = {
+      'Products': { title: 'Products Marketplace', discount: 'VERIFIED PRODUCTS', desc: 'Browse verified vendor products and listings', icon: ShoppingBag, bg: 'bg-[#0b1329]', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=80' },
+      'Services': { title: 'Services & Support', discount: 'VERIFIED SERVICES', desc: 'Browse verified professional service providers', icon: Settings, bg: 'bg-[#0e0717]', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80' },
+      'Daily Needs': { title: 'Daily Needs', discount: 'ESSENTIALS', desc: 'Everyday necessities & provisions', icon: Truck, bg: 'bg-[#07111e]', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80' },
+      'Food': { title: 'Food & Dining', discount: 'VERIFIED VENDORS', desc: 'Explore local food & dining options', icon: Utensils, bg: 'bg-[#0e0e0e]', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80' },
+      'Stay': { title: 'Stays & Accommodation', discount: 'ACCOMMODATION', desc: 'Explore verified stays & accommodation', icon: BedDouble, bg: 'bg-[#07111e]', image: hotelActual },
+      'Travel': { title: 'Travel & Mobility', discount: 'VERIFIED TRAVEL', desc: 'Explore travel & transport services', icon: Plane, bg: 'bg-[#0b1329]', image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80' },
+      'Jobs': { title: 'Jobs & Careers', discount: 'CAREER OPPORTUNITIES', desc: 'Explore verified job opportunities', icon: Briefcase, bg: 'bg-[#0e0717]', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&auto=format&fit=crop&q=80' }
+    };
 
-    const slides = realDbSlides.length > 0 ? realDbSlides : fallbackCatSlides;
+    const fallbackCatSlides = subNavbarCategories
+      .filter(cat => cat !== 'Home' && defaultCategoryMeta[cat])
+      .map(cat => ({
+        id: `cat-${cat.toLowerCase().replace(/\s+/g, '-')}`,
+        isCategorySlide: true,
+        category: cat,
+        ...defaultCategoryMeta[cat]
+      }));
+
+    const slides = realDbSlides.length > 0 ? realDbSlides : (fallbackCatSlides.length > 0 ? fallbackCatSlides : [
+      { id: 'cat-default', isCategorySlide: true, title: 'Connect Ecosystem', discount: 'VERIFIED PLATFORM', desc: 'Explore verified products and services', icon: ShoppingBag, bg: 'bg-[#0b1329]', category: 'Products', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=80' }
+    ]);
 
     const totalSlides = slides.length;
     const currentSlideIdx = activeHeroSlide % totalSlides;
@@ -8221,6 +8235,17 @@ export default function CustomerDashboard({
 
     // Dynamic highlights based on category
     const getProductHighlights = (product) => {
+      if (!product) return [];
+      if (product.specifications && Object.keys(product.specifications).length > 0) {
+        return Object.entries(product.specifications)
+          .filter(([k, v]) => v && String(v).trim())
+          .map(([k, v]) => `${k}: ${v}`);
+      }
+      if (product.customFields && Object.keys(product.customFields).length > 0) {
+        return Object.entries(product.customFields)
+          .filter(([k, v]) => v && String(v).trim())
+          .map(([k, v]) => `${k}: ${v}`);
+      }
       if (product.description) {
         const lines = product.description
           .split('\n')
@@ -8698,22 +8723,49 @@ export default function CustomerDashboard({
                 })}
               </div>
 
-              {/* Highlights Section */}
-              <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 mb-6">
-                <h4 className="text-[10.5px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-3.5">
-                  Highlights
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                  {getProductHighlights(selectedProduct).map((hl, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              {/* Dynamic Product Specifications / Highlights Section */}
+              {(() => {
+                const specs = selectedProduct?.specifications || selectedProduct?.customFields || {};
+                const entries = Object.entries(specs).filter(([k, v]) => v && String(v).trim());
+                if (entries.length > 0) {
+                  return (
+                    <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 mb-6">
+                      <h4 className="text-[10.5px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-3.5">
+                        Product Specifications
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        {entries.map(([key, val]) => (
+                          <div key={key} className="flex justify-between items-center text-xs py-2 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-2xs">
+                            <span className="font-semibold text-slate-400">{key}:</span>
+                            <span className="font-extrabold text-slate-800 dark:text-white">{String(val)}</span>
+                          </div>
+                        ))}
                       </div>
-                      <span className="font-medium text-left">{hl}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  );
+                }
+                const hls = getProductHighlights(selectedProduct);
+                if (hls.length > 0) {
+                  return (
+                    <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 mb-6">
+                      <h4 className="text-[10.5px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-3.5">
+                        Highlights
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        {hls.map((hl, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+                            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                            </div>
+                            <span className="font-medium text-left">{hl}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Description & Action buttons */}

@@ -433,6 +433,16 @@ export default function SubServiceDetails({ title, onBack }) {
 
   const getProductHighlights = (product) => {
     if (!product) return [];
+    if (product.specifications && Object.keys(product.specifications).length > 0) {
+      return Object.entries(product.specifications)
+        .filter(([k, v]) => v && String(v).trim())
+        .map(([k, v]) => `${k}: ${v}`);
+    }
+    if (product.customFields && Object.keys(product.customFields).length > 0) {
+      return Object.entries(product.customFields)
+        .filter(([k, v]) => v && String(v).trim())
+        .map(([k, v]) => `${k}: ${v}`);
+    }
     if (product.description) {
       const lines = product.description
         .split('\n')
@@ -442,41 +452,7 @@ export default function SubServiceDetails({ title, onBack }) {
         return lines;
       }
     }
-    const categoryName = (product.category || '').toLowerCase();
-    if (categoryName.includes('smartphone') || categoryName.includes('phone')) {
-      return [
-        "High-definition OLED display",
-        "Octa-core flagship processor",
-        "Pro-grade multi-camera system",
-        "Fast-charging long-life battery",
-        "Includes brand-certified warranty"
-      ];
-    }
-    if (categoryName.includes('saree')) {
-      return [
-        "Premium pure silk fabric blend",
-        "Exquisite Zari border embroidery",
-        "Length: 5.5m with matching blouse piece",
-        "Dry clean only recommended",
-        "Handcrafted by local weaver societies"
-      ];
-    }
-    if (categoryName.includes('stay') || categoryName.includes('hotel')) {
-      return [
-        "Priority reservation confirmation",
-        "Complimentary high-speed WiFi",
-        "Access to premium pool and lounge",
-        "Connect special welcome package",
-        "Free cancellation options available"
-      ];
-    }
-    return [
-      "Exclusive deal verified by Connect App",
-      "Qualifies for extra reward points",
-      "Priority order/booking processing",
-      "Secure payment checkout guarantee",
-      "Dedicated member helpline support"
-    ];
+    return [];
   };
 
   return (
@@ -1148,20 +1124,45 @@ export default function SubServiceDetails({ title, onBack }) {
                   </p>
                 </div>
 
-                {/* Specs */}
-                <div>
-                  <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Specifications</h4>
-                  <div className="space-y-2.5">
-                    {getProductHighlights(selectedProductForModal).map((hl, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-xs text-slate-650 dark:text-slate-350">
-                        <div className="w-4 h-4 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                          <svg className="w-2.5 h-2.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                {/* Dynamic Product Specifications */}
+                {(() => {
+                  const specs = selectedProductForModal.specifications || selectedProductForModal.customFields || {};
+                  const entries = Object.entries(specs).filter(([k, v]) => v && String(v).trim());
+                  if (entries.length > 0) {
+                    return (
+                      <div>
+                        <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Product Specifications</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                          {entries.map(([key, val]) => (
+                            <div key={key} className="flex justify-between items-center text-xs py-1.5 px-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800">
+                              <span className="font-semibold text-slate-400">{key}:</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-100">{String(val)}</span>
+                            </div>
+                          ))}
                         </div>
-                        <span>{hl}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    );
+                  }
+                  const highlights = getProductHighlights(selectedProductForModal);
+                  if (highlights.length > 0) {
+                    return (
+                      <div>
+                        <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Specifications</h4>
+                        <div className="space-y-2.5">
+                          {highlights.map((hl, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-xs text-slate-650 dark:text-slate-350">
+                              <div className="w-4 h-4 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg className="w-2.5 h-2.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              </div>
+                              <span>{hl}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
           </div>
