@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
-import { getAdminBackendUrl } from '../../services/apiSetup';
+import { getAdminBackendUrl, getBackendUrl } from '../../services/apiSetup';
 import { productService, isRealVendorProduct } from '../../services/productService';
 import { socketService } from '../../services/socketService';
 import { getActiveMainCategories, fetchAdminCategories, buildActiveCategoryTree } from '../../services/categoryService';
@@ -1433,17 +1433,19 @@ export default function CustomerDashboard({
   }, []);
 
   const fetchDbBanners = useCallback(async () => {
+    const adminUrl = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+    const mainUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const endpoints = [
       '/api/public/banners',
       '/api/admin/public/banners',
       '/api/banners',
-      `${getAdminBackendUrl()}/api/admin/public/banners`,
-      `${getBackendUrl()}/api/public/banners`
+      adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
+      mainUrl ? `${mainUrl}/api/public/banners` : ''
     ];
     const unique = [...new Set(endpoints.filter(Boolean))];
     for (const url of unique) {
       try {
-        const res = await fetch(`${url}?t=${Date.now()}`);
+        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
