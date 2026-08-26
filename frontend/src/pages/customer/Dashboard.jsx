@@ -1432,35 +1432,34 @@ export default function CustomerDashboard({
     }
   }, []);
 
-  // Poll dynamic categories every 3 seconds for instant real-time synchronization
-  useAutoRefresh(fetchDbCategories, 3000);
-
-  useEffect(() => {
-    const fetchDbBanners = async () => {
+  const fetchDbBanners = useCallback(async () => {
+    const endpoints = [
+      '/api/public/banners',
+      '/api/admin/public/banners',
+      '/api/banners',
+      `${getAdminBackendUrl()}/api/admin/public/banners`,
+      `${getBackendUrl()}/api/public/banners`
+    ];
+    const unique = [...new Set(endpoints.filter(Boolean))];
+    for (const url of unique) {
       try {
-        let res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
-        if (!res.ok) {
-          res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
-        }
+        const res = await fetch(`${url}?t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
             setDbBanners(data);
+            return;
           }
         }
-      } catch (err) {
-        try {
-          const res = await fetch(`${getAdminBackendUrl()}/api/admin/public/banners`);
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data)) setDbBanners(data);
-          }
-        } catch (e) {
-          console.warn("Failed to fetch dynamic banners in customer dashboard", err);
-        }
-      }
-    };
+      } catch (err) {}
+    }
+  }, []);
 
+  // Poll dynamic categories and banners every 3 seconds for real-time synchronization
+  useAutoRefresh(fetchDbCategories, 3000);
+  useAutoRefresh(fetchDbBanners, 3000);
+
+  useEffect(() => {
     fetchDbCategories();
     fetchDbBanners();
 
@@ -1477,8 +1476,10 @@ export default function CustomerDashboard({
           timeout: 8000
         });
         socket.on('categories:updated', () => {
-          // Real-time category update received
           fetchDbCategories();
+        });
+        socket.on('banners:updated', () => {
+          fetchDbBanners();
         });
       }
     } catch (err) {}
@@ -1486,7 +1487,7 @@ export default function CustomerDashboard({
     return () => {
       if (socket) socket.disconnect();
     };
-  }, [fetchDbCategories]);
+  }, [fetchDbCategories, fetchDbBanners]);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
@@ -4474,24 +4475,32 @@ export default function CustomerDashboard({
 
   const renderHeroBanner = () => {
     const realDbSlides = [
-      ...dbBanners.map((banner, index) => ({
-        id: `db-banner-${banner._id || index}`,
-        isDb: true,
-        title: banner.title,
-        imageUrl: banner.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600',
-        redirectLink: banner.redirectLink || '/promotions',
-        targetAudience: banner.targetAudience || 'all',
-        description: banner.redirectLink || 'Special Promotion Offer'
-      })),
-      ...(Array.isArray(adminAds) ? adminAds.map((ad, idx) => ({
-        id: `admin-ad-${ad._id || idx}`,
-        isDb: true,
-        title: ad.title || 'Special Sponsored Deal',
-        imageUrl: ad.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600',
-        redirectLink: ad.redirectLink || '',
-        targetAudience: 'all',
-        description: ad.discount ? `${ad.discount} - Limited Offer` : 'Sponsored Advertisement'
-      })) : [])
+      ...dbBanners.map((banner, index) => {
+        const rawImg = banner.imageUrl || banner.image || banner.bannerImage || banner.photo || banner.img || banner.picture || '';
+        return {
+          id: `db-banner-${banner._id || index}`,
+          isDb: true,
+          title: banner.title || banner.name || banner.bannerTitle || banner.header || 'Special Promotion',
+          imageUrl: rawImg ? sanitizeImageUrl(rawImg, { subNavbarCategory: banner.category || banner.mainCategory }) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600',
+          redirectLink: banner.redirectLink || banner.link || banner.targetUrl || banner.url || (banner.category ? `/${banner.category}` : '/promotions'),
+          targetAudience: banner.targetAudience || 'all',
+          description: banner.description || banner.desc || banner.subtitle || 'Special Promotion Offer',
+          discount: banner.discount || banner.badge || banner.offer || 'CONNECT DEAL'
+        };
+      }),
+      ...(Array.isArray(adminAds) ? adminAds.map((ad, idx) => {
+        const rawImg = ad.imageUrl || ad.image || ad.photo || ad.img || '';
+        return {
+          id: `admin-ad-${ad._id || idx}`,
+          isDb: true,
+          title: ad.title || ad.name || 'Special Sponsored Deal',
+          imageUrl: rawImg ? sanitizeImageUrl(rawImg, { subNavbarCategory: ad.category }) : 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600',
+          redirectLink: ad.redirectLink || ad.link || '',
+          targetAudience: 'all',
+          description: ad.description || ad.desc || (ad.discount ? `${ad.discount} - Limited Offer` : 'Sponsored Advertisement'),
+          discount: ad.discount || 'SPONSORED'
+        };
+      }) : [])
     ];
 
     const defaultCategoryMeta = {

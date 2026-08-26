@@ -106,6 +106,35 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
     res.status(500).json({ error: err.message || 'Server error' });
   }
 });
+// Public Banners Endpoints
+app.get(['/api/public/banners', '/api/banners'], async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const banners = await mongoDb.collection('banners').find({ isActive: { $ne: false } }).toArray();
+      return res.json(banners);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching public banners in index.ts:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// Public Ads Endpoints
+app.get(['/api/public/ads', '/api/ads'], async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const ads = await mongoDb.collection('ads').find({ isActive: { $ne: false } }).toArray();
+      return res.json(ads);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.error("Error fetching public ads in index.ts:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
 
 // Public Products Endpoints (Customer & Vendor products)
 app.get(['/api/public/products', '/api/products'], async (req, res) => {

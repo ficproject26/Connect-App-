@@ -37,11 +37,11 @@ router.get(['/categories', '/public/categories'], async (req: Request, res: Resp
 });
 
 // GET: /api/admin/public/banners
-router.get('/public/banners', async (req: Request, res: Response) => {
+router.get(['/public/banners', '/banners'], async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {
-      const banners = await mongoDb.collection('banners').find({ isActive: true }).toArray();
+      const banners = await mongoDb.collection('banners').find({ isActive: { $ne: false } }).toArray();
       return res.json(banners);
     }
     return res.json([]);
@@ -56,7 +56,7 @@ router.get(['/public/ads', '/ads'], async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {
-      const ads = await mongoDb.collection('ads').find({ isActive: true }).toArray();
+      const ads = await mongoDb.collection('ads').find({ isActive: { $ne: false } }).toArray();
       return res.json(ads);
     }
     return res.json([]);
