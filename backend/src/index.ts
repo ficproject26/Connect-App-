@@ -17,7 +17,7 @@ import { helmetSecurityMiddleware, sanitizeInputsMiddleware } from './security/m
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = Number(process.env.PORT) || 8000;
 
 // OWASP Security Headers (Helmet) & Input Sanitization
 app.use(helmetSecurityMiddleware);
@@ -314,14 +314,16 @@ app.use((err: any, req: any, res: any, next: any) => {
 const server = http.createServer(app);
 socketManager.init(server);
 
-// Connect to Database and start Server
-db.connect()
-  .then(() => {
-    server.listen(PORT, () => {
-      console.log(`[Server]: Connect App Backend running on http://localhost:${PORT} with DevSecOps Security`);
+// Start Server immediately on 0.0.0.0 for Cloud / Render port detection
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`[Server]: Connect App Backend running on port ${PORT} bound to 0.0.0.0 with DevSecOps Security`);
+
+  // Asynchronously connect to Database without blocking port binding
+  db.connect()
+    .then(() => {
+      console.log('[Server]: Database connection and indexes verified successfully.');
+    })
+    .catch((err) => {
+      console.error('[Server]: Initial database connection error (will retry on incoming requests):', err.message);
     });
-  })
-  .catch((err) => {
-    console.error('[Server]: Failed to start backend due to database connection failure:', err.message);
-    process.exit(1);
-  });
+});
