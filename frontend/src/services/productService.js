@@ -282,17 +282,43 @@ const sanitizeProduct = (p) => {
 };
 
 let activeGetProductsPromise = null;
+let memoryProductCache = null;
+
+try {
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    const saved = window.sessionStorage.getItem('cached_vendor_products');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        memoryProductCache = parsed;
+      }
+    }
+  }
+} catch (e) {}
 
 export const productService = {
   clearCache: () => {
     activeGetProductsPromise = null;
+    memoryProductCache = null;
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.removeItem('cached_vendor_products');
+      }
+    } catch (e) {}
   },
 
   getCachedProducts: () => {
-    return [];
+    return memoryProductCache || [];
   },
 
-  getProducts: async () => {
+  getProducts: async (forceRefresh = false) => {
+    if (!forceRefresh && Array.isArray(memoryProductCache) && memoryProductCache.length > 0) {
+      if (!activeGetProductsPromise) {
+        productService.getProducts(true).catch(() => {});
+      }
+      return { success: true, products: memoryProductCache, source: 'cache' };
+    }
+
     if (activeGetProductsPromise) {
       return activeGetProductsPromise;
     }
@@ -307,36 +333,87 @@ export const productService = {
         const baseVendorUrl = getVendorBackendUrl();
         const baseUrl = getBackendUrl();
         const endpoints = [
-          '/api/public/products',
           baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
-          baseUrl ? `${baseUrl}/api/public/products` : null
+          baseUrl ? `${baseUrl}/api/public/products` : null,
+          'https://connect-app-7s6g.onrender.com/api/public/products',
+          '/api/public/products'
         ];
         const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
 
-        for (const endpoint of uniqueEndpoints) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const fetchEndpoint = (endpoint) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-            const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
-              signal: controller.signal,
-              cache: 'no-store'
-            }).catch(() => null);
-            clearTimeout(timeoutId);
+              const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
+                signal: controller.signal,
+                cache: 'no-store'
+              }).catch(() => null);
+              clearTimeout(timeoutId);
 
-            if (res && res.status === 401) {
-              continue;
-            }
-
-            if (res && res.ok) {
-              const data = await res.json().catch(() => null);
-              const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
-              if (Array.isArray(rawList)) {
-                const vendorProducts = filterVendorAddedOnly(rawList);
-                return { success: true, products: vendorProducts, source: 'live' };
+              if (res && res.ok) {
+                const data = await res.json().catch(() => null);
+                const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
+                if (Array.isArray(rawList)) {
+                  const vendorProducts = filterVendorAddedOnly(rawList);
+                  if (vendorProducts.length > 0) {
+                    return resolve(vendorProducts);
+                  }
+                }
               }
+              reject(new Error(`Failed endpoint ${endpoint}`));
+            } catch (err) {
+              reject(err);
             }
-          } catch (err) {}
+          });
+        };
+
+        try {
+          const fastestProducts = await Promise.any(uniqueEndpoints.map(ep => fetchEndpoint(ep)));
+          if (Array.isArray(fastestProducts) && fastestProducts.length > 0) {
+            memoryProductCache = fastestProducts;
+            try {
+              if (typeof window !== 'undefined' && window.sessionStorage) {
+                window.sessionStorage.setItem('cached_vendor_products', JSON.stringify(fastestProducts));
+              }
+            } catch (e) {}
+            return { success: true, products: fastestProducts, source: 'live' };
+          }
+        } catch (raceErr) {
+          for (const endpoint of uniqueEndpoints) {
+            try {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+              const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
+                signal: controller.signal,
+                cache: 'no-store'
+              }).catch(() => null);
+              clearTimeout(timeoutId);
+
+              if (res && res.ok) {
+                const data = await res.json().catch(() => null);
+                const rawList = Array.isArray(data) ? data : (data && Array.isArray(data.products) ? data.products : (data && Array.isArray(data.data) ? data.data : []));
+                if (Array.isArray(rawList)) {
+                  const vendorProducts = filterVendorAddedOnly(rawList);
+                  if (vendorProducts.length > 0) {
+                    memoryProductCache = vendorProducts;
+                    try {
+                      if (typeof window !== 'undefined' && window.sessionStorage) {
+                        window.sessionStorage.setItem('cached_vendor_products', JSON.stringify(vendorProducts));
+                      }
+                    } catch (e) {}
+                    return { success: true, products: vendorProducts, source: 'live' };
+                  }
+                }
+              }
+            } catch (err) {}
+          }
+        }
+
+        if (Array.isArray(memoryProductCache) && memoryProductCache.length > 0) {
+          return { success: true, products: memoryProductCache, source: 'cache_fallback' };
         }
 
         return { success: true, products: [], source: 'empty' };

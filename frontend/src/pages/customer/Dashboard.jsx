@@ -497,7 +497,11 @@ export default function CustomerDashboard({
 
   const loadVendorProducts = useCallback(async () => {
     try {
-      const res = await productService.getProducts(true);
+      const cached = productService.getCachedProducts();
+      if (Array.isArray(cached) && cached.length > 0) {
+        setIsLoadingProducts(false);
+      }
+      const res = await productService.getProducts(false);
       setIsLoadingProducts(false);
       if (res && res.success && Array.isArray(res.products)) {
         const patched = res.products.map(p => {
