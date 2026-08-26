@@ -6,7 +6,7 @@ import { apiFetch } from '../../services/api';
 import { getAdminBackendUrl, getBackendUrl } from '../../services/apiSetup';
 import { productService, isRealVendorProduct, sanitizeImageUrl, getCategoryFallbackImage } from '../../services/productService';
 import { socketService } from '../../services/socketService';
-import { getActiveMainCategories, fetchAdminCategories, buildActiveCategoryTree } from '../../services/categoryService';
+import { getActiveMainCategories, fetchAdminCategories, buildActiveCategoryTree, normalizeCategoryName } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 import WalletPage from './Wallet';
