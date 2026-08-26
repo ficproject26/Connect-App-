@@ -3951,15 +3951,16 @@ export default function CustomerDashboard({
   };
 
   const renderCategoryExplorer = () => {
-    // 1. Determine active Main Category tab focus (Services, Products, Daily Needs, Food, Stay, Travel, Jobs)
-    const currentMainCategory = (activeTab && activeTab !== 'Home' && activeTab !== 'All' && activeTab !== 'Offers') 
-      ? normalizeCategoryName(activeTab) 
-      : 'Services';
+    // 1. Home tab displays NO category panel
+    if (activeTab === 'Home') return null;
 
-    // 2. Build full active category tree from DB records using authoritative parser
+    // 2. Resolve current Main Category tab focus (Services, Products, Daily Needs, Food, Stay, Travel, Jobs)
+    const currentMainCategory = normalizeCategoryName(activeTab || 'Services');
+
+    // 3. Parse database category tree using authoritative buildActiveCategoryTree(dbCategories)
     const fullTree = buildActiveCategoryTree(dbCategories);
 
-    // 3. Extract subcategories & child categories for the CURRENT main category (e.g. Travel, Services)
+    // 4. Extract Level 2 Subcategories and Level 3 Child Categories for currentMainCategory strictly from DB
     const mainCategoryObj = fullTree[currentMainCategory] || { subcategories: {} };
     const categoryTaxonomy = {};
 
@@ -3967,19 +3968,21 @@ export default function CustomerDashboard({
       Object.keys(mainCategoryObj.subcategories).forEach(subName => {
         const subObj = mainCategoryObj.subcategories[subName];
         if (subObj && subObj.isActive !== false) {
-          categoryTaxonomy[subName] = Array.isArray(subObj.childCategories) ? [...subObj.childCategories] : [];
+          categoryTaxonomy[subName] = Array.isArray(subObj.childCategories) 
+            ? subObj.childCategories.filter(Boolean) 
+            : [];
         }
       });
     }
 
-    // 4. Augment with live vendor products matching currentMainCategory
+    // 5. Augment with live vendor products matching currentMainCategory strictly from DB
     if (Array.isArray(products)) {
       products.forEach(p => {
         if (!p || p.isActive === false || p.isAvailable === false) return;
         const pMain = normalizeCategoryName(p.mainCategory || p.subNavbarCategory || p.tag || '');
         if (pMain === currentMainCategory) {
-          const sub = p.subcategory || p.category;
-          const child = p.subSubcategory;
+          const sub = (p.subcategory || p.category || '').trim();
+          const child = (p.subSubcategory || '').trim();
           if (sub && sub !== currentMainCategory) {
             if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
             if (child && child !== sub && child !== currentMainCategory && !categoryTaxonomy[sub].includes(child)) {
@@ -3990,80 +3993,42 @@ export default function CustomerDashboard({
       });
     }
 
-    // 5. If no DB subcategories exist for this main category, add baseline subcategories for this specific main category
-    const mainSubcategoryKeys = Object.keys(categoryTaxonomy);
-    if (mainSubcategoryKeys.length === 0) {
-      if (currentMainCategory === 'Services') {
-        categoryTaxonomy['Home Services'] = ['Plumbing', 'Electrician', 'Cleaning Services', 'AC Repair & Service', 'Carpentry', 'Painting Services'];
-        categoryTaxonomy['Beauty & Wellness'] = ['Salon for Women', 'Spa & Massage', 'Skincare & Facial', 'Makeup Artists', 'Hair Styling'];
-        categoryTaxonomy['Repair & Maintenance'] = ['Appliance Repair', 'Laptop & PC Repair', 'Mobile Repair', 'CCTV Repair'];
-        categoryTaxonomy['Professional Services'] = ['Legal Consultancy', 'CA & Tax Advisor', 'Web Development', 'Digital Marketing'];
-      } else if (currentMainCategory === 'Products') {
-        categoryTaxonomy['Computers'] = ['Laptop', 'Desktop PCs', 'Monitors', 'Computer Accessories', 'Storage Devices'];
-        categoryTaxonomy['Electronics'] = ['Mobiles', 'Smartwatches', 'Headphones', 'Cameras', 'Audio Devices'];
-        categoryTaxonomy['Gaming'] = ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs'];
-        categoryTaxonomy['Home & Kitchen'] = ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor', 'Lighting Products'];
-      } else if (currentMainCategory === 'Food') {
-        categoryTaxonomy['Main Course'] = ['Biryani', 'Thali & Meals', 'Paneer Special', 'Chicken Specialties', 'Chinese & Noodles'];
-        categoryTaxonomy['Fast Food'] = ['Burgers', 'Pizzas', 'Sandwiches', 'Rolls & Wraps', 'Fried Chicken'];
-        categoryTaxonomy['Desserts & Sweets'] = ['Ice Creams', 'Cakes & Pastries', 'Indian Sweets', 'Shakes & Smoothies'];
-      } else if (currentMainCategory === 'Daily Needs') {
-        categoryTaxonomy['Grocery & Staples'] = ['Atta & Flour', 'Rice & Grains', 'Pulses & Dals', 'Edible Oils', 'Spices & Masalas'];
-        categoryTaxonomy['Fresh Produce'] = ['Fresh Vegetables', 'Fresh Fruits', 'Organic Produce', 'Exotic Veggies'];
-        categoryTaxonomy['Dairy & Breakfast'] = ['Milk & Butter', 'Paneer & Curd', 'Bread & Eggs', 'Breakfast Cereals'];
-      } else if (currentMainCategory === 'Stay') {
-        categoryTaxonomy['Hotels & Resorts'] = ['Luxury Hotels', 'Budget Hotels', 'Beach Resorts', 'Heritage Hotels'];
-        categoryTaxonomy['Homestays & Villas'] = ['Private Villas', 'Serviced Apartments', 'Cozy Homestays', 'Farmhouses'];
-      } else if (currentMainCategory === 'Travel') {
-        categoryTaxonomy['Bus Tickets'] = ['AC Sleeper Bus', 'Non-AC Seater', 'Express Intercity', 'Volvo Luxury'];
-        categoryTaxonomy['Cab Services'] = ['Outstation Cabs', 'Airport Taxi', 'Hourly Rental', 'Local City Cabs'];
-      } else if (currentMainCategory === 'Jobs') {
-        categoryTaxonomy['IT & Software'] = ['Full Stack Developer', 'Frontend Engineer', 'Backend Developer', 'UI/UX Designer', 'DevOps Engineer'];
-        categoryTaxonomy['Sales & Marketing'] = ['Business Development', 'Digital Marketer', 'Sales Manager', 'Telecaller'];
-      }
-    }
+    // Second-Level Subcategories list for Left Sidebar
+    const subcategoryKeys = Object.keys(categoryTaxonomy);
 
-    // Merged Left Sidebar Category List (Combines Subcategories and Child Categories cleanly)
-    const leftCategories = ['ALL'];
-    Object.keys(categoryTaxonomy).forEach(subName => {
-      if (subName && !leftCategories.includes(subName)) {
-        leftCategories.push(subName);
-      }
-      const children = categoryTaxonomy[subName] || [];
-      children.forEach(childName => {
-        if (childName && !leftCategories.includes(childName)) {
-          leftCategories.push(childName);
-        }
-      });
-    });
-
-    // Determine Child Items to Display on the Right Grid
+    // Third-Level Child Categories for Right Content Grid
     let childItemsToDisplay = [];
     if (sidebarActiveCat === 'ALL') {
       childItemsToDisplay = Array.from(new Set(Object.values(categoryTaxonomy).flat())).filter(Boolean);
-      if (childItemsToDisplay.length === 0) {
-        childItemsToDisplay = leftCategories.filter(c => c !== 'ALL');
-      }
     } else {
-      const nestedChildren = categoryTaxonomy[sidebarActiveCat];
-      if (Array.isArray(nestedChildren) && nestedChildren.length > 0) {
-        childItemsToDisplay = nestedChildren;
-      } else {
-        // If sidebarActiveCat is itself a leaf category item (e.g. NON AC CAR), render it as the action card
-        childItemsToDisplay = [sidebarActiveCat];
-      }
+      childItemsToDisplay = (categoryTaxonomy[sidebarActiveCat] || []).filter(Boolean);
     }
 
     return (
       <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
-          {/* Left Sidebar: MERGED CATEGORIES FOR ACTIVE TAB */}
+          {/* Left Sidebar: SECOND-LEVEL SUBCATEGORIES FOR ACTIVE MAIN CATEGORY */}
           <div className="w-full md:w-1/4 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               MAIN CATEGORIES
             </span>
             <div className="flex flex-col gap-1.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
-              {leftCategories.map((catKey) => {
+              {/* ALL Button */}
+              <button
+                type="button"
+                onClick={() => setSidebarActiveCat('ALL')}
+                className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
+                  sidebarActiveCat === 'ALL'
+                    ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span>ALL</span>
+                <ChevronRight className={`w-4 h-4 opacity-70 group-hover/cat:translate-x-0.5 transition-transform ${sidebarActiveCat === 'ALL' ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} />
+              </button>
+
+              {/* Second-Level Subcategory Buttons */}
+              {subcategoryKeys.map((catKey) => {
                 const isActive = sidebarActiveCat === catKey;
                 return (
                   <button
@@ -4084,7 +4049,7 @@ export default function CustomerDashboard({
             </div>
           </div>
 
-          {/* Right Content Grid: CHILD CATEGORIES / ITEMS */}
+          {/* Right Content Grid: THIRD-LEVEL CHILD CATEGORIES */}
           <div className="flex-grow text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               {sidebarActiveCat === 'ALL' ? 'ALL CHILD CATEGORIES' : `${sidebarActiveCat.toUpperCase()} CHILD CATEGORIES`}
@@ -4112,7 +4077,7 @@ export default function CustomerDashboard({
               </div>
             ) : (
               <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs font-semibold">
-                No categories found for {sidebarActiveCat}.
+                No third-level categories configured for {sidebarActiveCat === 'ALL' ? currentMainCategory : sidebarActiveCat}.
               </div>
             )}
           </div>
