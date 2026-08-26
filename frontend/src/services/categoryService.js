@@ -202,29 +202,50 @@ export const getActiveMainCategories = (dbCategories = []) => {
   return sorted.length > 0 ? sorted : canonicalMains;
 };
 
-export const fetchAdminCategories = async () => {
-  const urlsToTry = [
-    '/api/public/categories',
-    '/api/admin/categories',
-    '/api/categories',
-    `${getBackendUrl()}/api/public/categories`,
-    `${getBackendUrl()}/api/admin/categories`,
-    `${getAdminBackendUrl()}/api/admin/categories`
-  ];
+let memoryCategoryCache = null;
+let activeFetchCategoriesPromise = null;
 
-  const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
-
-  for (const url of uniqueUrls) {
-    try {
-      const res = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } }).catch(() => null);
-      if (res && res.ok) {
-        const data = await res.json().catch(() => null);
-        if (Array.isArray(data) && data.length > 0) {
-          return data;
-        }
-      }
-    } catch (e) {}
+export const fetchAdminCategories = async (forceRefresh = false) => {
+  if (!forceRefresh && Array.isArray(memoryCategoryCache) && memoryCategoryCache.length > 0) {
+    return memoryCategoryCache;
   }
 
-  return [];
+  if (activeFetchCategoriesPromise) {
+    return activeFetchCategoriesPromise;
+  }
+
+  activeFetchCategoriesPromise = (async () => {
+    const urlsToTry = [
+      `${getBackendUrl()}/api/public/categories`,
+      '/api/public/categories',
+      '/api/admin/categories',
+      `${getAdminBackendUrl()}/api/admin/categories`
+    ];
+
+    const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
+
+    for (const url of uniqueUrls) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch(url, { signal: controller.signal }).catch(() => null);
+        clearTimeout(timeoutId);
+
+        if (res && res.ok) {
+          const data = await res.json().catch(() => null);
+          const list = Array.isArray(data) ? data : (data?.categories || []);
+          if (Array.isArray(list) && list.length > 0) {
+            memoryCategoryCache = list;
+            activeFetchCategoriesPromise = null;
+            return list;
+          }
+        }
+      } catch (e) {}
+    }
+
+    activeFetchCategoriesPromise = null;
+    return memoryCategoryCache || [];
+  })();
+
+  return activeFetchCategoriesPromise;
 };
