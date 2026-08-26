@@ -3950,65 +3950,92 @@ export default function CustomerDashboard({
   };
 
   const renderCategoryExplorer = () => {
-    const categoryTaxonomy = {
-      'Computers': ['Laptop', 'Desktop PCs', 'Monitors', 'Computer Accessories', 'Storage Devices'],
-      'Electronics': ['Mobiles', 'Smartwatches', 'Headphones', 'Cameras', 'Audio Devices'],
-      'Gaming': ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs'],
-      'Home & Kitchen': ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor', 'Lighting Products'],
-      'Pet Care': ['Pet Food', 'Pet Toys', 'Pet Accessories', 'Pet Grooming Products', 'Pet Healthcare'],
-      'Gardening': ['Plants', 'Gardening Tools', 'Pots & Planters', 'Fertilizers', 'Watering Equipment'],
-      'Business Products': ['Office Supplies', 'Stationery', 'POS Terminals', 'Printer Ink', 'Desk Accessories'],
-      'Fashion': ['Sarees', 'Ethnic Wear', 'Western Wear', 'Footwear', 'Jewelry']
-    };
+    // 1. Determine active Main Category tab focus (Services, Products, Daily Needs, Food, Stay, Travel, Jobs)
+    const currentMainCategory = (activeTab && activeTab !== 'Home' && activeTab !== 'All' && activeTab !== 'Offers') 
+      ? normalizeCategoryName(activeTab) 
+      : 'Services';
 
-    // 1. Process DB categories dynamically
-    if (Array.isArray(dbCategories)) {
-      dbCategories.forEach(c => {
-        if (c && c.isActive !== false && !c.isDeleted) {
-          const sub = c.subcategory || (c.level === 'subcategory' ? c.name : null);
-          const child = c.subSubcategory || (c.level === 'child' ? c.name : null);
-          if (sub) {
-            if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
-            if (child && !categoryTaxonomy[sub].includes(child)) {
-              categoryTaxonomy[sub].push(child);
-            }
-            if (Array.isArray(c.children)) {
-              c.children.forEach(ch => {
-                const chName = typeof ch === 'string' ? ch : (ch.name || ch.subSubcategory);
-                if (chName && !categoryTaxonomy[sub].includes(chName)) {
-                  categoryTaxonomy[sub].push(chName);
-                }
-              });
-            }
-          }
+    // 2. Build full active category tree from DB records using authoritative parser
+    const fullTree = buildActiveCategoryTree(dbCategories);
+
+    // 3. Extract subcategories for the CURRENT main category (e.g. Services)
+    const mainCategoryObj = fullTree[currentMainCategory] || { subcategories: {} };
+    const categoryTaxonomy = {};
+
+    if (mainCategoryObj.subcategories) {
+      Object.keys(mainCategoryObj.subcategories).forEach(subName => {
+        const subObj = mainCategoryObj.subcategories[subName];
+        if (subObj && subObj.isActive !== false) {
+          categoryTaxonomy[subName] = Array.isArray(subObj.childCategories) ? [...subObj.childCategories] : [];
         }
       });
     }
 
-    // 2. Process Live Products dynamically
+    // 4. Augment with live vendor products matching currentMainCategory
     if (Array.isArray(products)) {
       products.forEach(p => {
-        const sub = p.subcategory || p.category;
-        const child = p.subSubcategory;
-        if (sub) {
-          if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
-          if (child && !categoryTaxonomy[sub].includes(child)) {
-            categoryTaxonomy[sub].push(child);
+        if (!p || p.isActive === false || p.isAvailable === false) return;
+        const pMain = normalizeCategoryName(p.mainCategory || p.subNavbarCategory || p.tag || '');
+        if (pMain === currentMainCategory) {
+          const sub = p.subcategory || p.category;
+          const child = p.subSubcategory;
+          if (sub && sub !== currentMainCategory) {
+            if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
+            if (child && child !== sub && child !== currentMainCategory && !categoryTaxonomy[sub].includes(child)) {
+              categoryTaxonomy[sub].push(child);
+            }
           }
         }
       });
     }
 
-    const mainCategoryKeys = Object.keys(categoryTaxonomy);
+    // 5. If no DB subcategories exist for this main category, add baseline subcategories for this specific main category
+    const mainSubcategoryKeys = Object.keys(categoryTaxonomy);
+    if (mainSubcategoryKeys.length === 0) {
+      if (currentMainCategory === 'Services') {
+        categoryTaxonomy['Home Services'] = ['Plumbing', 'Electrician', 'Cleaning Services', 'AC Repair & Service', 'Carpentry', 'Painting Services'];
+        categoryTaxonomy['Beauty & Wellness'] = ['Salon for Women', 'Spa & Massage', 'Skincare & Facial', 'Makeup Artists', 'Hair Styling'];
+        categoryTaxonomy['Repair & Maintenance'] = ['Appliance Repair', 'Laptop & PC Repair', 'Mobile Repair', 'CCTV Repair'];
+        categoryTaxonomy['Professional Services'] = ['Legal Consultancy', 'CA & Tax Advisor', 'Web Development', 'Digital Marketing'];
+      } else if (currentMainCategory === 'Products') {
+        categoryTaxonomy['Computers'] = ['Laptop', 'Desktop PCs', 'Monitors', 'Computer Accessories', 'Storage Devices'];
+        categoryTaxonomy['Electronics'] = ['Mobiles', 'Smartwatches', 'Headphones', 'Cameras', 'Audio Devices'];
+        categoryTaxonomy['Gaming'] = ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs'];
+        categoryTaxonomy['Home & Kitchen'] = ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor', 'Lighting Products'];
+      } else if (currentMainCategory === 'Food') {
+        categoryTaxonomy['Main Course'] = ['Biryani', 'Thali & Meals', 'Paneer Special', 'Chicken Specialties', 'Chinese & Noodles'];
+        categoryTaxonomy['Fast Food'] = ['Burgers', 'Pizzas', 'Sandwiches', 'Rolls & Wraps', 'Fried Chicken'];
+        categoryTaxonomy['Desserts & Sweets'] = ['Ice Creams', 'Cakes & Pastries', 'Indian Sweets', 'Shakes & Smoothies'];
+      } else if (currentMainCategory === 'Daily Needs') {
+        categoryTaxonomy['Grocery & Staples'] = ['Atta & Flour', 'Rice & Grains', 'Pulses & Dals', 'Edible Oils', 'Spices & Masalas'];
+        categoryTaxonomy['Fresh Produce'] = ['Fresh Vegetables', 'Fresh Fruits', 'Organic Produce', 'Exotic Veggies'];
+        categoryTaxonomy['Dairy & Breakfast'] = ['Milk & Butter', 'Paneer & Curd', 'Bread & Eggs', 'Breakfast Cereals'];
+      } else if (currentMainCategory === 'Stay') {
+        categoryTaxonomy['Hotels & Resorts'] = ['Luxury Hotels', 'Budget Hotels', 'Beach Resorts', 'Heritage Hotels'];
+        categoryTaxonomy['Homestays & Villas'] = ['Private Villas', 'Serviced Apartments', 'Cozy Homestays', 'Farmhouses'];
+      } else if (currentMainCategory === 'Travel') {
+        categoryTaxonomy['Bus Tickets'] = ['AC Sleeper Bus', 'Non-AC Seater', 'Express Intercity', 'Volvo Luxury'];
+        categoryTaxonomy['Cab Services'] = ['Outstation Cabs', 'Airport Taxi', 'Hourly Rental', 'Local City Cabs'];
+      } else if (currentMainCategory === 'Jobs') {
+        categoryTaxonomy['IT & Software'] = ['Full Stack Developer', 'Frontend Engineer', 'Backend Developer', 'UI/UX Designer', 'DevOps Engineer'];
+        categoryTaxonomy['Sales & Marketing'] = ['Business Development', 'Digital Marketer', 'Sales Manager', 'Telecaller'];
+      }
+    }
 
-    const childItemsToDisplay = sidebarActiveCat === 'ALL'
-      ? Array.from(new Set(Object.values(categoryTaxonomy).flat()))
-      : (categoryTaxonomy[sidebarActiveCat] || []);
+    const subCategoryKeys = Object.keys(categoryTaxonomy);
+
+    // 6. Right Grid: Filter Child Categories by sidebarActiveCat
+    let childItemsToDisplay = [];
+    if (sidebarActiveCat === 'ALL') {
+      childItemsToDisplay = Array.from(new Set(Object.values(categoryTaxonomy).flat())).filter(Boolean);
+    } else {
+      childItemsToDisplay = categoryTaxonomy[sidebarActiveCat] || [];
+    }
 
     return (
       <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
-          {/* Left Sidebar: MAIN CATEGORIES */}
+          {/* Left Sidebar: SUBCATEGORIES FOR ACTIVE MAIN CATEGORY */}
           <div className="w-full md:w-1/4 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               MAIN CATEGORIES
@@ -4029,7 +4056,7 @@ export default function CustomerDashboard({
               </button>
 
               {/* Category List */}
-              {mainCategoryKeys.map((catKey) => {
+              {subCategoryKeys.map((catKey) => {
                 const isActive = sidebarActiveCat === catKey;
                 return (
                   <button
