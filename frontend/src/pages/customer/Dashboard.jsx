@@ -792,6 +792,7 @@ export default function CustomerDashboard({
       if (activeTab) {
         localStorage.setItem('connect_active_tab', activeTab);
       }
+      setSidebarActiveCat('ALL');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {}
   }, [activeTab, selectedSubNavbarCategory]);
@@ -3958,7 +3959,7 @@ export default function CustomerDashboard({
     // 2. Build full active category tree from DB records using authoritative parser
     const fullTree = buildActiveCategoryTree(dbCategories);
 
-    // 3. Extract subcategories for the CURRENT main category (e.g. Services)
+    // 3. Extract subcategories & child categories for the CURRENT main category (e.g. Travel, Services)
     const mainCategoryObj = fullTree[currentMainCategory] || { subcategories: {} };
     const categoryTaxonomy = {};
 
@@ -4022,41 +4023,47 @@ export default function CustomerDashboard({
       }
     }
 
-    const subCategoryKeys = Object.keys(categoryTaxonomy);
+    // Merged Left Sidebar Category List (Combines Subcategories and Child Categories cleanly)
+    const leftCategories = ['ALL'];
+    Object.keys(categoryTaxonomy).forEach(subName => {
+      if (subName && !leftCategories.includes(subName)) {
+        leftCategories.push(subName);
+      }
+      const children = categoryTaxonomy[subName] || [];
+      children.forEach(childName => {
+        if (childName && !leftCategories.includes(childName)) {
+          leftCategories.push(childName);
+        }
+      });
+    });
 
-    // 6. Right Grid: Filter Child Categories by sidebarActiveCat
+    // Determine Child Items to Display on the Right Grid
     let childItemsToDisplay = [];
     if (sidebarActiveCat === 'ALL') {
       childItemsToDisplay = Array.from(new Set(Object.values(categoryTaxonomy).flat())).filter(Boolean);
+      if (childItemsToDisplay.length === 0) {
+        childItemsToDisplay = leftCategories.filter(c => c !== 'ALL');
+      }
     } else {
-      childItemsToDisplay = categoryTaxonomy[sidebarActiveCat] || [];
+      const nestedChildren = categoryTaxonomy[sidebarActiveCat];
+      if (Array.isArray(nestedChildren) && nestedChildren.length > 0) {
+        childItemsToDisplay = nestedChildren;
+      } else {
+        // If sidebarActiveCat is itself a leaf category item (e.g. NON AC CAR), render it as the action card
+        childItemsToDisplay = [sidebarActiveCat];
+      }
     }
 
     return (
       <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
-          {/* Left Sidebar: SUBCATEGORIES FOR ACTIVE MAIN CATEGORY */}
+          {/* Left Sidebar: MERGED CATEGORIES FOR ACTIVE TAB */}
           <div className="w-full md:w-1/4 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               MAIN CATEGORIES
             </span>
             <div className="flex flex-col gap-1.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
-              {/* ALL Button */}
-              <button
-                type="button"
-                onClick={() => setSidebarActiveCat('ALL')}
-                className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
-                  sidebarActiveCat === 'ALL'
-                    ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <span>ALL</span>
-                <ChevronRight className={`w-4 h-4 opacity-70 group-hover/cat:translate-x-0.5 transition-transform ${sidebarActiveCat === 'ALL' ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} />
-              </button>
-
-              {/* Category List */}
-              {subCategoryKeys.map((catKey) => {
+              {leftCategories.map((catKey) => {
                 const isActive = sidebarActiveCat === catKey;
                 return (
                   <button
@@ -4077,7 +4084,7 @@ export default function CustomerDashboard({
             </div>
           </div>
 
-          {/* Right Content Grid: CHILD CATEGORIES ONLY */}
+          {/* Right Content Grid: CHILD CATEGORIES / ITEMS */}
           <div className="flex-grow text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               {sidebarActiveCat === 'ALL' ? 'ALL CHILD CATEGORIES' : `${sidebarActiveCat.toUpperCase()} CHILD CATEGORIES`}
@@ -4105,7 +4112,7 @@ export default function CustomerDashboard({
               </div>
             ) : (
               <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs font-semibold">
-                No child categories found for {sidebarActiveCat}.
+                No categories found for {sidebarActiveCat}.
               </div>
             )}
           </div>
