@@ -183,7 +183,7 @@ const getCategoryFallbackImage = (pContext) => {
   return 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&q=80';
 };
 
-const sanitizeImageUrl = (imgUrl, pContext = null) => {
+export const sanitizeImageUrl = (imgUrl, pContext = null) => {
   if (!imgUrl || typeof imgUrl !== 'string') return getCategoryFallbackImage(pContext);
   let url = imgUrl.trim();
   if (!url || url === 'null' || url === 'undefined' || url === 'false') return getCategoryFallbackImage(pContext);

@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
 import { getAdminBackendUrl, getBackendUrl } from '../../services/apiSetup';
-import { productService, isRealVendorProduct } from '../../services/productService';
+import { productService, isRealVendorProduct, sanitizeImageUrl } from '../../services/productService';
 import { socketService } from '../../services/socketService';
 import { getActiveMainCategories, fetchAdminCategories, buildActiveCategoryTree } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
