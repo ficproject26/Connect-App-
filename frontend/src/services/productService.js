@@ -163,24 +163,27 @@ const extractRawImage = (p) => {
   return '';
 };
 
-const getCategoryFallbackImage = (pContext) => {
-  const cat = (pContext?.subNavbarCategory || pContext?.mainCategory || pContext?.category || pContext?.tag || pContext?.name || '').toString().toLowerCase();
-  if (cat.includes('food') || cat.includes('biryani') || cat.includes('naan') || cat.includes('meal') || cat.includes('paneer') || cat.includes('dosa') || cat.includes('idli')) {
-    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+export const getCategoryFallbackImage = (pContext) => {
+  const cat = (pContext?.subNavbarCategory || pContext?.mainCategory || pContext?.category || pContext?.subcategory || pContext?.subSubcategory || pContext?.tag || pContext?.name || pContext?.title || '').toString().toLowerCase();
+  if (cat.includes('food') || cat.includes('biryani') || cat.includes('biriyani') || cat.includes('naan') || cat.includes('meal') || cat.includes('paneer') || cat.includes('dosa') || cat.includes('idli') || cat.includes('roti') || cat.includes('tandoori') || cat.includes('thali') || cat.includes('snack')) {
+    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80';
   }
-  if (cat.includes('stay') || cat.includes('hotel') || cat.includes('room') || cat.includes('suite') || cat.includes('resort')) {
-    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=80';
+  if (cat.includes('stay') || cat.includes('hotel') || cat.includes('room') || cat.includes('suite') || cat.includes('resort') || cat.includes('villa') || cat.includes('pg') || cat.includes('hostel')) {
+    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80';
   }
-  if (cat.includes('service') || cat.includes('repair') || cat.includes('plumb') || cat.includes('electric') || cat.includes('clean')) {
-    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80';
+  if (cat.includes('service') || cat.includes('repair') || cat.includes('plumb') || cat.includes('electric') || cat.includes('clean') || cat.includes('doctor') || cat.includes('salon')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80';
   }
-  if (cat.includes('job') || cat.includes('career') || cat.includes('work') || cat.includes('hiring')) {
-    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80';
+  if (cat.includes('job') || cat.includes('career') || cat.includes('work') || cat.includes('hiring') || cat.includes('developer') || cat.includes('engineer') || cat.includes('it domain')) {
+    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80';
   }
-  if (cat.includes('daily') || cat.includes('grocery') || cat.includes('soap') || cat.includes('rin') || cat.includes('wash')) {
-    return 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80';
+  if (cat.includes('daily') || cat.includes('grocery') || cat.includes('soap') || cat.includes('rin') || cat.includes('wash') || cat.includes('vim') || cat.includes('chips') || cat.includes('personal')) {
+    return 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80';
   }
-  return 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&q=80';
+  if (cat.includes('product') || cat.includes('laptop') || cat.includes('computer') || cat.includes('mobile') || cat.includes('phone') || cat.includes('electronic') || cat.includes('dhanush')) {
+    return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=800&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=800&auto=format&fit=crop&q=80';
 };
 
 export const sanitizeImageUrl = (imgUrl, pContext = null) => {
@@ -194,41 +197,22 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
 
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
-  if (url.includes('/uploads/')) {
-    const relativePath = url.substring(url.indexOf('/uploads/'));
-    let backendUrl = getVendorBackendUrl() || getBackendUrl();
-    if (!backendUrl || !backendUrl.startsWith('http')) {
-      backendUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'https://connect-app-7s6g.onrender.com';
+  // Return full HTTP/HTTPS URLs directly (Unsplash, Cloudinary, external images)
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (isHttps && url.startsWith('http://')) {
+      return url.replace('http://', 'https://');
     }
-    return relativePath.startsWith('http') ? relativePath : `${backendUrl}${relativePath}`;
+    return url;
   }
 
-  if (isHttps && url.startsWith('http://')) {
-    return url.replace('http://', 'https://');
-  }
-
+  // Handle relative paths
   let backendUrl = getVendorBackendUrl() || getBackendUrl();
   if (!backendUrl || !backendUrl.startsWith('http')) {
-    backendUrl = isHttps ? '' : 'https://connect-app-7s6g.onrender.com';
+    backendUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'https://connect-app-7s6g.onrender.com';
   }
 
-  if (url.includes('trycloudflare.com') || url.includes(':8000') || url.includes(':8001') || url.includes('43.204.141.105') || url.includes('13.203.197.69')) {
-    if (isHttps) {
-      const pathIndex = url.indexOf('/', url.indexOf('://') + 3);
-      return pathIndex !== -1 ? url.substring(pathIndex) : url.replace('http://', 'https://');
-    }
-    return url.replace(/^https?:\/\/[^/]+/, backendUrl);
-  }
-
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    if (backendUrl) {
-      return `${backendUrl}${cleanPath}`;
-    }
-    return cleanPath;
-  }
-
-  return url;
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${backendUrl}${cleanPath}`;
 };
 
 const sanitizeProduct = (p) => {

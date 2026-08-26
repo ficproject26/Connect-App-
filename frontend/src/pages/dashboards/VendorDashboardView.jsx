@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import ResponsiveTable from '../../components/common/ResponsiveTable';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
+import { getCategoryFallbackImage } from '../../services/productService';
 
 export default function VendorDashboardView({
   products = [],
@@ -31,8 +32,9 @@ export default function VendorDashboardView({
       render: (row) => (
         <div className="flex items-center gap-3">
           <img
-            src={row.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=100&q=80'}
+            src={row.image || getCategoryFallbackImage(row)}
             alt={row.name}
+            onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(row); }}
             className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
           />
           <div className="flex flex-col truncate">

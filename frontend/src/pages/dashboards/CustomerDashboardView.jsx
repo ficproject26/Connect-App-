@@ -5,6 +5,7 @@ import {
   TrendingUp, Clock, CheckCircle2, ArrowRight
 } from 'lucide-react';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
+import { getCategoryFallbackImage } from '../../services/productService';
 
 export default function CustomerDashboardView({
   products = [],
@@ -145,12 +146,12 @@ export default function CustomerDashboardView({
                 {/* Image */}
                 <div className="relative h-44 bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0">
                   <img
-                    src={product.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'}
+                    src={product.image || getCategoryFallbackImage(product)}
                     alt={product.name}
                     loading="lazy"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80';
+                      e.target.src = getCategoryFallbackImage(product);
                     }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

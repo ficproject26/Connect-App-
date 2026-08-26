@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
 import { getAdminBackendUrl, getBackendUrl } from '../../services/apiSetup';
-import { productService, isRealVendorProduct, sanitizeImageUrl } from '../../services/productService';
+import { productService, isRealVendorProduct, sanitizeImageUrl, getCategoryFallbackImage } from '../../services/productService';
 import { socketService } from '../../services/socketService';
 import { getActiveMainCategories, fetchAdminCategories, buildActiveCategoryTree } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
@@ -4508,13 +4508,6 @@ export default function CustomerDashboard({
       }) : [])
     ];
 
-    const defaultCategoryMeta = {
-      'Products': { title: 'Products Marketplace', discount: 'VERIFIED PRODUCTS', desc: 'Browse verified vendor products and listings', icon: ShoppingBag, bg: 'bg-[#0b1329]', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=80' },
-      'Services': { title: 'Services & Support', discount: 'VERIFIED SERVICES', desc: 'Browse verified professional service providers', icon: Settings, bg: 'bg-[#0e0717]', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&auto=format&fit=crop&q=80' },
-      'Daily Needs': { title: 'Daily Needs', discount: 'ESSENTIALS', desc: 'Everyday necessities & provisions', icon: Truck, bg: 'bg-[#07111e]', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80' },
-      'Food': { title: 'Food & Dining', discount: 'VERIFIED VENDORS', desc: 'Explore local food & dining options', icon: Utensils, bg: 'bg-[#0e0e0e]', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80' },
-      'Stay': { title: 'Stays & Accommodation', discount: 'ACCOMMODATION', desc: 'Explore verified stays & accommodation', icon: BedDouble, bg: 'bg-[#07111e]', image: hotelActual },
-      'Travel': { title: 'Travel & Mobility', discount: 'VERIFIED TRAVEL', desc: 'Explore travel & transport services', icon: Plane, bg: 'bg-[#0b1329]', image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&auto=format&fit=crop&q=80' },
       'Jobs': { title: 'Jobs & Careers', discount: 'CAREER OPPORTUNITIES', desc: 'Explore verified job opportunities', icon: Briefcase, bg: 'bg-[#0e0717]', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&auto=format&fit=crop&q=80' }
     };
 
@@ -4951,7 +4944,7 @@ export default function CustomerDashboard({
               </div>
 
               <div className="w-[110px] sm:w-[125px] h-full rounded-2xl overflow-hidden relative shadow-3xs shrink-0 bg-slate-100 flex items-center justify-center">
-                <img src={offer.image} alt={offer.brand} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover" />
+                <img src={offer.image} alt={offer.brand} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(offer); }} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/5" />
               </div>
             </div>
@@ -5016,7 +5009,7 @@ export default function CustomerDashboard({
                       <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                     </div>
                   ) : (
-                    <img src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'} alt={item.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                    <img src={item.image || getCategoryFallbackImage(item)} alt={item.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getCategoryFallbackImage(item); }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
                   )}
                   
                   {/* Rating star on left top */}
@@ -5169,7 +5162,7 @@ export default function CustomerDashboard({
                       </div>
                     </div>
                   )}
-                  <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
+                  <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(product); }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                   {!isVendorProductUnavailable(product) && product.tag && (
                     <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
                   )}
@@ -6682,7 +6675,7 @@ export default function CustomerDashboard({
                                 <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                               </div>
                             ) : (
-                              <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
+                              <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(product); }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                             )}
                             {product.subNavbarCategory === 'Food' && (
                               <div className="absolute top-0 left-0 z-10 w-16 h-16 overflow-hidden pointer-events-none">
