@@ -126,6 +126,11 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
       const suspendedVendorNames = new Set<string>();
       const suspendedVendorPrefixes = new Set<string>();
 
+      const isGenericVendorName = (nameStr: any) => {
+        const norm = (nameStr || '').toString().toLowerCase().trim();
+        return !norm || ['connect member', 'verified vendor', 'elite vendor', 'vendor', 'connect', 'customer', 'admin', 'connect customer'].includes(norm);
+      };
+
       [...suspendedUsers, ...suspendedVendorsCol].forEach((v: any) => {
         if (v._id) {
           const idStr = v._id.toString();
@@ -143,8 +148,8 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
         if (v.email) suspendedVendorEmails.add(v.email.toLowerCase().trim());
         const phone = (v.phone || v.mobileNumber || '').replace(/\D/g, '');
         if (phone) suspendedVendorPhones.add(phone);
-        if (v.businessName) suspendedVendorNames.add(v.businessName.toLowerCase().trim());
-        if (v.name) suspendedVendorNames.add(v.name.toLowerCase().trim());
+        if (v.businessName && !isGenericVendorName(v.businessName)) suspendedVendorNames.add(v.businessName.toLowerCase().trim());
+        if (v.name && !isGenericVendorName(v.name)) suspendedVendorNames.add(v.name.toLowerCase().trim());
       });
 
       const allVendorUsers = await mongoDb.collection('users').find({
@@ -163,8 +168,8 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
           v.vendorId ? v.vendorId.toString() : '',
           v.email ? v.email.toLowerCase().trim() : '',
           (v.phone || v.mobileNumber || '').replace(/\D/g, ''),
-          v.businessName ? v.businessName.toLowerCase().trim() : '',
-          v.name ? v.name.toLowerCase().trim() : ''
+          (v.businessName && !isGenericVendorName(v.businessName)) ? v.businessName.toLowerCase().trim() : '',
+          (v.name && !isGenericVendorName(v.name)) ? v.name.toLowerCase().trim() : ''
         ].filter(Boolean);
 
         if (Array.isArray(v.businesses)) {
@@ -176,7 +181,7 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
               const bName = (b.businessName || b.name || '').toLowerCase().trim();
               vKeys.forEach(vKey => {
                 if (bId) suspendedVendorBizKeys.add(`${vKey}:${bId}`);
-                if (bName) suspendedVendorBizKeys.add(`${vKey}:${bName}`);
+                if (bName && !isGenericVendorName(bName)) suspendedVendorBizKeys.add(`${vKey}:${bName}`);
               });
             }
           });
@@ -199,7 +204,7 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
         if (vId && suspendedVendorIds.has(vId)) return false;
         if (vEmail && suspendedVendorEmails.has(vEmail)) return false;
         if (vPhone && suspendedVendorPhones.has(vPhone)) return false;
-        if (vName && suspendedVendorNames.has(vName)) return false;
+        if (vName && !isGenericVendorName(vName) && suspendedVendorNames.has(vName)) return false;
         if (vId && Array.from(suspendedVendorPrefixes).some(prefix => vId.startsWith(prefix))) return false;
 
         if (p.businessIsActive === false) return false;

@@ -2095,6 +2095,26 @@ export default function CustomerDashboard({
       'Jobs': mergeDbCategories('Jobs')
     };
 
+    // Construct composite category mega menu for 'Home' tab
+    const homeMenu = {};
+    Object.values(menus).forEach(catDict => {
+      if (catDict && typeof catDict === 'object') {
+        Object.entries(catDict).forEach(([subName, subObj]) => {
+          if (!subName || subName === 'ALL_SUBCATEGORIES_DELETED_MARKER') return;
+          if (!homeMenu[subName]) {
+            homeMenu[subName] = {
+              title: subObj.title || subName,
+              items: [...(subObj.items || [])]
+            };
+          } else {
+            const mergedItems = new Set([...(homeMenu[subName].items || []), ...(subObj.items || [])]);
+            homeMenu[subName].items = Array.from(mergedItems);
+          }
+        });
+      }
+    });
+    menus['Home'] = homeMenu;
+
     // Also add any custom main categories that are not default
     subNavbarCategories.forEach(cat => {
       if (cat !== 'Home' && !menus[cat]) {
@@ -3293,20 +3313,19 @@ export default function CustomerDashboard({
       }
 
       const matchesCategoryFilter = selectedCategories.length === 0 || 
-        (activeTab === 'Home' 
-          ? (
-              selectedCategories.includes('Products')
-                ? (!isJob && (normalizeMainCatName(product.subNavbarCategory) === 'products' || product.category === 'Products' || (product.category || '').toLowerCase().includes('product')))
-                : selectedCategories.includes(product.subNavbarCategory)
-            )
-          : selectedCategories.some(cat => 
-              (product.category || '').toLowerCase().includes(cat.toLowerCase()) ||
-              (product.subSubcategory || '').toLowerCase().includes(cat.toLowerCase()) ||
-              (product.subcategory || '').toLowerCase().includes(cat.toLowerCase()) ||
-              (product.name || '').toLowerCase().includes(cat.toLowerCase()) ||
-              (product.tag || '').toLowerCase().includes(cat.toLowerCase()) ||
-              (product.subNavbarCategory || '').toLowerCase().includes(cat.toLowerCase())
-            ));
+        selectedCategories.some(cat => {
+          const normCat = cat.toLowerCase().trim();
+          if (normCat === 'products') return !isJob && (normalizeMainCatName(product.subNavbarCategory) === 'products' || (product.category || '').toLowerCase().includes('product'));
+          return (
+            (product.category || '').toLowerCase().includes(normCat) ||
+            (product.subcategory || '').toLowerCase().includes(normCat) ||
+            (product.subSubcategory || '').toLowerCase().includes(normCat) ||
+            (product.name || '').toLowerCase().includes(normCat) ||
+            (product.tag || '').toLowerCase().includes(normCat) ||
+            (product.subNavbarCategory || '').toLowerCase().includes(normCat) ||
+            (product.mainCategory || '').toLowerCase().includes(normCat)
+          );
+        });
 
       const matchesBrandFilter = selectedBrands.length === 0 || 
         selectedBrands.includes(product.vendorName);
