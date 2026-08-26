@@ -4055,7 +4055,11 @@ export default function CustomerDashboard({
                   <button
                     key={catKey}
                     type="button"
-                    onClick={() => setSidebarActiveCat(catKey)}
+                    onClick={() => {
+                      setSidebarActiveCat(catKey);
+                      setSelectedSubNavbarCategory(catKey);
+                      triggerNotification(`Viewing ${catKey}`);
+                    }}
                     className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
                       isActive
                         ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
@@ -4083,6 +4087,8 @@ export default function CustomerDashboard({
                     key={childTitle}
                     onClick={() => {
                       setSearchQuery(childTitle);
+                      setSelectedSubNavbarCategory(childTitle);
+                      setSelectedCategories([childTitle]);
                       triggerNotification(`Filtering catalog by "${childTitle}"`);
                     }}
                     className="bg-[#f8fafc] dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl px-4 py-3.5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all cursor-pointer group select-none"
