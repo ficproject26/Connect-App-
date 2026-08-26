@@ -191,34 +191,38 @@ class DatabaseManager {
   constructor() {}
 
   public async connect() {
-    const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null);
-    
-    if (!connStr) {
-      const errorMsg = `[DB]: No MongoDB connection string found in MONGODB_URI or DATABASE_URL. MongoDB is strictly required.`;
-      console.error(errorMsg);
-      throw new Error(errorMsg);
-    }
+    const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-app:Connect123@cluster0.fzj1k5l.mongodb.net/connect_db?retryWrites=true&w=majority&appName=Cluster0';
 
     console.log(`[DB]: Attempting connection to MongoDB...`);
-    try {
-      this.mongoClient = new MongoClient(connStr, {
-        connectTimeoutMS: 10000,
-        serverSelectionTimeoutMS: 10000
-      });
-      await this.mongoClient.connect();
-      
-      const dbName = this.mongoClient.db().databaseName || 'connect_db';
-      this.mongoDb = this.mongoClient.db(dbName);
-      console.log(`[DB]: Connected to MongoDB successfully. Database: ${dbName}`);
-      
-      // Setup collections and indexes
-      await this.createIndexes();
-    } catch (err: any) {
-      const errorMsg = `[DB]: MongoDB connection failed. Reason: ${err.message}`;
-      console.error(errorMsg);
-      this.mongoClient = null;
-      this.mongoDb = null;
-      throw new Error(errorMsg);
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        attempts++;
+        this.mongoClient = new MongoClient(connStr, {
+          connectTimeoutMS: 30000,
+          serverSelectionTimeoutMS: 30000,
+          family: 4
+        });
+        await this.mongoClient.connect();
+        
+        const dbName = this.mongoClient.db().databaseName || 'connect_db';
+        this.mongoDb = this.mongoClient.db(dbName);
+        console.log(`[DB]: Connected to MongoDB successfully. Database: ${dbName}`);
+        
+        // Setup collections and indexes
+        await this.createIndexes();
+        return;
+      } catch (err: any) {
+        console.error(`[DB]: Connection attempt ${attempts}/${maxAttempts} failed: ${err.message}`);
+        if (attempts >= maxAttempts) {
+          this.mongoClient = null;
+          this.mongoDb = null;
+          throw err;
+        }
+        await new Promise(res => setTimeout(res, 2000));
+      }
     }
   }
 

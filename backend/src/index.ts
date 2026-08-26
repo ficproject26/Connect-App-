@@ -314,14 +314,16 @@ app.use((err: any, req: any, res: any, next: any) => {
 const server = http.createServer(app);
 socketManager.init(server);
 
-// Connect to Database and start Server
+// Bind server immediately to 0.0.0.0 on PORT for Render cloud port scanner detection
+server.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`[Server]: Connect App Backend running on 0.0.0.0:${PORT} with DevSecOps Security`);
+});
+
+// Connect to Database asynchronously
 db.connect()
   .then(() => {
-    server.listen(PORT, () => {
-      console.log(`[Server]: Connect App Backend running on http://localhost:${PORT} with DevSecOps Security`);
-    });
+    console.log('[Server]: Database connection initialized and ready.');
   })
   .catch((err) => {
-    console.error('[Server]: Failed to start backend due to database connection failure:', err.message);
-    process.exit(1);
+    console.error('[Server]: Database connection issue during startup:', err.message);
   });
