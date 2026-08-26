@@ -4455,23 +4455,9 @@ export default function CustomerDashboard({
           <div
             onMouseEnter={() => handleMouseEnter(hoveredLink)}
             onMouseLeave={handleMouseLeave}
-            className="absolute top-[calc(100%+2px)] left-6 right-6 bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-md shadow-2xl border border-slate-200/80 dark:border-slate-800/60 rounded-2xl py-8 px-8 z-50 flex transition-all duration-300 ease-out text-slate-800 dark:text-slate-200"
+            className="absolute top-[calc(100%+2px)] left-6 right-6 bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-md shadow-2xl border border-slate-200/80 dark:border-slate-800/60 rounded-2xl p-4 sm:p-6 z-50 flex transition-all duration-300 ease-out text-slate-800 dark:text-slate-200"
           >
-            {hoveredLink === 'Jobs' ? (
-              renderSidebarMegaMenu(activeMegaCategory, setActiveMegaCategory, allMegaMenus[hoveredLink], (subCat) => {
-                setActiveTab('Jobs');
-                setSelectedSubNavbarCategory('Jobs');
-                setSelectedCategories([]);
-                if (subCat && subCat !== 'ALL') {
-                  setSelectedJobDepts([subCat]);
-                } else {
-                  setSelectedJobDepts([]);
-                }
-                setHoveredLink(null);
-              })
-            ) : allMegaMenus[hoveredLink] ? (
-              renderSidebarMegaMenu(activeMegaCategory, setActiveMegaCategory, allMegaMenus[hoveredLink])
-            ) : null}
+            {renderCategoryExplorer()}
           </div>
         )}
       </div>
