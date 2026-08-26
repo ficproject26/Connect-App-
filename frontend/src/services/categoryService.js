@@ -232,21 +232,26 @@ export const getActiveMainCategories = (dbCategories = []) => {
 let memoryCategoryCache = null;
 let activeFetchCategoriesPromise = null;
 
+export const invalidateCategoryCache = () => {
+  memoryCategoryCache = null;
+  activeFetchCategoriesPromise = null;
+};
+
 export const fetchAdminCategories = async (forceRefresh = false) => {
   if (!forceRefresh && Array.isArray(memoryCategoryCache) && memoryCategoryCache.length > 0) {
     return memoryCategoryCache;
   }
 
-  if (activeFetchCategoriesPromise) {
+  if (activeFetchCategoriesPromise && !forceRefresh) {
     return activeFetchCategoriesPromise;
   }
 
   activeFetchCategoriesPromise = (async () => {
     const urlsToTry = [
-      `${getBackendUrl()}/api/public/categories`,
-      '/api/public/categories',
-      '/api/admin/categories',
-      `${getAdminBackendUrl()}/api/admin/categories`
+      `${getBackendUrl()}/api/public/categories?t=${Date.now()}`,
+      `/api/public/categories?t=${Date.now()}`,
+      `/api/admin/categories?t=${Date.now()}`,
+      `${getAdminBackendUrl()}/api/admin/categories?t=${Date.now()}`
     ];
 
     const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
@@ -254,7 +259,7 @@ export const fetchAdminCategories = async (forceRefresh = false) => {
     for (const url of uniqueUrls) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
         const res = await fetch(url, { signal: controller.signal }).catch(() => null);
         clearTimeout(timeoutId);
 

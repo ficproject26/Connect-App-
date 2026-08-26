@@ -1429,7 +1429,7 @@ export default function CustomerDashboard({
 
   const fetchDbCategories = useCallback(async () => {
     try {
-      const data = await fetchAdminCategories();
+      const data = await fetchAdminCategories(true);
       if (Array.isArray(data)) {
         setDbCategories(data);
       }
