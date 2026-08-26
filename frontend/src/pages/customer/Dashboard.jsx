@@ -2037,7 +2037,7 @@ export default function CustomerDashboard({
       if (Array.isArray(root.children)) {
         root.children.forEach(subNode => {
           if (!subNode || subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') return;
-          const subName = (subNode.name || subNode.subcategory || '').trim();
+          const subName = (subNode.subcategory || (subNode.name && normalizeMainCatName(subNode.name) !== targetNorm ? subNode.name : '')).trim();
           addSubCategory(subName, subNode.children);
         });
       }
@@ -2048,9 +2048,10 @@ export default function CustomerDashboard({
       dbCategories.forEach(c => {
         if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
         if (c.parentId && rootMainIds.has(c.parentId.toString())) {
-          const subName = (c.name || c.subcategory || '').trim();
+          const subName = (c.subcategory || (c.name && normalizeMainCatName(c.name) !== targetNorm ? c.name : '')).trim();
+          const childName = (c.subSubcategory || '').trim();
           const childrenOfSub = c._id ? dbCategories.filter(ch => ch && ch.parentId && ch.parentId.toString() === c._id.toString()) : [];
-          addSubCategory(subName, [...(c.children || []), ...childrenOfSub]);
+          addSubCategory(subName, childName ? [childName, ...(c.children || []), ...childrenOfSub] : [...(c.children || []), ...childrenOfSub]);
         }
       });
     }
@@ -2060,9 +2061,9 @@ export default function CustomerDashboard({
       if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
       if (c.level === 'main' && (!c.subcategory || normalizeMainCatName(c.subcategory) === targetNorm)) return;
 
-      const recMain = normalizeMainCatName(c.mainCategory || c.main_category || c.parentName || '');
+      const recMain = normalizeMainCatName(c.mainCategory || c.main_category || c.parentName || c.name || '');
       if (recMain === targetNorm) {
-        const subName = (c.subcategory || c.name || '').trim();
+        const subName = (c.subcategory || (c.name && normalizeMainCatName(c.name) !== targetNorm ? c.name : '')).trim();
         const childName = (c.subSubcategory || '').trim();
         addSubCategory(subName, childName ? [childName] : (c.children || []));
       }

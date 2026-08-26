@@ -107,7 +107,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     if (Array.isArray(root.children)) {
       root.children.forEach(subNode => {
         if (!subNode || subNode.isActive === false || subNode.isDeleted || subNode.description === 'DELETED_HIERARCHY_MARKER') return;
-        const subName = (subNode.name || subNode.subcategory || '').trim();
+        const subName = (subNode.subcategory || (subNode.name && normalizeCategoryName(subNode.name) !== mainName ? subNode.name : '')).trim();
         appendSub(mainName, subName, subNode.children);
       });
     }
@@ -119,9 +119,10 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
       if (c.parentId && rootMainIds.has(c.parentId.toString())) {
         const mainName = rootMainIds.get(c.parentId.toString());
-        const subName = (c.name || c.subcategory || '').trim();
+        const subName = (c.subcategory || (c.name && normalizeCategoryName(c.name) !== mainName ? c.name : '')).trim();
+        const childName = (c.subSubcategory || '').trim();
         const childrenOfSub = c._id ? dbCategories.filter(ch => ch && ch.parentId && ch.parentId.toString() === c._id.toString()) : [];
-        appendSub(mainName, subName, [...(c.children || []), ...childrenOfSub]);
+        appendSub(mainName, subName, childName ? [childName, ...(c.children || []), ...childrenOfSub] : [...(c.children || []), ...childrenOfSub]);
       }
     });
   }
@@ -134,8 +135,8 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     const mainName = resolveMainCategoryName(c);
     if (!mainName) return;
 
-    let subName = (c.subcategory || c.name || '').trim();
-    if (!subName) return;
+    let subName = (c.subcategory || (c.name && normalizeCategoryName(c.name) !== mainName ? c.name : '')).trim();
+    if (!subName || normalizeCategoryName(subName) === mainName) return;
 
     const childName = (c.subSubcategory || '').trim();
     appendSub(mainName, subName, childName ? [childName] : (c.children || []));
