@@ -4410,7 +4410,10 @@ export default function CustomerDashboard({
             return (
               <button
                 key={cat}
-                onMouseEnter={() => handleMouseEnter(cat)}
+                onMouseEnter={() => {
+                  handleMouseEnter(cat);
+                  setActiveMegaCategory('ALL');
+                }}
                 onClick={() => {
                   if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
                   if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
