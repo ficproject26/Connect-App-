@@ -3932,42 +3932,42 @@ export default function CustomerDashboard({
   };
 
   const renderSidebarMegaMenu = (activeCat, setActiveCat, dataDict, onItemClick) => {
-    let items = [];
-    let title = "";
-
     const isDeletedSubCategory = (subName) => false;
-
     const validCategories = Object.keys(dataDict || {}).filter(cat => !isDeletedSubCategory(cat));
+    const selectedSubCats = activeCat === 'ALL' ? validCategories : (validCategories.includes(activeCat) ? [activeCat] : []);
 
-    if (activeCat === 'ALL') {
-      title = "All Items";
-      const allSubAndChildItems = [];
-      validCategories.forEach((cat) => {
-        allSubAndChildItems.push(cat);
-        const catData = dataDict[cat];
-        const catItems = catData ? (catData.items || catData) : [];
-        if (Array.isArray(catItems)) {
-          const validChildItems = catItems.filter(item => typeof item === 'string' ? !isDeletedSubCategory(item) : (item && !isDeletedSubCategory(item.name || item.title)));
-          validChildItems.forEach(ch => {
-            const chName = typeof ch === 'string' ? ch : (ch.name || ch.title || '');
-            if (chName) allSubAndChildItems.push(chName);
-          });
-        }
-      });
-      items = Array.from(new Set(allSubAndChildItems.filter(Boolean)));
-    } else {
-      if (!isDeletedSubCategory(activeCat)) {
-        const activeData = dataDict[activeCat];
-        title = `${activeCat}`;
-        if (activeData) {
-          const rawItems = activeData.items || activeData;
-          const childItems = Array.isArray(rawItems) ? rawItems.map(ch => typeof ch === 'string' ? ch : (ch?.name || ch?.title || '')).filter(Boolean) : [];
-          items = Array.from(new Set([activeCat, ...childItems]));
+    const handleCategoryClick = (categoryName, e) => {
+      if (onItemClick) {
+        onItemClick(categoryName, e);
+      } else {
+        const validTabs = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+        const tabForLink = hoveredLink || (validTabs.includes(activeTab) ? activeTab : 'Products');
+        setHoveredLink(null);
+
+        if (tabForLink === 'Jobs') {
+          setActiveTab('Jobs');
+          setSelectedSubNavbarCategory('Jobs');
+          setSelectedJobDepts(categoryName && categoryName !== 'ALL' ? [categoryName] : []);
         } else {
-          items = [activeCat];
+          setActiveTab(tabForLink);
+          setSelectedSubNavbarCategory(tabForLink);
+          
+          setSelectedCategories([]);
+          setSelectedServiceTypes([]);
+          setSelectedCuisines([]);
+          setSelectedAccomTypes([]);
+          setSelectedTravelTypes([]);
+          setSelectedDailyNeedsTypes([]);
+
+          if (tabForLink === 'Services') setSelectedServiceTypes([categoryName]);
+          else if (tabForLink === 'Food') setSelectedCuisines([categoryName]);
+          else if (tabForLink === 'Stay') setSelectedAccomTypes([categoryName]);
+          else if (tabForLink === 'Travel') setSelectedTravelTypes([categoryName]);
+          else if (tabForLink === 'Daily Needs') setSelectedDailyNeedsTypes([categoryName]);
+          else setSelectedCategories([categoryName]);
         }
       }
-    }
+    };
 
     return (
       <div className="w-full flex flex-col md:flex-row gap-8">
@@ -4011,74 +4011,63 @@ export default function CustomerDashboard({
           })}
         </div>
 
-        {/* Details Area */}
+        {/* Details Area: Structured Level 2 Subcategories & Level 3 Child Categories */}
         <div className="flex-grow pl-0 md:pl-6 text-left max-h-[400px] overflow-y-auto pr-2">
           <div className="flex justify-between items-baseline mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-              {title}
+              {activeCat === 'ALL' ? 'All Subcategories & Child Categories' : activeCat}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {items.map((subCat, idx) => (
-              <button
-                key={idx}
-                onClick={(e) => {
-                  if (onItemClick) {
-                    onItemClick(subCat, e);
-                  } else {
-                    // Stay inside the dashboard — switch to the relevant tab and filter
-                    const validTabs = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
-                    const tabForLink = hoveredLink || (validTabs.includes(activeTab) ? activeTab : 'Products');
-                    setHoveredLink(null);
-                    if (tabForLink === 'Jobs') {
-                      setActiveTab('Jobs');
-                      setSelectedSubNavbarCategory('Jobs');
-                      if (subCat && subCat !== 'ALL') {
-                        setSelectedJobDepts([subCat]);
-                      } else {
-                        setSelectedJobDepts([]);
-                      }
-                    } else {
-                      setActiveTab(tabForLink);
-                      setSelectedSubNavbarCategory(tabForLink);
-                      
-                      // Reset other filter arrays
-                      setSelectedCategories([]);
-                      setSelectedServiceTypes([]);
-                      setSelectedCuisines([]);
-                      setSelectedAccomTypes([]);
-                      setSelectedTravelTypes([]);
-                      setSelectedDailyNeedsTypes([]);
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {selectedSubCats.map((subName) => {
+              const catData = dataDict[subName];
+              const rawItems = catData ? (catData.items || catData) : [];
+              const childCategories = Array.isArray(rawItems)
+                ? Array.from(new Set(rawItems.map(ch => typeof ch === 'string' ? ch : (ch?.name || ch?.title || '')).filter(Boolean)))
+                : [];
 
-                      // Set tab-specific subcategory filter array
-                      if (tabForLink === 'Services') {
-                        setSelectedServiceTypes([subCat]);
-                      } else if (tabForLink === 'Food') {
-                        setSelectedCuisines([subCat]);
-                      } else if (tabForLink === 'Stay') {
-                        setSelectedAccomTypes([subCat]);
-                      } else if (tabForLink === 'Travel') {
-                        setSelectedTravelTypes([subCat]);
-                      } else if (tabForLink === 'Daily Needs') {
-                        setSelectedDailyNeedsTypes([subCat]);
-                      } else {
-                        // Products / defaults
-                        setSelectedCategories([subCat]);
-                      }
-                    }
-                  }
-                }}
-                className="p-3 border border-slate-200/60 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:border-amber-400 dark:hover:border-amber-400 rounded-xl flex justify-between items-center group/item transition-all cursor-pointer hover:shadow-xs text-left w-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-brand-gold-dark dark:hover:text-brand-gold"
-              >
-                <span>{subCat}</span>
-                <div className="w-5 h-5 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center shrink-0 group-hover/item:bg-amber-400 dark:group-hover/item:bg-amber-400 text-slate-400 group-hover/item:text-slate-900 transition-colors">
-                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
+              return (
+                <div key={subName} className="bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 transition-all">
+                  {/* Level 2 Subcategory Header */}
+                  <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2.5 mb-3">
+                    <button
+                      onClick={(e) => handleCategoryClick(subName, e)}
+                      className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-amber-400 flex items-center gap-2 cursor-pointer border-none bg-transparent p-0 text-left"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                      <span>{subName}</span>
+                    </button>
+                    <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                      Subcategory
+                    </span>
+                  </div>
+
+                  {/* Level 3 Child Categories */}
+                  {childCategories.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {childCategories.map((childName) => (
+                        <button
+                          key={childName}
+                          onClick={(e) => handleCategoryClick(childName, e)}
+                          className="py-1.5 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+                        >
+                          <span>{childName}</span>
+                          <span className="text-[10px] text-slate-400">›</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => handleCategoryClick(subName, e)}
+                      className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-amber-500 transition-colors cursor-pointer border-none bg-transparent p-0 italic"
+                    >
+                      Explore {subName} items →
+                    </button>
+                  )}
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
