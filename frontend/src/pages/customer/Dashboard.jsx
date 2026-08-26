@@ -3970,46 +3970,7 @@ export default function CustomerDashboard({
     // 4. Parse database category tree using authoritative buildActiveCategoryTree(dbCategories)
     const fullTree = buildActiveCategoryTree(dbCategories);
 
-    // 5. Baseline taxonomies for canonical main categories
-    const defaultTaxonomies = {
-      'Services': {
-        'Home Services': ['Plumbing', 'Electrician', 'Cleaning Services', 'AC Repair & Service', 'Carpentry', 'Painting Services'],
-        'Beauty & Wellness': ['Salon for Women', 'Spa & Massage', 'Skincare & Facial', 'Makeup Artists', 'Hair Styling'],
-        'Repair & Maintenance': ['Appliance Repair', 'Laptop & PC Repair', 'Mobile Repair', 'CCTV Repair'],
-        'Professional Services': ['Legal Consultancy', 'CA & Tax Advisor', 'Web Development', 'Digital Marketing']
-      },
-      'Products': {
-        'Electronics': ['Mobiles', 'Smartwatches', 'Headphones', 'Cameras', 'Audio Devices'],
-        'Computers': ['Laptop', 'Desktop PCs', 'Monitors', 'Computer Accessories', 'Storage Devices'],
-        'Gaming': ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs'],
-        'Home & Kitchen': ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor']
-      },
-      'Daily Needs': {
-        'Snacks': ['Chips & Crisps', 'Biscuits & Cookies', 'Namkeen', 'Chocolates & Sweets', 'Cold Drinks & Juices'],
-        'Personal Care': ['Soaps & Body Wash', 'Shampoo & Conditioner', 'Skin Care', 'Oral Care & Toothpaste', 'Deodorants'],
-        'Staples & Grocery': ['Atta & Flour', 'Rice & Grains', 'Pulses & Dals', 'Edible Oils', 'Spices & Masalas'],
-        'Dairy & Breakfast': ['Milk & Butter', 'Paneer & Curd', 'Bread & Eggs', 'Breakfast Cereals']
-      },
-      'Food': {
-        'Main Course': ['Biryani', 'Thali & Meals', 'Paneer Special', 'Chicken Specialties', 'Chinese & Noodles'],
-        'Fast Food': ['Burgers', 'Pizzas', 'Sandwiches', 'Rolls & Wraps', 'Fried Chicken'],
-        'Desserts & Sweets': ['Ice Creams', 'Cakes & Pastries', 'Indian Sweets', 'Shakes & Smoothies']
-      },
-      'Stay': {
-        'Hotels & Resorts': ['Luxury Hotels', 'Budget Hotels', 'Beach Resorts', 'Heritage Hotels'],
-        'Homestays & Villas': ['Private Villas', 'Serviced Apartments', 'Cozy Homestays', 'Farmhouses']
-      },
-      'Travel': {
-        'Bus Tickets': ['AC Sleeper Bus', 'Non-AC Seater', 'Express Intercity', 'Volvo Luxury'],
-        'Cab Services': ['Outstation Cabs', 'Airport Taxi', 'Hourly Rental', 'Local City Cabs']
-      },
-      'Jobs': {
-        'IT & Software': ['Full Stack Developer', 'Frontend Engineer', 'Backend Developer', 'UI/UX Designer', 'DevOps Engineer'],
-        'Sales & Marketing': ['Business Development', 'Digital Marketer', 'Sales Manager', 'Telecaller']
-      }
-    };
-
-    // 6. Extract Level 2 Subcategories and Level 3 Child Categories for currentMainCategory from DB
+    // 5. Extract Level 2 Subcategories and Level 3 Child Categories for currentMainCategory strictly from DB
     const mainCategoryObj = fullTree[currentMainCategory] || { subcategories: {} };
     const categoryTaxonomy = {};
 
@@ -4024,7 +3985,7 @@ export default function CustomerDashboard({
       });
     }
 
-    // 7. Augment with live vendor products matching currentMainCategory strictly from DB
+    // 6. Augment with live vendor products matching currentMainCategory strictly from DB
     if (Array.isArray(products)) {
       products.forEach(p => {
         if (!p || p.isActive === false || p.isAvailable === false) return;
@@ -4036,25 +3997,6 @@ export default function CustomerDashboard({
             if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
             if (child && child !== sub && child !== currentMainCategory && !categoryTaxonomy[sub].includes(child)) {
               categoryTaxonomy[sub].push(child);
-            }
-          }
-        }
-      });
-    }
-
-    // 8. Merge default taxonomy for currentMainCategory if DB has no subcategories or empty child lists
-    const defaultTax = defaultTaxonomies[currentMainCategory] || {};
-    if (Object.keys(categoryTaxonomy).length === 0) {
-      Object.assign(categoryTaxonomy, defaultTax);
-    } else {
-      Object.keys(categoryTaxonomy).forEach(sub => {
-        if (!categoryTaxonomy[sub] || categoryTaxonomy[sub].length === 0) {
-          if (defaultTax[sub]) {
-            categoryTaxonomy[sub] = [...defaultTax[sub]];
-          } else {
-            const matchKey = Object.keys(defaultTax).find(k => k.toLowerCase().includes(sub.toLowerCase()) || sub.toLowerCase().includes(k.toLowerCase()));
-            if (matchKey) {
-              categoryTaxonomy[sub] = [...defaultTax[matchKey]];
             }
           }
         }

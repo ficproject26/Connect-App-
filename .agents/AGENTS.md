@@ -7,25 +7,25 @@
    - The overall workflow, UI layouts, navigation structures, and data handling of the Admin Portal are fully correct and locked.
    - NEVER refactor, remove, or modify existing working features, modals, navigation tabs, directory flows, or backend handlers unless explicitly asked by the USER for a targeted bug fix or new requirement.
 
-## Admin to Customer Category Hierarchy Synchronization Flow
+## Strict Admin-to-Customer Category Hierarchy Authority & Synchronization Rules
 
-### Core Principles
-1. **Database Authority**:
-   - The Database (MongoDB `categories` collection via `/api/admin/categories`) is the single authoritative source of truth for categories.
-   - When an Admin configures subcategories (Level 2) or child categories (Level 3) for a main category (Level 1), default static baseline subcategories for that main category MUST be cleared and overridden by the database configuration.
+### Core Immutable Directive (NEVER ALTER OR OVERWRITE)
+1. **Absolute Database Authority & Zero Hardcoded Data**:
+   - The Database (MongoDB `categories` collection via `/api/admin/categories`) is the SINGLE, SOLE authoritative source of truth for all categories across Admin and Customer portals.
+   - ALL hardcoded, mock, prebuilt, duplicate, fallback, or outdated category arrays (such as `defaultTaxonomies`) are strictly forbidden. Any category, subcategory, or child category that does not exist in the active Admin Category Management database MUST NOT BE DISPLAYED on the Customer Website.
 
-2. **3-Tier Hierarchy Mapping**:
-   - **Main Category (Level 1)**: `Services`, `Products`, `Daily Needs`, `Food`, `Stay`, `Travel`, `Jobs`.
-   - **Subcategory (Level 2)**: Stored in DB records as `subcategory` (e.g. `Electronics`).
-   - **Child Category (Level 3)**: Stored in DB records as `subSubcategory` (e.g. `Mobiles`).
+2. **Strict 3-Tier Hierarchy Mapping**:
+   - **Level 1 (Main Category)**: Fixed system canonical categories (`Services`, `Products`, `Daily Needs`, `Food`, `Stay`, `Travel`, `Jobs`). Main Categories must NEVER be treated as Subcategories or Child Categories.
+   - **Level 2 (Subcategory)**: Created by Admin under a Main Category (e.g., `Electronics`, `Computers`). Displayed ONLY on the left-side sidebar (`MAIN CATEGORIES`) under its respective Main Category tab. Subcategories must NEVER be displayed as Main Categories or Child Categories.
+   - **Level 3 (Child Category)**: Created by Admin under a specific Subcategory (e.g., `Power Bank`, `Smartphones`, `Laptop`, `Tablets`, `Bluetooth Headphones`). Displayed ONLY on the right-side content grid (`ALL CHILD CATEGORIES` / `[SUBCATEGORY] CHILD CATEGORIES`). Child categories must NEVER be displayed as Subcategories or Main Categories.
 
-3. **Flat Record & Hierarchical Parser Rules**:
-   - In `categoryService.js` (`buildActiveCategoryTree`) and `Dashboard.jsx` (`mergeDbCategories`), always check if `level === 'main'` records contain a populated `.children` array (`Array.isArray(m.children) && m.children.length > 0`).
-   - If `.children` is absent or empty (flat DB structure), process flat subcategory (`subcategory`) and child category (`subSubcategory`) records so child items like `Mobiles` are correctly grouped under their subcategory `Electronics`.
+3. **Parent-Child Integrity & Scoping Rules**:
+   - When "ALL" is selected on the left sidebar, display ALL active Level 3 Child Categories belonging to that Main Category.
+   - When a specific Level 2 Subcategory (e.g. `Electronics`) is selected, display ONLY the active Level 3 Child Categories belonging to `Electronics`.
+   - The Child Categories section must NEVER display the selected Subcategory name itself, the Main Category name, or unrelated categories.
 
-4. **Consistency Across Customer Touchpoints**:
-   - All customer interface components — including Top Navbar mega menus, category dropdowns, sub-navbar filter pills, Dashboard category cards, and `CategoryDetails` pages — MUST strictly consume the dynamic category tree built by `buildActiveCategoryTree` / `mergeDbCategories`.
-   - Never re-introduce hardcoded fallback subcategories when database subcategory records exist for a main category.
+4. **Integration Protocol for Future Features**:
+   - This category hierarchy structure, data mapping (`buildActiveCategoryTree`), and DB-first filtering logic are core system invariants. Any new feature added to the application MUST strictly integrate with this existing hierarchy without altering its structure, filtering rules, or database data source.
 
 ## Vendor Product Display & Response Parsing Flow
 
