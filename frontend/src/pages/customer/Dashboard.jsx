@@ -478,6 +478,13 @@ export default function CustomerDashboard({
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    fetchAdminCategories().then(data => {
+      if (Array.isArray(data) && data.length > 0) setDbCategories(data);
+    }).catch(err => console.warn('Category fetch notice:', err));
+  }, []);
   const [selectedColor, setSelectedColor] = useState('Red');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -3950,33 +3957,60 @@ export default function CustomerDashboard({
   };
 
   const renderCategoryExplorer = () => {
-    const allCategoryMap = {
+    const categoryTaxonomy = {
+      'Computers': ['Laptop', 'Desktop PCs', 'Monitors', 'Computer Accessories', 'Storage Devices'],
+      'Electronics': ['Mobiles', 'Smartwatches', 'Headphones', 'Cameras', 'Audio Devices'],
       'Gaming': ['Gaming Consoles', 'Gaming Accessories', 'VR Devices', 'Gaming Chairs', 'Gaming PCs'],
       'Home & Kitchen': ['Kitchen Appliances', 'Cookware', 'Storage Containers', 'Dining Sets', 'Home Decor', 'Lighting Products'],
       'Pet Care': ['Pet Food', 'Pet Toys', 'Pet Accessories', 'Pet Grooming Products', 'Pet Healthcare'],
       'Gardening': ['Plants', 'Gardening Tools', 'Pots & Planters', 'Fertilizers', 'Watering Equipment'],
       'Business Products': ['Office Supplies', 'Stationery', 'POS Terminals', 'Printer Ink', 'Desk Accessories'],
-      'Fashion': ['Sarees', 'Ethnic Wear', 'Western Wear', 'Footwear', 'Jewelry'],
-      'Electronics': ['Mobiles', 'Smartwatches', 'Headphones', 'Laptops', 'Cameras']
+      'Fashion': ['Sarees', 'Ethnic Wear', 'Western Wear', 'Footwear', 'Jewelry']
     };
 
-    // Dynamically populate from live products
-    if (Array.isArray(products)) {
-      products.forEach(p => {
-        const sub = p.subcategory || p.category;
-        const main = p.subNavbarCategory || p.mainCategory || 'Electronics';
-        if (sub && main) {
-          if (!allCategoryMap[main]) allCategoryMap[main] = [];
-          if (!allCategoryMap[main].includes(sub)) allCategoryMap[main].push(sub);
+    // 1. Process DB categories dynamically
+    if (Array.isArray(dbCategories)) {
+      dbCategories.forEach(c => {
+        if (c && c.isActive !== false && !c.isDeleted) {
+          const sub = c.subcategory || (c.level === 'subcategory' ? c.name : null);
+          const child = c.subSubcategory || (c.level === 'child' ? c.name : null);
+          if (sub) {
+            if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
+            if (child && !categoryTaxonomy[sub].includes(child)) {
+              categoryTaxonomy[sub].push(child);
+            }
+            if (Array.isArray(c.children)) {
+              c.children.forEach(ch => {
+                const chName = typeof ch === 'string' ? ch : (ch.name || ch.subSubcategory);
+                if (chName && !categoryTaxonomy[sub].includes(chName)) {
+                  categoryTaxonomy[sub].push(chName);
+                }
+              });
+            }
+          }
         }
       });
     }
 
-    const mainCategoryKeys = Object.keys(allCategoryMap);
+    // 2. Process Live Products dynamically
+    if (Array.isArray(products)) {
+      products.forEach(p => {
+        const sub = p.subcategory || p.category;
+        const child = p.subSubcategory;
+        if (sub) {
+          if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
+          if (child && !categoryTaxonomy[sub].includes(child)) {
+            categoryTaxonomy[sub].push(child);
+          }
+        }
+      });
+    }
 
-    const itemsToDisplay = sidebarActiveCat === 'ALL'
-      ? Array.from(new Set(Object.values(allCategoryMap).flat()))
-      : (allCategoryMap[sidebarActiveCat] || []);
+    const mainCategoryKeys = Object.keys(categoryTaxonomy);
+
+    const childItemsToDisplay = sidebarActiveCat === 'ALL'
+      ? Array.from(new Set(Object.values(categoryTaxonomy).flat()))
+      : (categoryTaxonomy[sidebarActiveCat] || []);
 
     return (
       <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
@@ -4023,31 +4057,37 @@ export default function CustomerDashboard({
             </div>
           </div>
 
-          {/* Right Content Grid: ALL ITEMS */}
+          {/* Right Content Grid: CHILD CATEGORIES ONLY */}
           <div className="flex-grow text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
-              {sidebarActiveCat === 'ALL' ? 'ALL ITEMS' : `${sidebarActiveCat.toUpperCase()} ITEMS`}
+              {sidebarActiveCat === 'ALL' ? 'ALL CHILD CATEGORIES' : `${sidebarActiveCat.toUpperCase()} CHILD CATEGORIES`}
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
-              {itemsToDisplay.map((itemTitle) => (
-                <div
-                  key={itemTitle}
-                  onClick={() => {
-                    setSearchQuery(itemTitle);
-                    triggerNotification(`Filtering catalog by "${itemTitle}"`);
-                  }}
-                  className="bg-[#f8fafc] dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl px-4 py-3.5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all cursor-pointer group select-none"
-                >
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors truncate">
-                    {itemTitle}
-                  </span>
-                  <div className="w-6 h-6 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 group-hover:bg-amber-400 group-hover:border-amber-400 text-slate-400 group-hover:text-slate-950 flex items-center justify-center transition-all shrink-0">
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            {childItemsToDisplay.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
+                {childItemsToDisplay.map((childTitle) => (
+                  <div
+                    key={childTitle}
+                    onClick={() => {
+                      setSearchQuery(childTitle);
+                      triggerNotification(`Filtering catalog by "${childTitle}"`);
+                    }}
+                    className="bg-[#f8fafc] dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl px-4 py-3.5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all cursor-pointer group select-none"
+                  >
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors truncate">
+                      {childTitle}
+                    </span>
+                    <div className="w-6 h-6 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 group-hover:bg-amber-400 group-hover:border-amber-400 text-slate-400 group-hover:text-slate-950 flex items-center justify-center transition-all shrink-0">
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs font-semibold">
+                No child categories found for {sidebarActiveCat}.
+              </div>
+            )}
           </div>
         </div>
       </div>
