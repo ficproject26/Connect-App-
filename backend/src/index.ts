@@ -48,10 +48,16 @@ app.use(cors({
   credentials: true
 }));
 
+import path from 'path';
+
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(sanitizeInputsMiddleware);
+
+// Serve static uploaded files
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Base Health Check Route
 app.get('/', (req, res) => {

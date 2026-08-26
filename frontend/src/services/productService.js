@@ -123,12 +123,70 @@ const inferSubNavbarCategory = (p) => {
   return rawSubNav || rawMainCat || 'Products';
 };
 
-const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80';
+const extractRawImage = (p) => {
+  if (!p) return '';
+  if (typeof p.image === 'string' && p.image.trim()) return p.image.trim();
+  if (typeof p.imageUrl === 'string' && p.imageUrl.trim()) return p.imageUrl.trim();
+  if (typeof p.imgUrl === 'string' && p.imgUrl.trim()) return p.imgUrl.trim();
+  
+  if (Array.isArray(p.images) && p.images.length > 0) {
+    const first = p.images[0];
+    if (typeof first === 'string' && first.trim()) return first.trim();
+    if (first && typeof first === 'object') {
+      const url = first.url || first.src || first.path || first.imageUrl || first.location || '';
+      if (url && typeof url === 'string' && url.trim()) return url.trim();
+    }
+  }
+  if (Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
+    const first = p.imageUrls[0];
+    if (typeof first === 'string' && first.trim()) return first.trim();
+  }
 
-const sanitizeImageUrl = (imgUrl) => {
-  if (!imgUrl || typeof imgUrl !== 'string') return DEFAULT_FALLBACK_IMAGE;
+  if (typeof p.photo === 'string' && p.photo.trim()) return p.photo.trim();
+  if (Array.isArray(p.photos) && p.photos.length > 0) {
+    const first = p.photos[0];
+    if (typeof first === 'string' && first.trim()) return first.trim();
+    if (first && typeof first === 'object') {
+      const url = first.url || first.src || first.path || first.imageUrl || '';
+      if (url && typeof url === 'string' && url.trim()) return url.trim();
+    }
+  }
+
+  if (typeof p.productImage === 'string' && p.productImage.trim()) return p.productImage.trim();
+  if (typeof p.picture === 'string' && p.picture.trim()) return p.picture.trim();
+  if (typeof p.thumbnail === 'string' && p.thumbnail.trim()) return p.thumbnail.trim();
+  if (typeof p.img === 'string' && p.img.trim()) return p.img.trim();
+  if (typeof p.file === 'string' && p.file.trim()) return p.file.trim();
+  if (typeof p.coverImage === 'string' && p.coverImage.trim()) return p.coverImage.trim();
+  if (typeof p.bannerImage === 'string' && p.bannerImage.trim()) return p.bannerImage.trim();
+
+  return '';
+};
+
+const getCategoryFallbackImage = (pContext) => {
+  const cat = (pContext?.subNavbarCategory || pContext?.mainCategory || pContext?.category || pContext?.tag || pContext?.name || '').toString().toLowerCase();
+  if (cat.includes('food') || cat.includes('biryani') || cat.includes('naan') || cat.includes('meal') || cat.includes('paneer') || cat.includes('dosa') || cat.includes('idli')) {
+    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('stay') || cat.includes('hotel') || cat.includes('room') || cat.includes('suite') || cat.includes('resort')) {
+    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('service') || cat.includes('repair') || cat.includes('plumb') || cat.includes('electric') || cat.includes('clean')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('job') || cat.includes('career') || cat.includes('work') || cat.includes('hiring')) {
+    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('daily') || cat.includes('grocery') || cat.includes('soap') || cat.includes('rin') || cat.includes('wash')) {
+    return 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&q=80';
+};
+
+const sanitizeImageUrl = (imgUrl, pContext = null) => {
+  if (!imgUrl || typeof imgUrl !== 'string') return getCategoryFallbackImage(pContext);
   let url = imgUrl.trim();
-  if (!url || url === 'null' || url === 'undefined') return DEFAULT_FALLBACK_IMAGE;
+  if (!url || url === 'null' || url === 'undefined' || url === 'false') return getCategoryFallbackImage(pContext);
 
   if (url.startsWith('data:') || url.startsWith('blob:')) {
     return url;
@@ -138,14 +196,11 @@ const sanitizeImageUrl = (imgUrl) => {
 
   if (url.includes('/uploads/')) {
     const relativePath = url.substring(url.indexOf('/uploads/'));
-    if (isHttps) {
-      return relativePath;
-    }
     let backendUrl = getVendorBackendUrl() || getBackendUrl();
     if (!backendUrl || !backendUrl.startsWith('http')) {
-      backendUrl = 'https://connect-app-7s6g.onrender.com';
+      backendUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'https://connect-app-7s6g.onrender.com';
     }
-    return `${backendUrl}${relativePath}`;
+    return relativePath.startsWith('http') ? relativePath : `${backendUrl}${relativePath}`;
   }
 
   if (isHttps && url.startsWith('http://')) {
@@ -167,10 +222,10 @@ const sanitizeImageUrl = (imgUrl) => {
 
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    if (isHttps) {
-      return cleanPath;
+    if (backendUrl) {
+      return `${backendUrl}${cleanPath}`;
     }
-    return `${backendUrl}${cleanPath}`;
+    return cleanPath;
   }
 
   return url;
@@ -204,11 +259,29 @@ const sanitizeProduct = (p) => {
   updated.rating = p.rating ? Number(p.rating) : 4.5;
   updated.reviews = p.reviews ? Number(p.reviews) : 12;
 
-  // Standardize Image
-  const rawImg = p.image || p.imageUrl || (p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : '') || p.img || '';
-  updated.image = sanitizeImageUrl(rawImg);
+  // Infer category context first for fallback selection if needed
+  updated.subNavbarCategory = inferSubNavbarCategory(updated);
+
+  // Extract raw vendor uploaded image
+  const rawImg = extractRawImage(p);
+  updated.image = sanitizeImageUrl(rawImg, updated);
+
+  const allImages = [];
   if (Array.isArray(p.images) && p.images.length > 0) {
-    updated.images = p.images.map(sanitizeImageUrl);
+    p.images.forEach(img => {
+      const extracted = typeof img === 'string' ? img : (img?.url || img?.src || img?.path || img?.imageUrl || '');
+      if (extracted) allImages.push(sanitizeImageUrl(extracted, updated));
+    });
+  }
+  if (Array.isArray(p.photos) && p.photos.length > 0) {
+    p.photos.forEach(img => {
+      const extracted = typeof img === 'string' ? img : (img?.url || img?.src || img?.path || img?.imageUrl || '');
+      if (extracted) allImages.push(sanitizeImageUrl(extracted, updated));
+    });
+  }
+
+  if (allImages.length > 0) {
+    updated.images = Array.from(new Set(allImages));
   } else if (updated.image) {
     updated.images = [updated.image];
   }
@@ -220,7 +293,7 @@ const sanitizeProduct = (p) => {
       updated[key] = updated[key].map(item => typeof item === 'string' ? sanitizeString(item) : item);
     }
   }
-  updated.subNavbarCategory = inferSubNavbarCategory(updated);
+
   return updated;
 };
 
