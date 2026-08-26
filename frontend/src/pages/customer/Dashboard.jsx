@@ -1782,7 +1782,8 @@ export default function CustomerDashboard({
     enterTimeoutRef.current = setTimeout(() => {
       setHoveredLink(linkName);
       setActiveMegaCategory('ALL');
-    }, 500); // 500ms delay: show only if cursor stops/pauses on the tab
+      setSidebarActiveCat('ALL');
+    }, 120); // 120ms responsive hover
   };
 
   const handleMouseLeave = () => {
@@ -1793,6 +1794,10 @@ export default function CustomerDashboard({
       setHoveredLink(null);
     }, 150);
   };
+
+  useEffect(() => {
+    setSidebarActiveCat('ALL');
+  }, [hoveredLink]);
 
   // Job Application States
   const [appliedJobId, setAppliedJobId] = useState(null);
@@ -3951,11 +3956,16 @@ export default function CustomerDashboard({
   };
 
   const renderCategoryExplorer = () => {
-    // 1. Home tab displays NO category panel
-    if (activeTab === 'Home') return null;
+    // 1. Determine active category focus (prioritize currently hovered category link over activeTab)
+    const activeCategory = (hoveredLink && hoveredLink !== 'Home') 
+      ? hoveredLink 
+      : activeTab;
 
-    // 2. Resolve current Main Category tab focus (Services, Products, Daily Needs, Food, Stay, Travel, Jobs)
-    const currentMainCategory = normalizeCategoryName(activeTab || 'Services');
+    // 2. Home tab displays NO category panel
+    if (!activeCategory || activeCategory === 'Home') return null;
+
+    // 3. Resolve current Main Category tab focus (Services, Products, Daily Needs, Food, Stay, Travel, Jobs)
+    const currentMainCategory = normalizeCategoryName(activeCategory);
 
     // 3. Parse database category tree using authoritative buildActiveCategoryTree(dbCategories)
     const fullTree = buildActiveCategoryTree(dbCategories);
