@@ -477,14 +477,6 @@ export default function CustomerDashboard({
 
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
-  const [dbCategories, setDbCategories] = useState([]);
-
-  useEffect(() => {
-    fetchAdminCategories().then(data => {
-      if (Array.isArray(data) && data.length > 0) setDbCategories(data);
-    }).catch(err => console.warn('Category fetch notice:', err));
-  }, []);
   const [selectedColor, setSelectedColor] = useState('Red');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -986,6 +978,7 @@ export default function CustomerDashboard({
   const [selectedCuisines, setSelectedCuisines] = useState([]);
   const [selectedDistances, setSelectedDistances] = useState([]);
   const [selectedFoodType, setSelectedFoodType] = useState('All');
+  const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
   const [selectedAccomTypes, setSelectedAccomTypes] = useState([]);
   const [selectedTravelTypes, setSelectedTravelTypes] = useState([]);
   const [selectedDailyNeedsTypes, setSelectedDailyNeedsTypes] = useState([]);
@@ -4515,6 +4508,7 @@ export default function CustomerDashboard({
       }) : [])
     ];
 
+    const defaultCategoryMeta = {
       'Jobs': { title: 'Jobs & Careers', discount: 'CAREER OPPORTUNITIES', desc: 'Explore verified job opportunities', icon: Briefcase, bg: 'bg-[#0e0717]', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&auto=format&fit=crop&q=80' }
     };
 
