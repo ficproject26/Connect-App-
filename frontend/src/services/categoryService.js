@@ -115,13 +115,34 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     return c.parentName ? normalizeCategoryName(c.parentName) : cNorm;
   };
 
-  // 2. Process all DB Category records
   dbCategories.forEach(c => {
     if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
 
     const mainName = findMainCategoryName(c);
-    const subName = (c.subcategory || '').trim();
-    const childName = (c.subSubcategory || '').trim();
+    let subName = (c.subcategory || (c.level === 'subcategory' ? c.name : '')).trim();
+    let childName = (c.subSubcategory || (c.level === 'child' || c.level === 'subSubcategory' ? c.name : '')).trim();
+
+    // Check parentId mapping
+    if (c.parentId && idMap.has(c.parentId.toString())) {
+      const parent = idMap.get(c.parentId.toString());
+      const parentMain = findMainCategoryName(parent);
+      const parentNorm = normalizeCategoryName(parent.name);
+      const isParentMain = parent.level === 'main' || canonicalMains.includes(parentNorm);
+
+      if (isParentMain) {
+        if (!subName && c.name && normalizeCategoryName(c.name) !== parentMain) {
+          subName = c.name.trim();
+        }
+      } else {
+        const parentSub = (parent.subcategory || parent.name || '').trim();
+        if (parentSub) {
+          subName = parentSub;
+          if (!childName && c.name && c.name !== parentSub) {
+            childName = c.name.trim();
+          }
+        }
+      }
+    }
 
     if (mainName && subName) {
       appendSub(mainName, subName, childName ? [childName] : (c.children || []));
@@ -136,25 +157,6 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
           appendSub(mainName, subNodeName, subNode.children);
         }
       });
-    }
-
-    // Check parentId relationships
-    if (c.parentId && idMap.has(c.parentId.toString())) {
-      const parent = idMap.get(c.parentId.toString());
-      const parentMain = findMainCategoryName(parent);
-      const nodeName = (c.name || c.subcategory || '').trim();
-
-      if (parentMain && nodeName && normalizeCategoryName(nodeName) !== parentMain) {
-        const isParentMain = parent.level === 'main' || canonicalMains.includes(normalizeCategoryName(parent.name));
-        if (isParentMain) {
-          appendSub(parentMain, nodeName, c.children);
-        } else {
-          const parentSub = (parent.subcategory || parent.name || '').trim();
-          if (parentSub) {
-            appendSub(parentMain, parentSub, [nodeName, ...(c.children || [])]);
-          }
-        }
-      }
     }
   });
 
