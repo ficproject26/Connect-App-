@@ -44,9 +44,25 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     return catTree;
   }
 
-  // 1. Build an ID Map of all valid category records
+  // Helper to recursively flatten nested category arrays (e.g. backend roots with .children)
+  const flattenCategories = (list) => {
+    const flat = [];
+    const walk = (c) => {
+      if (!c) return;
+      flat.push(c);
+      if (Array.isArray(c.children)) {
+        c.children.forEach(walk);
+      }
+    };
+    (Array.isArray(list) ? list : []).forEach(walk);
+    return flat;
+  };
+
+  const allFlat = flattenCategories(dbCategories);
+
+  // 1. Build an ID Map of all valid category records across all levels
   const idMap = new Map();
-  dbCategories.forEach(c => {
+  allFlat.forEach(c => {
     if (c && c._id && c.isActive !== false && !c.isDeleted && c.description !== 'DELETED_HIERARCHY_MARKER') {
       idMap.set(c._id.toString(), c);
     }
@@ -115,7 +131,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     return c.parentName ? normalizeCategoryName(c.parentName) : cNorm;
   };
 
-  dbCategories.forEach(c => {
+  allFlat.forEach(c => {
     if (!c || c.isActive === false || c.isDeleted || c.description === 'DELETED_HIERARCHY_MARKER') return;
 
     const mainName = findMainCategoryName(c);
@@ -123,7 +139,7 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
     let childName = (c.subSubcategory || '').trim();
 
     // If level is explicitly subcategory
-    if (!subName && c.level === 'subcategory' && c.name) {
+    if (!subName && (c.level === 'subcategory' || c.level === 'sub') && c.name) {
       subName = c.name.trim();
     }
 
