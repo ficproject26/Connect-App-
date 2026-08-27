@@ -164,11 +164,6 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       subName = c.name.trim();
     }
 
-    // If childName is present but subName is empty, use default group
-    if (childName && !subName) {
-      subName = 'General';
-    }
-
     if (mainName && subName) {
       appendSub(mainName, subName, childName ? [childName] : (c.children || []));
     }
