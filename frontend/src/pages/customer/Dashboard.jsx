@@ -4089,7 +4089,14 @@ export default function CustomerDashboard({
                       setSearchQuery(childTitle);
                       setSelectedSubNavbarCategory(childTitle);
                       setSelectedCategories([childTitle]);
+                      setHoveredLink(null);
                       triggerNotification(`Filtering catalog by "${childTitle}"`);
+                      setTimeout(() => {
+                        const el = document.getElementById('products-section') || document.getElementById('catalog-grid');
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 100);
                     }}
                     className="bg-[#f8fafc] dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl px-4 py-3.5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all cursor-pointer group select-none"
                   >
