@@ -534,7 +534,7 @@ const inferApplicationTips = (title = '', category = '', desc = '', pTips) => {
   ];
 };
 
-const sanitizeJobLocation = (loc, defaultLoc = 'Bangalore, Karnataka') => {
+export function sanitizeJobLocation(loc, defaultLoc = 'Bangalore, Karnataka') {
   if (!loc || typeof loc !== 'string') return defaultLoc;
   const trimmed = loc.trim();
   const lower = trimmed.toLowerCase();
@@ -547,14 +547,161 @@ const sanitizeJobLocation = (loc, defaultLoc = 'Bangalore, Karnataka') => {
     return defaultLoc;
   }
   return trimmed;
-};
+}
 
-const sanitizeJobTitle = (t, defaultTitle = 'Full Stack Developer') => {
+export function sanitizeJobTitle(t, defaultTitle = 'Full Stack Developer') {
   if (!t || typeof t !== 'string') return defaultTitle;
   const trimmed = t.trim();
   if (trimmed.toLowerCase() === 'full') return 'Full Stack Developer';
   return trimmed;
-};
+}
+
+export function formatDateYYYYMMDD(date) {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export function getFormattedModalDate(date) {
+  if (!date) return '';
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+export function formatDateFromYYYYMMDD(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+export function generateUpcomingDates(startDateStr, count = 14) {
+  const dates = [];
+  let base = new Date();
+  if (startDateStr && !isNaN(new Date(startDateStr + 'T00:00:00').getTime())) {
+    base = new Date(startDateStr + 'T00:00:00');
+  }
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  for (let i = 0; i < count; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    const dateStr = formatDateYYYYMMDD(d);
+    const isAvailable = (i % 5 !== 3);
+    dates.push({
+      dateStr,
+      dayNumber: d.getDate(),
+      dayName: weekdays[d.getDay()],
+      monthName: months[d.getMonth()],
+      formatted: `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`,
+      isAvailable
+    });
+  }
+  return dates;
+}
+
+export function isJobCardItem(item) {
+  if (!item) return false;
+  const subCat = String(item.subNavbarCategory || '').toLowerCase().trim();
+  const tag = String(item.tag || '').toLowerCase().trim();
+  const cat = String(item.category || '').toLowerCase().trim();
+  const mainCat = String(item.mainCategory || '').toLowerCase().trim();
+  const subSub = String(item.subSubcategory || '').toLowerCase().trim();
+
+  if (subCat === 'jobs' || subCat === 'job' || tag === 'jobs' || tag === 'job' || cat === 'jobs' || cat === 'job' || mainCat === 'jobs' || mainCat === 'job' || cat.includes('it jobs') || subSub.includes('it jobs') || item.jobTitle || item.jobLocation) {
+    return true;
+  }
+  return false;
+}
+
+export function isBookingCartItem(item) {
+  if (!item) return false;
+  const subCat = String(item.subNavbarCategory || '');
+  const tag = String(item.tag || '');
+  const cat = String(item.category || '');
+  const mainCat = String(item.mainCategory || '');
+  const type = String(item.type || '');
+
+  const bookingCategories = ['Services', 'Stay', 'Travel', 'Hospitals', 'Hospital', 'Doctors', 'Doctor', 'Appointments', 'Appointment'];
+  if (bookingCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
+  if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking) return true;
+  return false;
+}
+
+export function isJobCartItem(item) {
+  if (!item) return false;
+  if (isJobCardItem(item)) return true;
+  const subCat = String(item.subNavbarCategory || '');
+  const tag = String(item.tag || '');
+  const cat = String(item.category || '');
+  const mainCat = String(item.mainCategory || '');
+  const type = String(item.type || '');
+
+  const jobCategories = ['Jobs', 'Job', 'Careers', 'Career'];
+  if (jobCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
+  return false;
+}
+
+export function isProductOrderCartItem(item) {
+  if (!item) return false;
+  const subCat = String(item.subNavbarCategory || item.mainCategory || item.tag || item.category || '').toLowerCase().trim();
+
+  const noQtyCategories = ['services', 'service', 'stay', 'stays', 'travel', 'travels', 'jobs', 'job', 'hospitals', 'hospital', 'doctors', 'doctor', 'appointment'];
+  const isExcluded = noQtyCategories.some(c => subCat === c || subCat.startsWith(c + ' ') || subCat.endsWith(' ' + c) || subCat.includes(c + ' booking'));
+  if (isExcluded) return false;
+
+  if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.isBooking) return false;
+
+  return true;
+}
+
+export function normalizeMainCatName(rawName) {
+  if (!rawName) return '';
+  const n = rawName.trim().toLowerCase();
+
+  if (n === 'stay' || n === 'stays') return 'stay';
+  if (n === 'food' || n === 'foods') return 'food';
+  if (n === 'daily needs' || n === 'daily need' || n === 'daily-needs' || n === 'dailyneeds') return 'daily needs';
+  if (n === 'jobs' || n === 'job') return 'jobs';
+  if (n === 'services' || n === 'service') return 'services';
+  if (n === 'travel' || n === 'travels') return 'travel';
+  if (n === 'products' || n === 'product') return 'products';
+
+  if (['hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'rooms', 'accommodation', 'villa', 'villas', 'pg', 'hostel', 'hostels', 'apartment', 'apartments', 'guest house', 'suite', 'suites'].some(k => n === k || n.includes(k))) return 'stay';
+  if (['food', 'foods', 'restaurant', 'restaurants', 'dining', 'bakery', 'bakeries', 'cafe', 'cafes', 'biryani', 'biriyani', 'catering', 'sweets', 'sweet', 'ice cream', 'fast food', 'beverages', 'beverage', 'juice', 'juices', 'south indian', 'north indian', 'chinese', 'continental', 'dessert', 'desserts', 'snack', 'snacks', 'meal', 'meals', 'thali', 'dosa', 'parotta', 'pizza', 'burger'].some(k => n === k || n.includes(k))) return 'food';
+  if (['daily need', 'daily needs', 'daily-needs', 'dailyneeds', 'grocery', 'groceries', 'supermarket', 'vegetable', 'vegetables', 'fruits', 'fruit', 'rice', 'eggs', 'egg', 'milk', 'dairy', 'pharmacy', 'medicine', 'medicines', 'organic', 'staples', 'personal care', 'provisions'].some(k => n === k || n.includes(k))) return 'daily needs';
+  if (['job', 'jobs', 'hiring', 'recruitment', 'career', 'careers', 'it jobs', 'it domain', 'full time', 'part time', 'opening', 'openings', 'vacancy', 'vacancies', 'employment', 'work'].some(k => n === k || n.includes(k))) return 'jobs';
+  if (['service', 'services', 'hospital', 'hospitals', 'doctor', 'doctors', 'clinic', 'clinics', 'healthcare', 'repair', 'repairs', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'consultant', 'fitness', 'gym', 'education', 'tutoring', 'photography', 'event management', 'maintenance', 'home care', 'pest control', 'laundry', 'carpentry', 'painter', 'legal', 'financial', 'insurance', 'it services', 'developer', 'design'].some(k => n === k || n.includes(k))) return 'services';
+  if (['travel', 'travels', 'tour', 'tours', 'cab', 'cabs', 'taxi', 'taxis', 'bus', 'buses', 'flight', 'flights', 'train', 'trains', 'car rental', 'bike rental', 'tour package', 'ticket', 'tickets', 'transport'].some(k => n === k || n.includes(k))) return 'travel';
+
+  return 'products';
+}
+
+export function resolveCustomerName(uName, currentUserName, emailStr) {
+  if (uName && uName !== 'Connect Member' && !/^\d+$/.test(uName)) return uName;
+  if (currentUserName && currentUserName !== 'Connect Member' && !/^\d+$/.test(currentUserName)) return currentUserName;
+  if (emailStr && emailStr.includes('@')) {
+    const prefix = emailStr.split('@')[0];
+    if (prefix && !/^\d+$/.test(prefix)) {
+      return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+    }
+  }
+  return uName || currentUserName || 'Connect Member';
+}
+
+export function sanitizePhoneInput(val, pincodeVal = '') {
+  if (!val) return '';
+  const digits = String(val).replace(/\D/g, '');
+  if (digits.length < 10 || digits === String(pincodeVal)) return '';
+  return val;
+}
 
 export default function CustomerDashboard({ 
   currentUser, 
@@ -796,18 +943,7 @@ export default function CustomerDashboard({
       setActiveDateTab('checkIn');
     }
   }, [activeScheduleModalItem, activeBookNowModalItem]);
-  const formatDateYYYYMMDD = (date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
 
-  const getFormattedModalDate = (date) => {
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-  };
 
   const todayObj = new Date();
   const tomorrowObj = new Date();
@@ -825,15 +961,7 @@ export default function CustomerDashboard({
   const [stayCheckOutDate, setStayCheckOutDate] = useState(() => formatDateYYYYMMDD(tomorrowObj));
   const [activeDateTab, setActiveDateTab] = useState('checkIn'); // 'checkIn' | 'checkOut'
 
-  const formatDateFromYYYYMMDD = (dateStr) => {
-    if (!dateStr) return '';
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return dateStr;
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-  };
+
 
   const checkInTimeSlots = [
     { time: '09:00 AM', status: 'Available' },
@@ -859,31 +987,7 @@ export default function CustomerDashboard({
     { time: '04:00 PM', status: 'Available' }
   ];
 
-  const generateUpcomingDates = (startDateStr, count = 14) => {
-    const dates = [];
-    let base = new Date();
-    if (startDateStr && !isNaN(new Date(startDateStr + 'T00:00:00').getTime())) {
-      base = new Date(startDateStr + 'T00:00:00');
-    }
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    for (let i = 0; i < count; i++) {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
-      const dateStr = formatDateYYYYMMDD(d);
-      const isAvailable = (i % 5 !== 3);
-      dates.push({
-        dateStr,
-        dayNumber: d.getDate(),
-        dayName: weekdays[d.getDay()],
-        monthName: months[d.getMonth()],
-        formatted: `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`,
-        isAvailable
-      });
-    }
-    return dates;
-  };
 
   const [stayRoomsCount, setStayRoomsCount] = useState(1);
   const [stayGuestsCount, setStayGuestsCount] = useState(2);
@@ -936,124 +1040,7 @@ export default function CustomerDashboard({
   }, []);
   const [dbCategories, setDbCategories] = useState([]);
 
-  const sanitizeJobTitle = (title) => {
-    if (!title) return 'Job Opening';
-    return String(title).trim();
-  };
 
-  const sanitizeJobLocation = (loc) => {
-    if (!loc) return 'Bangalore, India';
-    return String(loc).trim();
-  };
-
-  const inferJobType = (p) => {
-    if (!p) return 'Full Time';
-    const str = `${p.jobType || ''} ${p.type || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
-    if (str.includes('part time') || str.includes('part-time')) return 'Part Time';
-    if (str.includes('contract') || str.includes('freelance')) return 'Contract';
-    if (str.includes('intern')) return 'Internship';
-    if (str.includes('remote') || str.includes('work from home')) return 'Remote';
-    return 'Full Time';
-  };
-
-  const inferExperience = (desc, name, exp) => {
-    if (exp) return String(exp);
-    const str = `${desc || ''} ${name || ''}`.toLowerCase();
-    if (str.includes('fresher') || str.includes('entry') || str.includes('0-1')) return 'Fresher / 0-1 Yr';
-    if (str.includes('senior') || str.includes('5+')) return '5+ Years';
-    if (str.includes('lead') || str.includes('manager')) return '5+ Years';
-    return '1-3 Years';
-  };
-
-  const isJobCardItem = (item) => {
-    if (!item) return false;
-    const subCat = String(item.subNavbarCategory || '').toLowerCase().trim();
-    const tag = String(item.tag || '').toLowerCase().trim();
-    const cat = String(item.category || '').toLowerCase().trim();
-    const mainCat = String(item.mainCategory || '').toLowerCase().trim();
-    const subSub = String(item.subSubcategory || '').toLowerCase().trim();
-
-    if (subCat === 'jobs' || subCat === 'job' || tag === 'jobs' || tag === 'job' || cat === 'jobs' || cat === 'job' || mainCat === 'jobs' || mainCat === 'job' || cat.includes('it jobs') || subSub.includes('it jobs') || item.jobTitle || item.jobLocation) {
-      return true;
-    }
-    return false;
-  };
-
-  const isBookingCartItem = (item) => {
-    if (!item) return false;
-    const subCat = String(item.subNavbarCategory || '');
-    const tag = String(item.tag || '');
-    const cat = String(item.category || '');
-    const mainCat = String(item.mainCategory || '');
-    const type = String(item.type || '');
-
-    const bookingCategories = ['Services', 'Stay', 'Travel', 'Hospitals', 'Hospital', 'Doctors', 'Doctor', 'Appointments', 'Appointment'];
-    if (bookingCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
-    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.bookingType || item.isBooking) return true;
-    return false;
-  };
-
-  const isJobCartItem = (item) => {
-    if (!item) return false;
-    if (isJobCardItem(item)) return true;
-    const subCat = String(item.subNavbarCategory || '');
-    const tag = String(item.tag || '');
-    const cat = String(item.category || '');
-    const mainCat = String(item.mainCategory || '');
-    const type = String(item.type || '');
-
-    const jobCategories = ['Jobs', 'Job', 'Careers', 'Career'];
-    if (jobCategories.some(c => subCat === c || tag === c || cat === c || mainCat === c || type === c)) return true;
-    return false;
-  };
-
-  const isProductOrderCartItem = (item) => {
-    if (!item) return false;
-    const subCat = String(item.subNavbarCategory || item.mainCategory || item.tag || item.category || '').toLowerCase().trim();
-
-    const noQtyCategories = ['services', 'service', 'stay', 'stays', 'travel', 'travels', 'jobs', 'job', 'hospitals', 'hospital', 'doctors', 'doctor', 'appointment'];
-    const isExcluded = noQtyCategories.some(c => subCat === c || subCat.startsWith(c + ' ') || subCat.endsWith(' ' + c) || subCat.includes(c + ' booking'));
-    if (isExcluded) return false;
-
-    if (item.bookingDate || item.bookingTime || item.checkInDate || item.checkInTime || item.isBooking) return false;
-
-    return true;
-  };
-
-  const normalizeMainCatName = (rawName) => {
-    if (!rawName) return '';
-    const n = rawName.trim().toLowerCase();
-
-    // Exact or direct main category matches first
-    if (n === 'stay' || n === 'stays') return 'stay';
-    if (n === 'food' || n === 'foods') return 'food';
-    if (n === 'daily needs' || n === 'daily need' || n === 'daily-needs' || n === 'dailyneeds') return 'daily needs';
-    if (n === 'jobs' || n === 'job') return 'jobs';
-    if (n === 'services' || n === 'service') return 'services';
-    if (n === 'travel' || n === 'travels') return 'travel';
-    if (n === 'products' || n === 'product') return 'products';
-
-    // Stay
-    if (['hotel', 'hotels', 'homestay', 'resort', 'resorts', 'lodging', 'room', 'rooms', 'accommodation', 'villa', 'villas', 'pg', 'hostel', 'hostels', 'apartment', 'apartments', 'guest house', 'suite', 'suites'].some(k => n === k || n.includes(k))) return 'stay';
-    
-    // Food
-    if (['food', 'foods', 'restaurant', 'restaurants', 'dining', 'bakery', 'bakeries', 'cafe', 'cafes', 'biryani', 'biriyani', 'catering', 'sweets', 'sweet', 'ice cream', 'fast food', 'beverages', 'beverage', 'juice', 'juices', 'south indian', 'north indian', 'chinese', 'continental', 'dessert', 'desserts', 'snack', 'snacks', 'meal', 'meals', 'thali', 'dosa', 'parotta', 'pizza', 'burger'].some(k => n === k || n.includes(k))) return 'food';
-    
-    // Daily Needs
-    if (['daily need', 'daily needs', 'daily-needs', 'dailyneeds', 'grocery', 'groceries', 'supermarket', 'vegetable', 'vegetables', 'fruits', 'fruit', 'rice', 'eggs', 'egg', 'milk', 'dairy', 'pharmacy', 'medicine', 'medicines', 'organic', 'staples', 'personal care', 'provisions'].some(k => n === k || n.includes(k))) return 'daily needs';
-    
-    // Jobs
-    if (['job', 'jobs', 'hiring', 'recruitment', 'career', 'careers', 'it jobs', 'it domain', 'full time', 'part time', 'opening', 'openings', 'vacancy', 'vacancies', 'employment', 'work'].some(k => n === k || n.includes(k))) return 'jobs';
-    
-    // Services
-    if (['service', 'services', 'hospital', 'hospitals', 'doctor', 'doctors', 'clinic', 'clinics', 'healthcare', 'repair', 'repairs', 'plumbing', 'electrician', 'cleaning', 'salon', 'spa', 'consulting', 'consultant', 'fitness', 'gym', 'education', 'tutoring', 'photography', 'event management', 'maintenance', 'home care', 'pest control', 'laundry', 'carpentry', 'painter', 'legal', 'financial', 'insurance', 'it services', 'developer', 'design'].some(k => n === k || n.includes(k))) return 'services';
-    
-    // Travel
-    if (['travel', 'travels', 'tour', 'tours', 'cab', 'cabs', 'taxi', 'taxis', 'bus', 'buses', 'flight', 'flights', 'train', 'trains', 'car rental', 'bike rental', 'tour package', 'ticket', 'tickets', 'transport'].some(k => n === k || n.includes(k))) return 'travel';
-
-    // Products (Default for physical goods, clothing, dress, jeans, shoes, electronics, etc.)
-    return 'products';
-  };
 
   // Dynamic Sub-navbar categories
   const subNavbarCategories = useMemo(() => {
@@ -1107,17 +1094,7 @@ export default function CustomerDashboard({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState('orders'); // 'orders' | 'settings' | 'card' | 'edit'
-  const resolveCustomerName = (uName, currentUserName, emailStr) => {
-    if (uName && uName !== 'Connect Member' && !/^\d+$/.test(uName)) return uName;
-    if (currentUserName && currentUserName !== 'Connect Member' && !/^\d+$/.test(currentUserName)) return currentUserName;
-    if (emailStr && emailStr.includes('@')) {
-      const prefix = emailStr.split('@')[0];
-      if (prefix && !/^\d+$/.test(prefix)) {
-        return prefix.charAt(0).toUpperCase() + prefix.slice(1);
-      }
-    }
-    return uName || currentUserName || 'Connect Member';
-  };
+
 
   const [profileName, setProfileName] = useState(() => {
     return resolveCustomerName(currentUser?.name, '', currentUser?.email);
@@ -1163,12 +1140,7 @@ export default function CustomerDashboard({
     return getOrGenerateCustomerId(currentUser || 'customer');
   }, [currentUser]);
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
-  const sanitizePhoneInput = (val, pincodeVal = '') => {
-    if (!val) return '';
-    const digits = String(val).replace(/\D/g, '');
-    if (digits.length < 10 || digits === String(pincodeVal)) return '';
-    return val;
-  };
+
 
   const [profilePhone, setProfilePhone] = useState(() => {
     const raw = currentUser?.phone || '';
