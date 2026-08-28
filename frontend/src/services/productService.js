@@ -191,8 +191,16 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
   let url = imgUrl.trim();
   if (!url || url === 'null' || url === 'undefined' || url === 'false') return getCategoryFallbackImage(pContext);
 
-  if (url.startsWith('data:') || url.startsWith('blob:')) {
+  if (url.startsWith('data:')) {
     return url;
+  }
+  if (url.startsWith('blob:')) {
+    try {
+      if (typeof window !== 'undefined' && url.includes(window.location.host)) {
+        return url;
+      }
+    } catch (e) {}
+    return getCategoryFallbackImage(pContext);
   }
 
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';

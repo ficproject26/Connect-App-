@@ -980,6 +980,10 @@ export default function CustomerDashboard({
   const [selectedDistances, setSelectedDistances] = useState([]);
   const [selectedFoodType, setSelectedFoodType] = useState('All');
   const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
+
+  useEffect(() => {
+    setSidebarActiveCat('ALL');
+  }, [activeTab, hoveredLink]);
   const [selectedAccomTypes, setSelectedAccomTypes] = useState([]);
   const [selectedTravelTypes, setSelectedTravelTypes] = useState([]);
   const [selectedDailyNeedsTypes, setSelectedDailyNeedsTypes] = useState([]);
@@ -3978,8 +3982,9 @@ export default function CustomerDashboard({
       Object.keys(mainCategoryObj.subcategories).forEach(subName => {
         const subObj = mainCategoryObj.subcategories[subName];
         if (subObj && subObj.isActive !== false) {
-          categoryTaxonomy[subName] = Array.isArray(subObj.childCategories) 
-            ? subObj.childCategories.filter(Boolean) 
+          const sNameTrim = subName.trim();
+          categoryTaxonomy[sNameTrim] = Array.isArray(subObj.childCategories) 
+            ? subObj.childCategories.filter(Boolean).map(c => typeof c === 'string' ? c.trim() : (c.name || '').trim()).filter(Boolean)
             : [];
         }
       });
@@ -3994,9 +3999,11 @@ export default function CustomerDashboard({
           const sub = (p.subcategory || p.category || '').trim();
           const child = (p.subSubcategory || '').trim();
           if (sub && sub !== currentMainCategory) {
-            if (!categoryTaxonomy[sub]) categoryTaxonomy[sub] = [];
-            if (child && child !== sub && child !== currentMainCategory && !categoryTaxonomy[sub].includes(child)) {
-              categoryTaxonomy[sub].push(child);
+            // Case-insensitive match against existing subcategory key to prevent duplicate keys
+            const existingSubKey = Object.keys(categoryTaxonomy).find(k => k.trim().toLowerCase() === sub.toLowerCase()) || sub;
+            if (!categoryTaxonomy[existingSubKey]) categoryTaxonomy[existingSubKey] = [];
+            if (child && child.toLowerCase() !== existingSubKey.toLowerCase() && child.toLowerCase() !== currentMainCategory.toLowerCase() && !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(child.toLowerCase())) {
+              categoryTaxonomy[existingSubKey].push(child);
             }
           }
         }
@@ -4006,19 +4013,31 @@ export default function CustomerDashboard({
     // Second-Level Subcategories list for Left Sidebar (Level 2 ONLY)
     const subcategoryKeys = Object.keys(categoryTaxonomy);
 
+    // Resolve active subcategory key case-insensitively
+    let activeSubCat = sidebarActiveCat;
+    if (activeSubCat !== 'ALL') {
+      const matchKey = subcategoryKeys.find(k => k.trim().toLowerCase() === String(activeSubCat).trim().toLowerCase());
+      if (matchKey) {
+        activeSubCat = matchKey;
+      } else {
+        // Fallback to ALL if selected subcategory does not belong to current Main Category
+        activeSubCat = 'ALL';
+      }
+    }
+
     // Third-Level Child Categories for Right Content Grid (Level 3 ONLY)
     let childItemsToDisplay = [];
-    if (sidebarActiveCat === 'ALL') {
+    if (activeSubCat === 'ALL') {
       childItemsToDisplay = Array.from(new Set(Object.values(categoryTaxonomy).flat())).filter(Boolean);
     } else {
-      childItemsToDisplay = (categoryTaxonomy[sidebarActiveCat] || []).filter(Boolean);
+      childItemsToDisplay = (categoryTaxonomy[activeSubCat] || []).filter(Boolean);
     }
 
     // Strict hygiene filter: exclude main category name, subcategory names, and self-references from right grid
     childItemsToDisplay = childItemsToDisplay.filter(item => {
       if (!item) return false;
       const itemNorm = normalizeCategoryName(item);
-      const subNorm = normalizeCategoryName(sidebarActiveCat);
+      const subNorm = normalizeCategoryName(activeSubCat);
       const mainNorm = normalizeCategoryName(currentMainCategory);
       if (itemNorm === mainNorm || itemNorm === subNorm) return false;
       if (subcategoryKeys.map(normalizeCategoryName).includes(itemNorm)) return false;
@@ -4037,20 +4056,23 @@ export default function CustomerDashboard({
               {/* ALL Button */}
               <button
                 type="button"
-                onClick={() => setSidebarActiveCat('ALL')}
+                onClick={() => {
+                  setSidebarActiveCat('ALL');
+                  setSelectedSubNavbarCategory('All');
+                }}
                 className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
-                  sidebarActiveCat === 'ALL'
+                  activeSubCat === 'ALL'
                     ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <span>ALL</span>
-                <ChevronRight className={`w-4 h-4 opacity-70 group-hover/cat:translate-x-0.5 transition-transform ${sidebarActiveCat === 'ALL' ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} />
+                <ChevronRight className={`w-4 h-4 opacity-70 group-hover/cat:translate-x-0.5 transition-transform ${activeSubCat === 'ALL' ? 'text-amber-400 dark:text-[#0b1e36]' : 'text-slate-400'}`} />
               </button>
 
               {/* Second-Level Subcategory Buttons ONLY */}
               {subcategoryKeys.map((catKey) => {
-                const isActive = sidebarActiveCat === catKey;
+                const isActive = activeSubCat !== 'ALL' && activeSubCat.trim().toLowerCase() === catKey.trim().toLowerCase();
                 return (
                   <button
                     key={catKey}
@@ -4077,7 +4099,7 @@ export default function CustomerDashboard({
           {/* Right Content Grid: THIRD-LEVEL CHILD CATEGORIES ONLY */}
           <div className="flex-grow text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
-              {sidebarActiveCat === 'ALL' ? 'ALL CHILD CATEGORIES' : `${sidebarActiveCat.toUpperCase()} CHILD CATEGORIES`}
+              {activeSubCat === 'ALL' ? 'ALL CHILD CATEGORIES' : `${activeSubCat.toUpperCase()} CHILD CATEGORIES`}
             </span>
 
             {childItemsToDisplay.length > 0 ? (
@@ -4111,7 +4133,7 @@ export default function CustomerDashboard({
               </div>
             ) : (
               <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs font-semibold">
-                No third-level categories configured for {sidebarActiveCat === 'ALL' ? currentMainCategory : sidebarActiveCat}.
+                No third-level categories configured for {activeSubCat === 'ALL' ? currentMainCategory : activeSubCat}.
               </div>
             )}
           </div>

@@ -80,9 +80,14 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       catTree[mainName] = { name: mainName, isActive: true, subcategories: {} };
     }
 
-    if (!catTree[mainName].subcategories[subName]) {
-      catTree[mainName].subcategories[subName] = {
-        name: subName,
+    // Match subcategory key case-insensitively to prevent duplicates like "Electronics" and "electronics"
+    const existingSubKey = Object.keys(catTree[mainName].subcategories).find(
+      k => k.trim().toLowerCase() === subName.toLowerCase()
+    ) || subName;
+
+    if (!catTree[mainName].subcategories[existingSubKey]) {
+      catTree[mainName].subcategories[existingSubKey] = {
+        name: existingSubKey,
         isActive: true,
         childCategories: []
       };
@@ -92,8 +97,13 @@ export const buildActiveCategoryTree = (dbCategories = []) => {
       childItems.forEach(ch => {
         if (!ch) return;
         const chName = (typeof ch === 'string' ? ch : ch.name || ch.subSubcategory || ch.title || '').trim();
-        if (chName && normalizeCategoryName(chName) !== mainName && !catTree[mainName].subcategories[subName].childCategories.includes(chName)) {
-          catTree[mainName].subcategories[subName].childCategories.push(chName);
+        if (
+          chName && 
+          normalizeCategoryName(chName) !== mainName && 
+          chName.toLowerCase() !== existingSubKey.toLowerCase() &&
+          !catTree[mainName].subcategories[existingSubKey].childCategories.some(c => String(c).toLowerCase() === chName.toLowerCase())
+        ) {
+          catTree[mainName].subcategories[existingSubKey].childCategories.push(chName);
         }
       });
     }
