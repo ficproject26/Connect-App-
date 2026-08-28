@@ -68,34 +68,145 @@ import phoneMockupDashboard from '../../assets/images/phone_mockup_dashboard.png
 
 const initialProducts = [];
 
-const getProductPrices = (product) => {
-  if (!product) return { price: 0, originalPrice: null, discountText: null };
+export function getProductPrices(product) {
+  if (!product) return { price: 0, originalPrice: null, discountPercent: 0, discountText: '' };
 
-  let mainPrice = product.offerPrice || (product.discountPrice > 0 ? product.discountPrice : null) || product.salePrice || product.price || 0;
-  let origPrice = product.mrp || product.originalPrice || (product.offerPrice && product.offerPrice < product.price ? product.price : null);
-  
-  if (typeof mainPrice === 'string') mainPrice = parseFloat(String(mainPrice).replace(/[^0-9.]/g, '')) || 0;
-  if (typeof origPrice === 'string') origPrice = parseFloat(String(origPrice).replace(/[^0-9.]/g, '')) || null;
+  let price = Number(product?.price || 0);
+  let originalPrice = Number(product?.originalPrice || product?.mrp || product?.original_price || 0);
 
-  if (origPrice && origPrice <= mainPrice) {
-    origPrice = null;
+  const isJob = product?.subNavbarCategory === 'Jobs' || 
+    product?.mainCategory === 'Jobs' || 
+    product?.category === 'Jobs' || 
+    product?.tag === 'Jobs' || 
+    product?.type === 'Job' ||
+    product?.type === 'Jobs' ||
+    (product?.category || '').toLowerCase().includes('job') ||
+    (product?.subNavbarCategory || '').toLowerCase().includes('job');
+
+  if (isJob) {
+    return {
+      price,
+      originalPrice: null,
+      discountPercent: 0,
+      discountText: ''
+    };
   }
 
-  let discountText = product.discount || product.discountText || product.offerPercentage || null;
-  if (typeof discountText === 'number' || (typeof discountText === 'string' && discountText.trim() !== '' && !isNaN(Number(discountText)))) {
-    discountText = `${discountText}% off`;
+  let discountVal = product?.discountPercent || product?.discountPercentage;
+  if (!discountVal && typeof product?.discount === 'string') {
+    const match = product.discount.match(/(\d+)/);
+    if (match) discountVal = parseFloat(match[1]);
+  } else if (!discountVal && typeof product?.discount === 'number') {
+    discountVal = product.discount;
   }
-  if (!discountText && origPrice && origPrice > mainPrice) {
-    const pct = Math.round(((origPrice - mainPrice) / origPrice) * 100);
-    if (pct > 0) discountText = `${pct}% off`;
+
+  if (originalPrice > 0 && price > originalPrice) {
+    const temp = price;
+    price = originalPrice;
+    originalPrice = temp;
+  } else if ((!originalPrice || originalPrice <= price) && price > 0 && discountVal > 0 && discountVal < 100) {
+    originalPrice = Math.round(price / (1 - discountVal / 100));
   }
+
+  const discountPercent = (originalPrice > price && originalPrice > 0)
+    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+    : (discountVal || 0);
 
   return {
-    price: mainPrice,
-    originalPrice: origPrice,
-    discountText
+    price,
+    originalPrice: (originalPrice > price) ? originalPrice : null,
+    discountPercent,
+    discountText: discountPercent > 0 ? `${discountPercent}% off` : (product?.discount && product.discount.includes('%') ? product.discount : '')
   };
-};
+}
+
+export function formatJobSalary(job) {
+  if (!job) return '3LPA';
+  let raw = '';
+  if (typeof job === 'string' || typeof job === 'number') {
+    raw = String(job);
+  } else if (job.salary) {
+    raw = String(job.salary);
+  } else if (job.price) {
+    const priceNum = Number(job.price || 0);
+    if (priceNum >= 10000) {
+      const lakhs = priceNum / 100000;
+      return Number.isInteger(lakhs) ? `${lakhs}LPA` : `${lakhs.toFixed(1)}LPA`;
+    } else if (priceNum > 0) {
+      return `${priceNum}LPA`;
+    }
+  }
+  
+  if (!raw) return '3LPA';
+  
+  raw = raw.replace(/₹/g, '').replace(/,/g, '').trim();
+  const numMatch = raw.match(/[\d.]+/);
+  if (numMatch) {
+    const parsed = parseFloat(numMatch[0]);
+    if (parsed >= 10000) {
+      const lakhs = parsed / 100000;
+      return Number.isInteger(lakhs) ? `${lakhs}LPA` : `${lakhs.toFixed(1)}LPA`;
+    } else if (parsed > 0) {
+      return Number.isInteger(parsed) ? `${parsed}LPA` : `${parsed}LPA`;
+    }
+  }
+  const clean = raw.replace(/l\.?p\.?a\.?/gi, '').replace(/\s+/g, '');
+  return clean ? `${clean}LPA` : '3LPA';
+}
+
+export function getProductOptions(product) {
+  if (!product) return null;
+  const cat = (product.category || '').toLowerCase();
+  const subCat = (product.subNavbarCategory || '').toLowerCase();
+  const name = (product.name || '').toLowerCase();
+
+  const isFootwear = cat.includes('footwear') || cat.includes('shoes') || name.includes('shoes') || name.includes('nike');
+  const isApparel = cat.includes('shirts') || cat.includes('kurtis') || cat.includes('sarees') || cat.includes('apparel') || cat.includes('clothing') || cat.includes('t-shirts') || cat.includes('ethnic');
+  const isElectronics = cat.includes('smartphones') || cat.includes('laptops') || cat.includes('television') || cat.includes('headphones');
+
+  if (isFootwear) {
+    return {
+      type: 'footwear',
+      colors: [
+        { name: 'Red', class: 'bg-red-600 border-red-500' },
+        { name: 'Black', class: 'bg-slate-950 border-slate-900' },
+        { name: 'Blue', class: 'bg-blue-600 border-blue-500' },
+        { name: 'White', class: 'bg-white border-slate-300' }
+      ],
+      sizes: ['6', '7', '8', '9', '10', '11'],
+      sizeLabel: 'Size (UK/India)',
+      showSizeGuide: true
+    };
+  } else if (isApparel) {
+    return {
+      type: 'apparel',
+      colors: [
+        { name: 'Red', class: 'bg-red-500 border-red-400' },
+        { name: 'Blue', class: 'bg-blue-500 border-blue-400' },
+        { name: 'Green', class: 'bg-emerald-500 border-emerald-400' },
+        { name: 'Yellow', class: 'bg-yellow-500 border-yellow-400' },
+        { name: 'Black', class: 'bg-slate-900 border-slate-950' }
+      ],
+      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+      sizeLabel: 'Size',
+      showSizeGuide: true
+    };
+  } else if (isElectronics) {
+    return {
+      type: 'electronics',
+      colors: [
+        { name: 'Space Grey', class: 'bg-slate-600 border-slate-600' },
+        { name: 'Silver', class: 'bg-slate-200 border-slate-300' },
+        { name: 'Midnight', class: 'bg-slate-900 border-slate-950' }
+      ],
+      sizes: cat.includes('laptop') || cat.includes('smartphone') ? ['128GB', '256GB', '512GB'] : ['Standard'],
+      sizeLabel: 'Storage / Capacity',
+      showSizeGuide: false
+    };
+  }
+
+  return null;
+}
 
 const getProductHighlights = (product) => {
   if (!product) return [];
@@ -5668,91 +5779,7 @@ export default function CustomerDashboard({
     );
   };
 
-  const getProductPrices = (product) => {
-    let price = Number(product?.price || 0);
-    let originalPrice = Number(product?.originalPrice || product?.mrp || product?.original_price || 0);
 
-    const isJob = product?.subNavbarCategory === 'Jobs' || 
-      product?.mainCategory === 'Jobs' || 
-      product?.category === 'Jobs' || 
-      product?.tag === 'Jobs' || 
-      product?.type === 'Job' ||
-      product?.type === 'Jobs' ||
-      (product?.category || '').toLowerCase().includes('job') ||
-      (product?.subNavbarCategory || '').toLowerCase().includes('job');
-
-    if (isJob) {
-      return {
-        price,
-        originalPrice: null,
-        discountPercent: 0,
-        discountText: ''
-      };
-    }
-
-    let discountVal = product?.discountPercent || product?.discountPercentage;
-    if (!discountVal && typeof product?.discount === 'string') {
-      const match = product.discount.match(/(\d+)/);
-      if (match) discountVal = parseFloat(match[1]);
-    } else if (!discountVal && typeof product?.discount === 'number') {
-      discountVal = product.discount;
-    }
-
-    if (originalPrice > 0 && price > originalPrice) {
-      const temp = price;
-      price = originalPrice;
-      originalPrice = temp;
-    } else if ((!originalPrice || originalPrice <= price) && price > 0 && discountVal > 0 && discountVal < 100) {
-      originalPrice = Math.round(price / (1 - discountVal / 100));
-    }
-
-    const discountPercent = (originalPrice > price && originalPrice > 0)
-      ? Math.round(((originalPrice - price) / originalPrice) * 100)
-      : (discountVal || 0);
-
-    return {
-      price,
-      originalPrice: (originalPrice > price) ? originalPrice : null,
-      discountPercent,
-      discountText: discountPercent > 0 ? `${discountPercent}% off` : (product?.discount && product.discount.includes('%') ? product.discount : '')
-    };
-  };
-
-
-
-  const formatJobSalary = (job) => {
-    if (!job) return '3LPA';
-    let raw = '';
-    if (typeof job === 'string' || typeof job === 'number') {
-      raw = String(job);
-    } else if (job.salary) {
-      raw = String(job.salary);
-    } else if (job.price) {
-      const priceNum = Number(job.price || 0);
-      if (priceNum >= 10000) {
-        const lakhs = priceNum / 100000;
-        return Number.isInteger(lakhs) ? `${lakhs}LPA` : `${lakhs.toFixed(1)}LPA`;
-      } else if (priceNum > 0) {
-        return `${priceNum}LPA`;
-      }
-    }
-    
-    if (!raw) return '3LPA';
-    
-    raw = raw.replace(/₹/g, '').replace(/,/g, '').trim();
-    const numMatch = raw.match(/[\d.]+/);
-    if (numMatch) {
-      const parsed = parseFloat(numMatch[0]);
-      if (parsed >= 10000) {
-        const lakhs = parsed / 100000;
-        return Number.isInteger(lakhs) ? `${lakhs}LPA` : `${lakhs.toFixed(1)}LPA`;
-      } else if (parsed > 0) {
-        return Number.isInteger(parsed) ? `${parsed}LPA` : `${parsed}LPA`;
-      }
-    }
-    const clean = raw.replace(/l\.?p\.?a\.?/gi, '').replace(/\s+/g, '');
-    return clean ? `${clean}LPA` : '3LPA';
-  };
 
   // 12. CATALOG SECTION
   const renderCatalogSection = () => {
@@ -7892,58 +7919,7 @@ export default function CustomerDashboard({
     );
   };
 
-  const getProductOptions = (product) => {
-    if (!product) return null;
-    const cat = (product.category || '').toLowerCase();
-    const subCat = (product.subNavbarCategory || '').toLowerCase();
-    const name = (product.name || '').toLowerCase();
 
-    const isFootwear = cat.includes('footwear') || cat.includes('shoes') || name.includes('shoes') || name.includes('nike');
-    const isApparel = cat.includes('shirts') || cat.includes('kurtis') || cat.includes('sarees') || cat.includes('apparel') || cat.includes('clothing') || cat.includes('t-shirts') || cat.includes('ethnic');
-    const isElectronics = cat.includes('smartphones') || cat.includes('laptops') || cat.includes('television') || cat.includes('headphones');
-
-    if (isFootwear) {
-      return {
-        type: 'footwear',
-        colors: [
-          { name: 'Red', class: 'bg-red-600 border-red-500' },
-          { name: 'Black', class: 'bg-slate-950 border-slate-900' },
-          { name: 'Blue', class: 'bg-blue-600 border-blue-500' },
-          { name: 'White', class: 'bg-white border-slate-300' }
-        ],
-        sizes: ['6', '7', '8', '9', '10', '11'],
-        sizeLabel: 'Size (UK/India)',
-        showSizeGuide: true
-      };
-    } else if (isApparel) {
-      return {
-        type: 'apparel',
-        colors: [
-          { name: 'Red', class: 'bg-red-500 border-red-400' },
-          { name: 'Blue', class: 'bg-blue-500 border-blue-400' },
-          { name: 'Green', class: 'bg-emerald-500 border-emerald-400' },
-          { name: 'Yellow', class: 'bg-yellow-500 border-yellow-400' },
-          { name: 'Black', class: 'bg-slate-900 border-slate-950' }
-        ],
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-        sizeLabel: 'Size',
-        showSizeGuide: true
-      };
-    } else if (isElectronics) {
-      return {
-        type: 'electronics',
-        colors: [
-          { name: 'Space Grey', class: 'bg-slate-600 border-slate-600' },
-          { name: 'Silver', class: 'bg-slate-200 border-slate-300' },
-          { name: 'Midnight', class: 'bg-slate-900 border-slate-950' }
-        ],
-        sizes: cat.includes('laptop') || cat.includes('smartphone') ? ['128GB', '256GB', '512GB'] : ['Standard'],
-        sizeLabel: 'Storage / Capacity',
-        showSizeGuide: false
-      };
-    }
-    return null;
-  };
 
   // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
   const renderProductDetailsPage = () => {
