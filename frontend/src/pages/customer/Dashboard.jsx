@@ -822,18 +822,6 @@ export default function CustomerDashboard({
           if (p.name && p.name.toLowerCase().includes('egg') && p.category === 'Rice') {
             updated.category = 'Eggs';
           }
-          // Correct doctor images
-          if (p.subNavbarCategory === 'Services' && (!p.image || p.image.includes('unsplash.com/photo-1523275335684-37898b6baf30'))) {
-            if (p.name && p.name.toLowerCase().includes('robert')) {
-              updated.image = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60';
-            } else if (p.name && p.name.toLowerCase().includes('james')) {
-              updated.image = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60';
-            } else if (p.name && p.name.toLowerCase().includes('emily')) {
-              updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
-            } else {
-              updated.image = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60';
-            }
-          }
           // Assign foodType (Veg / Non-Veg) for Food items
           if (p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.category === 'Fine Dining' || p.category === 'Biryani' || p.category === 'Biriyani' || p.tag === 'Food') {
             const nameLower = (p.name || '').toLowerCase();
@@ -5143,7 +5131,13 @@ export default function CustomerDashboard({
               </div>
 
               <div className="w-[110px] sm:w-[125px] h-full rounded-2xl overflow-hidden relative shadow-3xs shrink-0 bg-slate-100 flex items-center justify-center">
-                <img src={offer.image} alt={offer.brand} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(offer); }} className="w-full h-full object-cover" />
+                {offer.image ? (
+                  <img src={offer.image} alt={offer.brand} onError={(e) => { e.target.style.display = 'none'; }} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex items-center justify-center p-2 text-center select-none">
+                    <ShoppingBag className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/5" />
               </div>
             </div>
@@ -5207,8 +5201,13 @@ export default function CustomerDashboard({
                       <Briefcase className="w-8 h-8 text-amber-500" />
                       <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                     </div>
+                  ) : item.image ? (
+                    <img src={item.image} alt={item.name} onError={(e) => { e.currentTarget.style.display = 'none'; }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
                   ) : (
-                    <img src={item.image || getCategoryFallbackImage(item)} alt={item.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getCategoryFallbackImage(item); }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                    <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center p-4 text-center select-none">
+                      <ShoppingBag className="w-6 h-6 text-slate-300 dark:text-slate-600 mb-1" />
+                      <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">No Image</span>
+                    </div>
                   )}
                   
                   {/* Rating star on left top */}
@@ -5361,7 +5360,14 @@ export default function CustomerDashboard({
                       </div>
                     </div>
                   )}
-                  <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(product); }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} onError={(e) => { e.target.style.display = 'none'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
+                  ) : (
+                    <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center p-4 text-center select-none">
+                      <ShoppingBag className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-1" />
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">No Image Added</span>
+                    </div>
+                  )}
                   {!isVendorProductUnavailable(product) && product.tag && (
                     <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
                   )}
@@ -6789,8 +6795,13 @@ export default function CustomerDashboard({
                                 <Briefcase className="w-8 h-8 text-amber-500" />
                                 <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                               </div>
+                            ) : product.image ? (
+                              <img src={product.image} alt={product.name} onError={(e) => { e.target.style.display = 'none'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                             ) : (
-                              <img src={product.image} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(product); }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
+                              <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center p-4 text-center select-none">
+                                <ShoppingBag className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-1" />
+                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">No Image Added</span>
+                              </div>
                             )}
                             {product.subNavbarCategory === 'Food' && (
                               <div className="absolute top-0 left-0 z-10 w-16 h-16 overflow-hidden pointer-events-none">

@@ -164,32 +164,13 @@ const extractRawImage = (p) => {
 };
 
 export const getCategoryFallbackImage = (pContext) => {
-  const cat = (pContext?.subNavbarCategory || pContext?.mainCategory || pContext?.category || pContext?.subcategory || pContext?.subSubcategory || pContext?.tag || pContext?.name || pContext?.title || '').toString().toLowerCase();
-  if (cat.includes('food') || cat.includes('biryani') || cat.includes('biriyani') || cat.includes('naan') || cat.includes('meal') || cat.includes('paneer') || cat.includes('dosa') || cat.includes('idli') || cat.includes('roti') || cat.includes('tandoori') || cat.includes('thali') || cat.includes('snack')) {
-    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('stay') || cat.includes('hotel') || cat.includes('room') || cat.includes('suite') || cat.includes('resort') || cat.includes('villa') || cat.includes('pg') || cat.includes('hostel')) {
-    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('service') || cat.includes('repair') || cat.includes('plumb') || cat.includes('electric') || cat.includes('clean') || cat.includes('doctor') || cat.includes('salon')) {
-    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('job') || cat.includes('career') || cat.includes('work') || cat.includes('hiring') || cat.includes('developer') || cat.includes('engineer') || cat.includes('it domain')) {
-    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('daily') || cat.includes('grocery') || cat.includes('soap') || cat.includes('rin') || cat.includes('wash') || cat.includes('vim') || cat.includes('chips') || cat.includes('personal')) {
-    return 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('product') || cat.includes('laptop') || cat.includes('computer') || cat.includes('mobile') || cat.includes('phone') || cat.includes('electronic') || cat.includes('dhanush')) {
-    return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=800&auto=format&fit=crop&q=80';
-  }
-  return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=800&auto=format&fit=crop&q=80';
+  return '';
 };
 
 export const sanitizeImageUrl = (imgUrl, pContext = null) => {
-  if (!imgUrl || typeof imgUrl !== 'string') return getCategoryFallbackImage(pContext);
+  if (!imgUrl || typeof imgUrl !== 'string') return '';
   let url = imgUrl.trim();
-  if (!url || url === 'null' || url === 'undefined' || url === 'false') return getCategoryFallbackImage(pContext);
+  if (!url || url === 'null' || url === 'undefined' || url === 'false' || url === 'none') return '';
 
   if (url.startsWith('data:')) {
     return url;

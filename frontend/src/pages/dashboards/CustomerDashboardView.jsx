@@ -145,16 +145,19 @@ export default function CustomerDashboardView({
               >
                 {/* Image */}
                 <div className="relative h-44 bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0">
-                  <img
-                    src={product.image || getCategoryFallbackImage(product)}
-                    alt={product.name}
-                    loading="lazy"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = getCategoryFallbackImage(product);
-                    }}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      loading="lazy"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center p-4 text-center select-none">
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">No Image Added</span>
+                    </div>
+                  )}
                   <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-slate-950/80 backdrop-blur-sm text-amber-400 rounded-full text-[9.5px] font-black uppercase tracking-wider">
                     {product.category || 'Featured'}
                   </div>
