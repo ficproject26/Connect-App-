@@ -2127,6 +2127,13 @@ export default function CustomerDashboard({
   const travelMegaMenuData = {};
   const serviceMegaMenuData = {};
 
+  const isMainCategoryName = (name) => {
+    if (!name) return true;
+    const canonicalMains = ['services', 'products', 'daily needs', 'food', 'stay', 'travel', 'jobs'];
+    const norm = normalizeCategoryName(name).trim().toLowerCase();
+    return canonicalMains.includes(norm);
+  };
+
   const mergeDbCategories = (mainCategoryName = '') => {
     let merged = {};
     const targetNorm = normalizeMainCatName(mainCategoryName);
@@ -2138,10 +2145,17 @@ export default function CustomerDashboard({
     if (mainObj && mainObj.subcategories) {
       Object.keys(mainObj.subcategories).forEach(subName => {
         const subObj = mainObj.subcategories[subName];
-        if (subObj && subObj.isActive !== false) {
-          merged[subName] = {
-            title: subName,
-            items: [...(subObj.childCategories || [])]
+        if (subObj && subObj.isActive !== false && !isMainCategoryName(subName)) {
+          const sNameTrim = subName.trim();
+          const cleanChildItems = Array.isArray(subObj.childCategories)
+            ? subObj.childCategories
+                .filter(Boolean)
+                .map(c => typeof c === 'string' ? c.trim() : (c.name || '').trim())
+                .filter(c => Boolean(c) && !isMainCategoryName(c) && c.toLowerCase() !== sNameTrim.toLowerCase())
+            : [];
+          merged[sNameTrim] = {
+            title: sNameTrim,
+            items: cleanChildItems
           };
         }
       });
@@ -2150,17 +2164,17 @@ export default function CustomerDashboard({
     // Supplement with categories extracted from live vendor products for this main category
     if (Array.isArray(products) && products.length > 0) {
       products.forEach(p => {
-        if (!p) return;
+        if (!p || p.isActive === false || p.isAvailable === false) return;
         const pMain = normalizeMainCatName(p.subNavbarCategory || p.mainCategory || p.tag || '');
         if (pMain === targetNorm) {
-          const subName = (p.category || p.subcategory || '').trim();
+          const subName = (p.subcategory || (p.category && !isMainCategoryName(p.category) ? p.category : '')).trim();
           const childName = (p.subSubcategory || '').trim();
-          if (subName && normalizeMainCatName(subName) !== targetNorm) {
+          if (subName && !isMainCategoryName(subName)) {
             const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
             if (!merged[existingKey]) {
               merged[existingKey] = { title: subName, items: [] };
             }
-            if (childName && normalizeMainCatName(childName) !== targetNorm && !merged[existingKey].items.includes(childName)) {
+            if (childName && !isMainCategoryName(childName) && childName.toLowerCase() !== existingKey.toLowerCase() && !merged[existingKey].items.some(i => i.toLowerCase() === childName.toLowerCase())) {
               merged[existingKey].items.push(childName);
             }
           }
@@ -4094,9 +4108,14 @@ export default function CustomerDashboard({
         const subObj = mainCategoryObj.subcategories[subName];
         if (subObj && subObj.isActive !== false) {
           const sNameTrim = subName.trim();
-          categoryTaxonomy[sNameTrim] = Array.isArray(subObj.childCategories) 
-            ? subObj.childCategories.filter(Boolean).map(c => typeof c === 'string' ? c.trim() : (c.name || '').trim()).filter(Boolean)
-            : [];
+          if (!isMainCategoryName(sNameTrim)) {
+            categoryTaxonomy[sNameTrim] = Array.isArray(subObj.childCategories) 
+              ? subObj.childCategories
+                  .filter(Boolean)
+                  .map(c => typeof c === 'string' ? c.trim() : (c.name || '').trim())
+                  .filter(c => Boolean(c) && !isMainCategoryName(c) && c.toLowerCase() !== sNameTrim.toLowerCase())
+              : [];
+          }
         }
       });
     }
@@ -4107,13 +4126,13 @@ export default function CustomerDashboard({
         if (!p || p.isActive === false || p.isAvailable === false) return;
         const pMain = normalizeCategoryName(p.mainCategory || p.subNavbarCategory || p.tag || '');
         if (pMain === currentMainCategory) {
-          const sub = (p.subcategory || p.category || '').trim();
+          const sub = (p.subcategory || (p.category && !isMainCategoryName(p.category) ? p.category : '')).trim();
           const child = (p.subSubcategory || '').trim();
-          if (sub && sub !== currentMainCategory) {
+          if (sub && !isMainCategoryName(sub)) {
             // Case-insensitive match against existing subcategory key to prevent duplicate keys
             const existingSubKey = Object.keys(categoryTaxonomy).find(k => k.trim().toLowerCase() === sub.toLowerCase()) || sub;
             if (!categoryTaxonomy[existingSubKey]) categoryTaxonomy[existingSubKey] = [];
-            if (child && child.toLowerCase() !== existingSubKey.toLowerCase() && child.toLowerCase() !== currentMainCategory.toLowerCase() && !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(child.toLowerCase())) {
+            if (child && !isMainCategoryName(child) && child.toLowerCase() !== existingSubKey.toLowerCase() && !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(child.toLowerCase())) {
               categoryTaxonomy[existingSubKey].push(child);
             }
           }
@@ -4122,7 +4141,7 @@ export default function CustomerDashboard({
     }
 
     // Second-Level Subcategories list for Left Sidebar (Level 2 ONLY)
-    const subcategoryKeys = Object.keys(categoryTaxonomy);
+    const subcategoryKeys = Object.keys(categoryTaxonomy).filter(k => !isMainCategoryName(k));
 
     // Resolve active subcategory key case-insensitively
     let activeSubCat = sidebarActiveCat;
@@ -4147,6 +4166,7 @@ export default function CustomerDashboard({
     // Strict hygiene filter: exclude main category name, subcategory names, and self-references from right grid
     childItemsToDisplay = childItemsToDisplay.filter(item => {
       if (!item) return false;
+      if (isMainCategoryName(item)) return false;
       const itemNorm = normalizeCategoryName(item);
       const subNorm = normalizeCategoryName(activeSubCat);
       const mainNorm = normalizeCategoryName(currentMainCategory);
