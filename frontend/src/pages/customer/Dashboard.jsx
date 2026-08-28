@@ -3119,7 +3119,10 @@ export default function CustomerDashboard({
 
       const matchesSearch = (searchQuery === '' || 
         (product.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
-        (product.category || '').toLowerCase().includes((searchQuery || '').toLowerCase())) &&
+        (product.category || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+        (product.subcategory || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+        (product.subSubcategory || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+        (product.tag || '').toLowerCase().includes((searchQuery || '').toLowerCase())) &&
         (searchCategory === 'All' || normalizeMainCatName(product.subNavbarCategory) === normalizeMainCatName(searchCategory));
 
       const isMainCategoryTabName = (name) => {
@@ -4236,7 +4239,6 @@ export default function CustomerDashboard({
                     onClick={() => {
                       setSidebarActiveCat(catKey);
                       setSelectedSubNavbarCategory(catKey);
-                      triggerNotification(`Viewing ${catKey}`);
                     }}
                     className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
                       isActive
@@ -4264,11 +4266,40 @@ export default function CustomerDashboard({
                   <div
                     key={childTitle}
                     onClick={() => {
-                      setSearchQuery(childTitle);
+                      const childLower = childTitle.toLowerCase().trim();
+                      const matchingProd = (products || []).find(p => {
+                        if (!p || p.isActive === false) return false;
+                        const pSubSub = (p.subSubcategory || '').toLowerCase();
+                        const pSub = (p.subcategory || '').toLowerCase();
+                        const pCat = (p.category || '').toLowerCase();
+                        const pTag = (p.tag || '').toLowerCase();
+                        const pName = (p.name || '').toLowerCase();
+                        return pSubSub === childLower || pSub === childLower || pCat === childLower || pTag === childLower || pName.includes(childLower);
+                      });
+
+                      const rawTargetTab = matchingProd?.subNavbarCategory || matchingProd?.mainCategory;
+                      const targetTab = rawTargetTab
+                        ? normalizeMainCatName(rawTargetTab)
+                        : (currentMainCategory && currentMainCategory !== 'Home' && currentMainCategory !== 'ALL' ? currentMainCategory : activeTab);
+
+                      const canonicalTabMap = {
+                        'services': 'Services',
+                        'products': 'Products',
+                        'daily needs': 'Daily Needs',
+                        'food': 'Food',
+                        'stay': 'Stay',
+                        'travel': 'Travel',
+                        'jobs': 'Jobs'
+                      };
+                      const finalTab = canonicalTabMap[targetTab?.toLowerCase()] || (targetTab && targetTab !== 'Home' ? targetTab : 'Products');
+
+                      setActiveTab(finalTab);
+                      setSidebarActiveCat(activeSubCat || 'ALL');
                       setSelectedSubNavbarCategory(childTitle);
                       setSelectedCategories([childTitle]);
+                      setSearchQuery(childTitle);
                       setHoveredLink(null);
-                      triggerNotification(`Filtering catalog by "${childTitle}"`);
+
                       setTimeout(() => {
                         const el = document.getElementById('products-section') || document.getElementById('catalog-grid');
                         if (el) {
@@ -4741,13 +4772,11 @@ export default function CustomerDashboard({
             setSelectedSubNavbarCategory(cat);
           }
         }
-        triggerNotification(`Exploring: ${slide.title}`);
         return;
       }
       if (slide.category) {
         setActiveTab(slide.category);
         setSelectedSubNavbarCategory(slide.category);
-        triggerNotification(`Exploring ${slide.category} catalog`);
         return;
       }
       setActiveTab('Products');
@@ -4777,7 +4806,6 @@ export default function CustomerDashboard({
               onClick={() => {
                 setActiveTab('Services');
                 setSelectedSubNavbarCategory('Services');
-                triggerNotification("Explore our premium services catalog!");
               }}
               className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-900 bg-[#FFC107] hover:bg-amber-500 px-6 py-3.5 rounded-full transition-all shadow-sm hover:shadow-md hover:scale-[1.02] duration-300 cursor-pointer border-none w-full sm:w-auto"
             >
@@ -4991,7 +5019,6 @@ export default function CustomerDashboard({
                     setActiveTab(cat.id);
                     setSelectedSubNavbarCategory(cat.id);
                   }
-                  triggerNotification(`Loading ${cat.title} Category...`);
                 }}
                 className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 rounded-3xl p-4 text-center flex flex-col items-center justify-center transition-all duration-300 shadow-3xs hover:shadow-md hover:-translate-y-1 cursor-pointer"
               >
