@@ -2179,21 +2179,46 @@ export default function CustomerDashboard({
       });
     }
 
+    const knownChildCategories = new Set(
+      Object.values(merged).flatMap(s => s.items || []).map(i => String(i).toLowerCase())
+    );
+
     // Supplement with categories extracted from live vendor products for this main category
     if (Array.isArray(products) && products.length > 0) {
       products.forEach(p => {
         if (!p || p.isActive === false || p.isAvailable === false) return;
         const pMain = normalizeMainCatName(p.subNavbarCategory || p.mainCategory || p.tag || '');
         if (pMain === targetNorm) {
-          const subName = (p.subcategory || (p.category && !isMainCategoryName(p.category) ? p.category : '')).trim();
+          const rawSub = (p.subcategory || '').trim();
+          const rawCat = (p.category && !isMainCategoryName(p.category) ? p.category : '').trim();
           const childName = (p.subSubcategory || '').trim();
-          if (subName && !isMainCategoryName(subName)) {
-            const existingKey = Object.keys(merged).find(k => k.toLowerCase() === subName.toLowerCase()) || subName;
-            if (!merged[existingKey]) {
-              merged[existingKey] = { title: subName, items: [] };
+
+          const existingSubKey = Object.keys(merged).find(k => 
+            (rawSub && k.toLowerCase() === rawSub.toLowerCase()) || 
+            (rawCat && k.toLowerCase() === rawCat.toLowerCase())
+          );
+
+          if (existingSubKey) {
+            const itemToAdd = childName || (rawSub && rawCat && rawCat.toLowerCase() !== rawSub.toLowerCase() ? rawCat : '');
+            if (itemToAdd && !isMainCategoryName(itemToAdd) && itemToAdd.toLowerCase() !== existingSubKey.toLowerCase() && !merged[existingSubKey].items.some(i => i.toLowerCase() === itemToAdd.toLowerCase())) {
+              merged[existingSubKey].items.push(itemToAdd);
             }
-            if (childName && !isMainCategoryName(childName) && childName.toLowerCase() !== existingKey.toLowerCase() && !merged[existingKey].items.some(i => i.toLowerCase() === childName.toLowerCase())) {
-              merged[existingKey].items.push(childName);
+          } else {
+            if (rawSub && !isMainCategoryName(rawSub) && !knownChildCategories.has(rawSub.toLowerCase())) {
+              const newSubKey = rawSub;
+              if (!merged[newSubKey]) {
+                merged[newSubKey] = { title: newSubKey, items: [] };
+              }
+              if (childName && !isMainCategoryName(childName) && childName.toLowerCase() !== newSubKey.toLowerCase() && !merged[newSubKey].items.some(i => i.toLowerCase() === childName.toLowerCase())) {
+                merged[newSubKey].items.push(childName);
+              }
+            } else if (rawCat && !isMainCategoryName(rawCat) && knownChildCategories.has(rawCat.toLowerCase())) {
+              const parentSubKey = Object.keys(merged).find(k => 
+                (merged[k].items || []).some(i => String(i).toLowerCase() === rawCat.toLowerCase())
+              );
+              if (parentSubKey && !merged[parentSubKey].items.some(i => i.toLowerCase() === rawCat.toLowerCase())) {
+                merged[parentSubKey].items.push(rawCat);
+              }
             }
           }
         }
@@ -4093,20 +4118,37 @@ export default function CustomerDashboard({
       });
     }
 
+    const knownChildCategories = new Set(
+      Object.values(categoryTaxonomy).flat().map(c => String(c).toLowerCase())
+    );
+
     // 6. Augment with live vendor products matching currentMainCategory strictly from DB
     if (Array.isArray(products)) {
       products.forEach(p => {
         if (!p || p.isActive === false || p.isAvailable === false) return;
         const pMain = normalizeCategoryName(p.mainCategory || p.subNavbarCategory || p.tag || '');
         if (pMain === currentMainCategory) {
-          const sub = (p.subcategory || (p.category && !isMainCategoryName(p.category) ? p.category : '')).trim();
+          const rawSub = (p.subcategory || '').trim();
+          const rawCat = (p.category && !isMainCategoryName(p.category) ? p.category : '').trim();
           const child = (p.subSubcategory || '').trim();
-          if (sub && !isMainCategoryName(sub)) {
-            // Case-insensitive match against existing subcategory key to prevent duplicate keys
-            const existingSubKey = Object.keys(categoryTaxonomy).find(k => k.trim().toLowerCase() === sub.toLowerCase()) || sub;
-            if (!categoryTaxonomy[existingSubKey]) categoryTaxonomy[existingSubKey] = [];
-            if (child && !isMainCategoryName(child) && child.toLowerCase() !== existingSubKey.toLowerCase() && !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(child.toLowerCase())) {
-              categoryTaxonomy[existingSubKey].push(child);
+
+          const existingSubKey = Object.keys(categoryTaxonomy).find(k => 
+            (rawSub && k.trim().toLowerCase() === rawSub.toLowerCase()) || 
+            (rawCat && k.trim().toLowerCase() === rawCat.toLowerCase())
+          );
+
+          if (existingSubKey) {
+            const itemToAdd = child || (rawSub && rawCat && rawCat.toLowerCase() !== rawSub.toLowerCase() ? rawCat : '');
+            if (itemToAdd && !isMainCategoryName(itemToAdd) && itemToAdd.toLowerCase() !== existingSubKey.toLowerCase() && !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(itemToAdd.toLowerCase())) {
+              categoryTaxonomy[existingSubKey].push(itemToAdd);
+            }
+          } else {
+            if (rawSub && !isMainCategoryName(rawSub) && !knownChildCategories.has(rawSub.toLowerCase())) {
+              const newSubKey = rawSub;
+              if (!categoryTaxonomy[newSubKey]) categoryTaxonomy[newSubKey] = [];
+              if (child && !isMainCategoryName(child) && child.toLowerCase() !== newSubKey.toLowerCase() && !categoryTaxonomy[newSubKey].map(c => String(c).toLowerCase()).includes(child.toLowerCase())) {
+                categoryTaxonomy[newSubKey].push(child);
+              }
             }
           }
         }
