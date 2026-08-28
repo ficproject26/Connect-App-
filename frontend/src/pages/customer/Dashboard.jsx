@@ -750,6 +750,13 @@ export function isPastTimeForSelectedDate(timeStr, dateStr) {
   return false;
 }
 
+export function isMainCategoryName(name) {
+  if (!name) return true;
+  const canonicalMains = ['services', 'products', 'daily needs', 'food', 'stay', 'travel', 'jobs'];
+  const norm = normalizeCategoryName(name || '').trim().toLowerCase();
+  return canonicalMains.includes(norm);
+}
+
 export default function CustomerDashboard({ 
   currentUser, 
   onLogOut, 
@@ -1126,9 +1133,6 @@ export default function CustomerDashboard({
   const [selectedFoodType, setSelectedFoodType] = useState('All');
   const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
 
-  useEffect(() => {
-    setSidebarActiveCat('ALL');
-  }, [activeTab, hoveredLink]);
   const [selectedAccomTypes, setSelectedAccomTypes] = useState([]);
   const [selectedTravelTypes, setSelectedTravelTypes] = useState([]);
   const [selectedDailyNeedsTypes, setSelectedDailyNeedsTypes] = useState([]);
@@ -2146,12 +2150,7 @@ export default function CustomerDashboard({
   const travelMegaMenuData = {};
   const serviceMegaMenuData = {};
 
-  const isMainCategoryName = (name) => {
-    if (!name) return true;
-    const canonicalMains = ['services', 'products', 'daily needs', 'food', 'stay', 'travel', 'jobs'];
-    const norm = normalizeCategoryName(name).trim().toLowerCase();
-    return canonicalMains.includes(norm);
-  };
+
 
   const mergeDbCategories = (mainCategoryName = '') => {
     let merged = {};
