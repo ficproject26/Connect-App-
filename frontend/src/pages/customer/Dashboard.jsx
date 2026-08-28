@@ -4266,34 +4266,6 @@ export default function CustomerDashboard({
                   <div
                     key={childTitle}
                     onClick={() => {
-                      const childLower = childTitle.toLowerCase().trim();
-                      const matchingProd = (products || []).find(p => {
-                        if (!p || p.isActive === false) return false;
-                        const pSubSub = (p.subSubcategory || '').toLowerCase();
-                        const pSub = (p.subcategory || '').toLowerCase();
-                        const pCat = (p.category || '').toLowerCase();
-                        const pTag = (p.tag || '').toLowerCase();
-                        const pName = (p.name || '').toLowerCase();
-                        return pSubSub === childLower || pSub === childLower || pCat === childLower || pTag === childLower || pName.includes(childLower);
-                      });
-
-                      const rawTargetTab = matchingProd?.subNavbarCategory || matchingProd?.mainCategory;
-                      const targetTab = rawTargetTab
-                        ? normalizeMainCatName(rawTargetTab)
-                        : (currentMainCategory && currentMainCategory !== 'Home' && currentMainCategory !== 'ALL' ? currentMainCategory : activeTab);
-
-                      const canonicalTabMap = {
-                        'services': 'Services',
-                        'products': 'Products',
-                        'daily needs': 'Daily Needs',
-                        'food': 'Food',
-                        'stay': 'Stay',
-                        'travel': 'Travel',
-                        'jobs': 'Jobs'
-                      };
-                      const finalTab = canonicalTabMap[targetTab?.toLowerCase()] || (targetTab && targetTab !== 'Home' ? targetTab : 'Products');
-
-                      setActiveTab(finalTab);
                       setSidebarActiveCat(activeSubCat || 'ALL');
                       setSelectedSubNavbarCategory(childTitle);
                       setSelectedCategories([childTitle]);
