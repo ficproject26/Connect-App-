@@ -703,6 +703,53 @@ export function sanitizePhoneInput(val, pincodeVal = '') {
   return val;
 }
 
+export function isPastTimeForSelectedDate(timeStr, dateStr) {
+  if (!timeStr || !dateStr) return false;
+  const now = new Date();
+  const todayStr = formatDateYYYYMMDD(now);
+
+  let normalizedDateStr = dateStr;
+  if (dateStr.includes(',')) {
+    const parsedDate = new Date(dateStr);
+    if (!isNaN(parsedDate.getTime())) {
+      normalizedDateStr = formatDateYYYYMMDD(parsedDate);
+    }
+  } else if (dateStr.includes('-')) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      normalizedDateStr = `${parts[0]}-${String(parts[1]).padStart(2, '0')}-${String(parts[2]).padStart(2, '0')}`;
+    }
+  }
+
+  if (normalizedDateStr < todayStr) return true;
+  if (normalizedDateStr > todayStr) return false;
+
+  let hours = 0;
+  let minutes = 0;
+
+  const match12 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match12) {
+    hours = parseInt(match12[1], 10);
+    minutes = parseInt(match12[2], 10);
+    const ampm = match12[3].toUpperCase();
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+  } else {
+    const match24 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (match24) {
+      hours = parseInt(match24[1], 10);
+      minutes = parseInt(match24[2], 10);
+    }
+  }
+
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+
+  if (hours < currentHours) return true;
+  if (hours === currentHours && minutes <= currentMinutes) return true;
+  return false;
+}
+
 export default function CustomerDashboard({ 
   currentUser, 
   onLogOut, 
@@ -2906,52 +2953,7 @@ export default function CustomerDashboard({
     });
   };
 
-  const isPastTimeForSelectedDate = (timeStr, dateStr) => {
-    if (!timeStr || !dateStr) return false;
-    const now = new Date();
-    const todayStr = formatDateYYYYMMDD(now);
 
-    let normalizedDateStr = dateStr;
-    if (dateStr.includes(',')) {
-      const parsedDate = new Date(dateStr);
-      if (!isNaN(parsedDate.getTime())) {
-        normalizedDateStr = formatDateYYYYMMDD(parsedDate);
-      }
-    } else if (dateStr.includes('-')) {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        normalizedDateStr = `${parts[0]}-${String(parts[1]).padStart(2, '0')}-${String(parts[2]).padStart(2, '0')}`;
-      }
-    }
-
-    if (normalizedDateStr < todayStr) return true;
-    if (normalizedDateStr > todayStr) return false;
-
-    let hours = 0;
-    let minutes = 0;
-
-    const match12 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (match12) {
-      hours = parseInt(match12[1], 10);
-      minutes = parseInt(match12[2], 10);
-      const ampm = match12[3].toUpperCase();
-      if (ampm === 'PM' && hours < 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-    } else {
-      const match24 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})$/);
-      if (match24) {
-        hours = parseInt(match24[1], 10);
-        minutes = parseInt(match24[2], 10);
-      }
-    }
-
-    const currentHours = now.getHours();
-    const currentMinutes = now.getMinutes();
-
-    if (hours < currentHours) return true;
-    if (hours === currentHours && minutes <= currentMinutes) return true;
-    return false;
-  };
 
 
   const clearAllFilters = () => {
