@@ -1064,7 +1064,7 @@ export default function CustomerDashboard({
       setSidebarActiveCat('ALL');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {}
-  }, [activeTab, selectedSubNavbarCategory]);
+  }, [activeTab]);
 
   // Browser History Sync for Back (←) and Next (→) Navigation Buttons on Dashboard Tabs
   useEffect(() => {
@@ -4131,6 +4131,7 @@ export default function CustomerDashboard({
           const rawSub = (p.subcategory || '').trim();
           const rawCat = (p.category && !isMainCategoryName(p.category) ? p.category : '').trim();
           const child = (p.subSubcategory || '').trim();
+          const pName = (p.name || p.title || '').trim();
 
           const existingSubKey = Object.keys(categoryTaxonomy).find(k => 
             (rawSub && k.trim().toLowerCase() === rawSub.toLowerCase()) || 
@@ -4138,16 +4139,37 @@ export default function CustomerDashboard({
           );
 
           if (existingSubKey) {
-            const itemToAdd = child || (rawSub && rawCat && rawCat.toLowerCase() !== rawSub.toLowerCase() ? rawCat : '');
-            if (itemToAdd && !isMainCategoryName(itemToAdd) && itemToAdd.toLowerCase() !== existingSubKey.toLowerCase() && !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(itemToAdd.toLowerCase())) {
+            let itemToAdd = '';
+            if (child && child.toLowerCase() !== existingSubKey.toLowerCase()) {
+              itemToAdd = child;
+            } else if (rawCat && rawCat.toLowerCase() !== existingSubKey.toLowerCase()) {
+              itemToAdd = rawCat;
+            } else if (rawSub && rawSub.toLowerCase() !== existingSubKey.toLowerCase()) {
+              itemToAdd = rawSub;
+            } else if (pName && pName.toLowerCase() !== existingSubKey.toLowerCase()) {
+              itemToAdd = pName;
+            }
+
+            if (
+              itemToAdd && 
+              !isMainCategoryName(itemToAdd) && 
+              itemToAdd.toLowerCase() !== existingSubKey.toLowerCase() && 
+              !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(itemToAdd.toLowerCase())
+            ) {
               categoryTaxonomy[existingSubKey].push(itemToAdd);
             }
           } else {
             if (rawSub && !isMainCategoryName(rawSub) && !knownChildCategories.has(rawSub.toLowerCase())) {
               const newSubKey = rawSub;
               if (!categoryTaxonomy[newSubKey]) categoryTaxonomy[newSubKey] = [];
-              if (child && !isMainCategoryName(child) && child.toLowerCase() !== newSubKey.toLowerCase() && !categoryTaxonomy[newSubKey].map(c => String(c).toLowerCase()).includes(child.toLowerCase())) {
-                categoryTaxonomy[newSubKey].push(child);
+              const itemToAdd = child || (rawCat && rawCat.toLowerCase() !== newSubKey.toLowerCase() ? rawCat : (pName.toLowerCase() !== newSubKey.toLowerCase() ? pName : ''));
+              if (
+                itemToAdd && 
+                !isMainCategoryName(itemToAdd) && 
+                itemToAdd.toLowerCase() !== newSubKey.toLowerCase() && 
+                !categoryTaxonomy[newSubKey].map(c => String(c).toLowerCase()).includes(itemToAdd.toLowerCase())
+              ) {
+                categoryTaxonomy[newSubKey].push(itemToAdd);
               }
             }
           }
