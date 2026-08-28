@@ -2191,23 +2191,6 @@ export default function CustomerDashboard({
             if (itemToAdd && !isMainCategoryName(itemToAdd) && itemToAdd.toLowerCase() !== existingSubKey.toLowerCase() && !merged[existingSubKey].items.some(i => i.toLowerCase() === itemToAdd.toLowerCase())) {
               merged[existingSubKey].items.push(itemToAdd);
             }
-          } else {
-            if (rawSub && !isMainCategoryName(rawSub) && !knownChildCategories.has(rawSub.toLowerCase())) {
-              const newSubKey = rawSub;
-              if (!merged[newSubKey]) {
-                merged[newSubKey] = { title: newSubKey, items: [] };
-              }
-              if (childName && !isMainCategoryName(childName) && childName.toLowerCase() !== newSubKey.toLowerCase() && !merged[newSubKey].items.some(i => i.toLowerCase() === childName.toLowerCase())) {
-                merged[newSubKey].items.push(childName);
-              }
-            } else if (rawCat && !isMainCategoryName(rawCat) && knownChildCategories.has(rawCat.toLowerCase())) {
-              const parentSubKey = Object.keys(merged).find(k => 
-                (merged[k].items || []).some(i => String(i).toLowerCase() === rawCat.toLowerCase())
-              );
-              if (parentSubKey && !merged[parentSubKey].items.some(i => i.toLowerCase() === rawCat.toLowerCase())) {
-                merged[parentSubKey].items.push(rawCat);
-              }
-            }
           }
         }
       });
@@ -4133,10 +4116,8 @@ export default function CustomerDashboard({
             let itemToAdd = '';
             if (child && child.toLowerCase() !== existingSubKey.toLowerCase()) {
               itemToAdd = child;
-            } else if (rawCat && rawCat.toLowerCase() !== existingSubKey.toLowerCase()) {
+            } else if (rawCat && rawCat.toLowerCase() !== existingSubKey.toLowerCase() && !Object.keys(categoryTaxonomy).map(k => k.toLowerCase()).includes(rawCat.toLowerCase())) {
               itemToAdd = rawCat;
-            } else if (rawSub && rawSub.toLowerCase() !== existingSubKey.toLowerCase()) {
-              itemToAdd = rawSub;
             } else if (pName && pName.toLowerCase() !== existingSubKey.toLowerCase()) {
               itemToAdd = pName;
             }
@@ -4148,20 +4129,6 @@ export default function CustomerDashboard({
               !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(itemToAdd.toLowerCase())
             ) {
               categoryTaxonomy[existingSubKey].push(itemToAdd);
-            }
-          } else {
-            if (rawSub && !isMainCategoryName(rawSub) && !knownChildCategories.has(rawSub.toLowerCase())) {
-              const newSubKey = rawSub;
-              if (!categoryTaxonomy[newSubKey]) categoryTaxonomy[newSubKey] = [];
-              const itemToAdd = child || (rawCat && rawCat.toLowerCase() !== newSubKey.toLowerCase() ? rawCat : (pName.toLowerCase() !== newSubKey.toLowerCase() ? pName : ''));
-              if (
-                itemToAdd && 
-                !isMainCategoryName(itemToAdd) && 
-                itemToAdd.toLowerCase() !== newSubKey.toLowerCase() && 
-                !categoryTaxonomy[newSubKey].map(c => String(c).toLowerCase()).includes(itemToAdd.toLowerCase())
-              ) {
-                categoryTaxonomy[newSubKey].push(itemToAdd);
-              }
             }
           }
         }
