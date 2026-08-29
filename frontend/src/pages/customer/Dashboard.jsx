@@ -1490,15 +1490,27 @@ export default function CustomerDashboard({
   // Derived filtered orders based on selected orders tab
   const filteredCustomerOrders = useMemo(() => {
     const orders = ordersForActiveTab;
-    if (selectedOrdersTab === 'All Orders') return orders;
+    if (selectedOrdersTab === 'All Orders' || selectedOrdersTab === 'All Bookings' || selectedOrdersTab === 'All Applications') {
+      return orders;
+    }
     return orders.filter(o => {
       const status = (o.status || '').toLowerCase();
       const tab = selectedOrdersTab.toLowerCase();
-      if (tab === 'processing') return ['order received', 'preparing', 'ready for pickup'].includes(status);
-      if (tab === 'in transit') return ['out for delivery', 'delivery partner accepted', 'picked up', 'near customer', 'assigned to delivery partner'].includes(status);
-      if (tab === 'delivered') return ['delivered', 'completed'].includes(status);
-      if (tab === 'cancelled') return status === 'cancelled';
-      if (tab === 'returned') return status === 'returned';
+      if (tab === 'processing' || tab === 'upcoming' || tab === 'under review') {
+        return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'confirmed', 'upcoming', 'processing', 'under review', 'under preview'].includes(status);
+      }
+      if (tab === 'in transit' || tab === 'shortlisted') {
+        return ['out for delivery', 'delivery partner accepted', 'picked up', 'near customer', 'shortlisted', 'interview scheduled'].includes(status);
+      }
+      if (tab === 'delivered' || tab === 'completed' || tab === 'selected') {
+        return ['delivered', 'completed', 'selected / offered', 'selected'].includes(status);
+      }
+      if (tab === 'cancelled' || tab === 'rejected') {
+        return status === 'cancelled' || status === 'rejected';
+      }
+      if (tab === 'returned') {
+        return status === 'returned';
+      }
       return true;
     });
   }, [ordersForActiveTab, selectedOrdersTab]);
@@ -1698,9 +1710,10 @@ export default function CustomerDashboard({
       }
 
       const targetName = (profileName || currentUser?.name || currentUser?.memberName || '').trim().toLowerCase();
+      const targetFirstName = targetName ? targetName.split(' ')[0] : '';
       const targetEmail = (profileEmail || currentUser?.email || currentUser?.candidateEmail || '').trim().toLowerCase();
       const targetPhone = (profilePhone || currentUser?.phone || '').replace(/\D/g, '');
-      const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || '').trim().toLowerCase();
+      const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || activeCustomerId || '').trim().toLowerCase();
 
       const seenIds = new Set();
       const filtered = [];
@@ -1717,13 +1730,15 @@ export default function CustomerDashboard({
 
         let isMatch = false;
 
-        if (targetId && cId && targetId === cId) {
+        if (targetId && cId && (targetId === cId || targetId.includes(cId) || cId.includes(targetId))) {
           isMatch = true;
         } else if (targetEmail && cEmail && (targetEmail === cEmail || cEmail.includes(targetEmail) || targetEmail.includes(cEmail))) {
           isMatch = true;
         } else if (targetPhone && cPhone && targetPhone.length >= 7 && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone))) {
           isMatch = true;
-        } else if (targetName && cName && (cName === targetName || cName.includes(targetName) || targetName.includes(cName))) {
+        } else if (targetName && cName && (cName === targetName || cName.includes(targetName) || targetName.includes(cName) || (targetFirstName && cName.includes(targetFirstName)))) {
+          isMatch = true;
+        } else if (['customer', 'applicant', 'member', 'connect member', 'guest', ''].includes(cName)) {
           isMatch = true;
         } else if (!targetName && !targetEmail && !targetPhone && !targetId) {
           isMatch = true;
@@ -1741,7 +1756,7 @@ export default function CustomerDashboard({
     } catch (err) {
       console.warn('Failed to load customer orders:', err);
     }
-  }, [profileName, profileEmail, profilePhone, currentUser]);
+  }, [profileName, profileEmail, profilePhone, currentUser, activeCustomerId]);
 
   const refreshTrackingDetails = async (orderId) => {
     try {
