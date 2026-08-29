@@ -274,8 +274,8 @@ let activeGetProductsPromise = null;
 let memoryProductCache = null;
 
 try {
-  if (typeof window !== 'undefined' && window.sessionStorage) {
-    const saved = window.sessionStorage.getItem('cached_vendor_products');
+  if (typeof window !== 'undefined') {
+    const saved = window.sessionStorage?.getItem('cached_vendor_products') || window.localStorage?.getItem('cached_vendor_products');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -290,8 +290,9 @@ export const productService = {
     activeGetProductsPromise = null;
     memoryProductCache = null;
     try {
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        window.sessionStorage.removeItem('cached_vendor_products');
+      if (typeof window !== 'undefined') {
+        window.sessionStorage?.removeItem('cached_vendor_products');
+        window.localStorage?.removeItem('cached_vendor_products');
       }
     } catch (e) {}
   },
@@ -333,7 +334,7 @@ export const productService = {
           return new Promise(async (resolve, reject) => {
             try {
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 2000);
+              const timeoutId = setTimeout(() => controller.abort(), 8000);
 
               const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
                 signal: controller.signal,
@@ -363,8 +364,9 @@ export const productService = {
           if (Array.isArray(fastestProducts) && fastestProducts.length > 0) {
             memoryProductCache = fastestProducts;
             try {
-              if (typeof window !== 'undefined' && window.sessionStorage) {
-                window.sessionStorage.setItem('cached_vendor_products', JSON.stringify(fastestProducts));
+              if (typeof window !== 'undefined') {
+                window.sessionStorage?.setItem('cached_vendor_products', JSON.stringify(fastestProducts));
+                window.localStorage?.setItem('cached_vendor_products', JSON.stringify(fastestProducts));
               }
             } catch (e) {}
             return { success: true, products: fastestProducts, source: 'live' };
@@ -373,7 +375,7 @@ export const productService = {
           for (const endpoint of uniqueEndpoints) {
             try {
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 1500);
+              const timeoutId = setTimeout(() => controller.abort(), 8000);
 
               const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
                 signal: controller.signal,
@@ -389,8 +391,9 @@ export const productService = {
                   if (vendorProducts.length > 0) {
                     memoryProductCache = vendorProducts;
                     try {
-                      if (typeof window !== 'undefined' && window.sessionStorage) {
-                        window.sessionStorage.setItem('cached_vendor_products', JSON.stringify(vendorProducts));
+                      if (typeof window !== 'undefined') {
+                        window.sessionStorage?.setItem('cached_vendor_products', JSON.stringify(vendorProducts));
+                        window.localStorage?.setItem('cached_vendor_products', JSON.stringify(vendorProducts));
                       }
                     } catch (e) {}
                     return { success: true, products: vendorProducts, source: 'live' };

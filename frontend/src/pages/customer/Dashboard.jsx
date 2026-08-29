@@ -811,6 +811,7 @@ export default function CustomerDashboard({
     try {
       const cached = productService.getCachedProducts();
       if (Array.isArray(cached) && cached.length > 0) {
+        setProducts(cached);
         setIsLoadingProducts(false);
       }
       const res = await productService.getProducts(false);
@@ -2960,11 +2961,7 @@ export default function CustomerDashboard({
     setSelectedRating(null);
     setSearchQuery('');
     setSelectedFoodType('All');
-    // Preserve current tab and current subNavbarCategory context
-    if (activeTab === 'Home') {
-      setSelectedSubNavbarCategory('All');
-      setActiveTab('Home');
-    }
+    setSelectedSubNavbarCategory('All');
     setSelectedServiceTypes([]);
     setSelectedLocTypes([]);
     setSelectedCuisines([]);
@@ -7069,7 +7066,7 @@ export default function CustomerDashboard({
                 ) : (
                   <div className="text-center py-16 px-4 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs w-full">
                     <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto mb-3">
-                      <Utensils className="w-6 h-6" />
+                      {activeTab === 'Food' ? <Utensils className="w-6 h-6" /> : activeTab === 'Services' ? <Sparkles className="w-6 h-6" /> : activeTab === 'Stay' ? <BedDouble className="w-6 h-6" /> : activeTab === 'Travel' ? <Plane className="w-6 h-6" /> : activeTab === 'Jobs' ? <Briefcase className="w-6 h-6" /> : <ShoppingBag className="w-6 h-6" />}
                     </div>
                     <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">No items match your filter criteria</h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Try resetting or selecting different filters to see available options.</p>
