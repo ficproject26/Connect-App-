@@ -1728,20 +1728,18 @@ export default function CustomerDashboard({
         const cPhone = String(ord.customer_phone || ord.customerPhone || ord.phone || '').replace(/\D/g, '');
         const cId = String(ord.customer_id || ord.customerId || ord.memberId || ord.user_id || '').trim().toLowerCase();
 
-        let isMatch = false;
+        // Match if customer ID, email, phone, or name matches, OR if order was created locally on this device
+        let isMatch = true;
 
-        if (targetId && cId && (targetId === cId || targetId.includes(cId) || cId.includes(targetId))) {
-          isMatch = true;
-        } else if (targetEmail && cEmail && (targetEmail === cEmail || cEmail.includes(targetEmail) || targetEmail.includes(cEmail))) {
-          isMatch = true;
-        } else if (targetPhone && cPhone && targetPhone.length >= 7 && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone))) {
-          isMatch = true;
-        } else if (targetName && cName && (cName === targetName || cName.includes(targetName) || targetName.includes(cName) || (targetFirstName && cName.includes(targetFirstName)))) {
-          isMatch = true;
-        } else if (['customer', 'applicant', 'member', 'connect member', 'guest', ''].includes(cName)) {
-          isMatch = true;
-        } else if (!targetName && !targetEmail && !targetPhone && !targetId) {
-          isMatch = true;
+        if (targetId || targetEmail || targetPhone || targetName) {
+          const matchId = Boolean(targetId && cId && (targetId === cId || targetId.includes(cId) || cId.includes(targetId)));
+          const matchEmail = Boolean(targetEmail && cEmail && (targetEmail === cEmail || cEmail.includes(targetEmail) || targetEmail.includes(cEmail)));
+          const matchPhone = Boolean(targetPhone && cPhone && targetPhone.length >= 7 && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone)));
+          const matchName = Boolean(targetName && cName && (cName === targetName || cName.includes(targetName) || targetName.includes(cName) || (targetFirstName && cName.includes(targetFirstName))));
+          const isGenericName = ['customer', 'applicant', 'member', 'connect member', 'guest', ''].includes(cName);
+          const isLocalDeviceOrder = localOrders.some(lo => lo && (lo.id === ord.id || lo.order_number === ord.order_number || lo._id === ord._id));
+
+          isMatch = matchId || matchEmail || matchPhone || matchName || isGenericName || isLocalDeviceOrder;
         }
 
         if (isMatch) {
