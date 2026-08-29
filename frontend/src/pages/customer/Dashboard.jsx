@@ -1206,7 +1206,6 @@ export default function CustomerDashboard({
   useEffect(() => {
     loadCustomerProfileFromDb();
   }, [loadCustomerProfileFromDb]);
-  }, [currentUser]);
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
 
 
