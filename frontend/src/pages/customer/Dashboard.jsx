@@ -9375,11 +9375,8 @@ export default function CustomerDashboard({
             {renderCatalogSection()}
           </div>
         ) : activeTab !== 'Home' ? (
-          /* CATEGORY PAGE VIEW: Hero Banner + Catalog Products & Services Section */
+          /* CATEGORY PAGE VIEW: Catalog Products & Services Section */
           <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
-            {/* Hero Banner Card */}
-            {renderHeroBanner()}
-
             {/* Catalog Products & Services Section */}
             {renderCatalogSection()}
           </div>
