@@ -4662,6 +4662,8 @@ export default function CustomerDashboard({
   };
 
   const renderSubNavbar = () => {
+    if (isLocationDropdownOpen) return null;
+
     const icons = {
       'Home': Home,
       'Products': ShoppingBag,
