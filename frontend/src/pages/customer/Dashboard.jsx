@@ -4062,53 +4062,46 @@ export default function CustomerDashboard({
       ? hoveredLink 
       : activeTab;
 
-    // 2. Parse database category tree using authoritative buildActiveCategoryTree(dbCategories)
+    // 2. Home tab displays NO category panel
+    if (!activeCategory || activeCategory === 'Home') return null;
+
+    // 3. Resolve current Main Category tab focus (Services, Products, Daily Needs, Food, Stay, Travel, Jobs)
+    const currentMainCategory = normalizeCategoryName(activeCategory);
+
+    // 4. Parse database category tree using authoritative buildActiveCategoryTree(dbCategories)
     const fullTree = buildActiveCategoryTree(dbCategories);
 
-    // 3. Resolve whether we are showing Home focus (all active categories) or a specific Main Category tab
-    const isHomeFocus = !activeCategory || activeCategory === 'Home';
-    const currentMainCategory = isHomeFocus ? '' : normalizeCategoryName(activeCategory);
-
-    // 4. Extract Level 2 Subcategories and Level 3 Child Categories strictly from DB
+    // 5. Extract Level 2 Subcategories and Level 3 Child Categories for currentMainCategory strictly from DB
+    const mainCategoryObj = fullTree[currentMainCategory] || { subcategories: {} };
     const categoryTaxonomy = {};
-    const mainCategoryKeys = isHomeFocus 
-      ? Object.keys(fullTree) 
-      : (currentMainCategory && fullTree[currentMainCategory] ? [currentMainCategory] : Object.keys(fullTree));
 
-    mainCategoryKeys.forEach(mKey => {
-      const mainCategoryObj = fullTree[mKey];
-      if (mainCategoryObj && mainCategoryObj.subcategories) {
-        Object.keys(mainCategoryObj.subcategories).forEach(subName => {
-          const subObj = mainCategoryObj.subcategories[subName];
-          if (subObj && subObj.isActive !== false) {
-            const sNameTrim = subName.trim();
-            if (!isMainCategoryName(sNameTrim)) {
-              if (!categoryTaxonomy[sNameTrim]) {
-                categoryTaxonomy[sNameTrim] = [];
-              }
-              const childs = Array.isArray(subObj.childCategories) 
-                ? subObj.childCategories
-                    .filter(Boolean)
-                    .map(c => typeof c === 'string' ? c.trim() : (c.name || '').trim())
-                    .filter(c => Boolean(c) && !isMainCategoryName(c) && c.toLowerCase() !== sNameTrim.toLowerCase())
-                : [];
-              childs.forEach(c => {
-                if (!categoryTaxonomy[sNameTrim].includes(c)) {
-                  categoryTaxonomy[sNameTrim].push(c);
-                }
-              });
-            }
+    if (mainCategoryObj.subcategories) {
+      Object.keys(mainCategoryObj.subcategories).forEach(subName => {
+        const subObj = mainCategoryObj.subcategories[subName];
+        if (subObj && subObj.isActive !== false) {
+          const sNameTrim = subName.trim();
+          if (!isMainCategoryName(sNameTrim)) {
+            categoryTaxonomy[sNameTrim] = Array.isArray(subObj.childCategories) 
+              ? subObj.childCategories
+                  .filter(Boolean)
+                  .map(c => typeof c === 'string' ? c.trim() : (c.name || '').trim())
+                  .filter(c => Boolean(c) && !isMainCategoryName(c) && c.toLowerCase() !== sNameTrim.toLowerCase())
+              : [];
           }
-        });
-      }
-    });
+        }
+      });
+    }
 
-    // 5. Augment with live vendor products matching selected main category (or all if Home) strictly from DB
+    const knownChildCategories = new Set(
+      Object.values(categoryTaxonomy).flat().map(c => String(c).toLowerCase())
+    );
+
+    // 6. Augment with live vendor products matching currentMainCategory strictly from DB
     if (Array.isArray(products)) {
       products.forEach(p => {
         if (!p || p.isActive === false || p.isAvailable === false) return;
         const pMain = normalizeCategoryName(p.mainCategory || p.subNavbarCategory || p.tag || '');
-        if (isHomeFocus || pMain === currentMainCategory) {
+        if (pMain === currentMainCategory) {
           const rawSub = (p.subcategory || '').trim();
           const rawCat = (p.category && !isMainCategoryName(p.category) ? p.category : '').trim();
           const child = (p.subSubcategory || '').trim();
@@ -4171,22 +4164,21 @@ export default function CustomerDashboard({
       if (isMainCategoryName(item)) return false;
       const itemNorm = normalizeCategoryName(item);
       const subNorm = normalizeCategoryName(activeSubCat);
-      const mainNorm = isHomeFocus ? '' : normalizeCategoryName(currentMainCategory);
-      if (mainNorm && itemNorm === mainNorm) return false;
-      if (itemNorm === subNorm) return false;
+      const mainNorm = normalizeCategoryName(currentMainCategory);
+      if (itemNorm === mainNorm || itemNorm === subNorm) return false;
       if (subcategoryKeys.map(normalizeCategoryName).includes(itemNorm)) return false;
       return true;
     });
 
     return (
-      <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xs text-slate-900 dark:text-slate-100 transition-all my-4">
+      <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
-          {/* Left Sidebar: SECOND-LEVEL SUBCATEGORIES FOR ACTIVE MAIN CATEGORY (26% Width) */}
-          <div className="w-full md:w-[26%] shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
+          {/* Left Sidebar: SECOND-LEVEL SUBCATEGORIES FOR ACTIVE MAIN CATEGORY */}
+          <div className="w-full md:w-1/4 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               MAIN CATEGORIES
             </span>
-            <div className="flex flex-col gap-1.5 scrollbar-thin">
+            <div className="flex flex-col gap-1.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
               {/* ALL Button */}
               <button
                 type="button"
@@ -4229,14 +4221,14 @@ export default function CustomerDashboard({
             </div>
           </div>
 
-          {/* Right Content Grid: THIRD-LEVEL CHILD CATEGORIES ONLY (74% Width) */}
-          <div className="flex-grow text-left md:pl-2">
+          {/* Right Content Grid: THIRD-LEVEL CHILD CATEGORIES ONLY */}
+          <div className="flex-grow text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               {activeSubCat === 'ALL' ? 'ALL CHILD CATEGORIES' : `${activeSubCat.toUpperCase()} CHILD CATEGORIES`}
             </span>
 
             {childItemsToDisplay.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
                 {childItemsToDisplay.map((childTitle) => (
                   <div
                     key={childTitle}
@@ -4266,8 +4258,8 @@ export default function CustomerDashboard({
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs font-semibold">
-                No child categories found for {activeSubCat === 'ALL' ? 'this selection' : activeSubCat}.
+              <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs font-semibold">
+                No third-level categories configured for {activeSubCat === 'ALL' ? currentMainCategory : activeSubCat}.
               </div>
             )}
           </div>
@@ -4600,9 +4592,14 @@ export default function CustomerDashboard({
       'Membership': Award
     };
 
+    const isDropdownOpen = Boolean(hoveredLink && hoveredLink !== 'Home');
+
     return (
       <div 
-        className="relative"
+        className="relative z-40"
+        onMouseEnter={() => {
+          if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+        }}
         onMouseLeave={handleMouseLeave}
       >
         <nav className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-2 sm:px-8 py-2 sm:py-2.5 grid grid-cols-4 md:flex md:items-center md:justify-center gap-1 sm:gap-6 md:gap-10 transition-colors w-full">
@@ -4612,9 +4609,16 @@ export default function CustomerDashboard({
             return (
               <button
                 key={cat}
+                type="button"
                 onMouseEnter={() => {
-                  handleMouseEnter(cat);
-                  setActiveMegaCategory('ALL');
+                  if (cat !== 'Home') {
+                    handleMouseEnter(cat);
+                    setActiveMegaCategory('ALL');
+                  } else {
+                    if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
+                    if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+                    setHoveredLink(null);
+                  }
                 }}
                 onClick={() => {
                   if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
@@ -4624,7 +4628,11 @@ export default function CustomerDashboard({
                   setSelectedSubNavbarCategory(cat);
                   setSelectedCategories([]);
                   setSearchQuery('');
-                  setHoveredLink(null);
+                  if (typeof window !== 'undefined' && window.innerWidth < 768 && cat !== 'Home') {
+                    setHoveredLink(prev => prev === cat ? null : cat);
+                  } else {
+                    setHoveredLink(null);
+                  }
                 }}
                 className={`relative group text-[10px] sm:text-xs font-black uppercase tracking-tight sm:tracking-wider px-1.5 sm:px-2 py-2 sm:py-3 transition-all cursor-pointer flex flex-col md:flex-row items-center justify-center gap-1 sm:gap-2 rounded-xl md:rounded-none ${
                   isActive 
@@ -4638,6 +4646,21 @@ export default function CustomerDashboard({
             );
           })}
         </nav>
+
+        {/* FLOATING HOVER MEGA DROPDOWN PANEL (Overlaying homepage content without pushing down) */}
+        {isDropdownOpen && (
+          <div 
+            className="absolute top-full left-0 right-0 w-full z-50 px-3 sm:px-6 md:px-8 py-2 animate-fade-in pointer-events-auto"
+            onMouseEnter={() => {
+              if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+            }}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div className="max-w-7xl mx-auto shadow-2xl rounded-3xl overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900">
+              {renderCategoryExplorer()}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -9288,27 +9311,21 @@ export default function CustomerDashboard({
             {renderCatalogSection()}
           </div>
         ) : activeTab !== 'Home' ? (
-          /* CATEGORY PAGE VIEW: Hero Banner Card + Category Explorer Card right below the Sub-Navbar category menu */
+          /* CATEGORY PAGE VIEW: Hero Banner + Catalog Products & Services Section */
           <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
-            {/* Hero Banner Card right below the Sub-Navbar category menu */}
+            {/* Hero Banner Card */}
             {renderHeroBanner()}
-
-            {/* Category Explorer Card right below the Banner Card */}
-            {renderCategoryExplorer()}
 
             {/* Catalog Products & Services Section */}
             {renderCatalogSection()}
           </div>
         ) : (
-          /* HOMEPAGE VIEW: Hero Banner + Category Explorer + Top Categories + Exclusive Offers + Catalog */
+          /* HOMEPAGE VIEW: Hero Banner + Top Categories + Exclusive Offers + Catalog */
           <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
             {/* 1. Combined Hero Banner */}
             {renderHeroBanner()}
 
-            {/* 2. White Rounded Category Section Card (MAIN CATEGORIES + ALL CHILD CATEGORIES) */}
-            {renderCategoryExplorer()}
-
-            {/* 3. Top Categories Grid */}
+            {/* 2. Top Categories Grid */}
             {renderTopCategoriesGrid()}
 
             {/* 3. Exclusive Offers for You */}
