@@ -9274,19 +9274,33 @@ export default function CustomerDashboard({
           renderProductDetailsPage()
         ) : activeTab === 'Offers' ? (
           <Offers />
-        ) : isMarketplaceView ? (
-          /* SEARCH / CATEGORY DIRECT CATALOG VIEW */
-          renderCatalogSection()
+        ) : searchQuery !== '' ? (
+          /* SEARCH DIRECT CATALOG VIEW */
+          <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
+            {renderCatalogSection()}
+          </div>
+        ) : activeTab !== 'Home' ? (
+          /* CATEGORY PAGE VIEW: Hero Banner Card + Category Explorer Card right below the Sub-Navbar category menu */
+          <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
+            {/* Hero Banner Card right below the Sub-Navbar category menu */}
+            {renderHeroBanner()}
+
+            {/* Category Explorer Card right below the Banner Card */}
+            {renderCategoryExplorer()}
+
+            {/* Catalog Products & Services Section */}
+            {renderCatalogSection()}
+          </div>
         ) : (
-          /* MOCKUP MATCHING HOMEPAGE ADAPTIVE DASHBOARD VIEW */
+          /* HOMEPAGE VIEW: Hero Banner + Category Explorer (on hover) + Top Categories + Exclusive Offers + Catalog */
           <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
             {/* 1. Combined Hero Banner */}
             {renderHeroBanner()}
 
-            {/* 2. Category Explorer Card (Matching Screenshot) */}
-            {renderCategoryExplorer()}
+            {/* Hovered Category Explorer preview on Home tab */}
+            {hoveredLink && hoveredLink !== 'Home' && renderCategoryExplorer()}
 
-            {/* 3. Top Categories Grid */}
+            {/* 2. Top Categories Grid */}
             {renderTopCategoriesGrid()}
 
             {/* 3. Exclusive Offers for You */}
