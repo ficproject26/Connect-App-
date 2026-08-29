@@ -4156,49 +4156,6 @@ export default function CustomerDashboard({
       });
     }
 
-    const knownChildCategories = new Set(
-      Object.values(categoryTaxonomy).flat().map(c => String(c).toLowerCase())
-    );
-
-    // 6. Augment with live vendor products matching currentMainCategory strictly from DB
-    if (Array.isArray(products)) {
-      products.forEach(p => {
-        if (!p || p.isActive === false || p.isAvailable === false) return;
-        const pMain = normalizeCategoryName(p.mainCategory || p.subNavbarCategory || p.tag || '');
-        if (pMain === currentMainCategory) {
-          const rawSub = (p.subcategory || '').trim();
-          const rawCat = (p.category && !isMainCategoryName(p.category) ? p.category : '').trim();
-          const child = (p.subSubcategory || '').trim();
-          const pName = (p.name || p.title || '').trim();
-
-          const existingSubKey = Object.keys(categoryTaxonomy).find(k => 
-            (rawSub && k.trim().toLowerCase() === rawSub.toLowerCase()) || 
-            (rawCat && k.trim().toLowerCase() === rawCat.toLowerCase())
-          );
-
-          if (existingSubKey) {
-            let itemToAdd = '';
-            if (child && child.toLowerCase() !== existingSubKey.toLowerCase()) {
-              itemToAdd = child;
-            } else if (rawCat && rawCat.toLowerCase() !== existingSubKey.toLowerCase() && !Object.keys(categoryTaxonomy).map(k => k.toLowerCase()).includes(rawCat.toLowerCase())) {
-              itemToAdd = rawCat;
-            } else if (pName && pName.toLowerCase() !== existingSubKey.toLowerCase()) {
-              itemToAdd = pName;
-            }
-
-            if (
-              itemToAdd && 
-              !isMainCategoryName(itemToAdd) && 
-              itemToAdd.toLowerCase() !== existingSubKey.toLowerCase() && 
-              !categoryTaxonomy[existingSubKey].map(c => String(c).toLowerCase()).includes(itemToAdd.toLowerCase())
-            ) {
-              categoryTaxonomy[existingSubKey].push(itemToAdd);
-            }
-          }
-        }
-      });
-    }
-
     // Second-Level Subcategories list for Left Sidebar (Level 2 ONLY)
     const subcategoryKeys = Object.keys(categoryTaxonomy).filter(k => !isMainCategoryName(k));
 
