@@ -1143,41 +1143,69 @@ export default function CustomerDashboard({
     if (currentUser?.email && !currentUser.email.match(/^\d+@connect\.app$/)) {
       return currentUser.email;
     }
-    try {
-      const savedUser = localStorage.getItem('connect_current_user');
-      if (savedUser) {
-        const u = JSON.parse(savedUser);
-        if (u.email) return u.email;
-      }
-    } catch (e) {}
     return currentUser?.email || '';
   });
+  const [profilePhone, setProfilePhone] = useState(() => {
+    return currentUser?.phone || '';
+  });
   const [profilePhoto, setProfilePhoto] = useState(() => {
-    if (currentUser?.avatar || currentUser?.photo) return currentUser.avatar || currentUser.photo;
-    try {
-      const savedUser = localStorage.getItem('connect_current_user');
-      if (savedUser) {
-        const u = JSON.parse(savedUser);
-        if (u.avatar || u.photo) return u.avatar || u.photo;
-      }
-    } catch (e) {}
-    return '';
+    return currentUser?.avatar || currentUser?.photo || '';
   });
 
   const activeCustomerId = useMemo(() => {
     if (currentUser?.customerId && currentUser.customerId !== 'FIC-CUST-750684' && currentUser.customerId !== 'FIC-CUST-849201') {
       return currentUser.customerId;
     }
-    const savedUser = localStorage.getItem('connect_current_user');
-    if (savedUser) {
-      try {
-        const u = JSON.parse(savedUser);
-        if (u.customerId && u.customerId !== 'FIC-CUST-750684' && u.customerId !== 'FIC-CUST-849201') {
-          return u.customerId;
-        }
-      } catch (e) {}
-    }
     return getOrGenerateCustomerId(currentUser || 'customer');
+  }, [currentUser]);
+
+  const loadCustomerProfileFromDb = useCallback(async () => {
+    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+    if (!userTarget) return;
+
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+    const endpoints = [
+      adminBackend ? `${adminBackend}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}` : '',
+      baseBackend ? `${baseBackend}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}` : '',
+      `/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}`
+    ].filter(Boolean);
+
+    const uniqueEndpoints = [...new Set(endpoints)];
+
+    for (const url of uniqueEndpoints) {
+      try {
+        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.status === 'success' && data.user) {
+            const dbUser = data.user;
+            if (dbUser.name) setProfileName(dbUser.name);
+            if (dbUser.email) setProfileEmail(dbUser.email);
+            if (dbUser.phone) setProfilePhone(dbUser.phone);
+            if (dbUser.avatar || dbUser.photo) setProfilePhoto(dbUser.avatar || dbUser.photo);
+            if (Array.isArray(dbUser.addresses)) setAddresses(dbUser.addresses);
+
+            login({
+              ...currentUser,
+              id: dbUser.id || currentUser?.id,
+              customerId: dbUser.customerId || currentUser?.customerId,
+              name: dbUser.name || currentUser?.name,
+              email: dbUser.email || currentUser?.email,
+              phone: dbUser.phone || currentUser?.phone,
+              avatar: dbUser.avatar || dbUser.photo || currentUser?.avatar,
+              role: 'customer'
+            }, 'customer');
+            return;
+          }
+        }
+      } catch (err) {}
+    }
+  }, [currentUser, activeCustomerId]);
+
+  useEffect(() => {
+    loadCustomerProfileFromDb();
+  }, [loadCustomerProfileFromDb]);
   }, [currentUser]);
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
 
@@ -2468,43 +2496,67 @@ export default function CustomerDashboard({
       id: addressForm.id || `addr_${Date.now()}`
     };
 
-    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || '';
+    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (userTarget) {
-      fetch(`${getAdminBackendUrl()}/api/auth/customer-address`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userTarget, address: newAddress })
-      }).then(res => res.ok ? res.json() : null)
-        .then(data => {
-          if (data && Array.isArray(data.addresses)) {
-            setAddresses(data.addresses);
-          }
-        })
-        .catch(() => {});
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+      const endpoints = [
+        adminBackend ? `${adminBackend}/api/auth/customer-address` : '',
+        baseBackend ? `${baseBackend}/api/auth/customer-address` : '',
+        `/api/auth/customer-address`
+      ].filter(Boolean);
+
+      for (const url of [...new Set(endpoints)]) {
+        try {
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: userTarget, address: newAddress })
+          }).then(res => res.ok ? res.json() : null)
+            .then(data => {
+              if (data && Array.isArray(data.addresses)) {
+                setAddresses(data.addresses);
+              }
+            })
+            .catch(() => {});
+        } catch (e) {}
+      }
     }
 
     setAddresses(prev => [newAddress, ...prev.filter(a => a.id !== newAddress.id)]);
     setSelectedCheckoutAddressId(newAddress.id);
     setIsAddingAddress(false);
-    triggerNotification("Address saved & selected for delivery!");
+    triggerNotification("Address saved in database & selected for delivery!");
     return newAddress;
   };
 
   const handleDeleteAddress = (id) => {
     setAddresses(prev => prev.filter(addr => addr.id !== id));
-    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || '';
+    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (userTarget) {
-      fetch(`${getAdminBackendUrl()}/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}`, {
-        method: 'DELETE'
-      }).then(res => res.ok ? res.json() : null)
-        .then(data => {
-          if (data && Array.isArray(data.addresses)) {
-            setAddresses(data.addresses);
-          }
-        })
-        .catch(() => {});
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+      const endpoints = [
+        adminBackend ? `${adminBackend}/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}` : '',
+        baseBackend ? `${baseBackend}/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}` : '',
+        `/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}`
+      ].filter(Boolean);
+
+      for (const url of [...new Set(endpoints)]) {
+        try {
+          fetch(url, {
+            method: 'DELETE'
+          }).then(res => res.ok ? res.json() : null)
+            .then(data => {
+              if (data && Array.isArray(data.addresses)) {
+                setAddresses(data.addresses);
+              }
+            })
+            .catch(() => {});
+        } catch (e) {}
+      }
     }
-    triggerNotification("Address deleted.");
+    triggerNotification("Address deleted from database.");
   };
 
   const getCartCheckoutButtonText = () => {
@@ -10733,44 +10785,55 @@ wishlistProducts.forEach(item => addToCart(item));
                         // Password change validation
                         if (profilePassword || profileConfirmPassword) {
                           if (profilePassword !== profileConfirmPassword) {
-                            triggerNotification("Passwords do not match!");
+                            triggerNotification("Passwords do not match!", "error");
                             return;
                           }
                           if (profilePassword.length < 6) {
-                            triggerNotification("Password must be at least 6 characters long!");
+                            triggerNotification("Password must be at least 6 characters long!", "error");
                             return;
                           }
-                          localStorage.setItem('connect_profile_password', profilePassword);
-                          setProfilePassword('');
-                          setProfileConfirmPassword('');
                         }
 
-                        const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || '';
+                        const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
                         if (userTarget) {
-                          fetch(`${getAdminBackendUrl()}/api/auth/customer-profile`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              userId: userTarget,
-                              name: profileName,
-                              email: profileEmail,
-                              phone: profilePhone,
-                              avatar: profilePhoto,
-                              password: profilePassword || undefined
-                            })
-                          }).then(res => res.ok ? res.json() : null)
-                            .then(data => {
-                              const updatedUser = data?.user || { ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto };
-                              login(updatedUser, 'customer');
-                            })
-                            .catch(() => {
-                              login({ ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto }, 'customer');
-                            });
-                        } else {
-                          login({ ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto }, 'customer');
+                          const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+                          const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+                          const endpoints = [
+                            adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+                            baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+                            `/api/auth/customer-profile`
+                          ].filter(Boolean);
+
+                          for (const url of [...new Set(endpoints)]) {
+                            try {
+                              fetch(url, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  userId: userTarget,
+                                  name: profileName,
+                                  email: profileEmail,
+                                  phone: profilePhone,
+                                  avatar: profilePhoto,
+                                  password: profilePassword || undefined
+                                })
+                              }).then(res => res.ok ? res.json() : null)
+                                .then(data => {
+                                  if (data && data.user) {
+                                    login(data.user, 'customer');
+                                  }
+                                }).catch(() => {});
+                            } catch (e) {}
+                          }
                         }
 
-                        triggerNotification("Profile details saved successfully!");
+                        login({ ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto }, 'customer');
+                        setProfilePassword('');
+                        setProfileConfirmPassword('');
+                        triggerNotification("Profile saved in database successfully!");
+                        setTimeout(() => {
+                          loadCustomerProfileFromDb();
+                        }, 500);
                       }}
                       className="space-y-4 text-left"
                     >
@@ -10808,18 +10871,28 @@ wishlistProducts.forEach(item => addToCart(item));
                                       reader.onloadend = () => {
                                         const base64 = reader.result;
                                         setProfilePhoto(base64);
-                                        const userKey = getUserStorageKey(currentUser);
-                                        localStorage.setItem(`connect_profile_photo_${userKey}`, base64);
-                                        const savedUserStr = localStorage.getItem('connect_current_user');
-                                        if (savedUserStr) {
-                                          try {
-                                            const u = JSON.parse(savedUserStr);
-                                            u.avatar = base64;
-                                            u.photo = base64;
-                                            localStorage.setItem('connect_current_user', JSON.stringify(u));
-                                          } catch (err) {}
+
+                                        const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+                                        if (userTarget) {
+                                          const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+                                          const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+                                          const endpoints = [
+                                            adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+                                            baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+                                            `/api/auth/customer-profile`
+                                          ].filter(Boolean);
+
+                                          for (const url of [...new Set(endpoints)]) {
+                                            fetch(url, {
+                                              method: 'PUT',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ userId: userTarget, avatar: base64 })
+                                            }).catch(() => {});
+                                          }
                                         }
-                                        triggerNotification("Profile photo uploaded successfully!");
+
+                                        login({ ...currentUser, avatar: base64, photo: base64 }, 'customer');
+                                        triggerNotification("Profile photo uploaded & saved in DB!");
                                       };
                                       reader.readAsDataURL(file);
                                     }
@@ -10831,18 +10904,26 @@ wishlistProducts.forEach(item => addToCart(item));
                                   type="button"
                                   onClick={() => {
                                     setProfilePhoto('');
-                                    const userKey = getUserStorageKey(currentUser);
-                                    localStorage.removeItem(`connect_profile_photo_${userKey}`);
-                                    const savedUserStr = localStorage.getItem('connect_current_user');
-                                    if (savedUserStr) {
-                                      try {
-                                        const u = JSON.parse(savedUserStr);
-                                        delete u.avatar;
-                                        delete u.photo;
-                                        localStorage.setItem('connect_current_user', JSON.stringify(u));
-                                      } catch (err) {}
+                                    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+                                    if (userTarget) {
+                                      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+                                      const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+                                      const endpoints = [
+                                        adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+                                        baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+                                        `/api/auth/customer-profile`
+                                      ].filter(Boolean);
+
+                                      for (const url of [...new Set(endpoints)]) {
+                                        fetch(url, {
+                                          method: 'PUT',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ userId: userTarget, avatar: '' })
+                                        }).catch(() => {});
+                                      }
                                     }
-                                    triggerNotification("Profile photo removed");
+                                    login({ ...currentUser, avatar: '', photo: '' }, 'customer');
+                                    triggerNotification("Profile photo removed from DB");
                                   }}
                                   className="px-2.5 py-1 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:underline bg-transparent border-none cursor-pointer"
                                 >
