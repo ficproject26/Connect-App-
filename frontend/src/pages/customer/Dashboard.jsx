@@ -1145,9 +1145,6 @@ export default function CustomerDashboard({
     }
     return currentUser?.email || '';
   });
-  const [profilePhone, setProfilePhone] = useState(() => {
-    return currentUser?.phone || '';
-  });
   const [profilePhoto, setProfilePhoto] = useState(() => {
     return currentUser?.avatar || currentUser?.photo || '';
   });
@@ -3733,7 +3730,7 @@ export default function CustomerDashboard({
           </div>
 
           {/* Location Selector */}
-          <div className="relative shrink-0 z-30">
+          <div className="relative shrink-0 z-[99999]">
             <button 
               type="button"
               onClick={(e) => {
@@ -3751,9 +3748,9 @@ export default function CustomerDashboard({
               <>
                 <div 
                   onClick={() => setIsLocationDropdownOpen(false)}
-                  className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-xs" 
+                  className="fixed inset-0 z-[99998] bg-black/60 backdrop-blur-xs" 
                 />
-                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:absolute sm:top-full sm:left-0 sm:translate-x-0 sm:translate-y-0 sm:mt-2 w-[90vw] max-w-[340px] sm:w-80 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-2xl p-4 z-[100] text-slate-800 dark:text-slate-200 animate-fade-in space-y-3">
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[360px] sm:w-88 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl shadow-2xl p-5 z-[99999] text-slate-800 dark:text-slate-200 animate-fade-in space-y-4">
                   
                   {/* Header Title & Close Button */}
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -13038,6 +13035,29 @@ wishlistProducts.forEach(item => addToCart(item));
                         <option value="">Select State</option>
                         {IndianStates.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-1 pt-1">
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider">Save Address As *</label>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        {['Home', 'Work', 'Other'].map(typeOption => {
+                          const isSelected = (addressForm.type || 'Home') === typeOption;
+                          return (
+                            <button
+                              key={typeOption}
+                              type="button"
+                              onClick={() => setAddressForm({ ...addressForm, type: typeOption })}
+                              className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all border cursor-pointer flex items-center justify-center gap-1.5 ${
+                                isSelected
+                                  ? 'bg-[#FFC107] border-[#FFC107] text-slate-950 shadow-2xs'
+                                  : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-amber-400'
+                              }`}
+                            >
+                              <span>{typeOption}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
