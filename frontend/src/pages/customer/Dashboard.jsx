@@ -4171,10 +4171,10 @@ export default function CustomerDashboard({
     });
 
     return (
-      <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm text-slate-900 dark:text-slate-100 transition-all my-2">
+      <div className="w-full bg-white dark:bg-slate-900 border-none rounded-3xl p-5 sm:p-7 text-slate-900 dark:text-slate-100 transition-all">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
           {/* Left Sidebar: SECOND-LEVEL SUBCATEGORIES FOR ACTIVE MAIN CATEGORY */}
-          <div className="w-full md:w-1/4 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
+          <div className="w-full md:w-1/5 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               MAIN CATEGORIES
             </span>
@@ -4228,7 +4228,7 @@ export default function CustomerDashboard({
             </span>
 
             {childItemsToDisplay.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
                 {childItemsToDisplay.map((childTitle) => (
                   <div
                     key={childTitle}
@@ -4647,16 +4647,16 @@ export default function CustomerDashboard({
           })}
         </nav>
 
-        {/* FLOATING HOVER MEGA DROPDOWN PANEL (Overlaying homepage content without pushing down) */}
+        {/* FLOATING HOVER MEGA DROPDOWN PANEL (Full Width Overlay) */}
         {isDropdownOpen && (
           <div 
-            className="absolute top-full left-0 right-0 w-full z-50 px-3 sm:px-6 md:px-8 py-2 animate-fade-in pointer-events-auto"
+            className="absolute top-full left-0 right-0 w-full z-50 px-2 sm:px-4 md:px-6 py-2 animate-fade-in pointer-events-auto"
             onMouseEnter={() => {
               if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
             }}
             onMouseLeave={handleMouseLeave}
           >
-            <div className="max-w-7xl mx-auto shadow-2xl rounded-3xl overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div className="w-full shadow-2xl rounded-3xl overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900">
               {renderCategoryExplorer()}
             </div>
           </div>
