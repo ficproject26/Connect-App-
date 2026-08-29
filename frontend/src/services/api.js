@@ -159,23 +159,23 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
 
   // 3. Orders endpoints
   if (urlPath === '/orders' && method === 'GET') {
-    const orders = JSON.parse(localStorage.getItem('connect_fallback_orders'));
+    const orders = JSON.parse(localStorage.getItem('connect_fallback_orders')) || [];
     return { status: 'success', data: orders };
   }
 
   if (urlPath.startsWith('/orders/') && method === 'GET') {
     const orderId = urlPath.split('/orders/')[1];
-    const orders = JSON.parse(localStorage.getItem('connect_fallback_orders'));
-    const order = orders.find((o) => o.id === orderId);
+    const orders = JSON.parse(localStorage.getItem('connect_fallback_orders')) || [];
+    const order = orders.find((o) => o && (o.id === orderId || o.order_number === orderId || o._id === orderId));
     if (!order) return { status: 'error', message: 'Order not found' };
 
-    const assignments = JSON.parse(localStorage.getItem('connect_fallback_assignments'));
-    const assignment = assignments.find((a) => a.order_id === orderId && a.status !== 'Rejected');
+    const assignments = JSON.parse(localStorage.getItem('connect_fallback_assignments')) || [];
+    const assignment = assignments.find((a) => a && a.order_id === orderId && a.status !== 'Rejected');
     
     let partner = null;
     if (assignment) {
-      const partners = JSON.parse(localStorage.getItem('connect_fallback_partners'));
-      partner = partners.find((p) => p.id === assignment.delivery_partner_id);
+      const partners = JSON.parse(localStorage.getItem('connect_fallback_partners')) || [];
+      partner = partners.find((p) => p && p.id === assignment.delivery_partner_id);
     }
 
     // Mock timeline
@@ -205,7 +205,7 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
   }
 
   if (urlPath === '/orders' && method === 'POST') {
-    const orders = JSON.parse(localStorage.getItem('connect_fallback_orders'));
+    const orders = JSON.parse(localStorage.getItem('connect_fallback_orders')) || [];
     const orderId = 'ORD' + Math.floor(Math.random() * 9000);
     const newOrder = {
       id: orderId,
@@ -226,7 +226,7 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
           id: orderId,
           order_number: orderId,
           vendorId: body.vendor_id || 'v1',
-          memberId: 'cust_dhanush',
+          memberId: body.customer_id || 'cust_dhanush',
           memberName: body.customer_name || 'Customer',
           type: body.type || 'Order',
           items: body.items || [],
@@ -252,14 +252,14 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
 
     // Emulate Auto assignment timer
     setTimeout(() => {
-      const partners = JSON.parse(localStorage.getItem('connect_fallback_partners'));
-      const available = partners.find((p) => p.status === 'Available' && p.availability);
+      const partners = JSON.parse(localStorage.getItem('connect_fallback_partners')) || [];
+      const available = partners.find((p) => p && p.status === 'Available' && p.availability);
       if (available) {
         available.status = 'Busy';
         available.availability = false;
         localStorage.setItem('connect_fallback_partners', JSON.stringify(partners));
 
-        const assignments = JSON.parse(localStorage.getItem('connect_fallback_assignments'));
+        const assignments = JSON.parse(localStorage.getItem('connect_fallback_assignments')) || [];
         const newAsg = {
           id: 'asg_' + Math.floor(Math.random() * 9000),
           order_id: orderId,

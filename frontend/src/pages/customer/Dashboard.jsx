@@ -1637,22 +1637,87 @@ export default function CustomerDashboard({
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
-  const loadCustomerOrders = async () => {
+  const loadCustomerOrders = useCallback(async () => {
     try {
+      let apiOrders = [];
       const res = await apiFetch('/orders');
-      if (res.status === 'success') {
-        const name = profileName || currentUser?.name;
-        if (name) {
-          const filtered = (res.data || []).filter(o => o.customer_name && o.customer_name.toLowerCase() === name.toLowerCase());
-          setCustomerOrders(filtered);
-        } else {
-          setCustomerOrders([]);
+      if (res) {
+        if (Array.isArray(res)) {
+          apiOrders = res;
+        } else if (Array.isArray(res.data)) {
+          apiOrders = res.data;
+        } else if (res.data && Array.isArray(res.data.orders)) {
+          apiOrders = res.data.orders;
+        } else if (Array.isArray(res.orders)) {
+          apiOrders = res.orders;
         }
       }
+
+      let localOrders = [];
+      try {
+        const fallbackRaw = localStorage.getItem('connect_fallback_orders');
+        if (fallbackRaw) {
+          const parsed = JSON.parse(fallbackRaw);
+          if (Array.isArray(parsed)) localOrders.push(...parsed);
+        }
+        const userOrdersRaw = localStorage.getItem('connect_user_orders') || localStorage.getItem('user_orders');
+        if (userOrdersRaw) {
+          const parsedUser = JSON.parse(userOrdersRaw);
+          if (Array.isArray(parsedUser)) localOrders.push(...parsedUser);
+        }
+      } catch (e) {}
+
+      const allCandidates = [...apiOrders, ...localOrders];
+      if (allCandidates.length === 0) {
+        setCustomerOrders([]);
+        return;
+      }
+
+      const targetName = (profileName || currentUser?.name || currentUser?.memberName || '').trim().toLowerCase();
+      const targetEmail = (profileEmail || currentUser?.email || currentUser?.candidateEmail || '').trim().toLowerCase();
+      const targetPhone = (profilePhone || currentUser?.phone || '').replace(/\D/g, '');
+      const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || '').trim().toLowerCase();
+
+      const seenIds = new Set();
+      const filtered = [];
+
+      for (const ord of allCandidates) {
+        if (!ord) continue;
+        const ordId = String(ord.id || ord.order_number || ord._id || '').trim();
+        if (ordId && seenIds.has(ordId)) continue;
+
+        const cName = String(ord.customer_name || ord.customerName || ord.memberName || ord.name || '').trim().toLowerCase();
+        const cEmail = String(ord.customer_email || ord.customerEmail || ord.candidateEmail || ord.email || '').trim().toLowerCase();
+        const cPhone = String(ord.customer_phone || ord.customerPhone || ord.phone || '').replace(/\D/g, '');
+        const cId = String(ord.customer_id || ord.customerId || ord.memberId || ord.user_id || '').trim().toLowerCase();
+
+        let isMatch = false;
+
+        if (targetId && cId && targetId === cId) {
+          isMatch = true;
+        } else if (targetEmail && cEmail && (targetEmail === cEmail || cEmail.includes(targetEmail) || targetEmail.includes(cEmail))) {
+          isMatch = true;
+        } else if (targetPhone && cPhone && targetPhone.length >= 7 && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone))) {
+          isMatch = true;
+        } else if (targetName && cName && (cName === targetName || cName.includes(targetName) || targetName.includes(cName))) {
+          isMatch = true;
+        } else if (!targetName && !targetEmail && !targetPhone && !targetId) {
+          isMatch = true;
+        }
+
+        if (isMatch) {
+          if (ordId) seenIds.add(ordId);
+          filtered.push(ord);
+        }
+      }
+
+      filtered.sort((a, b) => new Date(b.created_at || b.date || Date.now()) - new Date(a.created_at || a.date || Date.now()));
+
+      setCustomerOrders(filtered);
     } catch (err) {
       console.warn('Failed to load customer orders:', err);
     }
-  };
+  }, [profileName, profileEmail, profilePhone, currentUser]);
 
   const refreshTrackingDetails = async (orderId) => {
     try {
@@ -2521,8 +2586,10 @@ export default function CustomerDashboard({
           method: 'POST',
           body: JSON.stringify({
             vendor_id: vendorId,
+            customer_id: currentUser?.id || currentUser?.customerId || getOrGenerateCustomerId(currentUser),
             customer_name: chosenAddr.name || profileName || currentUser?.name || 'Customer',
             customer_phone: chosenAddr.phone || profilePhone || currentUser?.phone || '',
+            customer_email: profileEmail || currentUser?.email || '',
             customer_address: fullAddressString,
             customer_latitude: 12.9498,
             customer_longitude: 77.6289,
