@@ -467,13 +467,25 @@ class DatabaseManager {
       if (vendorId) query.vendor_id = vendorId;
       if (customerId) {
         const cleanCustId = String(customerId).trim();
-        query.$or = [
+        const cleanLower = cleanCustId.toLowerCase();
+        const cleanDigits = cleanCustId.replace(/\D/g, '');
+
+        const orList: any[] = [
           { customer_id: cleanCustId },
           { customerId: cleanCustId },
           { memberId: cleanCustId },
-          { customer_email: cleanCustId.toLowerCase() },
-          { candidateEmail: cleanCustId.toLowerCase() }
+          { user_id: cleanCustId },
+          { customer_email: cleanLower },
+          { candidateEmail: cleanLower }
         ];
+
+        if (cleanDigits && cleanDigits.length >= 7) {
+          orList.push({ customer_phone: cleanDigits });
+          orList.push({ customer_phone: `+91${cleanDigits}` });
+          orList.push({ customer_phone: `91${cleanDigits}` });
+        }
+
+        query.$or = orList;
       }
       return this.mongoDb.collection<Order>('orders')
         .find(query, { projection: { _id: 0 } })
@@ -487,8 +499,11 @@ class DatabaseManager {
       res = res.filter(o => 
         String((o as any).customer_id || '').toLowerCase() === cleanCustId ||
         String((o as any).customerId || '').toLowerCase() === cleanCustId ||
+        String((o as any).user_id || '').toLowerCase() === cleanCustId ||
         String(o.memberId || '').toLowerCase() === cleanCustId ||
-        String(o.candidateEmail || '').toLowerCase() === cleanCustId
+        String(o.candidateEmail || '').toLowerCase() === cleanCustId ||
+        String(o.customer_email || '').toLowerCase() === cleanCustId ||
+        String(o.customer_phone || '').replace(/\D/g, '') === cleanCustId.replace(/\D/g, '')
       );
     }
     return res.sort((a,b) => b.id.localeCompare(a.id));

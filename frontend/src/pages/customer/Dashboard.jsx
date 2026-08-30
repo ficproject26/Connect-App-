@@ -1381,8 +1381,11 @@ export default function CustomerDashboard({
     }
     if (activeProfileTab === 'myjobs') {
       return customerOrders.filter(o => {
+        if (!o) return false;
         const typeLower = (o.type || '').toLowerCase();
-        return typeLower === 'job' || typeLower === 'jobs';
+        if (typeLower === 'job' || typeLower === 'jobs') return true;
+        if (o.candidateEmail || o.candidateResume || o.experience || o.candidateEducation) return true;
+        return false;
       });
     }
     return customerOrders;
@@ -1584,7 +1587,12 @@ export default function CustomerDashboard({
 
       let apiOrders = [];
       const orderEndpoint = targetId ? `/orders?customerId=${encodeURIComponent(targetId)}` : '/orders';
-      const res = await apiFetch(orderEndpoint);
+      let res = await apiFetch(orderEndpoint);
+      if (!res || (Array.isArray(res) && res.length === 0) || (res.data && Array.isArray(res.data) && res.data.length === 0)) {
+        if (targetId && targetEmail) {
+          res = await apiFetch(`/orders?customerId=${encodeURIComponent(targetEmail)}`);
+        }
+      }
       if (res) {
         if (Array.isArray(res)) {
           apiOrders = res;
@@ -2011,12 +2019,22 @@ export default function CustomerDashboard({
       const jobId = selectedJob?.id || selectedJob?._id || appliedJobId || 'CAT-FSD-2026-1024';
       const vendorId = selectedJob?.vendorId || selectedJob?.vendor_id || '3w8hhon38mqg7ni0u';
 
+      const custIdTarget = currentUser?.id || currentUser?.customerId || activeCustomerId || '';
+      const custEmailTarget = applicantEmail || profileEmail || currentUser?.email || '';
+      const custPhoneTarget = profilePhone || currentUser?.phone || '';
+
       const res = await apiFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
           vendor_id: vendorId,
+          customer_id: custIdTarget,
+          customerId: custIdTarget,
+          user_id: custIdTarget,
+          memberId: custIdTarget,
           customer_name: applicantName || currentUser?.name || 'Applicant',
-          customer_phone: profilePhone || currentUser?.phone || '+91 98765 43210',
+          customer_email: custEmailTarget,
+          candidateEmail: custEmailTarget,
+          customer_phone: custPhoneTarget || '+91 98765 43210',
           customer_address: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
           customer_latitude: 12.9498,
           customer_longitude: 77.6289,
@@ -2028,7 +2046,6 @@ export default function CustomerDashboard({
             price: 0,
             quantity: 1
           }],
-          candidateEmail: applicantEmail,
           candidateResume: applicantResume || (resumeFile ? resumeFile.name : 'Dhanush_Resume.pdf'),
           experience: applicantExperience || 'Fresher',
           candidateEducation: 'Graduate',
@@ -2039,6 +2056,7 @@ export default function CustomerDashboard({
       if (res && (res.status === 'success' || res.id || res.order_number)) {
         setJobSubmitSuccess(true);
         triggerNotification(`Application for ${jobTitle} submitted successfully!`);
+        loadCustomerOrders();
       } else {
         console.error('Failed to submit job application:', res);
         triggerNotification(res?.message || 'Failed to submit job application. Please try again.');
@@ -10381,7 +10399,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               },
                               { 
                                 label: activeProfileTab === 'orders' ? 'Delivered Orders' : activeProfileTab === 'bookings' ? 'Completed Bookings' : 'Selected / Offered', 
-                                value: ordersForActiveTab.filter(o => ['Delivered','Completed'].includes(o.status)).length > 0 ? String(ordersForActiveTab.filter(o => ['Delivered','Completed'].includes(o.status)).length).padStart(2, '0') : '00', 
+                                value: ordersForActiveTab.filter(o => ['Delivered','Completed','Selected','Selected / Offered','Offered','Hired'].includes(o.status)).length > 0 ? String(ordersForActiveTab.filter(o => ['Delivered','Completed','Selected','Selected / Offered','Offered','Hired'].includes(o.status)).length).padStart(2, '0') : '00', 
                                 sub: 'This Year', 
                                 icon: CheckCircle2, 
                                 iconColor: 'text-emerald-600', 
@@ -10389,7 +10407,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               },
                               { 
                                 label: activeProfileTab === 'orders' ? 'In Transit' : activeProfileTab === 'bookings' ? 'Upcoming Bookings' : 'Under Review', 
-                                value: ordersForActiveTab.filter(o => !['Delivered','Completed','Cancelled'].includes(o.status)).length > 0 ? String(ordersForActiveTab.filter(o => !['Delivered','Completed','Cancelled'].includes(o.status)).length).padStart(2, '0') : '00', 
+                                value: ordersForActiveTab.filter(o => !['Delivered','Completed','Selected','Selected / Offered','Offered','Hired','Cancelled','Rejected'].includes(o.status)).length > 0 ? String(ordersForActiveTab.filter(o => !['Delivered','Completed','Selected','Selected / Offered','Offered','Hired','Cancelled','Rejected'].includes(o.status)).length).padStart(2, '0') : '00', 
                                 sub: 'Right Now', 
                                 icon: Clock, 
                                 iconColor: 'text-amber-600', 
@@ -10397,7 +10415,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               },
                               { 
                                 label: activeProfileTab === 'myjobs' ? 'Rejected' : 'Cancelled', 
-                                value: ordersForActiveTab.filter(o => o.status === 'Cancelled').length > 0 ? String(ordersForActiveTab.filter(o => o.status === 'Cancelled').length).padStart(2, '0') : '00', 
+                                value: ordersForActiveTab.filter(o => ['Cancelled','Rejected'].includes(o.status)).length > 0 ? String(ordersForActiveTab.filter(o => ['Cancelled','Rejected'].includes(o.status)).length).padStart(2, '0') : '00', 
                                 sub: 'This Year', 
                                 icon: X, 
                                 iconColor: 'text-rose-600', 
