@@ -241,7 +241,12 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
           doctorName: body.doctorName,
           tableNumber: body.tableNumber,
           roomNumber: body.roomNumber,
-          prescriptionUrl: body.prescriptionUrl
+          prescriptionUrl: body.prescriptionUrl,
+          guests: body.guests || body.numberOfGuests || body.guestCount || body.adults || (body.items && body.items[0]?.guests) || 2,
+          adults: body.adults || (body.items && body.items[0]?.adults),
+          children: body.children || (body.items && body.items[0]?.children),
+          customer_address: body.customer_address || body.address || body.deliveryAddress,
+          customer_phone: body.customer_phone || body.phone
         })
       }).then(r => r.json())
         .then(data => console.log('Fallback sync response:', data))

@@ -8299,6 +8299,8 @@ export default function CustomerDashboard({
     // Dynamic description generator
     const getProductDescription = (p) => {
       if (!p) return '';
+      const aboutProd = (p.aboutProduct || '').trim();
+      if (aboutProd.length > 10) return aboutProd;
       const desc = (p.description || '').trim();
       if (desc.length > 25 && !/^\d+\s*(kg|g|gm|ml|l|pcs|piece|pack|unit)s?$/i.test(desc)) {
         return desc;
