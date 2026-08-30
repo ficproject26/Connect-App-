@@ -6673,10 +6673,10 @@ export default function CustomerDashboard({
                                   <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                                     <span className="flex items-center gap-2 font-medium">
                                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                                      Posted On
+                                      Job Deadline
                                     </span>
                                     <span className="font-bold text-slate-800 dark:text-white">
-                                      {formatJobPostedDate(selectedJob.createdAt || selectedJob.postedOn || selectedJob.created_at)}
+                                      {formatJobPostedDate(selectedJob.deadline || selectedJob.applicationDeadline || 'N/A')}
                                     </span>
                                   </div>
                                 </div>
