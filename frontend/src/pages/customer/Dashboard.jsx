@@ -7159,8 +7159,8 @@ export default function CustomerDashboard({
 
   // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
   const renderStayDetailsPage = () => {
-    if (!selectedProduct) return null;
-    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+    const rawThumbs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+    const thumbnails = Array.from(new Set(rawThumbs.filter(Boolean)));
     const isFavorited = favorites.includes(selectedProduct.id);
     const formatDate = (dateStr) => { if (!dateStr) return ''; const d = new Date(dateStr); if (isNaN(d.getTime())) return dateStr; const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${wd[d.getDay()]}, ${d.getDate()} ${mn[d.getMonth()]} ${d.getFullYear()}`; };
     const getNightsCount = () => { const s = new Date(stayCheckInDate), e = new Date(stayCheckOutDate); if (isNaN(s.getTime()) || isNaN(e.getTime())) return 1; const diff = Math.ceil((e - s) / 86400000); return diff > 0 ? diff : 1; };
@@ -7337,8 +7337,8 @@ export default function CustomerDashboard({
 
   // SERVICE/GYM DETAILS PAGE
   const renderServiceDetailsPage = () => {
-    if (!selectedProduct) return null;
-    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+    const rawThumbs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+    const thumbnails = Array.from(new Set(rawThumbs.filter(Boolean)));
     const isFavorited = favorites.includes(selectedProduct.id);
     const basePrice = selectedProduct.price || 2499;
     const plans = [
@@ -7511,9 +7511,8 @@ export default function CustomerDashboard({
   const renderTravelDetailsPage = () => {
     if (!selectedProduct) return null;
 
-    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0
-      ? selectedProduct.images
-      : [selectedProduct.image];
+    const rawThumbs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+    const thumbnails = Array.from(new Set(rawThumbs.filter(Boolean)));
 
     const isFavorited = favorites.includes(selectedProduct.id);
 
@@ -8070,9 +8069,8 @@ export default function CustomerDashboard({
     const saveDiamond = pRegular - pDiamond;
 
     // Gallery images
-    const thumbnails = selectedProduct.images && selectedProduct.images.length > 0
-      ? selectedProduct.images
-      : [selectedProduct.image];
+    const rawThumbs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
+    const thumbnails = Array.from(new Set(rawThumbs.filter(Boolean)));
 
     // Helper to check if a service is medical/hospital vs general service (AC repairs, etc.)
     const isMedicalService = (product) => {

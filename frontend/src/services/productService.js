@@ -127,13 +127,22 @@ const extractRawImage = (p) => {
   if (!p) return '';
   if (typeof p.image === 'string' && p.image.trim()) return p.image.trim();
   if (typeof p.imageUrl === 'string' && p.imageUrl.trim()) return p.imageUrl.trim();
+  if (typeof p.imageURL === 'string' && p.imageURL.trim()) return p.imageURL.trim();
   if (typeof p.imgUrl === 'string' && p.imgUrl.trim()) return p.imgUrl.trim();
+  if (typeof p.serviceImage === 'string' && p.serviceImage.trim()) return p.serviceImage.trim();
+  if (typeof p.catalogImage === 'string' && p.catalogImage.trim()) return p.catalogImage.trim();
+  if (typeof p.productImage === 'string' && p.productImage.trim()) return p.productImage.trim();
+  if (typeof p.thumbnailUrl === 'string' && p.thumbnailUrl.trim()) return p.thumbnailUrl.trim();
+  if (typeof p.thumbnailURL === 'string' && p.thumbnailURL.trim()) return p.thumbnailURL.trim();
+  if (typeof p.mediaUrl === 'string' && p.mediaUrl.trim()) return p.mediaUrl.trim();
+  if (typeof p.mediaURL === 'string' && p.mediaURL.trim()) return p.mediaURL.trim();
+  if (typeof p.media === 'string' && p.media.trim()) return p.media.trim();
   
   if (Array.isArray(p.images) && p.images.length > 0) {
     const first = p.images[0];
     if (typeof first === 'string' && first.trim()) return first.trim();
     if (first && typeof first === 'object') {
-      const url = first.url || first.src || first.path || first.imageUrl || first.location || '';
+      const url = first.url || first.src || first.path || first.imageUrl || first.imageURL || first.location || '';
       if (url && typeof url === 'string' && url.trim()) return url.trim();
     }
   }
@@ -147,12 +156,11 @@ const extractRawImage = (p) => {
     const first = p.photos[0];
     if (typeof first === 'string' && first.trim()) return first.trim();
     if (first && typeof first === 'object') {
-      const url = first.url || first.src || first.path || first.imageUrl || '';
+      const url = first.url || first.src || first.path || first.imageUrl || first.imageURL || '';
       if (url && typeof url === 'string' && url.trim()) return url.trim();
     }
   }
 
-  if (typeof p.productImage === 'string' && p.productImage.trim()) return p.productImage.trim();
   if (typeof p.picture === 'string' && p.picture.trim()) return p.picture.trim();
   if (typeof p.thumbnail === 'string' && p.thumbnail.trim()) return p.thumbnail.trim();
   if (typeof p.img === 'string' && p.img.trim()) return p.img.trim();
@@ -267,23 +275,47 @@ const sanitizeProduct = (p) => {
   const rawImg = extractRawImage(p);
   updated.image = sanitizeImageUrl(rawImg, updated);
 
-  const allImages = [];
+  const rawImagesList = [];
+  if (rawImg) rawImagesList.push(rawImg);
+
+  const extractUrlFromItem = (item) => {
+    if (!item) return '';
+    if (typeof item === 'string') return item.trim();
+    if (typeof item === 'object') {
+      return (item.url || item.src || item.path || item.imageUrl || item.imageURL || item.location || '').toString().trim();
+    }
+    return '';
+  };
+
   if (Array.isArray(p.images) && p.images.length > 0) {
     p.images.forEach(img => {
-      const extracted = typeof img === 'string' ? img : (img?.url || img?.src || img?.path || img?.imageUrl || '');
-      if (extracted) allImages.push(sanitizeImageUrl(extracted, updated));
+      const url = extractUrlFromItem(img);
+      if (url) rawImagesList.push(url);
     });
   }
   if (Array.isArray(p.photos) && p.photos.length > 0) {
     p.photos.forEach(img => {
-      const extracted = typeof img === 'string' ? img : (img?.url || img?.src || img?.path || img?.imageUrl || '');
-      if (extracted) allImages.push(sanitizeImageUrl(extracted, updated));
+      const url = extractUrlFromItem(img);
+      if (url) rawImagesList.push(url);
+    });
+  }
+  if (Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
+    p.imageUrls.forEach(img => {
+      const url = extractUrlFromItem(img);
+      if (url) rawImagesList.push(url);
     });
   }
 
-  if (allImages.length > 0) {
-    updated.images = Array.from(new Set(allImages));
-  } else if (updated.image) {
+  // Sanitize all image URLs first, then deduplicate exact sanitized URLs
+  const sanitizedList = rawImagesList.map(imgStr => sanitizeImageUrl(imgStr, updated)).filter(Boolean);
+  const uniqueSanitized = Array.from(new Set(sanitizedList));
+
+  if (uniqueSanitized.length > 0) {
+    updated.images = uniqueSanitized;
+    if (!updated.image || updated.image.includes('unsplash.com')) {
+      updated.image = uniqueSanitized[0];
+    }
+  } else {
     updated.images = [updated.image];
   }
 

@@ -14,7 +14,10 @@ export const getBackendUrl = () => {
     if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
-    return '';
+    if (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_BACKEND_URL.includes('ficapp.in')) {
+      return formatUrl(import.meta.env.VITE_BACKEND_URL);
+    }
+    return 'https://connect-app-7s6g.onrender.com';
   }
 
   if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
@@ -40,10 +43,13 @@ export const getVendorBackendUrl = () => {
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
   if (isHttps) {
+    if (import.meta.env.VITE_VENDOR_BACKEND_URL && import.meta.env.VITE_VENDOR_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('ficapp.in')) {
+      return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
+    }
     if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
-    return '';
+    return 'https://connect-app-7s6g.onrender.com';
   }
 
   if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
@@ -72,7 +78,10 @@ export const getAdminBackendUrl = () => {
     if (import.meta.env.VITE_ADMIN_BACKEND_URL && import.meta.env.VITE_ADMIN_BACKEND_URL.startsWith('https://')) {
       return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
     }
-    return '';
+    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
+      return formatUrl(import.meta.env.VITE_API_URL);
+    }
+    return 'https://connect-app-7s6g.onrender.com';
   }
 
   if (import.meta.env.VITE_ADMIN_BACKEND_URL && !import.meta.env.VITE_ADMIN_BACKEND_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
