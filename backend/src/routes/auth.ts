@@ -7,30 +7,46 @@ import { authRateLimiter, authenticateToken, AuthenticatedRequest } from '../sec
 
 const router = Router();
 
-const buildCustomerMongoFilter = (target: string): any => {
-  if (!target) return { _id: null };
-  const cleanTarget = String(target).trim();
-  const cleanDigits = cleanTarget.replace(/\D/g, '');
+const buildCustomerMongoFilter = (input: any): any => {
+  if (!input) return { _id: null };
+  const rawTargets: string[] = [];
 
-  const orConds: any[] = [
-    { id: cleanTarget },
-    { customerId: cleanTarget },
-    { registrationId: cleanTarget },
-    { email: cleanTarget.toLowerCase() }
-  ];
-
-  if (ObjectId.isValid(cleanTarget)) {
-    try {
-      orConds.push({ _id: new ObjectId(cleanTarget) });
-    } catch (e) {}
+  if (typeof input === 'string') {
+    if (input.trim()) rawTargets.push(input.trim());
+  } else if (typeof input === 'object' && input !== null) {
+    if (input.userId) rawTargets.push(String(input.userId));
+    if (input.customerId) rawTargets.push(String(input.customerId));
+    if (input.registrationId) rawTargets.push(String(input.registrationId));
+    if (input.id) rawTargets.push(String(input.id));
+    if (input.email) rawTargets.push(String(input.email));
+    if (input.phone) rawTargets.push(String(input.phone));
   }
-  orConds.push({ _id: cleanTarget });
 
-  if (cleanDigits && cleanDigits.length >= 10) {
-    orConds.push({ phone: cleanDigits });
-    orConds.push({ phone: `+91${cleanDigits}` });
-    orConds.push({ phone: `91${cleanDigits}` });
-  }
+  const cleanTargets = Array.from(new Set(rawTargets.map(t => t.trim()).filter(Boolean)));
+  if (cleanTargets.length === 0) return { _id: null };
+
+  const orConds: any[] = [];
+
+  cleanTargets.forEach(t => {
+    orConds.push({ id: t });
+    orConds.push({ customerId: t });
+    orConds.push({ registrationId: t });
+    orConds.push({ email: t.toLowerCase() });
+    orConds.push({ _id: t });
+
+    if (ObjectId.isValid(t)) {
+      try {
+        orConds.push({ _id: new ObjectId(t) });
+      } catch (e) {}
+    }
+
+    const cleanDigits = t.replace(/\D/g, '');
+    if (cleanDigits && cleanDigits.length >= 10) {
+      orConds.push({ phone: cleanDigits });
+      orConds.push({ phone: `+91${cleanDigits}` });
+      orConds.push({ phone: `91${cleanDigits}` });
+    }
+  });
 
   return { $or: orConds };
 };
@@ -800,11 +816,7 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
 // PUT: /api/auth/customer-profile (Update customer profile & photo in MongoDB)
 router.put('/customer-profile', async (req: Request, res: Response) => {
   const { userId, customerId, phone, email, name, avatar, photo, password } = req.body;
-  const target = (userId || customerId || phone || email || '').toString().trim();
-
-  if (!target) {
-    return res.status(400).json({ status: 'error', message: 'User ID or identifier is required.' });
-  }
+  const target = req.body;
 
   try {
     const mongoDb = db.getDb();
@@ -836,10 +848,34 @@ router.put('/customer-profile', async (req: Request, res: Response) => {
     }
 
     if (!updatedUser) {
-      return res.status(404).json({ status: 'error', message: 'Customer record not found in database.' });
+      // Upsert: Create user record in MongoDB if not existing yet
+      const newUserId = userId || customerId || 'cust_' + Date.now();
+      const newCustId = customerId || (newUserId.startsWith('FIC-') ? newUserId : `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`);
+      const createdUserObj: any = {
+        id: newUserId,
+        _id: newUserId,
+        registrationId: newCustId,
+        customerId: newCustId,
+        name: name ? name.trim() : 'Connect Member',
+        email: email ? email.toLowerCase().trim() : '',
+        phone: phone ? phone.replace(/\D/g, '') : '',
+        avatar: newAvatar || '',
+        photo: newAvatar || '',
+        password: password ? await bcrypt.hash(password, 10) : '',
+        role: 'customer',
+        status: 'Active',
+        isActive: true,
+        addresses: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      await mongoDb.collection('users').insertOne(createdUserObj as any).catch(() => {});
+      await mongoDb.collection('customers').insertOne(createdUserObj as any).catch(() => {});
+      updatedUser = createdUserObj;
     }
 
-    const { password: _, ...safeUser } = updatedUser;
+    const { password: _, ...safeUser } = (updatedUser || {}) as any;
     const finalProfile = {
       id: safeUser.id || safeUser._id?.toString(),
       name: safeUser.name || 'Connect Member',

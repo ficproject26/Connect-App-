@@ -10810,11 +10810,11 @@ wishlistProducts.forEach(item => addToCart(item));
                               method: 'PUT',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                userId: userTarget,
+                                userId: currentUser?.id || userTarget,
                                 customerId: currentUser?.customerId || activeCustomerId,
+                                email: currentUser?.email || profileEmail,
+                                phone: currentUser?.phone || profilePhone,
                                 name: profileName,
-                                email: profileEmail,
-                                phone: profilePhone,
                                 avatar: profilePhoto,
                                 password: profilePassword || undefined
                               })
