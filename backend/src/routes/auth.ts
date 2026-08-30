@@ -1,10 +1,39 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import { ObjectId } from 'mongodb';
 import { db } from '../db';
 import { securityManager } from '../security/securityManager';
 import { authRateLimiter, authenticateToken, AuthenticatedRequest } from '../security/middleware';
 
 const router = Router();
+
+const buildCustomerMongoFilter = (target: string): any => {
+  if (!target) return { _id: null };
+  const cleanTarget = String(target).trim();
+  const cleanDigits = cleanTarget.replace(/\D/g, '');
+
+  const orConds: any[] = [
+    { id: cleanTarget },
+    { customerId: cleanTarget },
+    { registrationId: cleanTarget },
+    { email: cleanTarget.toLowerCase() }
+  ];
+
+  if (ObjectId.isValid(cleanTarget)) {
+    try {
+      orConds.push({ _id: new ObjectId(cleanTarget) });
+    } catch (e) {}
+  }
+  orConds.push({ _id: cleanTarget });
+
+  if (cleanDigits && cleanDigits.length >= 10) {
+    orConds.push({ phone: cleanDigits });
+    orConds.push({ phone: `+91${cleanDigits}` });
+    orConds.push({ phone: `91${cleanDigits}` });
+  }
+
+  return { $or: orConds };
+};
 
 const findCustomerInMongo = async (identifier: string) => {
   try {
@@ -215,13 +244,18 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
 
       userDetails = {
         id: dbUser._id ? dbUser._id.toString() : (dbUser.id || 'cust_' + Date.now()),
+        customerId: dbUser.customerId || dbUser.registrationId || dbUser.id || '',
         name: dbUser.name || 'Connect Member',
         email: dbUser.email || identifier,
         phone: dbUser.phone || '',
+        avatar: dbUser.avatar || dbUser.photo || '',
+        photo: dbUser.avatar || dbUser.photo || '',
         role: dbUser.role || 'customer',
-        address: dbUser.address || '',
+        address: dbUser.address || dbUser.registeredAddress || '',
         city: dbUser.city || '',
         pincode: dbUser.pincode || '',
+        state: dbUser.state || '',
+        addresses: Array.isArray(dbUser.addresses) ? dbUser.addresses : [],
         registrationId: dbUser.registrationId || ''
       };
     }
@@ -675,21 +709,7 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
       return res.status(503).json({ status: 'error', message: 'Database not connected' });
     }
 
-    const cleanDigits = target.replace(/\D/g, '');
-    const isMobileTarget = cleanDigits.length >= 10;
-    const filter: any = {
-      $or: [
-        { id: target },
-        { customerId: target },
-        { registrationId: target },
-        { email: target.toLowerCase() },
-        ...(isMobileTarget ? [
-          { phone: cleanDigits },
-          { phone: `+91${cleanDigits}` },
-          { phone: `91${cleanDigits}` }
-        ] : [])
-      ]
-    };
+    const filter = buildCustomerMongoFilter(target);
     let dbUser = await mongoDb.collection('users').findOne(filter);
     if (!dbUser) {
       dbUser = await mongoDb.collection('customers').findOne(filter);
@@ -707,7 +727,7 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         id: target,
         name: fallbackName,
         email: target.includes('@') ? target : '',
-        phone: isMobileTarget ? cleanDigits.slice(-10) : '',
+        phone: target.replace(/\D/g, '').length >= 10 ? target.replace(/\D/g, '').slice(-10) : '',
         avatar: '',
         photo: '',
         address: '',
@@ -723,7 +743,6 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
 
     const { password: _, ...safeProfile } = dbUser;
 
-    // Sanitize returned phone so pincodes or IDs like 226312 are never exposed as phone number
     const userPhoneDigits = (safeProfile.phone || '').toString().replace(/\D/g, '');
     if (userPhoneDigits.length < 10 || userPhoneDigits === String(safeProfile.pincode)) {
       safeProfile.phone = '';
@@ -750,7 +769,6 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         };
         profileAddresses = [regAddrObj];
 
-        // Persist back to database so future calls have addresses array populated
         await mongoDb.collection('users').updateOne(filter, { $set: { addresses: profileAddresses } }).catch(() => {});
         await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: profileAddresses } }).catch(() => {});
       }
@@ -781,7 +799,7 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
 
 // PUT: /api/auth/customer-profile (Update customer profile & photo in MongoDB)
 router.put('/customer-profile', async (req: Request, res: Response) => {
-  const { userId, customerId, phone, email, name, avatar, password } = req.body;
+  const { userId, customerId, phone, email, name, avatar, photo, password } = req.body;
   const target = (userId || customerId || phone || email || '').toString().trim();
 
   if (!target) {
@@ -798,39 +816,47 @@ router.put('/customer-profile', async (req: Request, res: Response) => {
     if (name) updateFields.name = name.trim();
     if (email) updateFields.email = email.toLowerCase().trim();
     if (phone) updateFields.phone = phone.replace(/\D/g, '');
-    if (avatar !== undefined) {
-      updateFields.avatar = avatar;
-      updateFields.photo = avatar;
+    const newAvatar = avatar !== undefined ? avatar : photo;
+    if (newAvatar !== undefined) {
+      updateFields.avatar = newAvatar;
+      updateFields.photo = newAvatar;
     }
     if (password) {
       updateFields.password = await bcrypt.hash(password, 10);
     }
 
-    const cleanDigits = target.replace(/\D/g, '');
-    const filter: any = {
-      $or: [
-        { id: target },
-        { customerId: target },
-        { registrationId: target },
-        { email: target.toLowerCase() },
-        ...(cleanDigits ? [
-          { phone: cleanDigits },
-          { phone: `+91${cleanDigits}` },
-          { phone: `91${cleanDigits}` }
-        ] : [])
-      ]
-    };
+    const filter = buildCustomerMongoFilter(target);
 
     await mongoDb.collection('users').updateOne(filter, { $set: updateFields });
     await mongoDb.collection('customers').updateOne(filter, { $set: updateFields }).catch(() => {});
 
-    const updatedUser = await mongoDb.collection('users').findOne(filter);
+    let updatedUser = await mongoDb.collection('users').findOne(filter);
     if (!updatedUser) {
-      return res.status(404).json({ status: 'error', message: 'Customer record not found.' });
+      updatedUser = await mongoDb.collection('customers').findOne(filter);
+    }
+
+    if (!updatedUser) {
+      return res.status(404).json({ status: 'error', message: 'Customer record not found in database.' });
     }
 
     const { password: _, ...safeUser } = updatedUser;
-    return res.json({ status: 'success', message: 'Profile updated successfully', user: safeUser });
+    const finalProfile = {
+      id: safeUser.id || safeUser._id?.toString(),
+      name: safeUser.name || 'Connect Member',
+      email: safeUser.email || '',
+      phone: safeUser.phone || '',
+      avatar: safeUser.avatar || safeUser.photo || '',
+      photo: safeUser.avatar || safeUser.photo || '',
+      address: safeUser.address || safeUser.registeredAddress || '',
+      city: safeUser.city || '',
+      pincode: safeUser.pincode || '',
+      state: safeUser.state || '',
+      role: safeUser.role || 'customer',
+      customerId: safeUser.registrationId || safeUser.customerId || `FIC-CUST-100000`,
+      addresses: Array.isArray(safeUser.addresses) ? safeUser.addresses : []
+    };
+
+    return res.json({ status: 'success', message: 'Profile updated successfully', user: finalProfile, data: finalProfile });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
   }
@@ -851,22 +877,12 @@ router.post('/customer-address', async (req: Request, res: Response) => {
       return res.status(503).json({ status: 'error', message: 'Database not connected' });
     }
 
-    const cleanDigits = target.replace(/\D/g, '');
-    const filter: any = {
-      $or: [
-        { id: target },
-        { customerId: target },
-        { registrationId: target },
-        { email: target.toLowerCase() },
-        ...(cleanDigits ? [
-          { phone: cleanDigits },
-          { phone: `+91${cleanDigits}` },
-          { phone: `91${cleanDigits}` }
-        ] : [])
-      ]
-    };
+    const filter = buildCustomerMongoFilter(target);
+    let user = await mongoDb.collection('users').findOne(filter);
+    if (!user) {
+      user = await mongoDb.collection('customers').findOne(filter);
+    }
 
-    const user = await mongoDb.collection('users').findOne(filter);
     if (!user) {
       return res.status(404).json({ status: 'error', message: 'Customer not found.' });
     }
@@ -875,10 +891,8 @@ router.post('/customer-address', async (req: Request, res: Response) => {
     let updatedAddresses: any[];
 
     if (address.id) {
-      // Edit existing address
       updatedAddresses = existingAddresses.map(a => a.id === address.id ? { ...a, ...address } : a);
     } else {
-      // Add new address
       const newAddr = {
         ...address,
         id: 'addr_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
@@ -911,22 +925,12 @@ router.delete('/customer-address/:addressId', async (req: Request, res: Response
       return res.status(503).json({ status: 'error', message: 'Database not connected' });
     }
 
-    const cleanDigits = target.replace(/\D/g, '');
-    const filter: any = {
-      $or: [
-        { id: target },
-        { customerId: target },
-        { registrationId: target },
-        { email: target.toLowerCase() },
-        ...(cleanDigits ? [
-          { phone: cleanDigits },
-          { phone: `+91${cleanDigits}` },
-          { phone: `91${cleanDigits}` }
-        ] : [])
-      ]
-    };
+    const filter = buildCustomerMongoFilter(target);
+    let user = await mongoDb.collection('users').findOne(filter);
+    if (!user) {
+      user = await mongoDb.collection('customers').findOne(filter);
+    }
 
-    const user = await mongoDb.collection('users').findOne(filter);
     if (!user) {
       return res.status(404).json({ status: 'error', message: 'Customer not found.' });
     }

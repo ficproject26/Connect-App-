@@ -1260,108 +1260,9 @@ export default function CustomerDashboard({
     type: 'Home'
   });
 
-  // Fetch customer profile & saved addresses directly from MongoDB backend
+  // Single consolidated profile listener on mount or user change
   useEffect(() => {
-    if (currentUser && (currentUser.role === 'customer' || !currentUser.role)) {
-      const userTarget = currentUser.id || currentUser.customerId || currentUser.phone || currentUser.email || '';
-      if (userTarget) {
-        fetch(`${getAdminBackendUrl()}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}`)
-          .then(res => res.ok ? res.json() : null)
-          .then(data => {
-            if (data && data.status === 'success' && data.user) {
-              const u = data.user;
-              const resolvedName = resolveCustomerName(u.name, currentUser?.name, u.email || currentUser?.email);
-              setProfileName(resolvedName);
-              setProfileEmail(u.email || currentUser.email || '');
-              setProfilePhone(sanitizePhoneInput(u.phone, u.pincode) || sanitizePhoneInput(currentUser?.phone, currentUser?.pincode));
-              setProfilePhoto(u.avatar || u.photo || currentUser?.avatar || '');
-
-              let dbAddrs = Array.isArray(u.addresses) ? u.addresses : [];
-              if (dbAddrs.length === 0) {
-                const regAddressStr = u.address || u.registeredAddress || currentUser?.address || currentUser?.registeredAddress || '';
-                if (regAddressStr.trim()) {
-                  dbAddrs = [{
-                    id: 'addr_reg_' + (u.id || currentUser?.id || 'reg'),
-                    name: resolvedName,
-                    phone: (u.phone || currentUser?.phone || '').replace('+91', '').trim(),
-                    pincode: u.pincode || currentUser?.pincode || '',
-                    locality: u.city || currentUser?.city || '',
-                    address: regAddressStr,
-                    city: u.city || currentUser?.city || '',
-                    state: u.state || currentUser?.state || 'Karnataka',
-                    landmark: '',
-                    altPhone: '',
-                    type: 'Home',
-                    isRegistrationAddress: true
-                  }];
-                }
-              }
-
-              setAddresses(dbAddrs);
-              if (dbAddrs.length > 0) {
-                setSelectedCheckoutAddressId(dbAddrs[0].id);
-              }
-            } else {
-              const fallbackResolvedName = resolveCustomerName('', currentUser?.name, currentUser?.email);
-              setProfileName(fallbackResolvedName);
-              setProfileEmail(currentUser.email || '');
-              setProfilePhone(sanitizePhoneInput(currentUser.phone, currentUser.pincode));
-              setProfilePhoto(currentUser.avatar || currentUser.photo || '');
-
-              const regAddressStr = currentUser?.address || currentUser?.registeredAddress || '';
-              if (regAddressStr.trim()) {
-                const defaultRegAddr = {
-                  id: 'addr_reg_' + (currentUser?.id || 'reg'),
-                  name: fallbackResolvedName,
-                  phone: (currentUser?.phone || '').replace('+91', '').trim(),
-                  pincode: currentUser?.pincode || '',
-                  locality: currentUser?.city || '',
-                  address: regAddressStr,
-                  city: currentUser?.city || '',
-                  state: currentUser?.state || 'Karnataka',
-                  landmark: '',
-                  altPhone: '',
-                  type: 'Home',
-                  isRegistrationAddress: true
-                };
-                setAddresses([defaultRegAddr]);
-                setSelectedCheckoutAddressId(defaultRegAddr.id);
-              } else {
-                setAddresses([]);
-              }
-            }
-          })
-          .catch(() => {
-            const fallbackResolvedName = resolveCustomerName('', currentUser?.name, currentUser?.email);
-            setProfileName(fallbackResolvedName);
-            setProfileEmail(currentUser.email || '');
-            setProfilePhone(currentUser.phone || '');
-            setProfilePhoto(currentUser.avatar || currentUser.photo || '');
-
-            const regAddressStr = currentUser?.address || currentUser?.registeredAddress || '';
-            if (regAddressStr.trim()) {
-              const defaultRegAddr = {
-                id: 'addr_reg_' + (currentUser?.id || 'reg'),
-                name: fallbackResolvedName,
-                phone: (currentUser?.phone || '').replace('+91', '').trim(),
-                pincode: currentUser?.pincode || '',
-                locality: currentUser?.city || '',
-                address: regAddressStr,
-                city: currentUser?.city || '',
-                state: currentUser?.state || 'Karnataka',
-                landmark: '',
-                altPhone: '',
-                type: 'Home',
-                isRegistrationAddress: true
-              };
-              setAddresses([defaultRegAddr]);
-              setSelectedCheckoutAddressId(defaultRegAddr.id);
-            } else {
-              setAddresses([]);
-            }
-          });
-      }
-    } else {
+    if (!currentUser) {
       setProfileName('');
       setProfileEmail('');
       setProfilePhone('');
@@ -2465,7 +2366,7 @@ export default function CustomerDashboard({
     );
   };
 
-  const handleSaveAddress = () => {
+  const handleSaveAddress = async () => {
     const name = (addressForm.name || profileName || currentUser?.name || '').trim();
     if (!name) {
       triggerNotification("Please enter a receiver name.", "error");
@@ -2519,17 +2420,18 @@ export default function CustomerDashboard({
 
       for (const url of [...new Set(endpoints)]) {
         try {
-          fetch(url, {
+          const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: userTarget, address: newAddress })
-          }).then(res => res.ok ? res.json() : null)
-            .then(data => {
-              if (data && Array.isArray(data.addresses)) {
-                setAddresses(data.addresses);
-              }
-            })
-            .catch(() => {});
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.addresses)) {
+              setAddresses(data.addresses);
+              break;
+            }
+          }
         } catch (e) {}
       }
     }
@@ -2541,7 +2443,7 @@ export default function CustomerDashboard({
     return newAddress;
   };
 
-  const handleDeleteAddress = (id) => {
+  const handleDeleteAddress = async (id) => {
     setAddresses(prev => prev.filter(addr => addr.id !== id));
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (userTarget) {
@@ -2555,15 +2457,14 @@ export default function CustomerDashboard({
 
       for (const url of [...new Set(endpoints)]) {
         try {
-          fetch(url, {
-            method: 'DELETE'
-          }).then(res => res.ok ? res.json() : null)
-            .then(data => {
-              if (data && Array.isArray(data.addresses)) {
-                setAddresses(data.addresses);
-              }
-            })
-            .catch(() => {});
+          const res = await fetch(url, { method: 'DELETE' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.addresses)) {
+              setAddresses(data.addresses);
+              break;
+            }
+          }
         } catch (e) {}
       }
     }
@@ -5353,18 +5254,18 @@ export default function CustomerDashboard({
                 className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
               >
                 <div className="relative aspect-[1.25/1] sm:aspect-[1.1/1] bg-slate-50 overflow-hidden flex items-center justify-center select-none border-b border-slate-100">
-                  {(item.tag === 'Jobs' || item.subNavbarCategory === 'Jobs') ? (
+                  {(item.tag === 'Jobs' || item.subNavbarCategory === 'Jobs') && !item.image ? (
                     <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                       <Briefcase className="w-8 h-8 text-amber-500" />
                       <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                     </div>
-                  ) : item.image ? (
-                    <img src={item.image} alt={item.name} onError={(e) => { e.currentTarget.style.display = 'none'; }} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
                   ) : (
-                    <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center p-4 text-center select-none">
-                      <ShoppingBag className="w-6 h-6 text-slate-300 dark:text-slate-600 mb-1" />
-                      <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">No Image</span>
-                    </div>
+                    <img 
+                      src={item.image || getCategoryFallbackImage(item)} 
+                      alt={item.name} 
+                      onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(item); e.target.style.display = 'block'; }} 
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" 
+                    />
                   )}
                   
                   {/* Rating star on left top */}
@@ -5517,13 +5418,18 @@ export default function CustomerDashboard({
                       </div>
                     </div>
                   )}
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} onError={(e) => { e.target.style.display = 'none'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
-                  ) : (
-                    <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center p-4 text-center select-none">
-                      <ShoppingBag className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-1" />
-                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">No Image Added</span>
+                  {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs') && !product.image ? (
+                    <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                      <Briefcase className="w-8 h-8 text-amber-500" />
+                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                     </div>
+                  ) : (
+                    <img 
+                      src={product.image || getCategoryFallbackImage(product)} 
+                      alt={product.name} 
+                      onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(product); e.target.style.display = 'block'; }} 
+                      className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} 
+                    />
                   )}
                   {!isVendorProductUnavailable(product) && product.tag && (
                     <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase">{product.tag}</span>
@@ -6947,18 +6853,18 @@ export default function CustomerDashboard({
                                 </div>
                               </div>
                             )}
-                            {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs') ? (
+                            {(product.tag === 'Jobs' || product.subNavbarCategory === 'Jobs') && !product.image ? (
                               <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
                                 <Briefcase className="w-8 h-8 text-amber-500" />
                                 <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                               </div>
-                            ) : product.image ? (
-                              <img src={product.image} alt={product.name} onError={(e) => { e.target.style.display = 'none'; }} className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} />
                             ) : (
-                              <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex flex-col items-center justify-center p-4 text-center select-none">
-                                <ShoppingBag className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-1" />
-                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">No Image Added</span>
-                              </div>
+                              <img 
+                                src={product.image || getCategoryFallbackImage(product)} 
+                                alt={product.name} 
+                                onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(product); e.target.style.display = 'block'; }} 
+                                className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ${isVendorProductUnavailable(product) ? 'opacity-60 grayscale-[40%]' : ''}`} 
+                              />
                             )}
                             {product.subNavbarCategory === 'Food' && (
                               <div className="absolute top-0 left-0 z-10 w-16 h-16 overflow-hidden pointer-events-none">
@@ -10866,7 +10772,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 {activeProfileTab === 'edit' && (
                   <div className="space-y-6 animate-fade-in text-left">
                     <form 
-                      onSubmit={(e) => {
+                      onSubmit={async (e) => {
                         e.preventDefault();
                         
                         // Password change validation
@@ -10882,45 +10788,73 @@ wishlistProducts.forEach(item => addToCart(item));
                         }
 
                         const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
-                        if (userTarget) {
-                          const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
-                          const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
-                          const endpoints = [
-                            adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
-                            baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
-                            `/api/auth/customer-profile`
-                          ].filter(Boolean);
-
-                          for (const url of [...new Set(endpoints)]) {
-                            try {
-                              fetch(url, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  userId: userTarget,
-                                  name: profileName,
-                                  email: profileEmail,
-                                  phone: profilePhone,
-                                  avatar: profilePhoto,
-                                  password: profilePassword || undefined
-                                })
-                              }).then(res => res.ok ? res.json() : null)
-                                .then(data => {
-                                  if (data && data.user) {
-                                    login(data.user, 'customer');
-                                  }
-                                }).catch(() => {});
-                            } catch (e) {}
-                          }
+                        if (!userTarget) {
+                          triggerNotification("Please log in to update profile.", "error");
+                          return;
                         }
 
-                        login({ ...currentUser, name: profileName, email: profileEmail, phone: profilePhone, avatar: profilePhoto }, 'customer');
-                        setProfilePassword('');
-                        setProfileConfirmPassword('');
-                        triggerNotification("Profile saved in database successfully!");
-                        setTimeout(() => {
-                          loadCustomerProfileFromDb();
-                        }, 500);
+                        const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+                        const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+                        const endpoints = [
+                          adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+                          baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+                          `/api/auth/customer-profile`
+                        ].filter(Boolean);
+
+                        let saveSuccess = false;
+                        let updatedUserObj = null;
+
+                        for (const url of [...new Set(endpoints)]) {
+                          try {
+                            const res = await fetch(url, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                userId: userTarget,
+                                customerId: currentUser?.customerId || activeCustomerId,
+                                name: profileName,
+                                email: profileEmail,
+                                phone: profilePhone,
+                                avatar: profilePhoto,
+                                password: profilePassword || undefined
+                              })
+                            });
+
+                            if (res.ok) {
+                              const data = await res.json();
+                              if (data && (data.status === 'success' || data.user)) {
+                                saveSuccess = true;
+                                updatedUserObj = data.user || data.data;
+                                break;
+                              }
+                            }
+                          } catch (err) {}
+                        }
+
+                        if (saveSuccess && updatedUserObj) {
+                          login({
+                            ...currentUser,
+                            id: updatedUserObj.id || currentUser?.id,
+                            customerId: updatedUserObj.customerId || currentUser?.customerId,
+                            name: updatedUserObj.name || profileName,
+                            email: updatedUserObj.email || profileEmail,
+                            phone: updatedUserObj.phone || profilePhone,
+                            avatar: updatedUserObj.avatar || updatedUserObj.photo || profilePhoto,
+                            role: 'customer'
+                          }, 'customer');
+
+                          if (updatedUserObj.name) setProfileName(updatedUserObj.name);
+                          if (updatedUserObj.email) setProfileEmail(updatedUserObj.email);
+                          if (updatedUserObj.phone) setProfilePhone(updatedUserObj.phone);
+                          if (updatedUserObj.avatar || updatedUserObj.photo) setProfilePhoto(updatedUserObj.avatar || updatedUserObj.photo);
+                          if (Array.isArray(updatedUserObj.addresses)) setAddresses(updatedUserObj.addresses);
+
+                          setProfilePassword('');
+                          setProfileConfirmPassword('');
+                          triggerNotification("Profile saved in database successfully!");
+                        } else {
+                          triggerNotification("Failed to save profile in database.", "error");
+                        }
                       }}
                       className="space-y-4 text-left"
                     >

@@ -164,13 +164,41 @@ const extractRawImage = (p) => {
 };
 
 export const getCategoryFallbackImage = (pContext) => {
-  return '';
+  if (!pContext) return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=600&auto=format&fit=crop&q=80';
+
+  const cat = String(pContext.subNavbarCategory || pContext.mainCategory || pContext.category || pContext.tag || '').toLowerCase();
+  const subCat = String(pContext.subcategory || pContext.subSubcategory || '').toLowerCase();
+  const name = String(pContext.name || pContext.title || pContext.jobTitle || '').toLowerCase();
+
+  if (cat.includes('food') || cat.includes('dining') || cat.includes('restaurant') || subCat.includes('snack') || subCat.includes('bakery') || name.includes('chip') || name.includes('snack') || name.includes('biryani') || name.includes('burger') || name.includes('pizza') || name.includes('dosa') || name.includes('idli')) {
+    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('stay') || cat.includes('hotel') || cat.includes('resort') || cat.includes('pg') || name.includes('deluxe') || name.includes('suite') || name.includes('room') || name.includes('villa')) {
+    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('service') || name.includes('repair') || name.includes('cleaning') || name.includes('maintenance') || name.includes('salon') || name.includes('doctor') || name.includes('spa')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('travel') || name.includes('bus') || name.includes('cab') || name.includes('flight') || name.includes('taxi')) {
+    return 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('job') || name.includes('developer') || name.includes('engineer') || name.includes('manager') || name.includes('hiring') || name.includes('senior')) {
+    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('daily') || cat.includes('grocery') || name.includes('rice') || name.includes('milk') || name.includes('egg') || name.includes('fruit') || name.includes('vegetable')) {
+    return 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('mobile') || name.includes('phone') || name.includes('smartphone') || name.includes('laptop') || name.includes('watch') || cat.includes('product') || cat.includes('electronics')) {
+    return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80';
+  }
+
+  return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=600&auto=format&fit=crop&q=80';
 };
 
 export const sanitizeImageUrl = (imgUrl, pContext = null) => {
-  if (!imgUrl || typeof imgUrl !== 'string') return '';
+  if (!imgUrl || typeof imgUrl !== 'string') return getCategoryFallbackImage(pContext);
   let url = imgUrl.trim();
-  if (!url || url === 'null' || url === 'undefined' || url === 'false' || url === 'none') return '';
+  if (!url || url === 'null' || url === 'undefined' || url === 'false' || url === 'none') return getCategoryFallbackImage(pContext);
 
   if (url.startsWith('data:')) {
     return url;
