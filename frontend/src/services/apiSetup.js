@@ -30,7 +30,7 @@ export const getBackendUrl = () => {
     hostname.startsWith('10.') ||
     hostname.startsWith('172.')
   ) {
-    return `http://${hostname || 'localhost'}:8001`;
+    return `http://${hostname || 'localhost'}:8000`;
   }
   
   return 'https://connect-app-7s6g.onrender.com';
@@ -59,7 +59,7 @@ export const getVendorBackendUrl = () => {
     hostname.startsWith('10.') ||
     hostname.startsWith('172.')
   ) {
-    return `http://${hostname || 'localhost'}:8001`;
+    return `http://${hostname || 'localhost'}:8000`;
   }
   
   return 'https://connect-app-7s6g.onrender.com';
@@ -88,7 +88,7 @@ export const getAdminBackendUrl = () => {
     hostname.startsWith('10.') ||
     hostname.startsWith('172.')
   ) {
-    return `http://${hostname || 'localhost'}:5001`;
+    return `http://${hostname || 'localhost'}:8000`;
   }
   
   return 'https://connect-app-7s6g.onrender.com';

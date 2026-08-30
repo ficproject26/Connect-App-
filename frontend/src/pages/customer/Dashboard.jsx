@@ -1675,8 +1675,15 @@ export default function CustomerDashboard({
 
   const loadCustomerOrders = useCallback(async () => {
     try {
+      const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || activeCustomerId || '').trim();
+      const targetEmail = (profileEmail || currentUser?.email || currentUser?.candidateEmail || '').trim().toLowerCase();
+      const targetPhone = (profilePhone || currentUser?.phone || '').replace(/\D/g, '');
+      const targetName = (profileName || currentUser?.name || currentUser?.memberName || '').trim().toLowerCase();
+      const targetFirstName = targetName ? targetName.split(' ')[0] : '';
+
       let apiOrders = [];
-      const res = await apiFetch('/orders');
+      const orderEndpoint = targetId ? `/orders?customerId=${encodeURIComponent(targetId)}` : '/orders';
+      const res = await apiFetch(orderEndpoint);
       if (res) {
         if (Array.isArray(res)) {
           apiOrders = res;
@@ -1709,12 +1716,6 @@ export default function CustomerDashboard({
         return;
       }
 
-      const targetName = (profileName || currentUser?.name || currentUser?.memberName || '').trim().toLowerCase();
-      const targetFirstName = targetName ? targetName.split(' ')[0] : '';
-      const targetEmail = (profileEmail || currentUser?.email || currentUser?.candidateEmail || '').trim().toLowerCase();
-      const targetPhone = (profilePhone || currentUser?.phone || '').replace(/\D/g, '');
-      const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || activeCustomerId || '').trim().toLowerCase();
-
       const seenIds = new Set();
       const filtered = [];
 
@@ -1728,18 +1729,19 @@ export default function CustomerDashboard({
         const cPhone = String(ord.customer_phone || ord.customerPhone || ord.phone || '').replace(/\D/g, '');
         const cId = String(ord.customer_id || ord.customerId || ord.memberId || ord.user_id || '').trim().toLowerCase();
 
-        // Match if customer ID, email, phone, or name matches, OR if order was created locally on this device
-        let isMatch = true;
+        const isLocalDeviceOrder = localOrders.some(lo => lo && (lo.id === ord.id || lo.order_number === ord.order_number || lo._id === ord._id));
+
+        let isMatch = false;
 
         if (targetId || targetEmail || targetPhone || targetName) {
-          const matchId = Boolean(targetId && cId && (targetId === cId || targetId.includes(cId) || cId.includes(targetId)));
+          const matchId = Boolean(targetId && cId && (targetId.toLowerCase() === cId || targetId.toLowerCase().includes(cId) || cId.includes(targetId.toLowerCase())));
           const matchEmail = Boolean(targetEmail && cEmail && (targetEmail === cEmail || cEmail.includes(targetEmail) || targetEmail.includes(cEmail)));
           const matchPhone = Boolean(targetPhone && cPhone && targetPhone.length >= 7 && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone)));
-          const matchName = Boolean(targetName && cName && (cName === targetName || cName.includes(targetName) || targetName.includes(cName) || (targetFirstName && cName.includes(targetFirstName))));
-          const isGenericName = ['customer', 'applicant', 'member', 'connect member', 'guest', ''].includes(cName);
-          const isLocalDeviceOrder = localOrders.some(lo => lo && (lo.id === ord.id || lo.order_number === ord.order_number || lo._id === ord._id));
+          const matchExactName = Boolean(targetName && cName && (cName === targetName || (targetFirstName && cName.includes(targetFirstName))) && !['customer', 'applicant', 'member', 'connect member', 'guest', ''].includes(cName));
 
-          isMatch = matchId || matchEmail || matchPhone || matchName || isGenericName || isLocalDeviceOrder;
+          isMatch = matchId || matchEmail || matchPhone || matchExactName || isLocalDeviceOrder;
+        } else {
+          isMatch = true;
         }
 
         if (isMatch) {
@@ -4255,8 +4257,82 @@ export default function CustomerDashboard({
     return (
       <div className="w-full bg-white dark:bg-slate-900 border-none rounded-3xl p-5 sm:p-7 text-slate-900 dark:text-slate-100 transition-all">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
-          {/* Left Sidebar: SECOND-LEVEL SUBCATEGORIES FOR ACTIVE MAIN CATEGORY */}
-          <div className="w-full md:w-1/5 shrink-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80 pb-4 md:pb-0 pr-0 md:pr-6 text-left">
+          {/* Mobile View: SECOND-LEVEL SUBCATEGORY DROPDOWN & PILLS (Mobile ONLY) */}
+          <div className="block md:hidden w-full border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-2 text-left">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+                MAIN CATEGORIES
+              </span>
+              <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                {subcategoryKeys.length} Categories
+              </span>
+            </div>
+
+            {/* Mobile Dropdown Selector */}
+            <div className="relative w-full mb-3">
+              <select
+                value={activeSubCat}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSidebarActiveCat(val);
+                  setSelectedSubNavbarCategory(val === 'ALL' ? 'All' : val);
+                }}
+                className="w-full appearance-none bg-slate-50 dark:bg-slate-800/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-2xl py-3 pl-4 pr-10 text-xs font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-2xs transition-all cursor-pointer"
+              >
+                <option value="ALL">ALL {currentMainCategory.toUpperCase()} CATEGORIES</option>
+                {subcategoryKeys.map((catKey) => (
+                  <option key={catKey} value={catKey}>
+                    {catKey.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-400 flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              </div>
+            </div>
+
+            {/* Horizontal Pill Bar for 1-Tap Fast Selection */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar -mx-1 px-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarActiveCat('ALL');
+                  setSelectedSubNavbarCategory('All');
+                }}
+                className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
+                  activeSubCat === 'ALL'
+                    ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                ALL
+              </button>
+              {subcategoryKeys.map((catKey) => {
+                const isActive = activeSubCat !== 'ALL' && activeSubCat.trim().toLowerCase() === catKey.trim().toLowerCase();
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => {
+                      setSidebarActiveCat(catKey);
+                      setSelectedSubNavbarCategory(catKey);
+                    }}
+                    className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
+                      isActive
+                        ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {catKey}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop Left Sidebar: SECOND-LEVEL SUBCATEGORIES FOR ACTIVE MAIN CATEGORY (Desktop ONLY) */}
+          <div className="hidden md:block w-1/5 shrink-0 border-r border-slate-100 dark:border-slate-800/80 pr-6 text-left">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3.5 block pl-1 select-none">
               MAIN CATEGORIES
             </span>

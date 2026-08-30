@@ -485,12 +485,6 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
 
 export const apiFetch = async (endpoint, options = {}) => {
   const token = localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('vendor_token') || localStorage.getItem('admin_token');
-  const method = (options.method || 'GET').toUpperCase();
-
-  // If unauthenticated (no token) for protected GET endpoints like /orders, serve from fallback DB directly
-  if (!token && (endpoint === '/orders' || endpoint.startsWith('/orders/')) && method === 'GET') {
-    return await handleFallbackRequest(endpoint, options);
-  }
 
   try {
     const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -505,13 +499,18 @@ export const apiFetch = async (endpoint, options = {}) => {
     });
     
     if (!res.ok) {
-      // If 401 Unauthorized, 404, or any HTTP error occurs, gracefully handle via fallback mock DB
-      return await handleFallbackRequest(endpoint, options);
+      const fallbackRes = await handleFallbackRequest(endpoint, options).catch(() => null);
+      if (fallbackRes && fallbackRes.status === 'success') {
+        return fallbackRes;
+      }
+      const errText = await res.text().catch(() => '');
+      let errData = {};
+      try { errData = JSON.parse(errText); } catch (e) {}
+      return errData.status ? errData : { status: 'error', message: errData.message || `HTTP ${res.status}` };
     }
     
     return await res.json();
   } catch (error) {
-    // Silently fall back to local mock DB when backend is unavailable
-    return await handleFallbackRequest(endpoint, options);
+    return await handleFallbackRequest(endpoint, options).catch(() => ({ status: 'error', message: error.message }));
   }
 };

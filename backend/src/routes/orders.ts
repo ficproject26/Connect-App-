@@ -123,8 +123,9 @@ export async function runAutoAssignment(orderId: string): Promise<DeliveryPartne
 // GET: /api/orders
 router.get('/', async (req: Request, res: Response) => {
   const vendorId = req.query.vendorId as string;
+  const customerId = req.query.customerId as string;
   try {
-    const orders = await db.getOrders(vendorId);
+    const orders = await db.getOrders(vendorId, customerId);
     res.json({
       status: 'success',
       data: orders
@@ -221,11 +222,11 @@ router.post('/create-razorpay-order', async (req: Request, res: Response) => {
 // POST: /api/orders
 router.post('/', async (req: Request, res: Response) => {
   const {
-    vendor_id, customer_name, customer_phone, customer_address,
+    vendor_id, customer_id, customerId, customer_email, customer_name, customer_phone, customer_address,
     product_details, amount, customer_latitude, customer_longitude,
     type, appointmentDate, appointmentTimeSlot, doctorName,
     tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items,
-    experience, candidateEducation
+    experience, candidateEducation, memberId
   } = req.body;
 
   if (!customer_name || !customer_phone || !customer_address || amount === undefined || amount === null) {
@@ -251,15 +252,20 @@ router.post('/', async (req: Request, res: Response) => {
     const prefix = isBookingType ? 'BKG' : isJobType ? 'JOB' : 'ORD';
     const orderId = prefix + Math.floor(1000 + Math.random() * 9000);
     const orderNo = prefix + Math.floor(100000 + Math.random() * 900000);
+    const resolvedCustId = (customer_id || customerId || memberId || req.body.user_id || '').trim();
+    const resolvedEmail = (customer_email || candidateEmail || '').trim();
     
     const newOrder = await db.createOrder({
       id: orderId,
       order_number: orderNo,
       vendor_id: vendor_id || 'v1',
       vendorId: vendor_id || 'v1',
+      customer_id: resolvedCustId,
+      customerId: resolvedCustId,
+      memberId: resolvedCustId,
       customer_name,
       memberName: customer_name,
-      memberId: 'cust_dhanush',
+      customer_email: resolvedEmail,
       customer_phone,
       customer_address,
       customer_latitude: customer_latitude || 12.9400,
@@ -276,7 +282,7 @@ router.post('/', async (req: Request, res: Response) => {
       tableNumber,
       roomNumber,
       prescriptionUrl,
-      candidateEmail,
+      candidateEmail: resolvedEmail || candidateEmail,
       candidateResume,
       experience,
       candidateEducation,

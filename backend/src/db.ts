@@ -44,6 +44,9 @@ export interface Order {
   id: string;
   order_number: string;
   vendor_id: string;
+  customer_id?: string;
+  customerId?: string;
+  customer_email?: string;
   customer_name: string;
   customer_phone: string;
   customer_address: string;
@@ -284,6 +287,9 @@ class DatabaseManager {
       await this.safeCreateIndex('orders', { id: 1 }, { unique: true, sparse: true });
       await this.safeCreateIndex('orders', { order_number: 1 }, { unique: true, sparse: true });
       await this.safeCreateIndex('orders', { vendor_id: 1 });
+      await this.safeCreateIndex('orders', { customer_id: 1 });
+      await this.safeCreateIndex('orders', { memberId: 1 });
+      await this.safeCreateIndex('orders', { type: 1 });
       await this.safeCreateIndex('orders', { status: 1 });
       await this.safeCreateIndex('orders', { createdAt: -1 });
 
@@ -455,17 +461,37 @@ class DatabaseManager {
   }
 
   // 3. Orders Repo
-  public async getOrders(vendorId?: string): Promise<Order[]> {
+  public async getOrders(vendorId?: string, customerId?: string): Promise<Order[]> {
     if (this.mongoDb) {
-      const query = vendorId ? { vendor_id: vendorId } : {};
+      const query: any = {};
+      if (vendorId) query.vendor_id = vendorId;
+      if (customerId) {
+        const cleanCustId = String(customerId).trim();
+        query.$or = [
+          { customer_id: cleanCustId },
+          { customerId: cleanCustId },
+          { memberId: cleanCustId },
+          { customer_email: cleanCustId.toLowerCase() },
+          { candidateEmail: cleanCustId.toLowerCase() }
+        ];
+      }
       return this.mongoDb.collection<Order>('orders')
         .find(query, { projection: { _id: 0 } })
         .sort({ created_at: -1 })
         .toArray();
     }
-    return vendorId 
-      ? this.memoryDb.orders.filter(o => o.vendor_id === vendorId).sort((a,b) => b.id.localeCompare(a.id)) 
-      : this.memoryDb.orders.sort((a,b) => b.id.localeCompare(a.id));
+    let res = this.memoryDb.orders;
+    if (vendorId) res = res.filter(o => o.vendor_id === vendorId);
+    if (customerId) {
+      const cleanCustId = String(customerId).trim().toLowerCase();
+      res = res.filter(o => 
+        String((o as any).customer_id || '').toLowerCase() === cleanCustId ||
+        String((o as any).customerId || '').toLowerCase() === cleanCustId ||
+        String(o.memberId || '').toLowerCase() === cleanCustId ||
+        String(o.candidateEmail || '').toLowerCase() === cleanCustId
+      );
+    }
+    return res.sort((a,b) => b.id.localeCompare(a.id));
   }
 
   public async getOrder(id: string): Promise<Order | null> {

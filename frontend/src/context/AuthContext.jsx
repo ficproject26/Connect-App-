@@ -57,6 +57,10 @@ export function AuthProvider({ children }) {
             isRegistrationAddress: true
           }];
         }
+        const tokenToSave = u.token || `token_${u.customerId || Date.now()}`;
+        if (!localStorage.getItem('connect_token')) {
+          localStorage.setItem('connect_token', tokenToSave);
+        }
         localStorage.setItem('connect_current_user', JSON.stringify(u));
         return u;
       } catch (err) {
@@ -110,6 +114,12 @@ export function AuthProvider({ children }) {
           isRegistrationAddress: true
         }] : []);
 
+    const custId = (inputUser.customerId && inputUser.customerId !== 'FIC-CUST-750684' && inputUser.customerId !== 'FIC-CUST-849201')
+      ? inputUser.customerId 
+      : getOrGenerateCustomerId(inputUser.email || validMobile || finalName);
+
+    const userToken = inputUser.token || `token_${custId}`;
+
     const finalUser = {
       ...inputUser,
       name: finalName,
@@ -120,20 +130,21 @@ export function AuthProvider({ children }) {
       pincode: inputUser.pincode || '',
       state: inputUser.state || '',
       role: role || inputUser.role || 'customer',
-      customerId: (inputUser.customerId && inputUser.customerId !== 'FIC-CUST-750684' && inputUser.customerId !== 'FIC-CUST-849201')
-        ? inputUser.customerId 
-        : getOrGenerateCustomerId(inputUser.email || validMobile || finalName),
+      customerId: custId,
+      token: userToken,
       addresses: initialAddresses
     };
 
     setCurrentUser(finalUser);
     localStorage.setItem('connect_current_user', JSON.stringify(finalUser));
+    localStorage.setItem('connect_token', userToken);
     if (callback) callback(finalUser);
   };
 
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('connect_current_user');
+    localStorage.removeItem('connect_token');
   };
 
   const register = (formData, role, callback) => {
@@ -158,6 +169,9 @@ export function AuthProvider({ children }) {
       isRegistrationAddress: true
     }] : [];
 
+    const custId = getOrGenerateCustomerId(formData.email || formData.phone || displayName);
+    const userToken = formData.token || `token_${custId}`;
+
     const user = {
       name: displayName || 'Connect Member',
       email: formData.email,
@@ -169,12 +183,14 @@ export function AuthProvider({ children }) {
       aadhaar: formData.aadhaarNumber || '',
       pan: formData.panNumber || '',
       role: role || 'customer',
-      customerId: getOrGenerateCustomerId(formData.email || formData.phone || displayName),
+      customerId: custId,
+      token: userToken,
       addresses: initialAddresses
     };
 
     setCurrentUser(user);
     localStorage.setItem('connect_current_user', JSON.stringify(user));
+    localStorage.setItem('connect_token', userToken);
     if (callback) callback(user);
   };
 

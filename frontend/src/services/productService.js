@@ -325,8 +325,8 @@ export const productService = {
         const endpoints = [
           baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
           baseUrl ? `${baseUrl}/api/public/products` : null,
-          'https://connect-app-7s6g.onrender.com/api/public/products',
-          '/api/public/products'
+          '/api/public/products',
+          'https://connect-app-7s6g.onrender.com/api/public/products'
         ];
         const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
 
@@ -334,7 +334,7 @@ export const productService = {
           return new Promise(async (resolve, reject) => {
             try {
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 8000);
+              const timeoutId = setTimeout(() => controller.abort(), 3000);
 
               const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
                 signal: controller.signal,

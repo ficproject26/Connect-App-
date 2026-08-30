@@ -1,18 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, ShoppingBag, CheckCircle2, Clock, XCircle, 
   CreditCard, FileText, Download, LifeBuoy, ArrowRight 
 } from 'lucide-react';
 import ResponsiveTable from '../../components/common/ResponsiveTable';
+import { apiFetch } from '../../services/api';
 
 export default function OrdersBookingsView({ orders = [], onOpenSupportModal }) {
   const [activeTab, setActiveTab] = useState('orders'); // orders | bookings | payments
+  const [liveOrders, setLiveOrders] = useState(orders);
 
-  const mockOrders = orders.length > 0 ? orders : [
-    { id: '1', order_number: 'ORD-99128', date: '2026-08-04', items: 'AC Doorstep Maintenance', amount: 1499, status: 'Completed', type: 'Service' },
-    { id: '2', order_number: 'ORD-99129', date: '2026-08-03', items: 'Kanjeevaram Silk Saree', amount: 8999, status: 'Processing', type: 'Product' },
-    { id: '3', order_number: 'ORD-99130', date: '2026-08-01', items: 'Hotel Shubha Sai Deluxe Suite', amount: 4500, status: 'Completed', type: 'Stay' },
-  ];
+  useEffect(() => {
+    if (orders && orders.length > 0) {
+      setLiveOrders(orders);
+    } else {
+      apiFetch('/orders').then(res => {
+        const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : (res?.data?.orders || res?.orders || []));
+        setLiveOrders(list);
+      }).catch(() => {});
+    }
+  }, [orders]);
+
+  const displayOrders = liveOrders;
 
   const columns = [
     {
@@ -92,7 +101,7 @@ export default function OrdersBookingsView({ orders = [], onOpenSupportModal }) 
 
       <ResponsiveTable
         columns={columns}
-        data={mockOrders}
+        data={displayOrders}
       />
 
     </div>
