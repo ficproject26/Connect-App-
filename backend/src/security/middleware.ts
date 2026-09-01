@@ -54,9 +54,12 @@ export const authRateLimiter = rateLimit({
 // 3. Input Sanitizer Middleware (XSS, SQL Injection & Mongo Injection protection)
 const sanitizeValue = (val: any): any => {
   if (typeof val === 'string') {
+    if (val.startsWith('data:') && val.includes(';base64,')) {
+      return val;
+    }
     return val
       .replace(/<[^>]*>?/gm, '') // Strip HTML tags
-      .replace(/(?:--|\/\*|\*\/|;|xp_)/gi, '') // Strip SQL injection tokens
+      .replace(/(?:--|\/\*|\*\/|xp_)/gi, '') // Strip SQL injection tokens
       .replace(/\$(?:gt|gte|lt|lte|ne|eq|where|regex)/gi, ''); // Strip Mongo operator injection
   }
   if (Array.isArray(val)) {

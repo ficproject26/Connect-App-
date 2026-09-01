@@ -27,6 +27,43 @@ const getUserStorageKey = (user) => {
   return idStr || 'default';
 };
 
+const compressImageFile = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(e.target?.result || '');
+      img.src = e.target?.result;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+};
+
 const LiveClock = React.memo(({ prefix = '' }) => {
   const [time, setTime] = useState(() => new Date());
   useEffect(() => {
@@ -10873,10 +10910,10 @@ wishlistProducts.forEach(item => addToCart(item));
                               body: JSON.stringify({
                                 userId: currentUser?.id || userTarget,
                                 customerId: currentUser?.customerId || activeCustomerId,
-                                email: currentUser?.email || profileEmail,
-                                phone: currentUser?.phone || profilePhone,
-                                name: profileName,
-                                avatar: profilePhoto,
+                                email: profileEmail || currentUser?.email,
+                                phone: profilePhone || currentUser?.phone,
+                                name: profileName || currentUser?.name,
+                                avatar: profilePhoto !== undefined ? profilePhoto : currentUser?.avatar,
                                 password: profilePassword || undefined
                               })
                             });
@@ -10946,37 +10983,37 @@ wishlistProducts.forEach(item => addToCart(item));
                                   type="file" 
                                   accept="image/*" 
                                   className="hidden" 
-                                  onChange={(e) => {
+                                  onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        const base64 = reader.result;
-                                        setProfilePhoto(base64);
+                                      const compressedBase64 = await compressImageFile(file);
+                                      if (!compressedBase64) {
+                                        triggerNotification("Failed to process image file.", "error");
+                                        return;
+                                      }
+                                      setProfilePhoto(compressedBase64);
 
-                                        const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
-                                        if (userTarget) {
-                                          const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
-                                          const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
-                                          const endpoints = [
-                                            adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
-                                            baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
-                                            `/api/auth/customer-profile`
-                                          ].filter(Boolean);
+                                      const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+                                      if (userTarget) {
+                                        const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+                                        const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+                                        const endpoints = [
+                                          adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+                                          baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+                                          `/api/auth/customer-profile`
+                                        ].filter(Boolean);
 
-                                          for (const url of [...new Set(endpoints)]) {
-                                            fetch(url, {
-                                              method: 'PUT',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({ userId: userTarget, avatar: base64 })
-                                            }).catch(() => {});
-                                          }
+                                        for (const url of [...new Set(endpoints)]) {
+                                          fetch(url, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ userId: userTarget, avatar: compressedBase64 })
+                                          }).catch(() => {});
                                         }
+                                      }
 
-                                        login({ ...currentUser, avatar: base64, photo: base64 }, 'customer');
-                                        triggerNotification("Profile photo uploaded & saved in DB!");
-                                      };
-                                      reader.readAsDataURL(file);
+                                      login({ ...currentUser, avatar: compressedBase64, photo: compressedBase64 }, 'customer');
+                                      triggerNotification("Profile photo uploaded & saved in DB!");
                                     }
                                   }}
                                 />
