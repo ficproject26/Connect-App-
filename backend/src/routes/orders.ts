@@ -226,7 +226,7 @@ router.post('/', async (req: Request, res: Response) => {
     product_details, amount, customer_latitude, customer_longitude,
     type, appointmentDate, appointmentTimeSlot, doctorName,
     tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items,
-    experience, candidateEducation, memberId
+    experience, candidateEducation, memberId, boardingPoint, droppingPoint
   } = req.body;
 
   if (!customer_name || !customer_phone || !customer_address || amount === undefined || amount === null) {

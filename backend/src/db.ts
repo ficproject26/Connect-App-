@@ -85,6 +85,11 @@ export interface Order {
   candidateResume?: string;
   experience?: string;
   candidateEducation?: string;
+  boardingPoint?: string;
+  droppingPoint?: string;
+  adults?: number;
+  children?: number;
+  guestDetails?: any[];
   items?: any[];
   vendorId?: string;
   memberId?: string;
