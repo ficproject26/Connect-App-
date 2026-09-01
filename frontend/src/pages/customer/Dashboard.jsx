@@ -2035,19 +2035,31 @@ export default function CustomerDashboard({
       const custEmailTarget = applicantEmail || profileEmail || currentUser?.email || '';
       const custPhoneTarget = profilePhone || currentUser?.phone || '';
 
+      const generatedAppId = 'APP-' + new Date().getFullYear() + '-' + String(Math.floor(100000 + Math.random() * 900000));
+
       const res = await apiFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
+          id: generatedAppId,
+          order_number: generatedAppId,
+          applicationId: generatedAppId,
+          jobId: jobId,
+          jobTitle: jobTitle,
+          status: 'APPLICATION RECEIVED',
           vendor_id: vendorId,
+          vendorId: vendorId,
           customer_id: custIdTarget,
           customerId: custIdTarget,
           user_id: custIdTarget,
           memberId: custIdTarget,
           customer_name: applicantName || currentUser?.name || 'Applicant',
+          candidateName: applicantName || currentUser?.name || 'Applicant',
           customer_email: custEmailTarget,
           candidateEmail: custEmailTarget,
           customer_phone: custPhoneTarget || '+91 98765 43210',
+          candidatePhone: custPhoneTarget || '+91 98765 43210',
           customer_address: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
+          jobLocation: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
           customer_latitude: 12.9498,
           customer_longitude: 77.6289,
           product_details: jobTitle,
@@ -2061,6 +2073,7 @@ export default function CustomerDashboard({
           candidateResume: applicantResume || (resumeFile ? resumeFile.name : 'Dhanush_Resume.pdf'),
           experience: applicantExperience || 'Fresher',
           candidateEducation: 'Graduate',
+          applicationDate: new Date().toISOString(),
           type: 'Job'
         })
       });

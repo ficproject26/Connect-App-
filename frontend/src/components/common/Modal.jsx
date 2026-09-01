@@ -75,13 +75,24 @@ export default function JobsModal({ isOpen, onClose }) {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const generatedAppId = 'APP-' + new Date().getFullYear() + '-' + String(Math.floor(100000 + Math.random() * 900000));
       const res = await apiFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
+          id: generatedAppId,
+          order_number: generatedAppId,
+          applicationId: generatedAppId,
+          jobId: selectedJob?.id || appliedJobId || 'CAT-FSD-2026-1024',
+          jobTitle: selectedJob?.title || 'Job Application',
+          status: 'APPLICATION RECEIVED',
           vendor_id: selectedJob?.vendorId || '3w8hhon38mqg7ni0u',
+          vendorId: selectedJob?.vendorId || '3w8hhon38mqg7ni0u',
           customer_name: applicantName || 'Applicant',
+          candidateName: applicantName || 'Applicant',
           customer_phone: '+91 98765 43210',
+          candidatePhone: '+91 98765 43210',
           customer_address: 'Koramangala, Bangalore',
+          jobLocation: 'Koramangala, Bangalore',
           customer_latitude: 12.9498,
           customer_longitude: 77.6289,
           product_details: selectedJob?.title || 'Job Application',
@@ -94,6 +105,9 @@ export default function JobsModal({ isOpen, onClose }) {
           }],
           candidateEmail: applicantEmail,
           candidateResume: applicantResume || 'Resume_Document.pdf',
+          experience: 'Fresher',
+          candidateEducation: 'Graduate',
+          applicationDate: new Date().toISOString(),
           type: 'Job'
         })
       });
