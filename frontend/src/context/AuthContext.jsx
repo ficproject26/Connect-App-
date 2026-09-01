@@ -8,8 +8,11 @@ export const getOrGenerateCustomerId = (userOrId) => {
   }
   let target = '';
   if (typeof userOrId === 'object' && userOrId !== null) {
-    if (userOrId.customerId && userOrId.customerId !== 'FIC-CUST-750684' && userOrId.customerId !== 'FIC-CUST-849201') {
+    if (userOrId.customerId && userOrId.customerId !== 'FIC-CUST-750684' && userOrId.customerId !== 'FIC-CUST-849201' && userOrId.customerId !== 'FIC-CUST-100000') {
       return userOrId.customerId;
+    }
+    if (userOrId.registrationId && userOrId.registrationId !== 'FIC-CUST-750684' && userOrId.registrationId !== 'FIC-CUST-849201' && userOrId.registrationId !== 'FIC-CUST-100000') {
+      return userOrId.registrationId;
     }
     target = userOrId.email || userOrId.phone || userOrId.name || userOrId.id || '';
   } else {
@@ -31,13 +34,42 @@ export const getOrGenerateCustomerId = (userOrId) => {
   return `FIC-CUST-${num}`;
 };
 
+export const normalizeAddressStr = (addr) => {
+  if (!addr) return '';
+  if (typeof addr === 'string') return addr.trim().toLowerCase().replace(/\s+/g, ' ');
+  const parts = [
+    addr.address || '',
+    addr.locality || '',
+    addr.city || '',
+    addr.state || '',
+    addr.pincode || ''
+  ];
+  return parts.map(p => String(p).trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean).join(', ');
+};
+
+export const deduplicateAddresses = (addrList) => {
+  if (!Array.isArray(addrList)) return [];
+  const seen = new Set();
+  const result = [];
+  for (const item of addrList) {
+    if (!item) continue;
+    const key = normalizeAddressStr(item);
+    if (!key) continue;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
+    }
+  }
+  return result;
+};
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('connect_current_user');
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        if (!u.customerId || u.customerId === 'FIC-CUST-750684' || u.customerId === 'FIC-CUST-849201') {
+        if (!u.customerId || u.customerId === 'FIC-CUST-750684' || u.customerId === 'FIC-CUST-849201' || u.customerId === 'FIC-CUST-100000') {
           u.customerId = getOrGenerateCustomerId(u);
         }
         const regAddressStr = u.address || u.registeredAddress || '';
@@ -57,6 +89,7 @@ export function AuthProvider({ children }) {
             isRegistrationAddress: true
           }];
         }
+        u.addresses = deduplicateAddresses(u.addresses || []);
         const tokenToSave = u.token || `token_${u.customerId || Date.now()}`;
         if (!localStorage.getItem('connect_token')) {
           localStorage.setItem('connect_token', tokenToSave);
@@ -120,6 +153,8 @@ export function AuthProvider({ children }) {
 
     const userToken = inputUser.token || `token_${custId}`;
 
+    const finalAddresses = deduplicateAddresses(initialAddresses);
+
     const finalUser = {
       ...inputUser,
       name: finalName,
@@ -134,7 +169,7 @@ export function AuthProvider({ children }) {
       role: role || inputUser.role || 'customer',
       customerId: custId,
       token: userToken,
-      addresses: initialAddresses
+      addresses: finalAddresses
     };
 
     setCurrentUser(finalUser);

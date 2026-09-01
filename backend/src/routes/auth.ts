@@ -7,6 +7,66 @@ import { authRateLimiter, authenticateToken, AuthenticatedRequest } from '../sec
 
 const router = Router();
 
+const normalizeAddressStr = (addr: any): string => {
+  if (!addr) return '';
+  if (typeof addr === 'string') return addr.trim().toLowerCase().replace(/\s+/g, ' ');
+  const parts = [
+    addr.address || '',
+    addr.locality || '',
+    addr.city || '',
+    addr.state || '',
+    addr.pincode || ''
+  ];
+  return parts.map(p => String(p).trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean).join(', ');
+};
+
+const deduplicateAddresses = (addrList: any[]): any[] => {
+  if (!Array.isArray(addrList)) return [];
+  const seen = new Set<string>();
+  const result: any[] = [];
+  for (const item of addrList) {
+    if (!item) continue;
+    const key = normalizeAddressStr(item);
+    if (!key) continue;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
+    }
+  }
+  return result;
+};
+
+const getOrGenerateCustomerId = (userOrId: any): string => {
+  if (!userOrId) {
+    return `FIC-CUST-100000`;
+  }
+  let target = '';
+  if (typeof userOrId === 'object' && userOrId !== null) {
+    if (userOrId.customerId && userOrId.customerId !== 'FIC-CUST-750684' && userOrId.customerId !== 'FIC-CUST-849201' && userOrId.customerId !== 'FIC-CUST-100000') {
+      return userOrId.customerId;
+    }
+    if (userOrId.registrationId && userOrId.registrationId !== 'FIC-CUST-750684' && userOrId.registrationId !== 'FIC-CUST-849201' && userOrId.registrationId !== 'FIC-CUST-100000') {
+      return userOrId.registrationId;
+    }
+    target = userOrId.email || userOrId.phone || userOrId.name || userOrId.id || '';
+  } else {
+    target = String(userOrId).trim();
+  }
+
+  const clean = target.trim().toLowerCase();
+  if (!clean) {
+    return `FIC-CUST-100000`;
+  }
+
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) {
+    hash = ((hash << 5) - hash) + clean.charCodeAt(i);
+    hash |= 0;
+  }
+  const num = Math.abs(hash % 900000) + 100000;
+  return `FIC-CUST-${num}`;
+};
+
 const buildCustomerMongoFilter = (input: any): any => {
   if (!input) return { _id: null };
   const rawTargets: string[] = [];
@@ -732,29 +792,7 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
     }
 
     if (!dbUser) {
-      let fallbackName = 'Connect Member';
-      if (target.includes('@')) {
-        const prefix = target.split('@')[0];
-        if (prefix && !/^\d+$/.test(prefix)) {
-          fallbackName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-        }
-      }
-      const defaultProfile = {
-        id: target,
-        name: fallbackName,
-        email: target.includes('@') ? target : '',
-        phone: target.replace(/\D/g, '').length >= 10 ? target.replace(/\D/g, '').slice(-10) : '',
-        avatar: '',
-        photo: '',
-        address: '',
-        city: '',
-        pincode: '',
-        state: '',
-        role: 'customer',
-        customerId: target.startsWith('FIC-') ? target : `FIC-CUST-100000`,
-        addresses: []
-      };
-      return res.json({ status: 'success', user: defaultProfile });
+      return res.status(404).json({ status: 'error', message: 'Customer record not found' });
     }
 
     const { password: _, ...safeProfile } = dbUser;
@@ -764,9 +802,9 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
       safeProfile.phone = '';
     }
     
-    let profileAddresses: any[] = Array.isArray(safeProfile.addresses) ? safeProfile.addresses : [];
+    let rawAddresses: any[] = Array.isArray(safeProfile.addresses) ? safeProfile.addresses : [];
 
-    if (profileAddresses.length === 0) {
+    if (rawAddresses.length === 0) {
       const regAddressStr = safeProfile.address || safeProfile.registeredAddress || safeProfile.fullAddress || '';
       if (regAddressStr && regAddressStr.trim()) {
         const regAddrObj = {
@@ -783,12 +821,15 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
           type: 'Home',
           isRegistrationAddress: true
         };
-        profileAddresses = [regAddrObj];
+        rawAddresses = [regAddrObj];
 
-        await mongoDb.collection('users').updateOne(filter, { $set: { addresses: profileAddresses } }).catch(() => {});
-        await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: profileAddresses } }).catch(() => {});
+        await mongoDb.collection('users').updateOne(filter, { $set: { addresses: rawAddresses } }).catch(() => {});
+        await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: rawAddresses } }).catch(() => {});
       }
     }
+
+    const profileAddresses = deduplicateAddresses(rawAddresses);
+    const resolvedCustId = safeProfile.registrationId || safeProfile.customerId || getOrGenerateCustomerId(safeProfile);
 
     return res.json({
       status: 'success',
@@ -804,7 +845,8 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         pincode: safeProfile.pincode || '',
         state: safeProfile.state || '',
         role: safeProfile.role || 'customer',
-        customerId: safeProfile.registrationId || safeProfile.customerId || `FIC-CUST-100000`,
+        customerId: resolvedCustId,
+        registrationId: resolvedCustId,
         addresses: profileAddresses
       }
     });
@@ -876,6 +918,7 @@ router.put('/customer-profile', async (req: Request, res: Response) => {
     }
 
     const { password: _, ...safeUser } = (updatedUser || {}) as any;
+    const resolvedCustId = safeUser.registrationId || safeUser.customerId || getOrGenerateCustomerId(safeUser);
     const finalProfile = {
       id: safeUser.id || safeUser._id?.toString(),
       name: safeUser.name || 'Connect Member',
@@ -888,8 +931,9 @@ router.put('/customer-profile', async (req: Request, res: Response) => {
       pincode: safeUser.pincode || '',
       state: safeUser.state || '',
       role: safeUser.role || 'customer',
-      customerId: safeUser.registrationId || safeUser.customerId || `FIC-CUST-100000`,
-      addresses: Array.isArray(safeUser.addresses) ? safeUser.addresses : []
+      customerId: resolvedCustId,
+      registrationId: resolvedCustId,
+      addresses: deduplicateAddresses(Array.isArray(safeUser.addresses) ? safeUser.addresses : [])
     };
 
     return res.json({ status: 'success', message: 'Profile updated successfully', user: finalProfile, data: finalProfile });
@@ -924,17 +968,19 @@ router.post('/customer-address', async (req: Request, res: Response) => {
     }
 
     const existingAddresses: any[] = Array.isArray(user.addresses) ? user.addresses : [];
-    let updatedAddresses: any[];
+    let rawUpdated: any[];
 
     if (address.id) {
-      updatedAddresses = existingAddresses.map(a => a.id === address.id ? { ...a, ...address } : a);
+      rawUpdated = existingAddresses.map(a => a.id === address.id ? { ...a, ...address } : a);
     } else {
       const newAddr = {
         ...address,
         id: 'addr_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
       };
-      updatedAddresses = [...existingAddresses, newAddr];
+      rawUpdated = [...existingAddresses, newAddr];
     }
+
+    const updatedAddresses = deduplicateAddresses(rawUpdated);
 
     await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
     await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});

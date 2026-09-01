@@ -19,7 +19,7 @@ import AdminDashboardView from '../dashboards/AdminDashboardView';
 import OrdersBookingsView from '../dashboards/OrdersBookingsView';
 import ProfileView from '../dashboards/ProfileView';
 import { sanitizeMobileInput } from '../../utils/validation';
-import { getOrGenerateCustomerId } from '../../context/AuthContext';
+import { getOrGenerateCustomerId, deduplicateAddresses } from '../../context/AuthContext';
 
 const getUserStorageKey = (user) => {
   if (!user) return 'default';
@@ -1181,16 +1181,18 @@ export default function CustomerDashboard({
             if (dbUser.email) setProfileEmail(dbUser.email);
             if (dbUser.phone) setProfilePhone(dbUser.phone);
             if (dbUser.avatar || dbUser.photo) setProfilePhoto(dbUser.avatar || dbUser.photo);
-            if (Array.isArray(dbUser.addresses)) setAddresses(dbUser.addresses);
+            if (Array.isArray(dbUser.addresses)) setAddresses(deduplicateAddresses(dbUser.addresses));
 
             login({
               ...currentUser,
               id: dbUser.id || currentUser?.id,
-              customerId: dbUser.customerId || currentUser?.customerId,
+              customerId: dbUser.customerId || currentUser?.customerId || activeCustomerId,
               name: dbUser.name || currentUser?.name,
               email: dbUser.email || currentUser?.email,
               phone: dbUser.phone || currentUser?.phone,
               avatar: dbUser.avatar || dbUser.photo || currentUser?.avatar,
+              photo: dbUser.avatar || dbUser.photo || currentUser?.photo,
+              addresses: deduplicateAddresses(dbUser.addresses || currentUser?.addresses || []),
               role: 'customer'
             }, 'customer');
             return;
@@ -1198,7 +1200,7 @@ export default function CustomerDashboard({
         }
       } catch (err) {}
     }
-  }, [currentUser, activeCustomerId]);
+  }, [currentUser, activeCustomerId, login]);
 
   useEffect(() => {
     loadCustomerProfileFromDb();
@@ -1225,11 +1227,11 @@ export default function CustomerDashboard({
 
   const [addresses, setAddresses] = useState(() => {
     if (currentUser?.addresses && Array.isArray(currentUser.addresses) && currentUser.addresses.length > 0) {
-      return currentUser.addresses;
+      return deduplicateAddresses(currentUser.addresses);
     }
     const regAddrStr = currentUser?.address || currentUser?.registeredAddress || '';
     if (regAddrStr.trim()) {
-      return [{
+      return deduplicateAddresses([{
         id: 'addr_reg_' + (currentUser?.id || 'reg'),
         name: currentUser?.name || 'Connect Member',
         phone: (currentUser?.phone || '').replace('+91', '').trim(),
@@ -1242,7 +1244,7 @@ export default function CustomerDashboard({
         altPhone: '',
         type: 'Home',
         isRegistrationAddress: true
-      }];
+      }]);
     }
     return [];
   });
@@ -2450,7 +2452,7 @@ export default function CustomerDashboard({
           if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.addresses)) {
-              setAddresses(data.addresses);
+              setAddresses(deduplicateAddresses(data.addresses));
               break;
             }
           }
@@ -2458,7 +2460,7 @@ export default function CustomerDashboard({
       }
     }
 
-    setAddresses(prev => [newAddress, ...prev.filter(a => a.id !== newAddress.id)]);
+    setAddresses(prev => deduplicateAddresses([newAddress, ...prev.filter(a => a.id !== newAddress.id)]));
     setSelectedCheckoutAddressId(newAddress.id);
     setIsAddingAddress(false);
     triggerNotification("Address saved in database & selected for delivery!");
@@ -2466,7 +2468,7 @@ export default function CustomerDashboard({
   };
 
   const handleDeleteAddress = async (id) => {
-    setAddresses(prev => prev.filter(addr => addr.id !== id));
+    setAddresses(prev => deduplicateAddresses(prev.filter(addr => addr.id !== id)));
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (userTarget) {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
@@ -2483,7 +2485,7 @@ export default function CustomerDashboard({
           if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.addresses)) {
-              setAddresses(data.addresses);
+              setAddresses(deduplicateAddresses(data.addresses));
               break;
             }
           }
