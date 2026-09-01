@@ -19,7 +19,7 @@ import AdminDashboardView from '../dashboards/AdminDashboardView';
 import OrdersBookingsView from '../dashboards/OrdersBookingsView';
 import ProfileView from '../dashboards/ProfileView';
 import { sanitizeMobileInput } from '../../utils/validation';
-import { getOrGenerateCustomerId, deduplicateAddresses } from '../../context/AuthContext';
+import { AuthContext, getOrGenerateCustomerId, deduplicateAddresses } from '../../context/AuthContext';
 
 const getUserStorageKey = (user) => {
   if (!user) return 'default';
@@ -765,9 +765,13 @@ export default function CustomerDashboard({
   isLandingPage = false,
   hideProfile = false,
   onAuthClick,
-  onNavigateToJoinNow,
-  initialLoginModalOpen = false
 }) {
+  const authContext = React.useContext(AuthContext);
+  const login = authContext?.login || ((userObj) => {
+    try {
+      localStorage.setItem('connect_current_user', JSON.stringify(userObj));
+    } catch (e) {}
+  });
   const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(initialLoginModalOpen || false);
 
