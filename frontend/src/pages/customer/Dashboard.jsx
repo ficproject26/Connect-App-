@@ -3231,8 +3231,39 @@ export default function CustomerDashboard({
 
       let matchesSubNavbar = true;
       if (selectedSubNavbarCategory && !isMainCategoryTabName(selectedSubNavbarCategory)) {
-        const targetSub = selectedSubNavbarCategory.toLowerCase().trim();
+        const targetSub = String(selectedSubNavbarCategory).toLowerCase().trim();
         const targetSingular = targetSub.endsWith('s') && targetSub.length > 3 ? targetSub.slice(0, -1) : targetSub;
+
+        const matchingDbCats = (dbCategories || []).filter(c => {
+          if (!c) return false;
+          const cId = (c._id || c.id || '').toString().toLowerCase();
+          const cName = (c.name || '').toLowerCase().trim();
+          const cSub = (c.subcategory || '').toLowerCase().trim();
+          const cChild = (c.subSubcategory || '').toLowerCase().trim();
+          return cId === targetSub || cName === targetSub || cSub === targetSub || cChild === targetSub;
+        });
+
+        const matchingDbIds = new Set();
+        matchingDbCats.forEach(c => {
+          if (c._id) matchingDbIds.add(c._id.toString().toLowerCase());
+          if (c.id) matchingDbIds.add(c.id.toString().toLowerCase());
+          if (c.mainCategoryId) matchingDbIds.add(c.mainCategoryId.toString().toLowerCase());
+          if (c.subCategoryId) matchingDbIds.add(c.subCategoryId.toString().toLowerCase());
+          if (c.childCategoryId) matchingDbIds.add(c.childCategoryId.toString().toLowerCase());
+        });
+
+        const pMainId = String(product.mainCategoryId || product.mainCategory_id || product.categoryId || '').toLowerCase().trim();
+        const pSubId = String(product.subCategoryId || product.subCategory_id || product.subcategoryId || '').toLowerCase().trim();
+        const pChildId = String(product.childCategoryId || product.childCategory_id || product.subSubcategoryId || '').toLowerCase().trim();
+
+        const matchesById = (
+          (pMainId && matchingDbIds.has(pMainId)) ||
+          (pSubId && matchingDbIds.has(pSubId)) ||
+          (pChildId && matchingDbIds.has(pChildId)) ||
+          (product._id && matchingDbIds.has(String(product._id).toLowerCase())) ||
+          (product.categoryId && matchingDbIds.has(String(product.categoryId).toLowerCase()))
+        );
+
         const pSubNav = (product.subNavbarCategory || '').toLowerCase().trim();
         const pMain = (product.mainCategory || '').toLowerCase().trim();
         const pCat = (product.category || '').toLowerCase().trim();
@@ -3241,7 +3272,7 @@ export default function CustomerDashboard({
         const pTag = (product.tag || '').toLowerCase().trim();
         const pName = (product.name || '').toLowerCase().trim();
 
-        matchesSubNavbar = 
+        const matchesByName = 
           pSubNav === targetSub || pSubNav === targetSingular ||
           pMain === targetSub || pMain === targetSingular ||
           pCat === targetSub || pCat === targetSingular ||
@@ -3255,6 +3286,8 @@ export default function CustomerDashboard({
           pSubSubCat.includes(targetSub) || pSubSubCat.includes(targetSingular) ||
           pTag.includes(targetSub) || pTag.includes(targetSingular) ||
           pName.includes(targetSub) || pName.includes(targetSingular);
+
+        matchesSubNavbar = matchesById || matchesByName;
       }
 
       const isHomeTab = !activeTab || activeTab === 'Home' || selectedSubNavbarCategory === 'Home' || selectedSubNavbarCategory === 'All';
@@ -4262,8 +4295,13 @@ export default function CustomerDashboard({
                 value={activeSubCat}
                 onChange={(e) => {
                   const val = e.target.value;
+                  const targetMain = currentMainCategory;
+                  setActiveTab(targetMain);
                   setSidebarActiveCat(val);
-                  setSelectedSubNavbarCategory(val === 'ALL' ? 'All' : val);
+                  setSelectedSubNavbarCategory(val === 'ALL' ? targetMain : val);
+                  setSelectedCategories(val === 'ALL' ? [] : [val]);
+                  setSearchQuery('');
+                  setHoveredLink(null);
                 }}
                 className="w-full appearance-none bg-slate-50 dark:bg-slate-800/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-2xl py-3 pl-4 pr-10 text-xs font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-2xs transition-all cursor-pointer"
               >
@@ -4285,8 +4323,13 @@ export default function CustomerDashboard({
               <button
                 type="button"
                 onClick={() => {
+                  const targetMain = currentMainCategory;
+                  setActiveTab(targetMain);
                   setSidebarActiveCat('ALL');
-                  setSelectedSubNavbarCategory('All');
+                  setSelectedSubNavbarCategory(targetMain);
+                  setSelectedCategories([]);
+                  setSearchQuery('');
+                  setHoveredLink(null);
                 }}
                 className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
                   activeSubCat === 'ALL'
@@ -4303,8 +4346,13 @@ export default function CustomerDashboard({
                     key={catKey}
                     type="button"
                     onClick={() => {
+                      const targetMain = currentMainCategory;
+                      setActiveTab(targetMain);
                       setSidebarActiveCat(catKey);
                       setSelectedSubNavbarCategory(catKey);
+                      setSelectedCategories([catKey]);
+                      setSearchQuery('');
+                      setHoveredLink(null);
                     }}
                     className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
                       isActive
@@ -4329,8 +4377,13 @@ export default function CustomerDashboard({
               <button
                 type="button"
                 onClick={() => {
+                  const targetMain = currentMainCategory;
+                  setActiveTab(targetMain);
                   setSidebarActiveCat('ALL');
-                  setSelectedSubNavbarCategory('All');
+                  setSelectedSubNavbarCategory(targetMain);
+                  setSelectedCategories([]);
+                  setSearchQuery('');
+                  setHoveredLink(null);
                 }}
                 className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
                   activeSubCat === 'ALL'
@@ -4350,8 +4403,13 @@ export default function CustomerDashboard({
                     key={catKey}
                     type="button"
                     onClick={() => {
+                      const targetMain = currentMainCategory;
+                      setActiveTab(targetMain);
                       setSidebarActiveCat(catKey);
                       setSelectedSubNavbarCategory(catKey);
+                      setSelectedCategories([catKey]);
+                      setSearchQuery('');
+                      setHoveredLink(null);
                     }}
                     className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
                       isActive
@@ -4379,10 +4437,12 @@ export default function CustomerDashboard({
                   <div
                     key={childTitle}
                     onClick={() => {
+                      const targetMain = currentMainCategory;
+                      setActiveTab(targetMain);
                       setSidebarActiveCat(activeSubCat || 'ALL');
                       setSelectedSubNavbarCategory(childTitle);
                       setSelectedCategories([childTitle]);
-                      setSearchQuery(childTitle);
+                      setSearchQuery('');
                       setHoveredLink(null);
 
                       setTimeout(() => {
