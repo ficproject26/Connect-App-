@@ -3031,7 +3031,7 @@ export default function CustomerDashboard({
     const prodId = product.id || `prod-${Date.now()}`;
     const prodName = product.name || 'Selected Item';
     const prodPrice = product.price || product.fee || 0;
-    const prodImg = product.image || product.img || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600';
+    const prodImg = product.image || product.img || getCategoryFallbackImage(product);
 
     setCart(prev => {
       const existing = prev.find(item => item && item.id === prodId);
@@ -5663,7 +5663,7 @@ export default function CustomerDashboard({
           {stays.map((stay, idx) => (
             <div key={idx} onClick={() => { setActiveProductImage(stay.image); setActiveThumbnailIndex(0); setSelectedProduct(stay); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={stay.image} alt={stay.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover" />
+                <img src={stay.image || getCategoryFallbackImage(stay)} alt={stay.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(stay); }} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">15% SAVINGS</span>
               </div>
               <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
@@ -5704,7 +5704,7 @@ export default function CustomerDashboard({
           {restaurants.map((rest, idx) => (
             <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={rest.image} alt={rest.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80'; }} className="w-full h-full object-cover" />
+                <img src={rest.image || getCategoryFallbackImage(rest)} alt={rest.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(rest); }} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-rose-500 text-white text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
               </div>
               <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
@@ -9727,7 +9727,7 @@ export default function CustomerDashboard({
               </div>
             ) : (
               wishlistProducts.map((item) => {
-                const itemImg = item.image || item.img || 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400';
+                const itemImg = item.image || item.img || getCategoryFallbackImage(item);
                 const itemPrice = item.price || item.fee || item.originalPrice || 0;
                 const itemCategory = item.category || item.type || 'Product';
                 return (

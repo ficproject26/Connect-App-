@@ -171,36 +171,10 @@ const extractRawImage = (p) => {
   return '';
 };
 
+export const NEUTRAL_NO_IMAGE_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" fill="%23f8fafc"><rect width="400" height="300" fill="%23f8fafc"/><g transform="translate(170,110)" fill="%23cbd5e1"><path d="M5 0h50a5 5 0 0 1 5 5v40a5 5 0 0 1-5 5H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5zm45 40V10H10v30h40zM17 22l8 10 6-6 12 14H17z"/><circle cx="20" cy="18" r="4"/></g><text x="200" y="185" font-family="sans-serif" font-size="13" font-weight="700" fill="%2394a3b8" text-anchor="middle">No image available</text></svg>`;
+
 export const getCategoryFallbackImage = (pContext) => {
-  if (!pContext) return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=600&auto=format&fit=crop&q=80';
-
-  const cat = String(pContext.subNavbarCategory || pContext.mainCategory || pContext.category || pContext.tag || '').toLowerCase();
-  const subCat = String(pContext.subcategory || pContext.subSubcategory || '').toLowerCase();
-  const name = String(pContext.name || pContext.title || pContext.jobTitle || '').toLowerCase();
-
-  if (cat.includes('food') || cat.includes('dining') || cat.includes('restaurant') || subCat.includes('snack') || subCat.includes('bakery') || name.includes('chip') || name.includes('snack') || name.includes('biryani') || name.includes('burger') || name.includes('pizza') || name.includes('dosa') || name.includes('idli')) {
-    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('stay') || cat.includes('hotel') || cat.includes('resort') || cat.includes('pg') || name.includes('deluxe') || name.includes('suite') || name.includes('room') || name.includes('villa')) {
-    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('service') || name.includes('repair') || name.includes('cleaning') || name.includes('maintenance') || name.includes('salon') || name.includes('doctor') || name.includes('spa')) {
-    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('travel') || name.includes('bus') || name.includes('cab') || name.includes('flight') || name.includes('taxi')) {
-    return 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('job') || name.includes('developer') || name.includes('engineer') || name.includes('manager') || name.includes('hiring') || name.includes('senior')) {
-    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80';
-  }
-  if (cat.includes('daily') || cat.includes('grocery') || name.includes('rice') || name.includes('milk') || name.includes('egg') || name.includes('fruit') || name.includes('vegetable')) {
-    return 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
-  }
-  if (name.includes('mobile') || name.includes('phone') || name.includes('smartphone') || name.includes('laptop') || name.includes('watch') || cat.includes('product') || cat.includes('electronics')) {
-    return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=600&auto=format&fit=crop&q=80';
+  return NEUTRAL_NO_IMAGE_PLACEHOLDER;
 };
 
 export const sanitizeImageUrl = (imgUrl, pContext = null) => {
@@ -220,24 +194,30 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
     return getCategoryFallbackImage(pContext);
   }
 
-  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    if (baseBackend && !cleanPath.startsWith('http')) {
+      return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
+    }
+    return cleanPath;
+  }
 
-  // Return full HTTP/HTTPS URLs directly (Unsplash, Cloudinary, external images)
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    if (isHttps && url.startsWith('http://')) {
-      return url.replace('http://', 'https://');
+    if (url.includes('unsplash.com')) {
+      const unsplashFallbacks = [
+        'photo-1526738549149', 'photo-1565299624946', 'photo-1566073771259',
+        'photo-1581578731548', 'photo-1544620347', 'photo-1486406146926',
+        'photo-1542838132', 'photo-1511707171634'
+      ];
+      if (unsplashFallbacks.some(fb => url.includes(fb))) {
+        return getCategoryFallbackImage(pContext);
+      }
     }
     return url;
   }
 
-  // Handle relative paths
-  let backendUrl = getVendorBackendUrl() || getBackendUrl();
-  if (!backendUrl || !backendUrl.startsWith('http')) {
-    backendUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'https://connect-app-7s6g.onrender.com';
-  }
-
-  const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `${backendUrl}${cleanPath}`;
+  return getCategoryFallbackImage(pContext);
 };
 
 const sanitizeProduct = (p) => {
