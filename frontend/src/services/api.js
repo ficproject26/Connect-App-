@@ -206,12 +206,16 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
 
   if (urlPath === '/orders' && method === 'POST') {
     const orders = JSON.parse(localStorage.getItem('connect_fallback_orders')) || [];
-    const orderId = 'ORD' + Math.floor(Math.random() * 9000);
+    const isJob = body.type === 'Job';
+    const orderId = body.applicationId || body.id || (isJob ? ('APP-' + new Date().getFullYear() + '-' + String(Math.floor(100000 + Math.random() * 900000))) : ('ORD' + Math.floor(100000 + Math.random() * 900000)));
+    const initialStatus = isJob ? (body.status || 'APPLICATION RECEIVED') : (body.status || 'Order Received');
     const newOrder = {
       id: orderId,
       order_number: orderId,
-      status: 'Order Received',
+      applicationId: orderId,
+      status: initialStatus,
       created_at: new Date().toISOString(),
+      applicationDate: new Date().toISOString(),
       ...body
     };
     orders.unshift(newOrder);
@@ -225,6 +229,7 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
         body: JSON.stringify({
           id: orderId,
           order_number: orderId,
+          applicationId: orderId,
           vendorId: body.vendor_id || 'v1',
           memberId: body.customer_id || 'cust_dhanush',
           memberName: body.customer_name || 'Customer',
@@ -232,10 +237,17 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
           items: body.items || [],
           totalAmount: body.amount || 0,
           finalAmount: body.amount || 0,
-          candidateEmail: body.candidateEmail,
+          status: initialStatus,
+          jobId: body.jobId || (body.items && body.items[0]?.productId),
+          jobTitle: body.jobTitle || (body.items && body.items[0]?.name) || body.product_details,
+          candidateName: body.customer_name || body.candidateName,
+          candidateEmail: body.candidateEmail || body.customer_email,
+          candidatePhone: body.customer_phone || body.candidatePhone,
+          jobLocation: body.customer_address || body.jobLocation,
+          candidateEducation: body.candidateEducation || 'Graduate',
+          experience: body.experience || 'Fresher',
           candidateResume: body.candidateResume,
-          experience: body.experience,
-          candidateEducation: body.candidateEducation,
+          applicationDate: new Date().toISOString(),
           appointmentDate: body.appointmentDate,
           appointmentTimeSlot: body.appointmentTimeSlot,
           doctorName: body.doctorName,

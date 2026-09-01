@@ -765,6 +765,8 @@ export default function CustomerDashboard({
   isLandingPage = false,
   hideProfile = false,
   onAuthClick,
+  onNavigateToJoinNow,
+  initialLoginModalOpen = false
 }) {
   const authContext = React.useContext(AuthContext);
   const login = authContext?.login || ((userObj) => {
