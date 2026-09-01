@@ -11114,7 +11114,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         type="submit"
                         className="mt-2 w-full py-2.5 bg-[#0b1e36] hover:bg-amber-500 hover:text-[#0b1e36] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors cursor-pointer text-center"
                       >
-                        Save Profile Updates
+                        Edit Profile
                       </button>
                     </form>
 
