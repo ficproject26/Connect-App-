@@ -2476,7 +2476,7 @@ export default function CustomerDashboard({
     const locality = (addressForm.locality || '').trim() || city || streetAddress.split(',')[0] || 'Locality';
     const state = (addressForm.state || 'Karnataka').trim();
 
-    const newAddress = {
+    const addressPayload = {
       ...addressForm,
       name,
       phone,
@@ -2485,16 +2485,19 @@ export default function CustomerDashboard({
       address: streetAddress,
       city,
       state,
-      id: addressForm.id || `addr_${Date.now()}`
+      id: addressForm.id || undefined
     };
 
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+    let savedAddr = null;
+
     if (userTarget) {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
       const endpoints = [
-        adminBackend ? `${adminBackend}/api/auth/customer-address` : '',
-        baseBackend ? `${baseBackend}/api/auth/customer-address` : '',
+        adminBackend ? `${adminBackend}/api/customer/addresses` : '',
+        baseBackend ? `${baseBackend}/api/customer/addresses` : '',
+        `/api/customer/addresses`,
         `/api/auth/customer-address`
       ].filter(Boolean);
 
@@ -2503,12 +2506,23 @@ export default function CustomerDashboard({
           const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: userTarget, address: newAddress })
+            body: JSON.stringify({ userId: userTarget, customerId: userTarget, address: addressPayload })
           });
           if (res.ok) {
             const data = await res.json();
-            if (data && Array.isArray(data.addresses)) {
-              setAddresses(deduplicateAddresses(data.addresses));
+            if (data) {
+              if (Array.isArray(data.addresses)) {
+                setAddresses(deduplicateAddresses(data.addresses));
+              }
+              if (data.isDuplicate) {
+                triggerNotification("This address is already saved.", "info");
+              } else {
+                triggerNotification("Address saved in database & selected for delivery!");
+              }
+              savedAddr = data.address || (data.addresses ? data.addresses.find(a => normalizeAddressStr(a) === normalizeAddressStr(addressPayload)) : null);
+              if (savedAddr && savedAddr.id) {
+                setSelectedCheckoutAddressId(savedAddr.id);
+              }
               break;
             }
           }
@@ -2516,11 +2530,16 @@ export default function CustomerDashboard({
       }
     }
 
-    setAddresses(prev => deduplicateAddresses([newAddress, ...prev.filter(a => a.id !== newAddress.id)]));
-    setSelectedCheckoutAddressId(newAddress.id);
+    if (!savedAddr) {
+      const fallbackId = addressForm.id || `addr_${Date.now()}`;
+      savedAddr = { ...addressPayload, id: fallbackId };
+      setAddresses(prev => deduplicateAddresses([savedAddr, ...prev.filter(a => a.id !== savedAddr.id)]));
+      setSelectedCheckoutAddressId(savedAddr.id);
+      triggerNotification("Address saved & selected for delivery!");
+    }
+
     setIsAddingAddress(false);
-    triggerNotification("Address saved in database & selected for delivery!");
-    return newAddress;
+    return savedAddr;
   };
 
   const handleDeleteAddress = async (id) => {
@@ -2530,8 +2549,9 @@ export default function CustomerDashboard({
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
       const endpoints = [
-        adminBackend ? `${adminBackend}/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}` : '',
-        baseBackend ? `${baseBackend}/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}` : '',
+        adminBackend ? `${adminBackend}/api/customer/addresses/${id}?userId=${encodeURIComponent(userTarget)}` : '',
+        baseBackend ? `${baseBackend}/api/customer/addresses/${id}?userId=${encodeURIComponent(userTarget)}` : '',
+        `/api/customer/addresses/${id}?userId=${encodeURIComponent(userTarget)}`,
         `/api/auth/customer-address/${id}?userId=${encodeURIComponent(userTarget)}`
       ].filter(Boolean);
 

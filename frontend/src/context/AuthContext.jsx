@@ -37,14 +37,17 @@ export const getOrGenerateCustomerId = (userOrId) => {
 export const normalizeAddressStr = (addr) => {
   if (!addr) return '';
   if (typeof addr === 'string') return addr.trim().toLowerCase().replace(/\s+/g, ' ');
-  const parts = [
-    addr.address || '',
-    addr.locality || '',
-    addr.city || '',
-    addr.state || '',
-    addr.pincode || ''
-  ];
-  return parts.map(p => String(p).trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean).join(', ');
+  
+  const name = String(addr.name || addr.receiverName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const phone = String(addr.phone || addr.mobileNumber || addr.mobile || '').replace(/\D/g, '').slice(-10);
+  const pincode = String(addr.pincode || addr.zip || '').replace(/\D/g, '').slice(0, 6);
+  const locality = String(addr.locality || addr.area || addr.sector || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const street = String(addr.address || addr.street || addr.houseNo || addr.flat || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const city = String(addr.city || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const state = String(addr.state || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+  const parts = [name, phone, pincode, locality, street, city, state];
+  return parts.filter(Boolean).join('|');
 };
 
 export const deduplicateAddresses = (addrList) => {

@@ -10,14 +10,17 @@ const router = Router();
 const normalizeAddressStr = (addr: any): string => {
   if (!addr) return '';
   if (typeof addr === 'string') return addr.trim().toLowerCase().replace(/\s+/g, ' ');
-  const parts = [
-    addr.address || '',
-    addr.locality || '',
-    addr.city || '',
-    addr.state || '',
-    addr.pincode || ''
-  ];
-  return parts.map(p => String(p).trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean).join(', ');
+
+  const name = String(addr.name || addr.receiverName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const phone = String(addr.phone || addr.mobileNumber || addr.mobile || '').replace(/\D/g, '').slice(-10);
+  const pincode = String(addr.pincode || addr.zip || '').replace(/\D/g, '').slice(0, 6);
+  const locality = String(addr.locality || addr.area || addr.sector || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const street = String(addr.address || addr.street || addr.houseNo || addr.flat || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const city = String(addr.city || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const state = String(addr.state || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+  const parts = [name, phone, pincode, locality, street, city, state];
+  return parts.filter(Boolean).join('|');
 };
 
 const deduplicateAddresses = (addrList: any[]): any[] => {
@@ -942,42 +945,90 @@ router.put('/customer-profile', async (req: Request, res: Response) => {
   }
 });
 
-// POST: /api/auth/customer-address (Add/Update customer saved address in MongoDB)
-router.post('/customer-address', async (req: Request, res: Response) => {
-  const { userId, customerId, phone, email, address } = req.body;
-  const target = (userId || customerId || phone || email || '').toString().trim();
+const resolveCustomerTarget = (req: Request): string => {
+  const authReq = req as AuthenticatedRequest;
+  if (authReq.user) {
+    if (authReq.user.userId) return String(authReq.user.userId).trim();
+    if (authReq.user.email) return String(authReq.user.email).trim();
+  }
+  const target = req.body?.userId || req.body?.customerId || req.body?.phone || req.body?.email || req.query?.userId || req.query?.customerId || req.query?.phone || req.query?.email;
+  return target ? String(target).trim() : '';
+};
 
-  if (!target || !address) {
-    return res.status(400).json({ status: 'error', message: 'User ID and address data are required.' });
+// GET: /customer/addresses & /api/auth/customer-addresses (Fetch saved addresses)
+const handleGetAddresses = async (req: Request, res: Response) => {
+  const target = resolveCustomerTarget(req);
+  if (!target) {
+    return res.status(400).json({ status: 'error', message: 'Authenticated customer identifier required.' });
   }
 
   try {
     const mongoDb = db.getDb();
-    if (!mongoDb) {
-      return res.status(503).json({ status: 'error', message: 'Database not connected' });
-    }
+    if (!mongoDb) return res.status(503).json({ status: 'error', message: 'Database not connected' });
 
     const filter = buildCustomerMongoFilter(target);
     let user = await mongoDb.collection('users').findOne(filter);
-    if (!user) {
-      user = await mongoDb.collection('customers').findOne(filter);
-    }
+    if (!user) user = await mongoDb.collection('customers').findOne(filter);
 
-    if (!user) {
-      return res.status(404).json({ status: 'error', message: 'Customer not found.' });
-    }
+    if (!user) return res.status(404).json({ status: 'error', message: 'Customer record not found.' });
+
+    const addresses = deduplicateAddresses(Array.isArray(user.addresses) ? user.addresses : []);
+    return res.json({ status: 'success', addresses });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// POST: /customer/addresses & /api/auth/customer-address (Save/Add/Deduplicate saved address)
+const handleSaveAddress = async (req: Request, res: Response) => {
+  const target = resolveCustomerTarget(req);
+  const address = req.body?.address || req.body;
+
+  if (!target || !address || typeof address !== 'object') {
+    return res.status(400).json({ status: 'error', message: 'Authenticated customer ID and address details are required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(503).json({ status: 'error', message: 'Database not connected' });
+
+    const filter = buildCustomerMongoFilter(target);
+    let user = await mongoDb.collection('users').findOne(filter);
+    if (!user) user = await mongoDb.collection('customers').findOne(filter);
+
+    if (!user) return res.status(404).json({ status: 'error', message: 'Customer record not found.' });
 
     const existingAddresses: any[] = Array.isArray(user.addresses) ? user.addresses : [];
+    const inputKey = normalizeAddressStr(address);
+
+    // 1. Duplicate check: check if same customer already has this exact address
+    const existingDuplicate = existingAddresses.find(a => normalizeAddressStr(a) === inputKey);
+
+    if (existingDuplicate && !address.id) {
+      return res.json({
+        status: 'success',
+        message: 'This address is already saved.',
+        isDuplicate: true,
+        address: existingDuplicate,
+        addresses: deduplicateAddresses(existingAddresses)
+      });
+    }
+
+    let savedAddr: any = null;
     let rawUpdated: any[];
 
-    if (address.id) {
+    if (address.id && existingAddresses.some(a => a.id === address.id)) {
+      savedAddr = { ...address };
       rawUpdated = existingAddresses.map(a => a.id === address.id ? { ...a, ...address } : a);
+    } else if (existingDuplicate) {
+      savedAddr = { ...existingDuplicate, ...address, id: existingDuplicate.id };
+      rawUpdated = existingAddresses.map(a => a.id === existingDuplicate.id ? savedAddr : a);
     } else {
-      const newAddr = {
+      savedAddr = {
         ...address,
-        id: 'addr_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
+        id: address.id || 'addr_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
       };
-      rawUpdated = [...existingAddresses, newAddr];
+      rawUpdated = [savedAddr, ...existingAddresses];
     }
 
     const updatedAddresses = deduplicateAddresses(rawUpdated);
@@ -985,37 +1036,69 @@ router.post('/customer-address', async (req: Request, res: Response) => {
     await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
     await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});
 
-    return res.json({ status: 'success', message: 'Address saved successfully', addresses: updatedAddresses });
+    return res.json({
+      status: 'success',
+      message: 'Address saved successfully',
+      isDuplicate: false,
+      address: savedAddr,
+      addresses: updatedAddresses
+    });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
   }
-});
+};
 
-// DELETE: /api/auth/customer-address/:addressId (Delete saved address from MongoDB)
-router.delete('/customer-address/:addressId', async (req: Request, res: Response) => {
-  const { addressId } = req.params;
-  const { userId, customerId, phone, email } = req.query;
-  const target = ((userId || customerId || phone || email || '') as string).trim();
+// PUT: /customer/addresses/:id & /api/auth/customer-address/:id (Update address)
+const handleUpdateAddress = async (req: Request, res: Response) => {
+  const addressId = req.params.addressId || req.params.id;
+  const target = resolveCustomerTarget(req);
+  const addressData = req.body?.address || req.body;
 
   if (!target || !addressId) {
-    return res.status(400).json({ status: 'error', message: 'User ID and Address ID are required.' });
+    return res.status(400).json({ status: 'error', message: 'Customer identifier and Address ID are required.' });
   }
 
   try {
     const mongoDb = db.getDb();
-    if (!mongoDb) {
-      return res.status(503).json({ status: 'error', message: 'Database not connected' });
-    }
+    if (!mongoDb) return res.status(503).json({ status: 'error', message: 'Database not connected' });
 
     const filter = buildCustomerMongoFilter(target);
     let user = await mongoDb.collection('users').findOne(filter);
-    if (!user) {
-      user = await mongoDb.collection('customers').findOne(filter);
-    }
+    if (!user) user = await mongoDb.collection('customers').findOne(filter);
 
-    if (!user) {
-      return res.status(404).json({ status: 'error', message: 'Customer not found.' });
-    }
+    if (!user) return res.status(404).json({ status: 'error', message: 'Customer record not found.' });
+
+    const existingAddresses: any[] = Array.isArray(user.addresses) ? user.addresses : [];
+    const rawUpdated = existingAddresses.map(a => a.id === addressId ? { ...a, ...addressData } : a);
+    const updatedAddresses = deduplicateAddresses(rawUpdated);
+
+    await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
+    await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});
+
+    return res.json({ status: 'success', message: 'Address updated successfully', addresses: updatedAddresses });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// DELETE: /customer/addresses/:id & /api/auth/customer-address/:id (Delete address)
+const handleDeleteAddress = async (req: Request, res: Response) => {
+  const addressId = req.params.addressId || req.params.id;
+  const target = resolveCustomerTarget(req);
+
+  if (!target || !addressId) {
+    return res.status(400).json({ status: 'error', message: 'Customer identifier and Address ID are required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(503).json({ status: 'error', message: 'Database not connected' });
+
+    const filter = buildCustomerMongoFilter(target);
+    let user = await mongoDb.collection('users').findOne(filter);
+    if (!user) user = await mongoDb.collection('customers').findOne(filter);
+
+    if (!user) return res.status(404).json({ status: 'error', message: 'Customer record not found.' });
 
     const existingAddresses: any[] = Array.isArray(user.addresses) ? user.addresses : [];
     const updatedAddresses = existingAddresses.filter(a => a.id !== addressId);
@@ -1027,6 +1110,16 @@ router.delete('/customer-address/:addressId', async (req: Request, res: Response
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
   }
-});
+};
+
+// Register Address Endpoints (Supports both /customer/addresses and /customer-address)
+router.get('/addresses', handleGetAddresses);
+router.post('/addresses', handleSaveAddress);
+router.put('/addresses/:id', handleUpdateAddress);
+router.delete('/addresses/:id', handleDeleteAddress);
+
+router.post('/customer-address', handleSaveAddress);
+router.put('/customer-address/:addressId', handleUpdateAddress);
+router.delete('/customer-address/:addressId', handleDeleteAddress);
 
 export default router;
