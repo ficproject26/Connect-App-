@@ -3934,8 +3934,16 @@ export default function CustomerDashboard({
           {/* Mobile Right Action Group: Clean Menu Button & Profile Avatar */}
           <div className="flex md:hidden items-center gap-2.5 shrink-0">
             <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:text-amber-500 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/60 shadow-3xs flex items-center justify-center"
+              onClick={() => {
+                setIsMobileMenuOpen(prev => {
+                  const next = !prev;
+                  if (next) {
+                    setHoveredLink(null);
+                  }
+                  return next;
+                });
+              }}
+              className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:text-amber-500 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/60 shadow-3xs flex items-center justify-center z-[10000]"
               title="Open Menu"
             >
               {isMobileMenuOpen ? <X className="w-5.5 h-5.5 text-amber-500" /> : <Menu className="w-5.5 h-5.5 text-slate-800 dark:text-slate-100" />}
@@ -3980,10 +3988,10 @@ export default function CustomerDashboard({
           {isMobileMenuOpen && (
             <>
               <div 
-                className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9998] md:hidden animate-fade-in"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
-              <div className="fixed top-16 left-3 right-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-50 p-4 space-y-3 md:hidden animate-scale-up text-left">
+              <div className="fixed top-16 left-3 right-3 max-h-[85vh] overflow-y-auto bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-[9999] p-4 space-y-3 md:hidden animate-scale-up text-left">
                 {/* Profile Header Card / Login Banner */}
                 {!currentUser || hideProfile ? (
                   <div className="flex items-center justify-between p-3 bg-[#FFC107]/10 dark:bg-amber-500/10 rounded-2xl border border-[#FFC107]/30">
@@ -4800,11 +4808,11 @@ export default function CustomerDashboard({
       'Membership': Award
     };
 
-    const isDropdownOpen = Boolean(hoveredLink && hoveredLink !== 'Home');
+    const isDropdownOpen = Boolean(!isMobileMenuOpen && hoveredLink && hoveredLink !== 'Home');
 
     return (
       <div 
-        className="relative z-40"
+        className="relative z-30"
         onMouseEnter={() => {
           if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
         }}
@@ -4819,6 +4827,7 @@ export default function CustomerDashboard({
                 key={cat}
                 type="button"
                 onMouseEnter={() => {
+                  if (isMobileMenuOpen) return;
                   if (cat !== 'Home') {
                     handleMouseEnter(cat);
                     setActiveMegaCategory('ALL');
@@ -4837,7 +4846,11 @@ export default function CustomerDashboard({
                   setSelectedCategories([]);
                   setSearchQuery('');
                   if (typeof window !== 'undefined' && window.innerWidth < 768 && cat !== 'Home') {
-                    setHoveredLink(prev => prev === cat ? null : cat);
+                    if (isMobileMenuOpen) {
+                      setHoveredLink(null);
+                    } else {
+                      setHoveredLink(prev => prev === cat ? null : cat);
+                    }
                   } else {
                     setHoveredLink(null);
                   }
@@ -4856,9 +4869,9 @@ export default function CustomerDashboard({
         </nav>
 
         {/* FLOATING HOVER MEGA DROPDOWN PANEL (Full Width Overlay) */}
-        {isDropdownOpen && (
+        {!isMobileMenuOpen && isDropdownOpen && (
           <div 
-            className="absolute top-full left-0 right-0 w-full z-50 px-2 sm:px-4 md:px-6 py-2 animate-fade-in pointer-events-auto"
+            className="absolute top-full left-0 right-0 w-full z-40 px-2 sm:px-4 md:px-6 py-2 animate-fade-in pointer-events-auto"
             onMouseEnter={() => {
               if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
             }}
