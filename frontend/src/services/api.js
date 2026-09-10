@@ -501,6 +501,10 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
 };
 
 export const apiFetch = async (endpoint, options = {}) => {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return { status: 'offline', message: 'Browser is offline' };
+  }
+
   const token = localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('vendor_token') || localStorage.getItem('admin_token');
 
   try {
@@ -528,6 +532,15 @@ export const apiFetch = async (endpoint, options = {}) => {
     
     return await res.json();
   } catch (error) {
+    const isNetworkSuspended = 
+      (typeof navigator !== 'undefined' && !navigator.onLine) ||
+      error?.message?.includes('NETWORK_IO_SUSPENDED') ||
+      error?.message?.includes('Failed to fetch') ||
+      error?.name === 'AbortError';
+
+    if (isNetworkSuspended) {
+      return { status: 'network_suspended', message: error?.message || 'Network suspended' };
+    }
     return await handleFallbackRequest(endpoint, options).catch(() => ({ status: 'error', message: error.message }));
   }
 };

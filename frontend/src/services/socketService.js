@@ -4,10 +4,51 @@ import { getBackendUrl } from './apiSetup';
 class SocketServiceClient {
   socket = null;
   listeners = new Map();
+  lastUserId = null;
+  lastRole = null;
+  lifecycleBound = false;
+
+  setupLifecycleListeners() {
+    if (this.lifecycleBound || typeof window === 'undefined') return;
+    this.lifecycleBound = true;
+
+    window.addEventListener('online', () => {
+      if (this.lastUserId && (!this.socket || !this.socket.connected)) {
+        setTimeout(() => {
+          this.connect(this.lastUserId, this.lastRole);
+        }, 500);
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      this.disconnect();
+    });
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && typeof navigator !== 'undefined' && navigator.onLine && this.lastUserId) {
+          if (!this.socket || !this.socket.connected) {
+            setTimeout(() => {
+              this.connect(this.lastUserId, this.lastRole);
+            }, 500);
+          }
+        }
+      });
+    }
+  }
 
   connect(userId, role) {
+    this.setupLifecycleListeners();
+    this.lastUserId = userId;
+    this.lastRole = role;
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return;
+    }
+
     if (this.socket) {
       this.socket.disconnect();
+      this.socket = null;
     }
 
     try {
@@ -20,10 +61,12 @@ class SocketServiceClient {
       }
 
       this.socket = io(backendUrl, {
-        transports: ['websocket'],
-        reconnectionAttempts: 2,
-        reconnectionDelay: 10000,
-        timeout: 8000,
+        transports: ['polling', 'websocket'],
+        upgrade: true,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 5000,
+        reconnectionDelayMax: 15000,
+        timeout: 10000,
         autoConnect: true
       });
 

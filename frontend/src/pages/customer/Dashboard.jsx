@@ -1200,6 +1200,7 @@ export default function CustomerDashboard({
   }, [currentUser]);
 
   const loadCustomerProfileFromDb = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (!userTarget) return;
 
@@ -1241,7 +1242,10 @@ export default function CustomerDashboard({
             return;
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) break;
+        if (err?.message?.includes('NETWORK_IO_SUSPENDED') || err?.name === 'AbortError') break;
+      }
     }
   }, [currentUser, activeCustomerId, login]);
 
@@ -1624,6 +1628,7 @@ export default function CustomerDashboard({
 
   const loadCustomerOrders = useCallback(async () => {
     try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || activeCustomerId || '').trim();
       const targetEmail = (profileEmail || currentUser?.email || currentUser?.candidateEmail || '').trim().toLowerCase();
       const targetPhone = (profilePhone || currentUser?.phone || '').replace(/\D/g, '');
@@ -1633,9 +1638,15 @@ export default function CustomerDashboard({
       let apiOrders = [];
       const orderEndpoint = targetId ? `/orders?customerId=${encodeURIComponent(targetId)}` : '/orders';
       let res = await apiFetch(orderEndpoint);
+      if (res?.status === 'network_suspended' || res?.status === 'offline') {
+        return;
+      }
       if (!res || (Array.isArray(res) && res.length === 0) || (res.data && Array.isArray(res.data) && res.data.length === 0)) {
-        if (targetId && targetEmail) {
+        if (targetId && targetEmail && (typeof navigator === 'undefined' || navigator.onLine)) {
           res = await apiFetch(`/orders?customerId=${encodeURIComponent(targetEmail)}`);
+          if (res?.status === 'network_suspended' || res?.status === 'offline') {
+            return;
+          }
         }
       }
       if (res) {
@@ -1791,6 +1802,18 @@ export default function CustomerDashboard({
       loadCustomerOrders();
     }
   }, [isProfileModalOpen]);
+
+  // Clean network recovery after system wake or reconnection
+  useEffect(() => {
+    const handleOnline = () => {
+      setTimeout(() => {
+        loadCustomerProfileFromDb();
+        loadCustomerOrders();
+      }, 500);
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [loadCustomerProfileFromDb, loadCustomerOrders]);
 
   useEffect(() => {
     if (trackingOrder && (trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs')) {
@@ -5658,79 +5681,82 @@ export default function CustomerDashboard({
                       </div>
                       <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold">({product.reviews})</span>
                     </div>
-                    <div className="flex items-center gap-1.5 w-full">
-                      {isVendorProductUnavailable(product) ? (
-                        <button 
-                          disabled
-                          onClick={(e) => e.stopPropagation()} 
-                          className="w-full py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[10px] font-black rounded-lg cursor-not-allowed uppercase border-none opacity-70"
-                        >
-                          <span>Vendor Unavailable</span>
-                        </button>
-                      ) : (
-                        (() => {
-                          const cartItem = cart.find(i => String(i.id) === String(product.id) || String(i.id) === String(product._id));
-                          const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
-                          return (
-                            <>
-                              {inCartQty > 0 ? (
-                                <div 
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex-1 px-1 py-0.5 bg-emerald-600 text-white font-black text-[10px] rounded-lg flex items-center justify-between shadow-xs select-none"
-                                >
-                                  <button 
-                                    type="button"
-                                    onClick={(e) => { 
-                                      e.stopPropagation(); 
-                                      updateCartQuantity(cartItem.id, -1); 
-                                    }}
-                                    className="w-5 h-5 rounded bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
-                                    title="Decrease quantity"
-                                  >
-                                    <Minus className="w-3 h-3" />
-                                  </button>
-                                  <span className="text-[10px] font-black text-white px-0.5">
-                                    {inCartQty} in Cart
-                                  </span>
-                                  <button 
-                                    type="button"
-                                    onClick={(e) => { 
-                                      e.stopPropagation(); 
-                                      updateCartQuantity(cartItem.id, 1); 
-                                    }}
-                                    className="w-5 h-5 rounded bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
-                                    title="Increase quantity"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <button 
-                                  onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    addToCart(product); 
-                                  }} 
-                                  className="flex-1 inline-flex items-center justify-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                  <span>Add</span>
-                                </button>
-                              )}
+                    {(() => {
+                      const isUnavail = isVendorProductUnavailable(product);
+                      if (isUnavail) {
+                        return (
+                          <div className="flex items-center gap-1.5 w-full">
+                            <button 
+                              disabled
+                              onClick={(e) => e.stopPropagation()} 
+                              className="w-full py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[10px] font-black rounded-lg cursor-not-allowed uppercase border-none opacity-70"
+                            >
+                              <span>Vendor Unavailable</span>
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      const cartItem = cart.find(i => String(i.id) === String(product.id) || String(i.id) === String(product._id));
+                      const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
+                      return (
+                        <div className={`flex ${inCartQty > 0 ? 'flex-col sm:flex-row' : 'flex-row'} items-stretch sm:items-center gap-1.5 w-full`}>
+                          {inCartQty > 0 ? (
+                            <div 
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full sm:flex-1 px-1.5 py-1 bg-emerald-600 text-white font-black text-[10px] rounded-lg flex items-center justify-between shadow-xs select-none box-border"
+                            >
                               <button 
+                                type="button"
                                 onClick={(e) => { 
                                   e.stopPropagation(); 
-                                  addToCart(product);
-                                  setIsCartOpen(true);
-                                }} 
-                                className="flex-1 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-blue-700/30"
+                                  updateCartQuantity(cartItem.id, -1); 
+                                }}
+                                className="w-5 h-5 rounded bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors shrink-0"
+                                title="Decrease quantity"
                               >
-                                <span>Order Now</span>
+                                <Minus className="w-3 h-3" />
                               </button>
-                            </>
-                          );
-                        })()
-                      )}
-                    </div>
+                              <span className="text-[10px] font-black text-white px-0.5 truncate text-center">
+                                {inCartQty} in Cart
+                              </span>
+                              <button 
+                                type="button"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  updateCartQuantity(cartItem.id, 1); 
+                                }}
+                                className="w-5 h-5 rounded bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors shrink-0"
+                                title="Increase quantity"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                addToCart(product); 
+                              }} 
+                              className="flex-1 inline-flex items-center justify-center gap-0.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-amber-500/30"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Add</span>
+                            </button>
+                          )}
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              addToCart(product);
+                              setIsCartOpen(true);
+                            }} 
+                            className={`${inCartQty > 0 ? 'w-full sm:flex-1' : 'flex-1'} inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black py-2 rounded-lg transition-all cursor-pointer uppercase shadow-sm border border-blue-700/30 min-w-0`}
+                          >
+                            <span className="truncate">Order Now</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -7076,7 +7102,7 @@ export default function CustomerDashboard({
                             </div>
                           </div>
                           
-                          <div className="p-4 flex-grow flex flex-col justify-between text-left">
+                          <div className="p-3 sm:p-4 flex-grow flex flex-col justify-between text-left">
                             <div>
                               <h4 className="text-[14px] sm:text-[15px] font-black text-slate-900 dark:text-slate-100 line-clamp-1 leading-tight group-hover:text-blue-600 transition-colors">{product.name}</h4>
                               <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1 font-medium">
@@ -7153,116 +7179,118 @@ export default function CustomerDashboard({
                             </div>
                             
                             {/* Action Buttons based on category type */}
-                            <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full flex flex-row items-center gap-1.5 sm:gap-2">
-                              {(() => {
-                                const isUnavail = isVendorProductUnavailable(product);
-                                if (isUnavail) {
-                                  return (
+                            {(() => {
+                              const isUnavail = isVendorProductUnavailable(product);
+                              if (isUnavail) {
+                                return (
+                                  <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full">
                                     <button 
                                       disabled
                                       onClick={(e) => e.stopPropagation()} 
-                                      className="w-full py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs rounded-xl cursor-not-allowed border-none leading-none h-9 flex items-center justify-center gap-1 opacity-70"
+                                      className="w-full py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-extrabold text-xs rounded-xl cursor-not-allowed border-none leading-none h-8.5 sm:h-9 flex items-center justify-center gap-1 opacity-70"
                                     >
                                       <span>Vendor Unavailable</span>
                                     </button>
-                                  );
-                                }
+                                  </div>
+                                );
+                              }
 
-                                const category = activeTab === 'Home' ? product.subNavbarCategory : activeTab;
-                                if (category === 'Products' || category === 'Daily Needs' || category === 'Food') {
-                                  const cartItem = cart.find(i => String(i.id) === String(product.id) || String(i.id) === String(product._id));
-                                  const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
+                              const category = activeTab === 'Home' ? product.subNavbarCategory : activeTab;
+                              if (category === 'Products' || category === 'Daily Needs' || category === 'Food') {
+                                const cartItem = cart.find(i => String(i.id) === String(product.id) || String(i.id) === String(product._id));
+                                const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
 
-                                  return (
-                                    <>
-                                      {inCartQty > 0 ? (
-                                        <div 
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="flex-1 py-1 px-1.5 bg-emerald-600 text-white font-black text-xs rounded-xl flex items-center justify-between shadow-sm h-8.5 sm:h-9 select-none"
-                                        >
-                                          <button 
-                                            type="button"
-                                            onClick={(e) => { 
-                                              e.stopPropagation(); 
-                                              updateCartQuantity(cartItem.id, -1); 
-                                            }}
-                                            className="w-6.5 h-6.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
-                                            title="Decrease quantity"
-                                          >
-                                            <Minus className="w-3.5 h-3.5" />
-                                          </button>
-                                          <span className="text-[11px] font-black text-white px-1">
-                                            {inCartQty} in Cart
-                                          </span>
-                                          <button 
-                                            type="button"
-                                            onClick={(e) => { 
-                                              e.stopPropagation(); 
-                                              updateCartQuantity(cartItem.id, 1); 
-                                            }}
-                                            className="w-6.5 h-6.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors"
-                                            title="Increase quantity"
-                                          >
-                                            <Plus className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      ) : (
+                                return (
+                                  <div className={`mt-3 sm:mt-4 pt-2.5 sm:pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full flex ${inCartQty > 0 ? 'flex-col sm:flex-row' : 'flex-row'} items-stretch sm:items-center gap-1.5 sm:gap-2`}>
+                                    {inCartQty > 0 ? (
+                                      <div 
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-full sm:flex-1 py-1 px-2 bg-emerald-600 text-white font-black text-xs rounded-xl flex items-center justify-between shadow-sm h-8.5 sm:h-9 select-none box-border"
+                                      >
                                         <button 
+                                          type="button"
                                           onClick={(e) => { 
                                             e.stopPropagation(); 
-                                            addToCart(product); 
-                                          }} 
-                                          className="px-3 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center border border-amber-500/20 leading-none h-8.5 sm:h-9 shrink-0"
-                                          title="Add to Cart"
+                                            updateCartQuantity(cartItem.id, -1); 
+                                          }}
+                                          className="w-6.5 h-6.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors shrink-0"
+                                          title="Decrease quantity"
                                         >
-                                          <ShoppingCart className="w-4 h-4 shrink-0 text-slate-950" />
+                                          <Minus className="w-3.5 h-3.5" />
                                         </button>
-                                      )}
+                                        <span className="text-[11px] font-black text-white px-1 text-center truncate">
+                                          {inCartQty} in Cart
+                                        </span>
+                                        <button 
+                                          type="button"
+                                          onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            updateCartQuantity(cartItem.id, 1); 
+                                          }}
+                                          className="w-6.5 h-6.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 flex items-center justify-center cursor-pointer border-none text-white font-black transition-colors shrink-0"
+                                          title="Increase quantity"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    ) : (
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
-                                          if (!currentUser) {
-                                            setIsLoginModalOpen(true);
-                                          } else {
-                                            addToCart(product);
-                                            setIsCartOpen(true);
-                                          }
+                                          addToCart(product); 
                                         }} 
-                                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9"
+                                        className="px-2.5 sm:px-3 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow-3xs flex items-center justify-center border border-amber-500/20 leading-none h-8.5 sm:h-9 shrink-0"
+                                        title="Add to Cart"
                                       >
-                                        <span>Order Now</span>
+                                        <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-slate-950" />
                                       </button>
-                                    </>
-                                  );
-                                } else if (category === 'Services' || category === 'Stay' || category === 'Travel') {
-                                  return (
-                                    <>
-                                      <button 
-                                        onClick={(e) => { 
-                                          e.stopPropagation(); 
-                                          if (!currentUser) {
-                                            setIsLoginModalOpen(true);
-                                          } else {
-                                            setActiveBookNowModalItem(product);
-                                            setSelectedModalDate('Wednesday, 21 May 2025');
-                                            setSelectedModalTime('11:00 AM');
-                                            setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
-                                            setSelectedTimeOfDayTab('Morning');
-                                          }
-                                        }} 
-                                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
-                                      >
-                                        <span>Book Now</span>
-                                      </button>
-                                    </>
-                                  );
-                                } else {
-                                  // Jobs
-                                  const appliedOrder = customerOrders.find(o => 
-                                    o.type === 'Job' && o.items?.some(item => item.productId === product.id)
-                                  );
-                                  if (appliedOrder) {
-                                    return (
+                                    )}
+                                    <button 
+                                      onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        if (!currentUser) {
+                                          setIsLoginModalOpen(true);
+                                        } else {
+                                          addToCart(product);
+                                          setIsCartOpen(true);
+                                        }
+                                      }} 
+                                      className={`${inCartQty > 0 ? 'w-full sm:flex-1' : 'flex-1'} py-2 px-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9 min-w-0`}
+                                    >
+                                      <span className="truncate">Order Now</span>
+                                    </button>
+                                  </div>
+                                );
+                              } else if (category === 'Services' || category === 'Stay' || category === 'Travel') {
+                                return (
+                                  <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full flex items-center">
+                                    <button 
+                                      onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        if (!currentUser) {
+                                          setIsLoginModalOpen(true);
+                                        } else {
+                                          setActiveBookNowModalItem(product);
+                                          setSelectedModalDate('Wednesday, 21 May 2025');
+                                          setSelectedModalTime('11:00 AM');
+                                          setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                                          setSelectedTimeOfDayTab('Morning');
+                                        }
+                                      }} 
+                                      className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9"
+                                    >
+                                      <span>Book Now</span>
+                                    </button>
+                                  </div>
+                                );
+                              } else {
+                                // Jobs
+                                const appliedOrder = customerOrders.find(o => 
+                                  o.type === 'Job' && o.items?.some(item => item.productId === product.id)
+                                );
+                                return (
+                                  <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3.5 border-t border-slate-100 dark:border-slate-900/60 w-full flex items-center">
+                                    {appliedOrder ? (
                                       <button 
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
@@ -7270,32 +7298,31 @@ export default function CustomerDashboard({
                                           setActiveProfileTab('orders');
                                           setTrackingOrder(appliedOrder);
                                         }} 
-                                        className="w-full py-2.5 bg-transparent border border-blue-600 hover:bg-blue-600/5 text-blue-600 font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center leading-none h-9 animate-fade-in"
+                                        className="w-full py-2.5 bg-transparent border border-blue-600 hover:bg-blue-600/5 text-blue-600 font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center leading-none h-8.5 sm:h-9 animate-fade-in"
                                       >
                                         <span>View Status</span>
                                       </button>
-                                    );
-                                  }
-                                  return (
-                                    <button 
-                                      onClick={(e) => { 
-                                        e.stopPropagation(); 
-                                        if (!currentUser) {
-                                          setIsLoginModalOpen(true);
-                                        } else {
-                                          setActiveTab('Jobs');
-                                          setAppliedJobId(product.id);
-                                          triggerNotification(`Applying for ${product.name}...`);
-                                        }
-                                      }} 
-                                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-9"
-                                    >
-                                      <span>Apply Now</span>
-                                    </button>
-                                  );
-                                }
-                              })()}
-                            </div>
+                                    ) : (
+                                      <button 
+                                        onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          if (!currentUser) {
+                                            setIsLoginModalOpen(true);
+                                          } else {
+                                            setActiveTab('Jobs');
+                                            setAppliedJobId(product.id);
+                                            triggerNotification(`Applying for ${product.name}...`);
+                                          }
+                                        }} 
+                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center border-none leading-none h-8.5 sm:h-9"
+                                      >
+                                        <span>Apply Now</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              }
+                            })()}
                           </div>
                         </div>
                       );

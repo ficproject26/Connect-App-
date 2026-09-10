@@ -44,11 +44,15 @@ window.addEventListener('error', (e) => {
   }
 }, true);
 
-// Suppress third-party Chrome Extension background script noise in console
+// Suppress third-party Chrome Extension and network suspension noise in console
 window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason?.message || (typeof event.reason === 'string' ? event.reason : '');
   if (
-    event.reason?.message?.includes('A listener indicated an asynchronous response') ||
-    event.reason?.message?.includes('message channel closed')
+    reason.includes('A listener indicated an asynchronous response') ||
+    reason.includes('message channel closed') ||
+    reason.includes('runtime.lastError') ||
+    reason.includes('ERR_NETWORK_IO_SUSPENDED') ||
+    reason.includes('NETWORK_IO_SUSPENDED')
   ) {
     event.preventDefault();
   }

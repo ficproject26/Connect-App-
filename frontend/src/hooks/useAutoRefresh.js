@@ -23,15 +23,24 @@ export function useAutoRefresh(callback, intervalMs = 5000, dependencies = []) {
 
   useEffect(() => {
     let timerId = null;
+    let wakeTimeout = null;
     let isMounted = true;
 
     const executeCallback = async () => {
       if (!isMounted || inFlightRef.current) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       inFlightRef.current = true;
       try {
         await savedCallback.current();
       } catch (err) {
-        // Log errors silently without breaking component lifecycle
+        // Silently skip if network was suspended/aborted
+        if (
+          err?.message?.includes('NETWORK_IO_SUSPENDED') ||
+          err?.message?.includes('Failed to fetch') ||
+          err?.name === 'AbortError'
+        ) {
+          return;
+        }
         console.warn('[useAutoRefresh]: Refetch failed:', err);
       } finally {
         if (isMounted) {
@@ -43,14 +52,14 @@ export function useAutoRefresh(callback, intervalMs = 5000, dependencies = []) {
     const startTimer = () => {
       if (timerId) clearInterval(timerId);
       timerId = setInterval(() => {
-        if (typeof document !== 'undefined' && !document.hidden) {
+        if (typeof document !== 'undefined' && !document.hidden && typeof navigator !== 'undefined' && navigator.onLine) {
           executeCallback();
         }
       }, intervalMs);
     };
 
-    // Execute immediately on mount/dependency change if tab is active
-    if (typeof document !== 'undefined' && !document.hidden) {
+    // Execute immediately on mount/dependency change if tab is active and online
+    if (typeof document !== 'undefined' && !document.hidden && typeof navigator !== 'undefined' && navigator.onLine) {
       executeCallback();
     }
 
@@ -58,10 +67,15 @@ export function useAutoRefresh(callback, intervalMs = 5000, dependencies = []) {
 
     // Tab visibility & Window focus listeners
     const handleVisibilityChange = () => {
+      if (wakeTimeout) clearTimeout(wakeTimeout);
       if (typeof document !== 'undefined' && !document.hidden) {
-        // Immediately fetch data on tab return & reset interval
-        executeCallback();
-        startTimer();
+        // Allow 300ms for network adapter to fully awaken from system sleep/standby
+        wakeTimeout = setTimeout(() => {
+          if (isMounted && typeof navigator !== 'undefined' && navigator.onLine) {
+            executeCallback();
+            startTimer();
+          }
+        }, 300);
       } else {
         // Pause timer when tab is inactive
         if (timerId) clearInterval(timerId);
@@ -69,15 +83,31 @@ export function useAutoRefresh(callback, intervalMs = 5000, dependencies = []) {
     };
 
     const handleFocus = () => {
+      if (wakeTimeout) clearTimeout(wakeTimeout);
       if (typeof document !== 'undefined' && !document.hidden) {
-        executeCallback();
-        startTimer();
+        wakeTimeout = setTimeout(() => {
+          if (isMounted && typeof navigator !== 'undefined' && navigator.onLine) {
+            executeCallback();
+            startTimer();
+          }
+        }, 300);
       }
+    };
+
+    const handleOnline = () => {
+      if (wakeTimeout) clearTimeout(wakeTimeout);
+      wakeTimeout = setTimeout(() => {
+        if (isMounted && typeof document !== 'undefined' && !document.hidden) {
+          executeCallback();
+          startTimer();
+        }
+      }, 300);
     };
 
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibilityChange);
       window.addEventListener('focus', handleFocus);
+      window.addEventListener('online', handleOnline);
     }
 
     return () => {

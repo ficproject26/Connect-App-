@@ -6,26 +6,39 @@
       (function () {
         const isIgnorableNoise = (msg) => {
           if (!msg) return false;
-          const str = typeof msg === 'string' ? msg : (msg.message || msg.stack || '');
+          let str = '';
+          if (typeof msg === 'string') {
+            str = msg;
+          } else if (msg instanceof Error) {
+            str = `${msg.name} ${msg.message} ${msg.stack}`;
+          } else {
+            try {
+              str = JSON.stringify(msg) || String(msg);
+            } catch (e) {
+              str = String(msg);
+            }
+          }
           return (
             str.includes('A listener indicated an asynchronous response') ||
             str.includes('message channel closed') ||
             str.includes('runtime.lastError') ||
-            str.includes('feature_collector.js') ||
+            str.includes('feature_collector') ||
             str.includes('using deprecated parameters for the initialization function') ||
-            str.includes('preloaded using link preload but not used')
+            str.includes('preloaded using link preload but not used') ||
+            str.includes('ERR_NETWORK_IO_SUSPENDED') ||
+            str.includes('NETWORK_IO_SUSPENDED')
           );
         };
 
         const origConsoleError = console.error;
         console.error = function (...args) {
-          if (args.some(isIgnorableNoise)) return;
+          if (args.some(isIgnorableNoise) || isIgnorableNoise(args.map(a => String(a || '')).join(' '))) return;
           origConsoleError.apply(console, args);
         };
 
         const origConsoleWarn = console.warn;
         console.warn = function (...args) {
-          if (args.some(isIgnorableNoise)) return;
+          if (args.some(isIgnorableNoise) || isIgnorableNoise(args.map(a => String(a || '')).join(' '))) return;
           origConsoleWarn.apply(console, args);
         };
 
