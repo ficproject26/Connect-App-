@@ -203,6 +203,10 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
     return cleanPath;
   }
 
+  if (url.startsWith('https://res.cloudinary.com/')) {
+    return url;
+  }
+
   if (url.startsWith('http://') || url.startsWith('https://')) {
     if (url.includes('unsplash.com')) {
       const unsplashFallbacks = [
@@ -291,13 +295,23 @@ const sanitizeProduct = (p) => {
   const uniqueSanitized = Array.from(new Set(sanitizedList));
 
   if (uniqueSanitized.length > 0) {
-    updated.images = uniqueSanitized;
+    updated.images = uniqueSanitized.map(img => typeof img === 'string' ? { url: img } : img);
+    updated.imageUrls = uniqueSanitized.map(img => typeof img === 'string' ? img : img.url);
     if (!updated.image || updated.image.includes('unsplash.com')) {
-      updated.image = uniqueSanitized[0];
+      const validFirst = uniqueSanitized.find(img => {
+        const u = typeof img === 'string' ? img : img?.url;
+        return u && !u.includes('unsplash.com');
+      }) || uniqueSanitized[0];
+      const validUrl = typeof validFirst === 'string' ? validFirst : validFirst?.url;
+      if (validUrl) {
+        updated.image = validUrl;
+      }
     }
   } else {
-    updated.images = [updated.image];
+    updated.images = updated.image ? [{ url: updated.image }] : [];
+    updated.imageUrls = updated.image ? [updated.image] : [];
   }
+  updated.imageUrl = updated.image;
 
   for (const key in updated) {
     if (typeof updated[key] === 'string') {
@@ -469,6 +483,82 @@ export const productService = {
     } catch (err) {
       console.warn("Failed to delete products:", err);
       return { success: false, message: 'Server error' };
+    }
+  },
+
+  uploadImage: async (imageFileOrBase64, folder = 'products') => {
+    try {
+      const baseUrl = getBackendUrl();
+      const res = await fetch(`${baseUrl}/api/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageFileOrBase64, folder })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+      return { success: false, error: 'Upload failed' };
+    } catch (err) {
+      console.error('Error in uploadImage:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  createProduct: async (productData) => {
+    try {
+      const baseUrl = getBackendUrl();
+      const res = await fetch(`${baseUrl}/api/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        productService.clearCache();
+        return data;
+      }
+      return { success: false, error: 'Failed to create product' };
+    } catch (err) {
+      console.error('Error creating product:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  updateProduct: async (id, updateData) => {
+    try {
+      const baseUrl = getBackendUrl();
+      const res = await fetch(`${baseUrl}/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        productService.clearCache();
+        return data;
+      }
+      return { success: false, error: 'Failed to update product' };
+    } catch (err) {
+      console.error('Error updating product:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  deleteProduct: async (id) => {
+    try {
+      const baseUrl = getBackendUrl();
+      const res = await fetch(`${baseUrl}/api/products/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        productService.clearCache();
+        return data;
+      }
+      return { success: false, error: 'Failed to delete product' };
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      return { success: false, error: err.message };
     }
   }
 };

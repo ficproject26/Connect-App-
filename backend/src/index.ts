@@ -12,6 +12,8 @@ import mapsRouter from './routes/maps';
 import { socketManager } from './socket';
 import { db } from './db';
 import { helmetSecurityMiddleware, sanitizeInputsMiddleware } from './security/middleware';
+import { uploadToCloudinary, isPersistentImageUrl } from './cloudinary';
+import { ObjectId } from 'mongodb';
 
 // Load environmental variables
 dotenv.config();
@@ -262,11 +264,293 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
         return true;
       });
 
-      return res.json(activeProducts);
+      const mappedActiveProducts = activeProducts.map((p: any) => {
+        let primaryImg = p.imageUrl || p.image || '';
+        if (!primaryImg && Array.isArray(p.images) && p.images.length > 0) {
+          const first = p.images[0];
+          primaryImg = typeof first === 'string' ? first : (first?.url || '');
+        }
+        if (!primaryImg && Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
+          primaryImg = p.imageUrls[0] || '';
+        }
+
+        const normalizedImages = Array.isArray(p.images) && p.images.length > 0
+          ? p.images.map((img: any) => typeof img === 'string' ? { url: img } : img)
+          : (primaryImg ? [{ url: primaryImg }] : []);
+
+        const normalizedImageUrls = Array.isArray(p.imageUrls) && p.imageUrls.length > 0
+          ? p.imageUrls
+          : (primaryImg ? [primaryImg] : []);
+
+        return {
+          ...p,
+          id: p.id || (p._id ? p._id.toString() : ''),
+          imageUrl: primaryImg,
+          image: primaryImg,
+          images: normalizedImages,
+          imageUrls: normalizedImageUrls
+        };
+      });
+
+      return res.json(mappedActiveProducts);
     }
     return res.json([]);
   } catch (err: any) {
     console.error("Error fetching public products in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// Direct Image Upload Endpoint (Persists permanently to Cloudinary)
+app.post(['/api/upload', '/api/products/upload-image', '/api/admin/upload'], async (req, res) => {
+  try {
+    const { image, file, folder } = req.body;
+    const rawImage = image || file;
+
+    if (!rawImage) {
+      return res.status(400).json({ success: false, error: 'No image data provided' });
+    }
+
+    const uploadRes = await uploadToCloudinary(rawImage, folder || 'products');
+    if (!uploadRes.success || !uploadRes.secure_url) {
+      return res.status(500).json({ success: false, error: uploadRes.error || 'Failed to upload image' });
+    }
+
+    return res.json({
+      success: true,
+      url: uploadRes.secure_url,
+      secure_url: uploadRes.secure_url,
+      publicId: uploadRes.publicId
+    });
+  } catch (err: any) {
+    console.error("Error in upload route:", err);
+    res.status(500).json({ success: false, error: err.message || 'Server error' });
+  }
+});
+
+// Single Product Fetch Endpoint
+app.get(['/api/products/:id', '/api/public/products/:id'], async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
+
+    const { id } = req.params;
+    let query: any = { _id: id };
+    if (ObjectId.isValid(id)) {
+      query = { $or: [{ _id: new ObjectId(id) }, { _id: id }, { id: id }] };
+    }
+
+    const product = await mongoDb.collection('products').findOne(query);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    let primaryImg = product.imageUrl || product.image || '';
+    if (!primaryImg && Array.isArray(product.images) && product.images.length > 0) {
+      const first = product.images[0];
+      primaryImg = typeof first === 'string' ? first : (first?.url || '');
+    }
+    if (!primaryImg && Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
+      primaryImg = product.imageUrls[0] || '';
+    }
+
+    return res.json({
+      ...product,
+      id: product.id || product._id?.toString(),
+      imageUrl: primaryImg,
+      image: primaryImg,
+      images: Array.isArray(product.images) ? product.images : (primaryImg ? [{ url: primaryImg }] : []),
+      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : (primaryImg ? [primaryImg] : [])
+    });
+  } catch (err: any) {
+    console.error("Error fetching single product:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// Product Creation Endpoint with Cloudinary Persistence
+app.post(['/api/products', '/api/public/products', '/api/admin/products'], async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
+
+    const payload = { ...req.body };
+    delete payload._id;
+
+    // Process primary image if base64 data URI
+    let primaryImageUrl = payload.imageUrl || payload.image || '';
+    if (primaryImageUrl && typeof primaryImageUrl === 'string' && primaryImageUrl.startsWith('data:image/')) {
+      const uploadRes = await uploadToCloudinary(primaryImageUrl, 'products');
+      if (uploadRes.success && uploadRes.secure_url) {
+        primaryImageUrl = uploadRes.secure_url;
+      }
+    }
+
+    // Process multiple images array if provided
+    let processedImages: any[] = [];
+    if (Array.isArray(payload.images) && payload.images.length > 0) {
+      for (const imgItem of payload.images) {
+        const rawUrl = typeof imgItem === 'string' ? imgItem : (imgItem?.url || '');
+        if (rawUrl && rawUrl.startsWith('data:image/')) {
+          const uploadRes = await uploadToCloudinary(rawUrl, 'products');
+          if (uploadRes.success && uploadRes.secure_url) {
+            processedImages.push({ url: uploadRes.secure_url, publicId: uploadRes.publicId });
+          }
+        } else if (rawUrl) {
+          processedImages.push(typeof imgItem === 'object' ? imgItem : { url: rawUrl });
+        }
+      }
+    } else if (primaryImageUrl) {
+      processedImages = [{ url: primaryImageUrl }];
+    }
+
+    // If primaryImageUrl was empty but processedImages has items, use the first
+    if (!primaryImageUrl && processedImages.length > 0) {
+      primaryImageUrl = processedImages[0].url || '';
+    }
+
+    const processedImageUrls = processedImages.map(img => typeof img === 'string' ? img : img.url).filter(Boolean);
+
+    const newProduct = {
+      ...payload,
+      imageUrl: primaryImageUrl,
+      image: primaryImageUrl,
+      images: processedImages,
+      imageUrls: processedImageUrls,
+      isActive: payload.isActive !== false,
+      isAvailable: payload.isAvailable !== false,
+      createdAt: payload.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const insertResult = await mongoDb.collection('products').insertOne(newProduct);
+    const savedProduct = {
+      ...newProduct,
+      _id: insertResult.insertedId,
+      id: insertResult.insertedId.toString()
+    };
+
+    return res.status(201).json({
+      success: true,
+      message: 'Product created successfully with permanent image persistence.',
+      product: savedProduct
+    });
+  } catch (err: any) {
+    console.error("Error creating product:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// Product Update Endpoint (PRESERVES EXISTING IMAGES WHEN NOT CHANGED)
+const handleUpdateProduct = async (req: any, res: any) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
+
+    const { id } = req.params;
+    let query: any = { _id: id };
+    if (ObjectId.isValid(id)) {
+      query = { $or: [{ _id: new ObjectId(id) }, { _id: id }, { id: id }] };
+    }
+
+    const existing = await mongoDb.collection('products').findOne(query);
+    if (!existing) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const updatePayload = { ...req.body };
+    delete updatePayload._id;
+    delete updatePayload.id;
+
+    // Check if new images are provided or if existing should be preserved
+    let updatedImageUrl = updatePayload.imageUrl !== undefined ? updatePayload.imageUrl : (updatePayload.image !== undefined ? updatePayload.image : undefined);
+    let updatedImages = updatePayload.images;
+    let updatedImageUrls = updatePayload.imageUrls;
+
+    // If updatePayload did not provide an image or sent empty string, and user did not explicitly flag removeImage,
+    // PRESERVE the existing product's images!
+    const isExplicitlyRemoving = updatePayload.removeImage === true;
+
+    if (!isExplicitlyRemoving) {
+      if (!updatedImageUrl && !updatedImages?.length && !updatedImageUrls?.length) {
+        // Retain existing image references
+        updatedImageUrl = existing.imageUrl || existing.image || '';
+        updatedImages = existing.images || (updatedImageUrl ? [{ url: updatedImageUrl }] : []);
+        updatedImageUrls = existing.imageUrls || (updatedImageUrl ? [updatedImageUrl] : []);
+      }
+    }
+
+    // If new image is base64, upload to Cloudinary
+    if (updatedImageUrl && typeof updatedImageUrl === 'string' && updatedImageUrl.startsWith('data:image/')) {
+      const uploadRes = await uploadToCloudinary(updatedImageUrl, 'products');
+      if (uploadRes.success && uploadRes.secure_url) {
+        updatedImageUrl = uploadRes.secure_url;
+      }
+    }
+
+    // Process images array if provided
+    if (Array.isArray(updatedImages) && updatedImages.length > 0) {
+      const processed: any[] = [];
+      for (const imgItem of updatedImages) {
+        const rawUrl = typeof imgItem === 'string' ? imgItem : (imgItem?.url || '');
+        if (rawUrl && rawUrl.startsWith('data:image/')) {
+          const uploadRes = await uploadToCloudinary(rawUrl, 'products');
+          if (uploadRes.success && uploadRes.secure_url) {
+            processed.push({ url: uploadRes.secure_url, publicId: uploadRes.publicId });
+          }
+        } else if (rawUrl) {
+          processed.push(typeof imgItem === 'object' ? imgItem : { url: rawUrl });
+        }
+      }
+      updatedImages = processed;
+      updatedImageUrls = processed.map(img => typeof img === 'string' ? img : img.url).filter(Boolean);
+      if (!updatedImageUrl && updatedImages.length > 0) {
+        updatedImageUrl = updatedImages[0].url || '';
+      }
+    }
+
+    updatePayload.imageUrl = updatedImageUrl;
+    updatePayload.image = updatedImageUrl;
+    updatePayload.images = updatedImages;
+    updatePayload.imageUrls = updatedImageUrls;
+    updatePayload.updatedAt = new Date().toISOString();
+
+    await mongoDb.collection('products').updateOne(query, { $set: updatePayload });
+
+    const finalProduct = await mongoDb.collection('products').findOne(query);
+    return res.json({
+      success: true,
+      message: 'Product updated successfully while preserving images.',
+      product: {
+        ...finalProduct,
+        id: finalProduct?._id?.toString()
+      }
+    });
+  } catch (err: any) {
+    console.error("Error updating product:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+};
+
+app.put(['/api/products/:id', '/api/public/products/:id', '/api/admin/products/:id'], handleUpdateProduct);
+app.patch(['/api/products/:id', '/api/public/products/:id', '/api/admin/products/:id'], handleUpdateProduct);
+
+// Product Deletion Endpoint
+app.delete(['/api/products/:id', '/api/public/products/:id', '/api/admin/products/:id'], async (req, res) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
+
+    const { id } = req.params;
+    let query: any = { _id: id };
+    if (ObjectId.isValid(id)) {
+      query = { $or: [{ _id: new ObjectId(id) }, { _id: id }, { id: id }] };
+    }
+
+    await mongoDb.collection('products').deleteOne(query);
+    return res.json({ success: true, message: 'Product deleted successfully.' });
+  } catch (err: any) {
+    console.error("Error deleting product:", err);
     res.status(500).json({ error: err.message || 'Server error' });
   }
 });
