@@ -29,14 +29,40 @@ export default function AppRoutes({
 
   const handleLogout = () => {
     logout();
-    setCurrentPage('home');
+    setCurrentPage('login');
+    try {
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({ page: 'login' }, '', '/login');
+      }
+    } catch (e) {}
   };
 
   const handleAuthSuccess = (user) => {
     setCurrentPage('dashboard');
+    try {
+      if (typeof window !== 'undefined') {
+        window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
+      }
+    } catch (e) {}
   };
 
   const effectiveUser = currentUser || null;
+
+  // Protected pages that require authenticated user session
+  const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
+
+  // Protected route auth guard: unauthenticated access to protected routes redirects to LoginPage
+  if (protectedPages.includes(currentPage) && !currentUser) {
+    return (
+      <AuthLayout>
+        <LoginPage
+          onAuthSuccess={handleAuthSuccess}
+          onBackToHome={handleHomeNavigate}
+          onNavigateToJoinNow={() => setCurrentPage('join-now')}
+        />
+      </AuthLayout>
+    );
+  }
 
   // Routing decisions
   if (currentPage === 'dashboard') {
@@ -55,22 +81,29 @@ export default function AppRoutes({
   }
 
   if (currentPage === 'login') {
+    if (currentUser) {
+      return (
+        <CustomerLayout>
+          <ErrorBoundary>
+            <CustomerDashboard 
+              currentUser={effectiveUser} 
+              onLogOut={handleLogout} 
+              onJobsClick={() => setIsJobsOpen(true)}
+              onCategoryClick={handleCategoryClick}
+            />
+          </ErrorBoundary>
+        </CustomerLayout>
+      );
+    }
+
     return (
-      <CustomerLayout>
-        <ErrorBoundary>
-          <CustomerDashboard 
-            currentUser={currentUser} 
-            onLogOut={handleLogout} 
-            onJobsClick={() => setIsJobsOpen(true)}
-            onCategoryClick={handleCategoryClick}
-            isLandingPage={!currentUser}
-            hideProfile={!currentUser}
-            initialLoginModalOpen={true}
-            onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
-            onNavigateToJoinNow={() => setCurrentPage('join-now')}
-          />
-        </ErrorBoundary>
-      </CustomerLayout>
+      <AuthLayout>
+        <LoginPage
+          onAuthSuccess={handleAuthSuccess}
+          onBackToHome={handleHomeNavigate}
+          onNavigateToJoinNow={() => setCurrentPage('join-now')}
+        />
+      </AuthLayout>
     );
   }
 

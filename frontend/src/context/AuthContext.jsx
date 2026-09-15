@@ -183,8 +183,17 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('connect_current_user');
-    localStorage.removeItem('connect_token');
+    try {
+      localStorage.removeItem('connect_current_user');
+      localStorage.removeItem('connect_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('connect_current_page');
+      localStorage.removeItem('connect_active_profile_tab');
+      localStorage.removeItem('connect_profile_modal_open');
+      sessionStorage.removeItem('connect_current_user');
+      sessionStorage.removeItem('connect_token');
+      sessionStorage.removeItem('token');
+    } catch (e) {}
   };
 
   const register = (formData, role, callback) => {

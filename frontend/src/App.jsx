@@ -43,9 +43,23 @@ function AppContent() {
 
   const [currentPage, setCurrentPage] = useState(() => {
     try {
-      const savedPage = localStorage.getItem('connect_current_page');
-      if (savedPage && savedPage !== 'login') return savedPage;
+      const path = (typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+|\/+$/g, '') : '').toLowerCase();
       const user = localStorage.getItem('connect_current_user');
+      const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
+
+      if (path === 'login') return 'login';
+      if (protectedPages.includes(path)) {
+        return user ? (path === 'profile' ? 'dashboard' : path) : 'login';
+      }
+
+      const savedPage = localStorage.getItem('connect_current_page');
+      if (savedPage) {
+        if (savedPage === 'login') return 'login';
+        if (protectedPages.includes(savedPage)) {
+          return user ? savedPage : 'login';
+        }
+        return savedPage;
+      }
       if (user) return 'dashboard';
       return 'home';
     } catch (e) {
@@ -104,10 +118,11 @@ function AppContent() {
     try {
       if (typeof window !== 'undefined') {
         const currentState = window.history.state || {};
+        const pagePath = currentPage === 'home' ? '/' : `/${currentPage}`;
         if (!currentState.page) {
-          window.history.replaceState({ page: currentPage, category: activeCategory, subService: activeSubService }, '');
+          window.history.replaceState({ page: currentPage, category: activeCategory, subService: activeSubService }, '', pagePath);
         } else if (currentState.page !== currentPage || currentState.category !== activeCategory || currentState.subService !== activeSubService) {
-          window.history.pushState({ ...currentState, page: currentPage, category: activeCategory, subService: activeSubService }, '');
+          window.history.pushState({ ...currentState, page: currentPage, category: activeCategory, subService: activeSubService }, '', pagePath);
         }
       }
     } catch (e) {}
@@ -115,6 +130,21 @@ function AppContent() {
 
   useEffect(() => {
     const handlePopState = (e) => {
+      const user = localStorage.getItem('connect_current_user');
+      const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
+      const targetPage = (e.state && e.state.page) ? e.state.page : (
+        typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() : ''
+      );
+
+      // Back navigation protection: if target is a protected route and user is logged out, redirect to login
+      if (protectedPages.includes(targetPage) && !user) {
+        setCurrentPage('login');
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({ page: 'login' }, '', '/login');
+        }
+        return;
+      }
+
       if (e.state) {
         if (e.state.page) setCurrentPage(e.state.page);
         if (e.state.category !== undefined) setActiveCategory(e.state.category);

@@ -1174,7 +1174,16 @@ export default function CustomerDashboard({
 
   // Profile Modal & Mobile Menu State
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname.toLowerCase();
+        return (path.includes('profile') || window.location.hash.includes('profile')) && Boolean(currentUser);
+      }
+    } catch (e) {}
+    return false;
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState('orders'); // 'orders' | 'settings' | 'card' | 'edit'
 
@@ -3039,14 +3048,22 @@ export default function CustomerDashboard({
   };
 
   const triggerNotification = (message, type = 'info') => {
-    const id = Date.now() + Math.random();
     const text = typeof message === 'object' ? (message.message || message.text) : message;
+    if (!text) return;
     const msgType = typeof message === 'object' ? (message.type || type) : type;
-    const newToast = { id, text, type: msgType };
-    setToasts(prev => [...prev.slice(-4), newToast]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
+
+    setToasts(prev => {
+      // Deduplicate: If an identical active notification (same text and type) is already displayed, do not add a duplicate
+      if (prev.some(t => t.text === text && t.type === msgType)) {
+        return prev;
+      }
+      const id = Date.now() + Math.random();
+      const newToast = { id, text, type: msgType };
+      setTimeout(() => {
+        setToasts(current => current.filter(t => t.id !== id));
+      }, 4000);
+      return [...prev.slice(-4), newToast];
+    });
   };
 
   const toggleFavorite = (id) => {
@@ -10992,86 +11009,92 @@ wishlistProducts.forEach(item => addToCart(item));
                     <form 
                       onSubmit={async (e) => {
                         e.preventDefault();
-                        
-                        // Password change validation
-                        if (profilePassword || profileConfirmPassword) {
-                          if (profilePassword !== profileConfirmPassword) {
-                            triggerNotification("Passwords do not match!", "error");
-                            return;
-                          }
-                          if (profilePassword.length < 6) {
-                            triggerNotification("Password must be at least 6 characters long!", "error");
-                            return;
-                          }
-                        }
+                        if (isSavingProfile) return;
+                        setIsSavingProfile(true);
 
-                        const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
-                        if (!userTarget) {
-                          triggerNotification("Please log in to update profile.", "error");
-                          return;
-                        }
-
-                        const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
-                        const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
-                        const endpoints = [
-                          adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
-                          baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
-                          `/api/auth/customer-profile`
-                        ].filter(Boolean);
-
-                        let saveSuccess = false;
-                        let updatedUserObj = null;
-
-                        for (const url of [...new Set(endpoints)]) {
-                          try {
-                            const res = await fetch(url, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                userId: currentUser?.id || userTarget,
-                                customerId: currentUser?.customerId || activeCustomerId,
-                                email: profileEmail || currentUser?.email,
-                                phone: profilePhone || currentUser?.phone,
-                                name: profileName || currentUser?.name,
-                                avatar: profilePhoto !== undefined ? profilePhoto : currentUser?.avatar,
-                                password: profilePassword || undefined
-                              })
-                            });
-
-                            if (res.ok) {
-                              const data = await res.json();
-                              if (data && (data.status === 'success' || data.user)) {
-                                saveSuccess = true;
-                                updatedUserObj = data.user || data.data;
-                                break;
-                              }
+                        try {
+                          // Password change validation
+                          if (profilePassword || profileConfirmPassword) {
+                            if (profilePassword !== profileConfirmPassword) {
+                              triggerNotification("Passwords do not match!", "error");
+                              return;
                             }
-                          } catch (err) {}
-                        }
+                            if (profilePassword.length < 6) {
+                              triggerNotification("Password must be at least 6 characters long!", "error");
+                              return;
+                            }
+                          }
 
-                        if (saveSuccess && updatedUserObj) {
-                          login({
-                            ...currentUser,
-                            id: updatedUserObj.id || currentUser?.id,
-                            customerId: updatedUserObj.customerId || currentUser?.customerId,
-                            name: updatedUserObj.name || profileName,
-                            email: updatedUserObj.email || profileEmail,
-                            phone: updatedUserObj.phone || profilePhone,
-                            avatar: updatedUserObj.avatar || updatedUserObj.photo || profilePhoto,
-                            role: 'customer'
-                          }, 'customer');
+                          const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+                          if (!userTarget) {
+                            triggerNotification("Please log in to update profile.", "error");
+                            return;
+                          }
 
-                          if (updatedUserObj.name) setProfileName(updatedUserObj.name);
-                          if (updatedUserObj.email) setProfileEmail(updatedUserObj.email);
-                          if (updatedUserObj.phone) setProfilePhone(updatedUserObj.phone);
-                          if (updatedUserObj.avatar || updatedUserObj.photo) setProfilePhoto(updatedUserObj.avatar || updatedUserObj.photo);
-                          if (Array.isArray(updatedUserObj.addresses)) setAddresses(updatedUserObj.addresses);
+                          const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+                          const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+                          const endpoints = [
+                            adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+                            baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+                            `/api/auth/customer-profile`
+                          ].filter(Boolean);
 
-                          setProfilePassword('');
-                          setProfileConfirmPassword('');
-                          triggerNotification("Profile saved in database successfully!");
-                        } else {
-                          triggerNotification("Failed to save profile in database.", "error");
+                          let saveSuccess = false;
+                          let updatedUserObj = null;
+
+                          for (const url of [...new Set(endpoints)]) {
+                            try {
+                              const res = await fetch(url, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  userId: currentUser?.id || userTarget,
+                                  customerId: currentUser?.customerId || activeCustomerId,
+                                  email: profileEmail || currentUser?.email,
+                                  phone: profilePhone || currentUser?.phone,
+                                  name: profileName || currentUser?.name,
+                                  avatar: profilePhoto !== undefined ? profilePhoto : currentUser?.avatar,
+                                  password: profilePassword || undefined
+                                })
+                              });
+
+                              if (res.ok) {
+                                const data = await res.json();
+                                if (data && (data.status === 'success' || data.user)) {
+                                  saveSuccess = true;
+                                  updatedUserObj = data.user || data.data;
+                                  break;
+                                }
+                              }
+                            } catch (err) {}
+                          }
+
+                          if (saveSuccess && updatedUserObj) {
+                            login({
+                              ...currentUser,
+                              id: updatedUserObj.id || currentUser?.id,
+                              customerId: updatedUserObj.customerId || currentUser?.customerId,
+                              name: updatedUserObj.name || profileName,
+                              email: updatedUserObj.email || profileEmail,
+                              phone: updatedUserObj.phone || profilePhone,
+                              avatar: updatedUserObj.avatar || updatedUserObj.photo || profilePhoto,
+                              role: 'customer'
+                            }, 'customer');
+
+                            if (updatedUserObj.name) setProfileName(updatedUserObj.name);
+                            if (updatedUserObj.email) setProfileEmail(updatedUserObj.email);
+                            if (updatedUserObj.phone) setProfilePhone(updatedUserObj.phone);
+                            if (updatedUserObj.avatar || updatedUserObj.photo) setProfilePhoto(updatedUserObj.avatar || updatedUserObj.photo);
+                            if (Array.isArray(updatedUserObj.addresses)) setAddresses(updatedUserObj.addresses);
+
+                            setProfilePassword('');
+                            setProfileConfirmPassword('');
+                            triggerNotification("Profile saved in database successfully!");
+                          } else {
+                            triggerNotification("Failed to save profile in database.", "error");
+                          }
+                        } finally {
+                          setIsSavingProfile(false);
                         }
                       }}
                       className="space-y-4 text-left"
@@ -11232,9 +11255,12 @@ wishlistProducts.forEach(item => addToCart(item));
 
                       <button 
                         type="submit"
-                        className="mt-2 w-full py-2.5 bg-[#0b1e36] hover:bg-amber-500 hover:text-[#0b1e36] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors cursor-pointer text-center"
+                        disabled={isSavingProfile}
+                        className={`mt-2 w-full py-2.5 bg-[#0b1e36] hover:bg-amber-500 hover:text-[#0b1e36] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors text-center ${
+                          isSavingProfile ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
                       >
-                        Edit Profile
+                        {isSavingProfile ? 'Saving...' : 'Edit Profile'}
                       </button>
                     </form>
 
