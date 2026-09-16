@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { getBackendUrl } from '../services/apiSetup';
 
 export const CustomerContext = createContext(null);
 
@@ -22,7 +23,7 @@ export function CustomerProvider({ children }) {
   });
 
   const [membershipTier, setMembershipTier] = useState(() => {
-    return localStorage.getItem('connect_customer_tier') || 'Gold Elite';
+    return localStorage.getItem('connect_customer_tier') || 'None';
   });
 
   useEffect(() => {
@@ -34,8 +35,45 @@ export function CustomerProvider({ children }) {
   }, [transactions]);
 
   useEffect(() => {
-    localStorage.setItem('connect_customer_tier', membershipTier);
+    if (membershipTier && membershipTier !== 'None') {
+      localStorage.setItem('connect_customer_tier', membershipTier);
+    } else {
+      localStorage.removeItem('connect_customer_tier');
+    }
   }, [membershipTier]);
+
+  const refreshWallet = useCallback(async (userIdentifier) => {
+    try {
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const targetUser = userIdentifier || localStorage.getItem('connect_customer_id') || localStorage.getItem('connect_user_id') || '';
+      
+      const queryParam = targetUser ? `?customerId=${encodeURIComponent(targetUser)}&userId=${encodeURIComponent(targetUser)}` : '';
+      
+      // 1. Fetch live balance from DB
+      const balRes = await fetch(`${baseBackend}/api/wallet/balance${queryParam}`);
+      if (balRes.ok) {
+        const balData = await balRes.json();
+        if (balData.success && typeof balData.walletBalance === 'number') {
+          setWalletBalance(balData.walletBalance);
+        }
+      }
+
+      // 2. Fetch live transactions from DB
+      const txnRes = await fetch(`${baseBackend}/api/wallet/transactions${queryParam}`);
+      if (txnRes.ok) {
+        const txnData = await txnRes.json();
+        if (txnData.success && Array.isArray(txnData.transactions)) {
+          setTransactions(txnData.transactions);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not sync wallet from backend:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshWallet();
+  }, [refreshWallet]);
 
   const addTransaction = (description, amount, category) => {
     const newTxn = {
@@ -54,7 +92,16 @@ export function CustomerProvider({ children }) {
   };
 
   return (
-    <CustomerContext.Provider value={{ walletBalance, transactions, membershipTier, addTransaction, updateTier }}>
+    <CustomerContext.Provider value={{
+      walletBalance,
+      transactions,
+      membershipTier,
+      addTransaction,
+      updateTier,
+      refreshWallet,
+      setWalletBalance,
+      setTransactions
+    }}>
       {children}
     </CustomerContext.Provider>
   );

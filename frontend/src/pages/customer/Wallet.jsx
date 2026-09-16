@@ -1,18 +1,138 @@
 import React, { useState } from 'react';
 import useCustomer from '../../hooks/useCustomer';
-import { Wallet as WalletIcon, PlusCircle, ArrowUpRight, ArrowDownRight, ShieldCheck, Zap } from 'lucide-react';
+import useAuth from '../../hooks/useAuth';
+import { getBackendUrl } from '../../services/apiSetup';
+import { Wallet as WalletIcon, PlusCircle, ArrowUpRight, ArrowDownRight, ShieldCheck, Zap, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function Wallet() {
-  const { walletBalance, transactions, addTransaction } = useCustomer();
+  const { walletBalance, transactions, refreshWallet } = useCustomer();
+  const { currentUser } = useAuth();
   const [depositAmount, setDepositAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleDeposit = (e) => {
+  const handleDeposit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
     const amt = parseFloat(depositAmount);
-    if (amt > 0) {
-      addTransaction('Added funds to wallet via UPI', amt, 'Deposit');
-      setDepositAmount('');
-      alert(`₹${amt.toLocaleString()} deposited successfully!`);
+    if (isNaN(amt) || amt <= 0) {
+      setErrorMessage('Please enter a valid deposit amount greater than ₹0.');
+      return;
+    }
+
+    if (isProcessing) return; // Prevent double-clicks / concurrent recharge attempts
+    setIsProcessing(true);
+
+    try {
+      if (typeof window !== 'undefined' && !window.Razorpay) {
+        await new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.async = true;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+      }
+
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const targetUser = currentUser?.id || currentUser?.customerId || localStorage.getItem('connect_customer_id') || localStorage.getItem('connect_user_id') || '';
+
+      const orderRes = await fetch(`${baseBackend}/api/wallet/recharge/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amt,
+          userId: targetUser,
+          customerId: currentUser?.customerId || targetUser,
+          email: currentUser?.email || '',
+          phone: currentUser?.phone || ''
+        })
+      });
+
+      const orderData = await orderRes.json();
+
+      if (!orderRes.ok || !orderData.success) {
+        setIsProcessing(false);
+        setErrorMessage(orderData.error || 'Failed to initialize wallet recharge.');
+        return;
+      }
+
+      if (typeof window !== 'undefined' && window.Razorpay) {
+        const razorpayOptions = {
+          key: orderData.key_id || 'rzp_test_THLM17MgXLM2tP',
+          amount: orderData.amount,
+          currency: orderData.currency || 'INR',
+          name: 'Forge India Connect',
+          description: `Wallet Deposit - ₹${amt.toLocaleString()}`,
+          order_id: orderData.order_id,
+          prefill: {
+            name: currentUser?.name || 'Connect Member',
+            email: currentUser?.email || '',
+            contact: currentUser?.phone || ''
+          },
+          theme: {
+            color: '#f59e0b'
+          },
+          handler: async function (response) {
+            try {
+              const verifyRes = await fetch(`${baseBackend}/api/wallet/recharge/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  amount: amt,
+                  userId: targetUser,
+                  customerId: currentUser?.customerId || targetUser,
+                  email: currentUser?.email || '',
+                  phone: currentUser?.phone || ''
+                })
+              });
+
+              const verifyData = await verifyRes.json();
+
+              if (verifyRes.ok && verifyData.success) {
+                setDepositAmount('');
+                setSuccessMessage(`Wallet recharged successfully! ₹${amt.toLocaleString()} credited.`);
+                if (typeof refreshWallet === 'function') {
+                  await refreshWallet(targetUser);
+                }
+              } else {
+                setErrorMessage(verifyData.error || 'Payment verification failed. Wallet not credited.');
+              }
+            } catch (vErr) {
+              console.error('Error verifying wallet payment:', vErr);
+              setErrorMessage('Network error verifying payment. Please refresh your wallet.');
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessing(false);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(razorpayOptions);
+        rzp.on('payment.failed', function (resp) {
+          setIsProcessing(false);
+          setErrorMessage(`Payment failed: ${resp.error?.description || 'Transaction unsuccessful'}. Wallet remains unchanged.`);
+        });
+        rzp.open();
+      } else {
+        setIsProcessing(false);
+        setErrorMessage('Unable to load Razorpay checkout. Please check your internet connection.');
+      }
+    } catch (err) {
+      console.error('Error initiating wallet recharge:', err);
+      setIsProcessing(false);
+      setErrorMessage('Server error initiating wallet deposit.');
     }
   };
 
@@ -34,6 +154,20 @@ export default function Wallet() {
           <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">100% Encrypted & Verified</span>
         </div>
       </div>
+
+      {/* Notifications */}
+      {errorMessage && (
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-2xl flex items-center gap-3 text-rose-700 dark:text-rose-300 text-xs font-bold animate-fade-in">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+      {successMessage && (
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-2xl flex items-center gap-3 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-fade-in">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          <span>{successMessage}</span>
+        </div>
+      )}
 
       {/* Main Grid: Wallet Balance & Deposit Funds */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
@@ -69,13 +203,29 @@ export default function Wallet() {
                 type="number"
                 placeholder="Enter deposit amount (e.g. 5000)"
                 value={depositAmount}
+                disabled={isProcessing}
                 onChange={(e) => setDepositAmount(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-8 pr-4 py-3.5 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-400 transition-colors"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl pl-8 pr-4 py-3.5 text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-amber-400 transition-colors disabled:opacity-50"
               />
             </div>
-            <button type="submit" className="px-8 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center space-x-2 cursor-pointer shadow-md transition-all shrink-0 border-none active:scale-98">
-              <PlusCircle className="w-4 h-4" />
-              <span>Deposit Funds</span>
+            <button 
+              type="submit" 
+              disabled={isProcessing}
+              className={`px-8 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center space-x-2 shadow-md transition-all shrink-0 border-none ${
+                isProcessing ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer active:scale-98'
+              }`}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Deposit Funds</span>
+                </>
+              )}
             </button>
           </form>
         </div>
@@ -93,7 +243,7 @@ export default function Wallet() {
             <div className="text-center py-12 text-slate-400 text-xs font-bold">No transactions found.</div>
           ) : (
             transactions.map((txn, index) => {
-              const isDeposit = txn.amount > 0;
+              const isDeposit = txn.amount > 0 || txn.type === 'CREDIT';
               let rawDesc = (txn.description || '').replace(/\s*\(Qty:\s*\d+\)/gi, '');
               if (/stay|hotel|travel|tour|cab|clinic|doctor|booking|service/i.test(rawDesc)) {
                 rawDesc = rawDesc.replace(/^Order Payment\s*-\s*/i, 'Booking Payment - ');
@@ -109,11 +259,11 @@ export default function Wallet() {
                     </div>
                     <div className="text-left">
                       <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white block">{rawDesc}</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider mt-0.5">{txn.category} • {txn.date}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider mt-0.5">{txn.category || (isDeposit ? 'Deposit' : 'Order Payment')} • {txn.date}</span>
                     </div>
                   </div>
                   <span className={`text-base sm:text-lg font-black font-mono ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
-                    {isDeposit ? '+' : ''}₹{Math.abs(txn.amount).toLocaleString()}
+                    {isDeposit ? '+' : '-'}₹{Math.abs(txn.amount).toLocaleString()}
                   </span>
                 </div>
               );

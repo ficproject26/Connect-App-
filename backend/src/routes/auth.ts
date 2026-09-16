@@ -335,7 +335,11 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
         pincode: dbUser.pincode || '',
         state: dbUser.state || '',
         addresses: Array.isArray(dbUser.addresses) ? dbUser.addresses : [],
-        registrationId: dbUser.registrationId || ''
+        registrationId: dbUser.registrationId || '',
+        membershipTier: dbUser.membershipTier || 'None',
+        membershipStatus: dbUser.membershipStatus || (dbUser.membershipTier && dbUser.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
+        membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : [],
+        walletBalance: typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 5000.00
       };
     }
 
@@ -565,7 +569,11 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     city: dbUser.city || '',
     pincode: dbUser.pincode || '',
     role: dbUser.role || 'customer',
-    customerId: dbUser.registrationId || dbUser.customerId || `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`
+    customerId: dbUser.registrationId || dbUser.customerId || `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`,
+    membershipTier: dbUser.membershipTier || 'None',
+    membershipStatus: dbUser.membershipStatus || (dbUser.membershipTier && dbUser.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
+    membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : [],
+    walletBalance: typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 5000.00
   };
 
   return res.json({
@@ -850,6 +858,10 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         role: safeProfile.role || 'customer',
         customerId: resolvedCustId,
         registrationId: resolvedCustId,
+        membershipTier: safeProfile.membershipTier || 'None',
+        membershipStatus: safeProfile.membershipStatus || (safeProfile.membershipTier && safeProfile.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
+        membershipHistory: Array.isArray(safeProfile.membershipHistory) ? safeProfile.membershipHistory : [],
+        walletBalance: typeof safeProfile.walletBalance === 'number' ? Math.max(0, safeProfile.walletBalance) : 5000.00,
         addresses: profileAddresses
       }
     });

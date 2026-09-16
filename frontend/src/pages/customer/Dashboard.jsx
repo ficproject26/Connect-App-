@@ -811,7 +811,7 @@ export default function CustomerDashboard({
       localStorage.setItem('connect_current_user', JSON.stringify(userObj));
     } catch (e) {}
   });
-  const { walletBalance, membershipTier, updateTier, addTransaction } = useCustomer();
+  const { walletBalance, membershipTier, updateTier, addTransaction, refreshWallet } = useCustomer();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(initialLoginModalOpen || false);
 
   useEffect(() => {
@@ -1236,6 +1236,10 @@ export default function CustomerDashboard({
             if (dbUser.avatar || dbUser.photo) setProfilePhoto(dbUser.avatar || dbUser.photo);
             if (Array.isArray(dbUser.addresses)) setAddresses(deduplicateAddresses(dbUser.addresses));
 
+            if (dbUser.membershipTier !== undefined) {
+              updateTier(dbUser.membershipTier || 'None');
+            }
+
             login({
               ...currentUser,
               id: dbUser.id || currentUser?.id,
@@ -1245,6 +1249,9 @@ export default function CustomerDashboard({
               phone: dbUser.phone || currentUser?.phone,
               avatar: dbUser.avatar || dbUser.photo || currentUser?.avatar,
               photo: dbUser.avatar || dbUser.photo || currentUser?.photo,
+              membershipTier: dbUser.membershipTier || currentUser?.membershipTier || 'None',
+              membershipStatus: dbUser.membershipStatus || 'ACTIVE',
+              membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : (currentUser?.membershipHistory || []),
               addresses: deduplicateAddresses(dbUser.addresses || currentUser?.addresses || []),
               role: 'customer'
             }, 'customer');
@@ -1980,6 +1987,153 @@ export default function CustomerDashboard({
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const currentMembershipTier = membershipTier;
   const setCurrentMembershipTier = updateTier;
+  const [processingMembershipTier, setProcessingMembershipTier] = useState(null);
+
+  const getMembershipLevel = (tierName) => {
+    if (!tierName || typeof tierName !== 'string') return 0;
+    const lower = tierName.toLowerCase().trim();
+    if (lower.includes('diamond')) return 3;
+    if (lower.includes('gold')) return 2;
+    if (lower.includes('silver')) return 1;
+    return 0;
+  };
+
+  const handleSelectOrUpgradeMembership = async (tier, onSuccessCallback = null) => {
+    if (processingMembershipTier) return; // Prevent duplicate payment / rapid clicks
+
+    const targetUserId = currentUser?.id || currentUser?.customerId || activeCustomerId;
+    if (!targetUserId) {
+      triggerNotification("Please log in to select or upgrade your membership plan.", "warning");
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    const currentLevel = getMembershipLevel(currentMembershipTier);
+    const targetLevel = typeof tier === 'object' ? (tier.level || getMembershipLevel(tier.name || tier.key)) : getMembershipLevel(tier);
+    const planKey = typeof tier === 'object' ? (tier.key || tier.name) : tier;
+    const planName = typeof tier === 'object' ? (tier.name || tier.key) : tier;
+
+    if (targetLevel < currentLevel) {
+      triggerNotification(`Downgrading is not permitted. You are currently on ${currentMembershipTier}.`, "error");
+      return;
+    }
+
+    if (targetLevel === currentLevel && currentLevel > 0) {
+      triggerNotification(`You are already subscribed to ${planName}.`, "info");
+      return;
+    }
+
+    setProcessingMembershipTier(planKey);
+
+    try {
+      if (typeof window !== 'undefined' && !window.Razorpay) {
+        await new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.async = true;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+      }
+
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const orderRes = await fetch(`${baseBackend}/api/membership/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planKey: planKey,
+          userId: targetUserId,
+          customerId: currentUser?.customerId || activeCustomerId,
+          email: profileEmail || currentUser?.email || '',
+          phone: profilePhone || currentUser?.phone || ''
+        })
+      });
+
+      const orderData = await orderRes.json();
+
+      if (!orderRes.ok || !orderData.success) {
+        setProcessingMembershipTier(null);
+        triggerNotification(orderData.error || "Failed to create membership payment order.", "error");
+        return;
+      }
+
+      if (typeof window !== 'undefined' && window.Razorpay) {
+        const razorpayOptions = {
+          key: orderData.key_id || 'rzp_test_THLM17MgXLM2tP',
+          amount: orderData.amount,
+          currency: orderData.currency || 'INR',
+          name: 'Forge India Connect',
+          description: `${orderData.planName || planName} Membership Plan`,
+          order_id: orderData.order_id,
+          prefill: {
+            name: profileName || currentUser?.name || 'Connect Member',
+            email: profileEmail || currentUser?.email || '',
+            contact: profilePhone || currentUser?.phone || ''
+          },
+          theme: {
+            color: planKey.toLowerCase().includes('diamond') ? '#06b6d4' : planKey.toLowerCase().includes('gold') ? '#f59e0b' : '#64748b'
+          },
+          handler: async function (response) {
+            try {
+              triggerNotification(`Verifying payment for ${planName}...`, "info");
+              const verifyRes = await fetch(`${baseBackend}/api/membership/verify-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  planKey: planKey,
+                  userId: targetUserId,
+                  customerId: currentUser?.customerId || activeCustomerId,
+                  email: profileEmail || currentUser?.email || '',
+                  phone: profilePhone || currentUser?.phone || ''
+                })
+              });
+
+              const verifyData = await verifyRes.json();
+
+              if (verifyRes.ok && verifyData.success) {
+                const activatedTier = verifyData.membershipTier || planName;
+                setCurrentMembershipTier(activatedTier);
+                triggerNotification(`🎉 Payment verified! Your ${activatedTier} membership is now ACTIVE!`, "success");
+                if (typeof onSuccessCallback === 'function') onSuccessCallback();
+                await loadCustomerProfileFromDb();
+              } else {
+                triggerNotification(verifyData.error || "Payment verification failed. Membership not activated.", "error");
+              }
+            } catch (vErr) {
+              console.error("Error verifying membership payment:", vErr);
+              triggerNotification("Network error verifying payment. Please refresh.", "error");
+            } finally {
+              setProcessingMembershipTier(null);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setProcessingMembershipTier(null);
+              triggerNotification("Membership checkout cancelled. Current plan remains unchanged.", "info");
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(razorpayOptions);
+        rzp.on('payment.failed', function (resp) {
+          setProcessingMembershipTier(null);
+          triggerNotification(`Payment failed: ${resp.error?.description || 'Transaction unsuccessful'}. Membership remains unchanged.`, "error");
+        });
+        rzp.open();
+      } else {
+        setProcessingMembershipTier(null);
+        triggerNotification("Unable to load Razorpay checkout. Please check internet connection.", "error");
+      }
+    } catch (err) {
+      console.error("Error initiating membership payment:", err);
+      setProcessingMembershipTier(null);
+      triggerNotification("Server error initiating membership payment.", "error");
+    }
+  };
 
   // Dynamic Notifications State
   const [unreadCount, setUnreadCount] = useState(0);
@@ -2659,7 +2813,61 @@ export default function CustomerDashboard({
     setIsRazorpayModalOpen(true);
   };
 
-  const processFinalOrderPlacement = async () => {
+  const handleWalletPayment = async () => {
+    if (razorpayProcessing) return; // Prevent double-clicks
+    const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+    if (selectedCart.length === 0) return;
+
+    const totalPayable = selectedCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+    const targetUserId = currentUser?.id || currentUser?.customerId || activeCustomerId;
+
+    if ((walletBalance || 0) < totalPayable) {
+      triggerNotification("Insufficient wallet balance.", "error");
+      return;
+    }
+
+    setRazorpayProcessing(true);
+
+    try {
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const orderSummaryDesc = selectedCart.map(item => `${item.name || item.title || 'Item'} (x${item.quantity || 1})`).join(', ');
+
+      // 1. ATOMIC WALLET DEDUCTION ON BACKEND
+      const payRes = await fetch(`${baseBackend}/api/wallet/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: totalPayable,
+          orderDetails: `Order Payment - ${orderSummaryDesc}`.substring(0, 120),
+          userId: targetUserId,
+          customerId: currentUser?.customerId || targetUserId,
+          email: profileEmail || currentUser?.email || '',
+          phone: profilePhone || currentUser?.phone || ''
+        })
+      });
+
+      const payData = await payRes.json();
+
+      if (!payRes.ok || !payData.success) {
+        setRazorpayProcessing(false);
+        triggerNotification(payData.error || "Insufficient wallet balance.", "error");
+        return;
+      }
+
+      if (typeof refreshWallet === 'function') {
+        await refreshWallet(targetUserId);
+      }
+
+      // 2. PROCEED TO CREATE/CONFIRM ORDER
+      await processFinalOrderPlacement('WALLET');
+    } catch (err) {
+      console.error("Wallet payment error:", err);
+      setRazorpayProcessing(false);
+      triggerNotification("Error processing wallet payment. Please try again.", "error");
+    }
+  };
+
+  const processFinalOrderPlacement = async (paymentMethod = 'RAZORPAY') => {
     try {
       const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
       if (selectedCart.length === 0) return;
@@ -2691,6 +2899,7 @@ export default function CustomerDashboard({
             customer_longitude: 77.6289,
             product_details: item.name || item.title || 'Item',
             amount: (item.price || 0) * (item.quantity || 1),
+            payment_method: paymentMethod,
             items: [{
               productId: item.id || item._id,
               name: item.name || item.title,
@@ -2714,7 +2923,11 @@ export default function CustomerDashboard({
       setOrderSuccess(true);
       setIsRazorpayModalOpen(false);
       setRazorpayProcessing(false);
-      triggerNotification("Payment authorized & Order placed successfully!");
+      if (paymentMethod === 'WALLET') {
+        triggerNotification("Wallet payment successful & Order placed!");
+      } else {
+        triggerNotification("Payment authorized & Order placed successfully!");
+      }
       loadCustomerOrders();
     } catch (err) {
       console.error("Order processing error:", err);
@@ -4547,6 +4760,7 @@ export default function CustomerDashboard({
       {
         key: 'Silver Tier',
         name: 'Silver Tier',
+        level: 1,
         titleBadge: 'SILVER MEMBER',
         price: '₹8,000/month',
         discount: '10% OFF',
@@ -4567,6 +4781,7 @@ export default function CustomerDashboard({
       {
         key: 'Gold Elite',
         name: 'Gold Elite',
+        level: 2,
         titleBadge: 'PREMIUM MEMBER',
         price: '₹15,000/month',
         discount: '20% OFF',
@@ -4588,6 +4803,7 @@ export default function CustomerDashboard({
       {
         key: 'Diamond Prestige',
         name: 'Diamond Prestige',
+        level: 3,
         titleBadge: 'DIAMOND MEMBER',
         price: '₹35,000/month',
         discount: '30% OFF',
@@ -4609,7 +4825,8 @@ export default function CustomerDashboard({
       }
     ];
 
-    const currentNorm = (currentMembershipTier || 'Gold Elite').toLowerCase();
+    const currentNorm = (currentMembershipTier || '').toLowerCase();
+    const currentLevel = getMembershipLevel(currentMembershipTier);
 
     return (
       <div className="p-4 md:p-8 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl text-left text-slate-800 dark:text-white max-w-7xl mx-auto space-y-8 animate-fade-in">
@@ -4626,7 +4843,11 @@ export default function CustomerDashboard({
         {/* 3 Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch justify-center">
           {tierList.map((tier) => {
-            const isActivePlan = currentNorm.includes(tier.name.split(' ')[0].toLowerCase());
+            const tierLevel = tier.level;
+            const isActivePlan = (tierLevel === currentLevel && currentLevel > 0);
+            const isLowerPlan = (currentLevel > 0 && tierLevel < currentLevel);
+            const isHigherPlan = (tierLevel > currentLevel || currentLevel === 0);
+            const isProcessing = (processingMembershipTier === tier.key);
             const isFlipped = flippedCardKey === tier.key;
 
             return (
@@ -4831,16 +5052,33 @@ export default function CustomerDashboard({
                       >
                         Active Plan
                       </button>
+                    ) : isLowerPlan ? (
+                      <button
+                        disabled
+                        type="button"
+                        className="w-full py-3 bg-slate-100 text-slate-400 dark:bg-slate-800/60 dark:text-slate-500 text-xs font-black uppercase tracking-wider rounded-xl cursor-not-allowed text-center border border-slate-200 dark:border-slate-800 opacity-60"
+                      >
+                        Not Available
+                      </button>
                     ) : (
                       <button
-                        onClick={() => {
-                          setCurrentMembershipTier(tier.name);
-                          triggerNotification(`Congratulations! You have upgraded to ${tier.name}!`);
-                        }}
+                        onClick={() => handleSelectOrUpgradeMembership(tier)}
+                        disabled={Boolean(processingMembershipTier)}
                         type="button"
-                        className={`w-full py-3 text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none text-center ${tier.btnBg}`}
+                        className={`w-full py-3 text-xs uppercase tracking-wider rounded-xl transition-all shadow-md border-none text-center ${
+                          processingMembershipTier ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:brightness-105'
+                        } ${tier.btnBg}`}
                       >
-                        Select {tier.name.split(' ')[0]}
+                        {isProcessing ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            <span>Processing...</span>
+                          </span>
+                        ) : currentLevel === 0 ? (
+                          `Select ${tier.name.split(' ')[0]}`
+                        ) : (
+                          `Upgrade to ${tier.name.split(' ')[0]}`
+                        )}
                       </button>
                     )}
                   </div>
@@ -13016,14 +13254,13 @@ wishlistProducts.forEach(item => addToCart(item));
                       </button>
                     ) : (
                       <button 
-                        onClick={() => {
-                          setCurrentMembershipTier('Gold Elite');
-                          setShowUpgradeModal(false);
-                          triggerNotification("Congratulations! You have upgraded to Gold Membership!");
-                        }}
-                        className="mt-6 w-full py-2 bg-amber-400 hover:bg-amber-500 text-[#0b1e36] text-xs font-black uppercase rounded-lg transition-colors cursor-pointer text-center"
+                        onClick={() => handleSelectOrUpgradeMembership('Gold Elite', () => setShowUpgradeModal(false))}
+                        disabled={Boolean(processingMembershipTier)}
+                        className={`mt-6 w-full py-2 bg-amber-400 hover:bg-amber-500 text-[#0b1e36] text-xs font-black uppercase rounded-lg transition-colors text-center ${
+                          processingMembershipTier ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
                       >
-                        Upgrade to Gold
+                        {processingMembershipTier === 'Gold Elite' ? 'Processing...' : 'Upgrade to Gold'}
                       </button>
                     )}
                   </div>
@@ -13064,14 +13301,13 @@ wishlistProducts.forEach(item => addToCart(item));
                     </button>
                   ) : (
                     <button 
-                      onClick={() => {
-                        setCurrentMembershipTier('Diamond Prestige');
-                        setShowUpgradeModal(false);
-                        triggerNotification("Congratulations! You have upgraded to Diamond Membership!");
-                      }}
-                      className="mt-6 w-full py-2 bg-cyan-400 hover:bg-cyan-500 text-cyan-955 text-xs font-black uppercase rounded-lg transition-colors cursor-pointer text-center"
+                      onClick={() => handleSelectOrUpgradeMembership('Diamond Prestige', () => setShowUpgradeModal(false))}
+                      disabled={Boolean(processingMembershipTier)}
+                      className={`mt-6 w-full py-2 bg-cyan-400 hover:bg-cyan-500 text-cyan-955 text-xs font-black uppercase rounded-lg transition-colors text-center ${
+                        processingMembershipTier ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
                     >
-                      Upgrade to Diamond
+                      {processingMembershipTier === 'Diamond Prestige' ? 'Processing...' : 'Upgrade to Diamond'}
                     </button>
                   )}
                 </div>
@@ -13662,27 +13898,80 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
                     )}
 
-                    {razorpayPayMethod === 'wallet' && (
-                      <div className="flex justify-between text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                        <span>Paytm / Amazon Pay / Mobikwik</span>
-                        <span className="text-blue-500">Connected</span>
-                      </div>
-                    )}
+                    {razorpayPayMethod === 'wallet' && (() => {
+                      const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+                      const totalPayable = selectedCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+                      const isSufficient = (walletBalance || 0) >= totalPayable && totalPayable > 0;
+
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px]">Available Balance:</span>
+                            <span className="font-black text-slate-900 dark:text-white font-mono text-sm">₹{Math.max(0, walletBalance || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px]">Order Total:</span>
+                            <span className="font-black text-slate-900 dark:text-white font-mono text-sm">₹{totalPayable.toLocaleString()}</span>
+                          </div>
+                          {!isSufficient ? (
+                            <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                              Insufficient wallet balance. Please deposit funds or choose another payment method.
+                            </div>
+                          ) : (
+                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-xl text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                              ✓ Sufficient balance available. Payment will be deducted instantly from your Connect Wallet.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Pay Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRazorpayProcessing(true);
-                      setTimeout(() => {
-                        processFinalOrderPlacement();
-                      }, 1200);
-                    }}
-                    className="w-full py-3.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
-                  >
-                    <span>Pay ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()} via Razorpay</span>
-                  </button>
+                  {razorpayPayMethod === 'wallet' ? (() => {
+                    const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+                    const totalPayable = selectedCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+                    const isSufficient = (walletBalance || 0) >= totalPayable && totalPayable > 0;
+
+                    return isSufficient ? (
+                      <button
+                        type="button"
+                        disabled={razorpayProcessing}
+                        onClick={handleWalletPayment}
+                        className={`w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98 ${
+                          razorpayProcessing ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
+                      >
+                        {razorpayProcessing ? (
+                          <span>Processing Wallet Payment...</span>
+                        ) : (
+                          <span>Pay with Wallet (₹{totalPayable.toLocaleString()})</span>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        type="button"
+                        className="w-full py-3.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-black text-xs uppercase tracking-widest rounded-2xl cursor-not-allowed border-none text-center"
+                      >
+                        Insufficient Balance
+                      </button>
+                    );
+                  })() : (
+                    <button
+                      type="button"
+                      disabled={razorpayProcessing}
+                      onClick={() => {
+                        setRazorpayProcessing(true);
+                        setTimeout(() => {
+                          processFinalOrderPlacement();
+                        }, 1200);
+                      }}
+                      className="w-full py-3.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                    >
+                      <span>Pay ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()} via Razorpay</span>
+                    </button>
+                  )}
                 </>
               )}
             </div>
