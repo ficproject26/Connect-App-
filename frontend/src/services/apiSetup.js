@@ -106,3 +106,13 @@ export const getAdminBackendUrl = () => {
   
   return 'https://api.ficapp.in';
 };
+
+export const getSocketUrl = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+      return `http://${hostname}:8001`;
+    }
+  }
+  return 'https://api.ficapp.in';
+};

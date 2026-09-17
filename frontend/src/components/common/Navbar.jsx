@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../../services/apiSetup';
 import logoImg from '../../assets/images/forge india logo.jpg';
 import {
   Shield, User, Briefcase, ShoppingBag, Globe,
@@ -232,8 +233,10 @@ export default function Navbar({
     // Socket.IO Real-time synchronization
     let socket;
     try {
-      const url = getAdminBackendUrl() || getBackendUrl() || 'https://api.ficapp.in';
-      const socketUrl = (url && (url.startsWith('https://') || url.startsWith('http://'))) ? url : 'https://api.ficapp.in';
+      const socketUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+        ? 'http://localhost:8001' 
+        : 'https://api.ficapp.in';
+
       socket = io(socketUrl, { 
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 2,

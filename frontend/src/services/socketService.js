@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { getBackendUrl } from './apiSetup';
+import { getSocketUrl } from './apiSetup';
 
 class SocketServiceClient {
   socket = null;
@@ -52,10 +52,11 @@ class SocketServiceClient {
     }
 
     try {
-      const rawUrl = getBackendUrl() || 'https://api.ficapp.in';
-      const backendUrl = (rawUrl && (rawUrl.startsWith('https://') || rawUrl.startsWith('http://'))) ? rawUrl : 'https://api.ficapp.in';
+      const socketUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+        ? 'http://localhost:8001' 
+        : 'https://api.ficapp.in';
 
-      this.socket = io(backendUrl, {
+      this.socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         upgrade: true,
         reconnectionAttempts: 3,

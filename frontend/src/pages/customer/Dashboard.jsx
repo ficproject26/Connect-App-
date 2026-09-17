@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiFetch } from '../../services/api';
-import { getAdminBackendUrl, getBackendUrl } from '../../services/apiSetup';
+import { getSocketUrl, getAdminBackendUrl, getBackendUrl } from '../../services/apiSetup';
 import { productService, isRealVendorProduct, sanitizeImageUrl, getCategoryFallbackImage } from '../../services/productService';
 import { socketService } from '../../services/socketService';
 import { getActiveMainCategories, fetchAdminCategories, buildActiveCategoryTree, normalizeCategoryName } from '../../services/categoryService';
@@ -1616,8 +1616,10 @@ export default function CustomerDashboard({
 
     let socket;
     try {
-      const url = getAdminBackendUrl() || getBackendUrl() || 'https://api.ficapp.in';
-      const socketUrl = (url && (url.startsWith('https://') || url.startsWith('http://'))) ? url : 'https://api.ficapp.in';
+      const socketUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+        ? 'http://localhost:8001' 
+        : 'https://api.ficapp.in';
+
       socket = io(socketUrl, { 
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 2,
