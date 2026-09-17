@@ -143,24 +143,48 @@ app.get(['/api/public/ads', '/api/ads'], async (req, res) => {
   }
 });
 
+// In-memory cache for public products with 30s TTL
+let publicProductsCache: { data: any[]; timestamp: number } | null = null;
+const PRODUCTS_CACHE_TTL = 30 * 1000;
+export const invalidatePublicProductsCache = () => {
+  publicProductsCache = null;
+};
+
 // Public Products Endpoints (Customer & Vendor products)
 app.get(['/api/public/products', '/api/products'], async (req, res) => {
   try {
+    const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+    if (!forceRefresh && publicProductsCache && (Date.now() - publicProductsCache.timestamp < PRODUCTS_CACHE_TTL)) {
+      return res.json(publicProductsCache.data);
+    }
+
     const mongoDb = db.getDb();
     if (mongoDb) {
-      const suspendedUsers = await mongoDb.collection('users').find({
-        $or: [
-          { status: { $in: ['suspended', 'Suspended', 'rejected', 'Rejected', 'inactive', 'Inactive', 'deactivated', 'Deactivated', 'blocked', 'Blocked'] } },
-          { isActive: false }
-        ]
-      }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, name: 1, registrationId: 1, vendorId: 1, primaryBusinessId: 1, businesses: 1 } }).toArray();
+      const [suspendedUsers, suspendedVendorsCol, allVendorUsers, allProducts] = await Promise.all([
+        mongoDb.collection('users').find({
+          $or: [
+            { status: { $in: ['suspended', 'Suspended', 'rejected', 'Rejected', 'inactive', 'Inactive', 'deactivated', 'Deactivated', 'blocked', 'Blocked'] } },
+            { isActive: false }
+          ]
+        }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, name: 1, registrationId: 1, vendorId: 1, primaryBusinessId: 1, businesses: 1 } }).toArray(),
 
-      const suspendedVendorsCol = await mongoDb.collection('vendors').find({
-        $or: [
-          { status: { $in: ['suspended', 'Suspended', 'rejected', 'Rejected', 'inactive', 'Inactive', 'deactivated', 'Deactivated', 'blocked', 'Blocked'] } },
-          { isActive: false }
-        ]
-      }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, registrationId: 1, vendorId: 1 } }).toArray();
+        mongoDb.collection('vendors').find({
+          $or: [
+            { status: { $in: ['suspended', 'Suspended', 'rejected', 'Rejected', 'inactive', 'Inactive', 'deactivated', 'Deactivated', 'blocked', 'Blocked'] } },
+            { isActive: false }
+          ]
+        }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, registrationId: 1, vendorId: 1 } }).toArray(),
+
+        mongoDb.collection('users').find({
+          $or: [
+            { role: { $in: ['vendor', 'Vendor', 'merchant', 'Merchant'] } },
+            { vendorType: { $exists: true } },
+            { businesses: { $exists: true, $not: { $size: 0 } } }
+          ]
+        }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, name: 1, registrationId: 1, vendorId: 1, businesses: 1 } }).toArray(),
+
+        mongoDb.collection('products').find({ isActive: { $ne: false }, isAvailable: { $ne: false } }).sort({ createdAt: -1 }).toArray()
+      ]);
 
       const suspendedVendorIds = new Set<string>();
       const suspendedVendorEmails = new Set<string>();
@@ -194,14 +218,6 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
         if (v.name && !isGenericVendorName(v.name)) suspendedVendorNames.add(v.name.toLowerCase().trim());
       });
 
-      const allVendorUsers = await mongoDb.collection('users').find({
-        $or: [
-          { role: { $in: ['vendor', 'Vendor', 'merchant', 'Merchant'] } },
-          { vendorType: { $exists: true } },
-          { businesses: { $exists: true, $not: { $size: 0 } } }
-        ]
-      }, { projection: { _id: 1, email: 1, phone: 1, mobileNumber: 1, businessName: 1, name: 1, registrationId: 1, vendorId: 1, businesses: 1 } }).toArray();
-
       const suspendedVendorBizKeys = new Set<string>();
       allVendorUsers.forEach((v: any) => {
         const vKeys = [
@@ -229,8 +245,6 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
           });
         }
       });
-
-      const allProducts = await mongoDb.collection('products').find({ isActive: { $ne: false }, isAvailable: { $ne: false } }).sort({ createdAt: -1 }).toArray();
 
       const activeProducts = allProducts.filter((p: any) => {
         if (p.isActive === false || p.isAvailable === false) return false;
@@ -295,6 +309,11 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
           imageUrls: normalizedImageUrls
         };
       });
+
+      publicProductsCache = {
+        data: mappedActiveProducts,
+        timestamp: Date.now()
+      };
 
       return res.json(mappedActiveProducts);
     }
@@ -428,6 +447,7 @@ app.post(['/api/products', '/api/public/products', '/api/admin/products'], async
     };
 
     const insertResult = await mongoDb.collection('products').insertOne(newProduct);
+    invalidatePublicProductsCache();
     const savedProduct = {
       ...newProduct,
       _id: insertResult.insertedId,
@@ -520,6 +540,7 @@ const handleUpdateProduct = async (req: any, res: any) => {
     updatePayload.updatedAt = new Date().toISOString();
 
     await mongoDb.collection('products').updateOne(query, { $set: updatePayload });
+    invalidatePublicProductsCache();
 
     const finalProduct = await mongoDb.collection('products').findOne(query);
     return res.json({
@@ -552,6 +573,7 @@ app.delete(['/api/products/:id', '/api/public/products/:id', '/api/admin/product
     }
 
     await mongoDb.collection('products').deleteOne(query);
+    invalidatePublicProductsCache();
     return res.json({ success: true, message: 'Product deleted successfully.' });
   } catch (err: any) {
     console.error("Error deleting product:", err);

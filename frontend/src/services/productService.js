@@ -388,7 +388,7 @@ export const productService = {
           return new Promise(async (resolve, reject) => {
             try {
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 3000);
+              const timeoutId = setTimeout(() => controller.abort(), 20000);
 
               const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
                 signal: controller.signal,
@@ -429,7 +429,7 @@ export const productService = {
           for (const endpoint of uniqueEndpoints) {
             try {
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 8000);
+              const timeoutId = setTimeout(() => controller.abort(), 25000);
 
               const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
                 signal: controller.signal,
