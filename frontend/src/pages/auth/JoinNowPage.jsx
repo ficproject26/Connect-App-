@@ -119,13 +119,13 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
     const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
     if (isHttps) {
-      if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
+      if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
         return formatApiUrl(import.meta.env.VITE_API_URL);
       }
       return '/api';
     }
 
-    if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return formatApiUrl(import.meta.env.VITE_API_URL);
+    if (import.meta.env.VITE_API_URL) return formatApiUrl(import.meta.env.VITE_API_URL);
     if (typeof window === 'undefined') return 'http://localhost:8001/api';
     const hostname = window.location.hostname;
     if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' ||

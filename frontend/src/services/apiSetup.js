@@ -4,6 +4,10 @@ const formatUrl = (url) => {
   if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
     cleaned = `http://${cleaned}`;
   }
+  // Strip trailing /api so callers doing `${getBackendUrl()}/api` don't create double /api/api
+  if (cleaned.endsWith('/api')) {
+    cleaned = cleaned.slice(0, -4);
+  }
   return cleaned;
 };
 
@@ -11,17 +15,17 @@ export const getBackendUrl = () => {
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
   if (isHttps) {
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
+    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
-    if (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_BACKEND_URL.includes('ficapp.in')) {
+    if (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.startsWith('https://')) {
       return formatUrl(import.meta.env.VITE_BACKEND_URL);
     }
-    return 'https://connect-app-7s6g.onrender.com';
+    return 'https://api.ficapp.in';
   }
 
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
-  if (import.meta.env.VITE_BACKEND_URL && !import.meta.env.VITE_BACKEND_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_BACKEND_URL);
+  if (import.meta.env.VITE_API_URL) return formatUrl(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_BACKEND_URL) return formatUrl(import.meta.env.VITE_BACKEND_URL);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
@@ -36,24 +40,24 @@ export const getBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8000`;
   }
   
-  return 'https://connect-app-7s6g.onrender.com';
+  return 'https://api.ficapp.in';
 };
 
 export const getVendorBackendUrl = () => {
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
   if (isHttps) {
-    if (import.meta.env.VITE_VENDOR_BACKEND_URL && import.meta.env.VITE_VENDOR_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('ficapp.in')) {
+    if (import.meta.env.VITE_VENDOR_BACKEND_URL && import.meta.env.VITE_VENDOR_BACKEND_URL.startsWith('https://')) {
       return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
     }
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
+    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
-    return 'https://connect-app-7s6g.onrender.com';
+    return 'https://api.ficapp.in';
   }
 
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
-  if (import.meta.env.VITE_VENDOR_BACKEND_URL && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
+  if (import.meta.env.VITE_API_URL) return formatUrl(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_VENDOR_BACKEND_URL) return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
@@ -68,7 +72,7 @@ export const getVendorBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8000`;
   }
   
-  return 'https://connect-app-7s6g.onrender.com';
+  return 'https://api.ficapp.in';
 };
 
 export const getAdminBackendUrl = () => {
@@ -78,14 +82,14 @@ export const getAdminBackendUrl = () => {
     if (import.meta.env.VITE_ADMIN_BACKEND_URL && import.meta.env.VITE_ADMIN_BACKEND_URL.startsWith('https://')) {
       return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
     }
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('ficapp.in')) {
+    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
-    return 'https://connect-app-7s6g.onrender.com';
+    return 'https://api.ficapp.in';
   }
 
-  if (import.meta.env.VITE_ADMIN_BACKEND_URL && !import.meta.env.VITE_ADMIN_BACKEND_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_ADMIN_BACKEND_URL) return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
+  if (import.meta.env.VITE_API_URL) return formatUrl(import.meta.env.VITE_API_URL);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
@@ -100,5 +104,5 @@ export const getAdminBackendUrl = () => {
     return `http://${hostname || 'localhost'}:8000`;
   }
   
-  return 'https://connect-app-7s6g.onrender.com';
+  return 'https://api.ficapp.in';
 };
