@@ -1616,23 +1616,20 @@ export default function CustomerDashboard({
 
     let socket;
     try {
-      const url = getAdminBackendUrl();
-      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-      const isValidSecureUrl = url && (url.startsWith('https://') || url.startsWith('wss://'));
-      if (isValidSecureUrl || (!isHttps && url && !url.startsWith('http://'))) {
-        socket = io(url, { 
-          transports: ['websocket', 'polling'],
-          reconnectionAttempts: 2,
-          reconnectionDelay: 10000,
-          timeout: 8000
-        });
-        socket.on('categories:updated', () => {
-          fetchDbCategories();
-        });
-        socket.on('banners:updated', () => {
-          fetchDbBanners();
-        });
-      }
+      const url = getAdminBackendUrl() || getBackendUrl() || 'https://api.ficapp.in';
+      const socketUrl = (url && (url.startsWith('https://') || url.startsWith('http://'))) ? url : 'https://api.ficapp.in';
+      socket = io(socketUrl, { 
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 2,
+        reconnectionDelay: 10000,
+        timeout: 8000
+      });
+      socket.on('categories:updated', () => {
+        fetchDbCategories();
+      });
+      socket.on('banners:updated', () => {
+        fetchDbBanners();
+      });
     } catch (err) {}
 
     return () => {

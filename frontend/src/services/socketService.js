@@ -52,16 +52,11 @@ class SocketServiceClient {
     }
 
     try {
-      const backendUrl = getBackendUrl();
-      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-      const isRelativeOrOrigin = !backendUrl || backendUrl.startsWith('/') || backendUrl.startsWith('http://') || (typeof window !== 'undefined' && backendUrl === window.location.origin);
-      
-      if (isHttps && isRelativeOrOrigin) {
-        return;
-      }
+      const rawUrl = getBackendUrl() || 'https://api.ficapp.in';
+      const backendUrl = (rawUrl && (rawUrl.startsWith('https://') || rawUrl.startsWith('http://'))) ? rawUrl : 'https://api.ficapp.in';
 
       this.socket = io(backendUrl, {
-        transports: ['polling', 'websocket'],
+        transports: ['websocket', 'polling'],
         upgrade: true,
         reconnectionAttempts: 3,
         reconnectionDelay: 5000,
