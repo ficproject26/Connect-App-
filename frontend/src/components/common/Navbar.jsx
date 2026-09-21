@@ -238,7 +238,7 @@ export default function Navbar({
         : 'https://api.ficapp.in';
 
       socket = io(socketUrl, { 
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         reconnectionAttempts: 2,
         reconnectionDelay: 10000,
         timeout: 8000

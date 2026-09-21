@@ -39,6 +39,11 @@ class SocketServiceClient {
 
   connect(userId, role) {
     this.setupLifecycleListeners();
+
+    if (this.socket && (this.socket.connected || this.socket.active) && this.lastUserId === userId && this.lastRole === role) {
+      return;
+    }
+
     this.lastUserId = userId;
     this.lastRole = role;
 
@@ -57,11 +62,11 @@ class SocketServiceClient {
         : 'https://api.ficapp.in';
 
       this.socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         upgrade: true,
-        reconnectionAttempts: 3,
-        reconnectionDelay: 5000,
-        reconnectionDelayMax: 15000,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 3000,
+        reconnectionDelayMax: 10000,
         timeout: 10000,
         autoConnect: true
       });

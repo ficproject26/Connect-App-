@@ -15,17 +15,17 @@ export const getBackendUrl = () => {
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
   if (isHttps) {
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
+    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
-    if (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.startsWith('https://')) {
+    if (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_BACKEND_URL.includes('www.ficapp.in')) {
       return formatUrl(import.meta.env.VITE_BACKEND_URL);
     }
     return 'https://api.ficapp.in';
   }
 
-  if (import.meta.env.VITE_API_URL) return formatUrl(import.meta.env.VITE_API_URL);
-  if (import.meta.env.VITE_BACKEND_URL) return formatUrl(import.meta.env.VITE_BACKEND_URL);
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_BACKEND_URL && !import.meta.env.VITE_BACKEND_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_BACKEND_URL);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
@@ -47,17 +47,17 @@ export const getVendorBackendUrl = () => {
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
   if (isHttps) {
-    if (import.meta.env.VITE_VENDOR_BACKEND_URL && import.meta.env.VITE_VENDOR_BACKEND_URL.startsWith('https://')) {
+    if (import.meta.env.VITE_VENDOR_BACKEND_URL && import.meta.env.VITE_VENDOR_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('www.ficapp.in')) {
       return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
     }
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
+    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
     return 'https://api.ficapp.in';
   }
 
-  if (import.meta.env.VITE_API_URL) return formatUrl(import.meta.env.VITE_API_URL);
-  if (import.meta.env.VITE_VENDOR_BACKEND_URL) return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_VENDOR_BACKEND_URL && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
@@ -79,17 +79,17 @@ export const getAdminBackendUrl = () => {
   const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
   if (isHttps) {
-    if (import.meta.env.VITE_ADMIN_BACKEND_URL && import.meta.env.VITE_ADMIN_BACKEND_URL.startsWith('https://')) {
+    if (import.meta.env.VITE_ADMIN_BACKEND_URL && import.meta.env.VITE_ADMIN_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_ADMIN_BACKEND_URL.includes('www.ficapp.in')) {
       return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
     }
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
+    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
       return formatUrl(import.meta.env.VITE_API_URL);
     }
     return 'https://api.ficapp.in';
   }
 
-  if (import.meta.env.VITE_ADMIN_BACKEND_URL) return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
-  if (import.meta.env.VITE_API_URL) return formatUrl(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_ADMIN_BACKEND_URL && !import.meta.env.VITE_ADMIN_BACKEND_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   

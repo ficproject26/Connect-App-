@@ -1621,7 +1621,7 @@ export default function CustomerDashboard({
         : 'https://api.ficapp.in';
 
       socket = io(socketUrl, { 
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         reconnectionAttempts: 2,
         reconnectionDelay: 10000,
         timeout: 8000
@@ -1637,7 +1637,7 @@ export default function CustomerDashboard({
     return () => {
       if (socket) socket.disconnect();
     };
-  }, [fetchDbCategories, fetchDbBanners]);
+  }, []);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
