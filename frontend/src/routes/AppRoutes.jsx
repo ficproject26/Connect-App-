@@ -44,14 +44,21 @@ export default function AppRoutes({
       // 2. Clear authentication session state and tokens
       logout();
 
-      // 3. Cleanly navigate directly to the public landing/home page
+      // 3. Clear localStorage page tracking to guarantee landing page
+      try {
+        localStorage.setItem('connect_current_page', 'home');
+        localStorage.removeItem('connect_active_profile_tab');
+        localStorage.removeItem('connect_profile_modal_open');
+      } catch (e) {}
+
+      // 4. Cleanly navigate directly to the public landing/home page
       if (handleHomeNavigate) {
         handleHomeNavigate();
       } else {
         setCurrentPage('home');
       }
 
-      // 4. Update browser URL to public landing ('/') and replace history state
+      // 5. Update browser URL to public landing ('/') and replace history state
       // so browser back navigation cannot expose authenticated dashboard
       try {
         if (typeof window !== 'undefined') {
@@ -96,6 +103,7 @@ export default function AppRoutes({
       <CustomerLayout>
         <ErrorBoundary>
           <CustomerDashboard 
+            key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
             currentUser={effectiveUser} 
             onLogOut={handleLogout} 
             onJobsClick={() => setIsJobsOpen(true)}
@@ -112,6 +120,7 @@ export default function AppRoutes({
         <CustomerLayout>
           <ErrorBoundary>
             <CustomerDashboard 
+              key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
               currentUser={effectiveUser} 
               onLogOut={handleLogout} 
               onJobsClick={() => setIsJobsOpen(true)}
@@ -183,6 +192,7 @@ export default function AppRoutes({
     <CustomerLayout>
       <ErrorBoundary>
         <CustomerDashboard 
+          key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
           currentUser={currentUser} 
           onLogOut={handleLogout} 
           onJobsClick={() => setIsJobsOpen(true)}

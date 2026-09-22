@@ -730,7 +730,7 @@ export function resolveCustomerName(uName, currentUserName, emailStr) {
       return prefix.charAt(0).toUpperCase() + prefix.slice(1);
     }
   }
-  return uName || currentUserName || 'Connect Member';
+  return uName || currentUserName || '';
 }
 
 export function sanitizePhoneInput(val, pincodeVal = '') {
@@ -1192,7 +1192,7 @@ export default function CustomerDashboard({
 
 
   const [profileName, setProfileName] = useState(() => {
-    return resolveCustomerName(currentUser?.name, '', currentUser?.email);
+    return currentUser ? resolveCustomerName(currentUser?.name, '', currentUser?.email) : '';
   });
   const [profileEmail, setProfileEmail] = useState(() => {
     if (currentUser?.email && !currentUser.email.match(/^\d+@connect\.app$/)) {
@@ -1205,13 +1205,15 @@ export default function CustomerDashboard({
   });
 
   const activeCustomerId = useMemo(() => {
+    if (!currentUser) return '';
     if (currentUser?.customerId && currentUser.customerId !== 'FIC-CUST-750684' && currentUser.customerId !== 'FIC-CUST-849201') {
       return currentUser.customerId;
     }
-    return getOrGenerateCustomerId(currentUser || 'customer');
+    return getOrGenerateCustomerId(currentUser);
   }, [currentUser]);
 
   const loadCustomerProfileFromDb = useCallback(async () => {
+    if (!currentUser) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (!userTarget) return;
@@ -1271,6 +1273,35 @@ export default function CustomerDashboard({
   useEffect(() => {
     loadCustomerProfileFromDb();
   }, [loadCustomerProfileFromDb]);
+
+  // Synchronize profile and reset all states cleanly when user logs out
+  useEffect(() => {
+    if (currentUser) {
+      setProfileName(resolveCustomerName(currentUser.name, '', currentUser.email));
+      setProfileEmail(currentUser.email && !currentUser.email.match(/^\d+@connect\.app$/) ? currentUser.email : '');
+      setProfilePhoto(currentUser.avatar || currentUser.photo || '');
+      const raw = currentUser.phone || '';
+      const clean = raw.replace(/\D/g, '');
+      if (clean.length >= 10 && clean !== String(currentUser.pincode)) {
+        setProfilePhone(raw);
+      } else {
+        const userKey = getUserStorageKey(currentUser);
+        const savedPhone = localStorage.getItem(`connect_profile_phone_${userKey}`);
+        setProfilePhone(savedPhone && savedPhone.replace(/\D/g, '').length >= 10 ? savedPhone : '');
+      }
+      if (currentUser.addresses && Array.isArray(currentUser.addresses) && currentUser.addresses.length > 0) {
+        setAddresses(deduplicateAddresses(currentUser.addresses));
+      }
+    } else {
+      setProfileName('');
+      setProfileEmail('');
+      setProfilePhone('');
+      setProfilePhoto('');
+      setAddresses([]);
+      setIsProfileModalOpen(false);
+      setCustomerOrders([]);
+    }
+  }, [currentUser]);
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
 
 
@@ -1656,6 +1687,10 @@ export default function CustomerDashboard({
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
   const loadCustomerOrders = useCallback(async () => {
+    if (!currentUser) {
+      setCustomerOrders([]);
+      return;
+    }
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || activeCustomerId || '').trim();
@@ -1805,7 +1840,11 @@ export default function CustomerDashboard({
 
   // Connect to Socket and bind updates
   useEffect(() => {
-    const customerId = currentUser?.id || 'cust_dhanush';
+    if (!currentUser?.id) {
+      socketService.disconnect();
+      return;
+    }
+    const customerId = currentUser.id;
     socketService.connect(customerId, 'customer');
 
     socketService.on('order_status_updated', (data) => {
@@ -1819,7 +1858,7 @@ export default function CustomerDashboard({
     return () => {
       socketService.disconnect();
     };
-  }, []);
+  }, [currentUser?.id, loadCustomerOrders, trackingOrder]);
 
   // Listen for order history loads
   useEffect(() => {

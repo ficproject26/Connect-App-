@@ -360,7 +360,7 @@ export default function Navbar({
                   onClick={() => { onLogOut(); }}
                   className="px-3.5 py-1.5 bg-[#f5a800] hover:bg-[#d48e00] text-slate-950 rounded-full text-[10.5px] font-bold uppercase tracking-wider cursor-pointer transition-all shadow-sm font-sans"
                 >
-                  Login
+                  Logout
                 </button>
               </div>
             ) : (
@@ -436,7 +436,7 @@ export default function Navbar({
                 onClick={() => { onLogOut(); closeAll(); }}
                 className="w-full text-center py-2 bg-[#f5a800] hover:bg-[#d48e00] text-slate-950 rounded-full text-[11px] font-bold uppercase tracking-wider cursor-pointer"
               >
-                Login
+                Logout
               </button>
             </div>
           ) : (
