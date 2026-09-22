@@ -1145,17 +1145,20 @@ export default function CustomerDashboard({
   }, [membershipTier]);
 
   const [dbBanners, setDbBanners] = useState([]);
+  const [isBannersLoading, setIsBannersLoading] = useState(true);
+  const hasLoadedBannersRef = useRef(false);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [isHeroBannerHovered, setIsHeroBannerHovered] = useState(false);
 
   useEffect(() => {
     if (isHeroBannerHovered) return;
-    const total = (dbBanners?.length || 0) + 4;
+    const total = (dbBanners?.length || 0) + (adminAds?.length || 0);
+    if (total <= 1) return;
     const timer = setInterval(() => {
       setActiveHeroSlide((prev) => (prev + 1) % total);
     }, 5000);
     return () => clearInterval(timer);
-  }, [dbBanners, isHeroBannerHovered]);
+  }, [dbBanners, adminAds, isHeroBannerHovered]);
 
   // Category-specific Filter States
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([]);
@@ -1571,6 +1574,9 @@ export default function CustomerDashboard({
   }, []);
 
   const fetchDbBanners = useCallback(async () => {
+    if (!hasLoadedBannersRef.current) {
+      setIsBannersLoading(true);
+    }
     const adminUrl = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
     const mainUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const endpoints = [
@@ -1585,24 +1591,32 @@ export default function CustomerDashboard({
     ];
     const unique = [...new Set(endpoints.filter(Boolean))];
     let foundBanners = null;
-    for (const url of unique) {
-      try {
-        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            if (data.length > 0) {
-              setDbBanners(data);
-              return;
-            } else if (foundBanners === null) {
-              foundBanners = data;
+    try {
+      for (const url of unique) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
+          const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              if (data.length > 0) {
+                setDbBanners(data);
+                return;
+              } else if (foundBanners === null) {
+                foundBanners = data;
+              }
             }
           }
-        }
-      } catch (err) {}
-    }
-    if (foundBanners !== null) {
-      setDbBanners(foundBanners);
+        } catch (err) {}
+      }
+      if (foundBanners !== null) {
+        setDbBanners(foundBanners);
+      }
+    } finally {
+      setIsBannersLoading(false);
+      hasLoadedBannersRef.current = true;
     }
   }, []);
 
@@ -5213,26 +5227,10 @@ export default function CustomerDashboard({
       }) : [])
     ];
 
-    const defaultCategoryMeta = {
-      'Jobs': { title: 'Jobs & Careers', discount: 'CAREER OPPORTUNITIES', desc: 'Explore verified job opportunities', icon: Briefcase, bg: 'bg-[#0e0717]', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&auto=format&fit=crop&q=80' }
-    };
-
-    const fallbackCatSlides = subNavbarCategories
-      .filter(cat => cat !== 'Home' && defaultCategoryMeta[cat])
-      .map(cat => ({
-        id: `cat-${cat.toLowerCase().replace(/\s+/g, '-')}`,
-        isCategorySlide: true,
-        category: cat,
-        ...defaultCategoryMeta[cat]
-      }));
-
-    const slides = realDbSlides.length > 0 ? realDbSlides : (fallbackCatSlides.length > 0 ? fallbackCatSlides : [
-      { id: 'cat-default', isCategorySlide: true, title: 'Connect Ecosystem', discount: 'VERIFIED PLATFORM', desc: 'Explore verified products and services', icon: ShoppingBag, bg: 'bg-[#0b1329]', category: 'Products', image: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=400&auto=format&fit=crop&q=80' }
-    ]);
-
+    const slides = realDbSlides;
     const totalSlides = slides.length;
-    const currentSlideIdx = activeHeroSlide % totalSlides;
-    const activeSlideObj = slides[currentSlideIdx];
+    const currentSlideIdx = totalSlides > 0 ? (activeHeroSlide % totalSlides) : 0;
+    const activeSlideObj = totalSlides > 0 ? slides[currentSlideIdx] : null;
 
     const nextSlide = (e) => {
       if (e) e.stopPropagation();
@@ -5310,162 +5308,145 @@ export default function CustomerDashboard({
           </div>
         </div>
 
-        {/* Right Side Graphics: Slider Carousel */}
+        {/* Right Side Graphics: Slider Carousel or Loading Skeleton or Empty State */}
         <div 
           onMouseEnter={() => setIsHeroBannerHovered(true)}
           onMouseLeave={() => setIsHeroBannerHovered(false)}
           className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] min-h-[250px] sm:h-[340px] shrink-0 mt-4 md:mt-0 select-none group/slider"
         >
-          {/* Previous Slide Button */}
-          <button 
-            type="button"
-            onClick={prevSlide}
-            className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
-            aria-label="Previous Slide"
-          >
-            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </button>
-
-          {/* Next Slide Button */}
-          <button 
-            type="button"
-            onClick={nextSlide}
-            className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
-            aria-label="Next Slide"
-          >
-            <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </button>
-
-          {/* Card Frame Wrapper */}
-          <div 
-            onClick={() => handleBannerAction(activeSlideObj)}
-            className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
-          >
-            {/* Dynamic DB Banners / Admin Ads */}
-            {activeSlideObj?.isDb ? (
-              <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1 sm:space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
-                      <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
-                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Special Promotion</span>
-                    </div>
-
-                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
-                      ★ Connect Deal
-                    </div>
-
-                    <div className="pt-1 sm:pt-2 leading-tight">
-                      <h3 className="text-sm sm:text-lg font-black text-white leading-tight truncate">
-                        {activeSlideObj.title}
-                      </h3>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">{activeSlideObj.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Exclusive member privileges</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Verified products & services</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBannerAction(activeSlideObj);
-                    }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
-                  >
-                    <span>Explore Now</span>
-                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
+          {isBannersLoading ? (
+            /* Initial Loading Skeleton */
+            <div className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 rounded-2xl overflow-hidden bg-[#0e0717]/85 border border-slate-800 flex flex-row items-stretch animate-pulse shadow-lg">
+              <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="h-3.5 w-28 bg-amber-500/20 rounded-md" />
+                  <div className="h-2.5 w-20 bg-amber-500/10 rounded-md" />
+                  <div className="h-5 w-40 bg-slate-700/50 rounded-md mt-2" />
+                  <div className="h-3 w-32 bg-slate-700/30 rounded-md" />
                 </div>
-
-                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
-                  <img 
-                    src={activeSlideObj.imageUrl} 
-                    alt={activeSlideObj.title} 
-                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
-                  />
+                <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+                  <div className="h-2.5 w-36 bg-slate-700/30 rounded" />
+                  <div className="h-2.5 w-28 bg-slate-700/30 rounded" />
                 </div>
+                <div className="h-7 w-24 bg-amber-500/20 rounded-full mt-2" />
               </div>
-            ) : (
-              /* Dynamic Category Fallback Banners (Zero Mock Brands) */
-              <div className={`w-full h-full rounded-2xl overflow-hidden border border-slate-800 ${activeSlideObj?.bg || 'bg-[#0e0717]'} text-white flex flex-row items-stretch animate-fade-in relative`}>
-                <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
-                  <div className="space-y-1 sm:space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
-                      {activeSlideObj?.icon ? (() => { const CatIcon = activeSlideObj.icon; return <CatIcon className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />; })() : <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0" />}
-                      <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">{activeSlideObj?.title || 'Connect Catalog'}</span>
-                    </div>
-
-                    <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
-                      ★ {activeSlideObj?.discount || 'FEATURED'}
-                    </div>
-
-                    <div className="pt-1 sm:pt-2 leading-tight">
-                      <h3 className="text-sm sm:text-lg font-black text-white leading-tight truncate">
-                        {activeSlideObj?.title}
-                      </h3>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">{activeSlideObj?.desc}</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
-                    <div className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">Direct Vendor Pricing</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
-                      <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
-                      <span className="truncate">100% Verified Quality</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBannerAction(activeSlideObj);
-                    }}
-                    className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
-                  >
-                    <span>Explore Now</span>
-                    <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
-                </div>
-
-                <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-slate-950">
-                  <img 
-                    src={activeSlideObj?.image} 
-                    alt={activeSlideObj?.title} 
-                    className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
-                  />
-                </div>
+              <div className="w-[40%] sm:w-[42%] bg-slate-800/40 rounded-r-2xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-amber-500/40 animate-pulse" />
               </div>
-            )}
-          </div>
+            </div>
+          ) : totalSlides === 0 ? (
+            /* Empty State: No active banners configured in Admin */
+            <div className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 rounded-2xl overflow-hidden bg-[#0e0717]/90 border border-slate-800/80 flex flex-col items-center justify-center p-6 text-center shadow-lg text-white">
+              <Sparkles className="w-8 h-8 text-[#FFC107] mb-2 animate-pulse" />
+              <h3 className="text-base sm:text-lg font-black text-white font-sans">Special Deals & Offers</h3>
+              <p className="text-xs text-slate-300 mt-1 max-w-xs font-sans">Check back soon for new promotions and exclusive deals from our verified partners.</p>
+            </div>
+          ) : (
+            <>
+              {/* Previous Slide Button (only if multiple slides) */}
+              {totalSlides > 1 && (
+                <button 
+                  type="button"
+                  onClick={prevSlide}
+                  className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+                  aria-label="Previous Slide"
+                >
+                  <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </button>
+              )}
 
-          {/* Slider Dots indicators */}
-          <div className="flex gap-2 justify-center mt-3 z-20 relative">
-            {Array.from({ length: totalSlides }).map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setActiveHeroSlide(idx)}
-                className={`w-2 h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
-                  currentSlideIdx === idx 
-                    ? 'bg-blue-600 dark:bg-blue-500 w-5' 
-                    : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
+              {/* Next Slide Button (only if multiple slides) */}
+              {totalSlides > 1 && (
+                <button 
+                  type="button"
+                  onClick={nextSlide}
+                  className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+                  aria-label="Next Slide"
+                >
+                  <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </button>
+              )}
+
+              {/* Card Frame Wrapper */}
+              <div 
+                onClick={() => handleBannerAction(activeSlideObj)}
+                className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
+              >
+                {activeSlideObj && (
+                  <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
+                    <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
+                          <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
+                          <span className="font-extrabold text-[12px] sm:text-[14px] tracking-wide text-white uppercase font-sans">Special Promotion</span>
+                        </div>
+
+                        <div className="inline-block text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-[#FFC107] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md mt-1 sm:mt-2">
+                          ★ {activeSlideObj.discount || 'Connect Deal'}
+                        </div>
+
+                        <div className="pt-1 sm:pt-2 leading-tight">
+                          <h3 className="text-sm sm:text-lg font-black text-white leading-tight truncate">
+                            {activeSlideObj.title}
+                          </h3>
+                          <p className="text-[10px] sm:text-xs font-bold text-slate-300 mt-1 truncate">{activeSlideObj.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-800/80 pt-1.5 sm:pt-2.5 flex flex-col gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none">
+                        <div className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                          <span className="truncate">Exclusive member privileges</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1">
+                          <Check className="w-3.5 h-3.5 text-[#FFC107] shrink-0" />
+                          <span className="truncate">Verified products & services</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBannerAction(activeSlideObj);
+                        }}
+                        className="flex items-center gap-1 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black uppercase text-[9px] sm:text-[10px] tracking-wider px-3 py-1.5 sm:px-4.5 sm:py-2 rounded-full transition-all border-none mt-1 sm:mt-2 cursor-pointer self-start shadow-xs hover:scale-105"
+                      >
+                        <span>Explore Now</span>
+                        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="w-[40%] sm:w-[42%] relative overflow-hidden rounded-r-2xl flex items-center justify-center shrink-0 bg-[#0e0717]">
+                      <img 
+                        src={activeSlideObj.imageUrl} 
+                        alt={activeSlideObj.title} 
+                        className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Slider Dots indicators (only if multiple slides) */}
+              {totalSlides > 1 && (
+                <div className="flex gap-2 justify-center mt-3 z-20 relative">
+                  {Array.from({ length: totalSlides }).map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveHeroSlide(idx)}
+                      className={`w-2 h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
+                        currentSlideIdx === idx 
+                          ? 'bg-blue-600 dark:bg-blue-500 w-5' 
+                          : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     );

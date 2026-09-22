@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import useAuth from '../hooks/useAuth';
+import { authService } from '../services/authService';
 import LandingLayout from '../layouts/LandingLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import CustomerLayout from '../layouts/CustomerLayout';
@@ -26,15 +27,40 @@ export default function AppRoutes({
   handleHomeNavigate
 }) {
   const { currentUser, login, logout, register } = useAuth();
+  const isLoggingOutRef = useRef(false);
 
-  const handleLogout = () => {
-    logout();
-    setCurrentPage('login');
+  const handleLogout = async () => {
+    if (isLoggingOutRef.current) return;
+    isLoggingOutRef.current = true;
+
     try {
-      if (typeof window !== 'undefined') {
-        window.history.replaceState({ page: 'login' }, '', '/login');
+      // 1. Perform session invalidation / cleanup via authService
+      try {
+        if (authService && typeof authService.logout === 'function') {
+          await authService.logout();
+        }
+      } catch (e) {}
+
+      // 2. Clear authentication session state and tokens
+      logout();
+
+      // 3. Cleanly navigate directly to the public landing/home page
+      if (handleHomeNavigate) {
+        handleHomeNavigate();
+      } else {
+        setCurrentPage('home');
       }
-    } catch (e) {}
+
+      // 4. Update browser URL to public landing ('/') and replace history state
+      // so browser back navigation cannot expose authenticated dashboard
+      try {
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
+        }
+      } catch (e) {}
+    } finally {
+      isLoggingOutRef.current = false;
+    }
   };
 
   const handleAuthSuccess = (user) => {

@@ -187,12 +187,16 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('connect_current_user');
       localStorage.removeItem('connect_token');
       localStorage.removeItem('token');
+      localStorage.removeItem('connect_customer_id');
+      localStorage.removeItem('connect_user_id');
       localStorage.removeItem('connect_current_page');
       localStorage.removeItem('connect_active_profile_tab');
       localStorage.removeItem('connect_profile_modal_open');
       sessionStorage.removeItem('connect_current_user');
       sessionStorage.removeItem('connect_token');
       sessionStorage.removeItem('token');
+      sessionStorage.removeItem('connect_customer_id');
+      sessionStorage.removeItem('connect_user_id');
     } catch (e) {}
   };
 

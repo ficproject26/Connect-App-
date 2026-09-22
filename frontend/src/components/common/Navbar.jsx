@@ -357,7 +357,7 @@ export default function Navbar({
             {currentUser ? (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => { onLogOut(); onAuthClick('login'); }}
+                  onClick={() => { onLogOut(); }}
                   className="px-3.5 py-1.5 bg-[#f5a800] hover:bg-[#d48e00] text-slate-950 rounded-full text-[10.5px] font-bold uppercase tracking-wider cursor-pointer transition-all shadow-sm font-sans"
                 >
                   Login
@@ -433,7 +433,7 @@ export default function Navbar({
           {currentUser ? (
             <div className="flex flex-col gap-3.5 mt-2.5">
               <button
-                onClick={() => { onLogOut(); onAuthClick('login'); closeAll(); }}
+                onClick={() => { onLogOut(); closeAll(); }}
                 className="w-full text-center py-2 bg-[#f5a800] hover:bg-[#d48e00] text-slate-950 rounded-full text-[11px] font-bold uppercase tracking-wider cursor-pointer"
               >
                 Login
