@@ -37,7 +37,7 @@ router.get(['/categories', '/public/categories'], async (req: Request, res: Resp
 });
 
 // GET: /api/admin/public/banners
-router.get(['/public/banners', '/banners'], async (req: Request, res: Response) => {
+router.get(['/public/banners', '/banners', '/public-banners', '/banners/public'], async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {

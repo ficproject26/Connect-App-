@@ -1612,16 +1612,14 @@ export default function CustomerDashboard({
     const mainUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const endpoints = [
       adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
-      adminUrl ? `${adminUrl}/api/admin/public-banners` : '',
-      adminUrl ? `${adminUrl}/api/admin/banners/public` : '',
       adminUrl ? `${adminUrl}/api/admin/banners` : '',
       mainUrl ? `${mainUrl}/api/public/banners` : '',
-      '/api/public/banners',
+      mainUrl ? `${mainUrl}/api/banners` : '',
       '/api/admin/public/banners',
+      '/api/public/banners',
       '/api/banners'
     ];
     const unique = [...new Set(endpoints.filter(Boolean))];
-    let foundBanners = null;
     try {
       for (const url of unique) {
         try {
@@ -1632,18 +1630,11 @@ export default function CustomerDashboard({
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data)) {
-              if (data.length > 0) {
-                setDbBanners(data);
-                return;
-              } else if (foundBanners === null) {
-                foundBanners = data;
-              }
+              setDbBanners(data);
+              return;
             }
           }
         } catch (err) {}
-      }
-      if (foundBanners !== null) {
-        setDbBanners(foundBanners);
       }
     } finally {
       setIsBannersLoading(false);

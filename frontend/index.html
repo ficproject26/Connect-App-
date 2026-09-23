@@ -11,48 +11,55 @@
             str = msg;
           } else if (msg instanceof Error) {
             str = `${msg.name} ${msg.message} ${msg.stack}`;
-          } else {
+          } else if (typeof msg === 'object') {
             try {
-              str = JSON.stringify(msg) || String(msg);
+              str = `${msg.message || ''} ${msg.stack || ''} ${msg.name || ''} ${JSON.stringify(msg) || ''}`;
             } catch (e) {
               str = String(msg);
             }
+          } else {
+            str = String(msg);
           }
           return (
             str.includes('A listener indicated an asynchronous response') ||
             str.includes('message channel closed') ||
             str.includes('runtime.lastError') ||
             str.includes('feature_collector') ||
-            str.includes('using deprecated parameters for the initialization function') ||
-            str.includes('preloaded using link preload but not used') ||
+            str.includes('using deprecated parameters') ||
+            str.includes('preloaded using link preload') ||
+            str.includes('preload but not used') ||
             str.includes('ERR_NETWORK_IO_SUSPENDED') ||
             str.includes('NETWORK_IO_SUSPENDED')
           );
         };
 
-        const origConsoleError = console.error;
-        console.error = function (...args) {
-          if (args.some(isIgnorableNoise) || isIgnorableNoise(args.map(a => String(a || '')).join(' '))) return;
-          origConsoleError.apply(console, args);
+        const filterMethod = (origFn) => {
+          return function (...args) {
+            const stack = (new Error().stack || '') + '';
+            if (stack.includes('feature_collector') || stack.includes('runtime.lastError')) return;
+            if (args.some(isIgnorableNoise) || isIgnorableNoise(args.map(a => String(a || '')).join(' '))) return;
+            origFn.apply(console, args);
+          };
         };
 
-        const origConsoleWarn = console.warn;
-        console.warn = function (...args) {
-          if (args.some(isIgnorableNoise) || isIgnorableNoise(args.map(a => String(a || '')).join(' '))) return;
-          origConsoleWarn.apply(console, args);
-        };
+        console.error = filterMethod(console.error);
+        console.warn = filterMethod(console.warn);
+        console.info = filterMethod(console.info);
+        console.log = filterMethod(console.log);
 
         window.addEventListener('unhandledrejection', function (e) {
-          if (isIgnorableNoise(e.reason)) {
+          if (isIgnorableNoise(e?.reason) || isIgnorableNoise(e?.reason?.message) || isIgnorableNoise(e?.reason?.stack)) {
             e.preventDefault();
             e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
           }
         }, true);
 
         window.addEventListener('error', function (e) {
-          if (isIgnorableNoise(e.error || e.message)) {
+          if (isIgnorableNoise(e?.error) || isIgnorableNoise(e?.message) || isIgnorableNoise(e?.error?.stack)) {
             e.preventDefault();
             e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
           }
         }, true);
       })();
@@ -62,7 +69,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Access Food, Travel, Stay, Services, Products, and Daily Needs through one powerful membership ecosystem." />
     <title>Connect - One Membership. Unlimited Benefits.</title>
-    <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
   </head>
   <body class="bg-slate-50">
     <div id="root"></div>

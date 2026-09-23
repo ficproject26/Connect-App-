@@ -114,7 +114,7 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
   }
 });
 // Public Banners Endpoints
-app.get(['/api/public/banners', '/api/banners'], async (req, res) => {
+app.get(['/api/public/banners', '/api/banners', '/api/public-banners', '/api/banners/public', '/api/admin/public/banners', '/api/admin/public-banners', '/api/admin/banners/public'], async (req, res) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {
