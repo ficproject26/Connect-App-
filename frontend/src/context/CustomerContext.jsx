@@ -91,17 +91,6 @@ export function CustomerProvider({ children }) {
     setMembershipTier(newTier);
   };
 
-  const resetCustomerData = useCallback(() => {
-    setWalletBalance(0);
-    setTransactions([]);
-    setMembershipTier('None');
-    try {
-      localStorage.removeItem('connect_customer_wallet');
-      localStorage.removeItem('connect_customer_transactions');
-      localStorage.removeItem('connect_customer_tier');
-    } catch (e) {}
-  }, []);
-
   return (
     <CustomerContext.Provider value={{
       walletBalance,
@@ -111,8 +100,7 @@ export function CustomerProvider({ children }) {
       updateTier,
       refreshWallet,
       setWalletBalance,
-      setTransactions,
-      resetCustomerData
+      setTransactions
     }}>
       {children}
     </CustomerContext.Provider>

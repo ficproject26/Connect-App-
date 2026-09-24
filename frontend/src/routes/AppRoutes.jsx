@@ -1,6 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import useAuth from '../hooks/useAuth';
-import useCustomer from '../hooks/useCustomer';
 import { authService } from '../services/authService';
 import LandingLayout from '../layouts/LandingLayout';
 import AuthLayout from '../layouts/AuthLayout';
@@ -19,9 +18,7 @@ export default function AppRoutes({
   currentPage,
   setCurrentPage,
   activeCategory,
-  setActiveCategory,
   activeSubService,
-  setActiveSubService,
   theme,
   toggleTheme,
   isJobsOpen,
@@ -30,7 +27,6 @@ export default function AppRoutes({
   handleHomeNavigate
 }) {
   const { currentUser, login, logout, register } = useAuth();
-  const { resetCustomerData } = useCustomer ? useCustomer() : { resetCustomerData: () => {} };
   const isLoggingOutRef = useRef(false);
 
   const handleLogout = async () => {
@@ -38,31 +34,29 @@ export default function AppRoutes({
     isLoggingOutRef.current = true;
 
     try {
-      // 1. Reset customer context (wallet balance, tier, transactions)
-      try {
-        if (typeof resetCustomerData === 'function') {
-          resetCustomerData();
-        }
-      } catch (e) {}
-
-      // 2. Perform backend session invalidation via authService
+      // 1. Perform session invalidation / cleanup via authService
       try {
         if (authService && typeof authService.logout === 'function') {
           await authService.logout();
         }
       } catch (e) {}
 
-      // 3. Completely clear all customer auth state, storage keys, and cookies
+      // 2. Clear authentication session state and tokens
       logout();
 
-      // 4. Clear storage page and tab tracking keys
+      // 3. Clear localStorage page tracking to guarantee landing page
       try {
-        localStorage.removeItem('connect_current_page');
+        localStorage.setItem('connect_current_page', 'home');
         localStorage.removeItem('connect_active_profile_tab');
         localStorage.removeItem('connect_profile_modal_open');
-        localStorage.removeItem('connect_active_category');
-        localStorage.removeItem('connect_active_sub_service');
       } catch (e) {}
+
+      // 4. Cleanly navigate directly to the public landing/home page
+      if (handleHomeNavigate) {
+        handleHomeNavigate();
+      } else {
+        setCurrentPage('home');
+      }
 
       // 5. Update browser URL to public landing ('/') and replace history state
       // so browser back navigation cannot expose authenticated dashboard
@@ -71,13 +65,6 @@ export default function AppRoutes({
           window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
         }
       } catch (e) {}
-
-      // 6. Cleanly navigate directly to the public landing/home page
-      if (handleHomeNavigate) {
-        handleHomeNavigate();
-      } else {
-        setCurrentPage('home');
-      }
     } finally {
       isLoggingOutRef.current = false;
     }
@@ -87,7 +74,7 @@ export default function AppRoutes({
     setCurrentPage('dashboard');
     try {
       if (typeof window !== 'undefined') {
-        window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
+        window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
       }
     } catch (e) {}
   };
@@ -97,60 +84,16 @@ export default function AppRoutes({
   // Protected pages that require authenticated user session
   const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
 
-  // Keep state and URL in sync when unauthenticated customer hits protected page
-  useEffect(() => {
-    if (protectedPages.includes(currentPage) && !currentUser) {
-      setCurrentPage('home');
-      try {
-        if (typeof window !== 'undefined') {
-          window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
-        }
-      } catch (e) {}
-    }
-  }, [currentPage, currentUser, setCurrentPage]);
-
-  // Protected route auth guard: unauthenticated access to protected routes strictly redirects to Landing Page ('/')
+  // Protected route auth guard: unauthenticated access to protected routes redirects to LoginPage
   if (protectedPages.includes(currentPage) && !currentUser) {
-    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-      try {
-        window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
-      } catch (e) {}
-    }
     return (
-      <LandingLayout
-        theme={theme}
-        toggleTheme={toggleTheme}
-        onHomeClick={handleHomeNavigate} 
-        onCategoryClick={handleCategoryClick}
-        isJobsOpen={isJobsOpen}
-        setIsJobsOpen={setIsJobsOpen}
-        currentUser={null}
-        onLogOut={handleLogout}
-        onAuthClick={(tab) => {
-          const target = tab === 'login' ? 'login' : 'join-now';
-          setCurrentPage(target);
-          if (typeof window !== 'undefined') {
-            window.history.pushState({ page: target }, '', `/${target}`);
-          }
-        }}
-        onDashboardClick={() => {
-          setCurrentPage('login');
-          if (typeof window !== 'undefined') {
-            window.history.pushState({ page: 'login' }, '', '/login');
-          }
-        }}
-      >
-        <LandingPage
-          onJoinClick={() => {
-            setCurrentPage('join-now');
-            if (typeof window !== 'undefined') {
-              window.history.pushState({ page: 'join-now' }, '', '/join-now');
-            }
-          }}
-          onCategoryClick={handleCategoryClick}
-          theme={theme}
+      <AuthLayout>
+        <LoginPage
+          onAuthSuccess={handleAuthSuccess}
+          onBackToHome={handleHomeNavigate}
+          onNavigateToJoinNow={() => setCurrentPage('join-now')}
         />
-      </LandingLayout>
+      </AuthLayout>
     );
   }
 
@@ -193,14 +136,7 @@ export default function AppRoutes({
         <LoginPage
           onAuthSuccess={handleAuthSuccess}
           onBackToHome={handleHomeNavigate}
-          onNavigateToJoinNow={() => {
-            setCurrentPage('join-now');
-            try {
-              if (typeof window !== 'undefined') {
-                window.history.pushState({ page: 'join-now' }, '', '/join-now');
-              }
-            } catch (e) {}
-          }}
+          onNavigateToJoinNow={() => setCurrentPage('join-now')}
         />
       </AuthLayout>
     );
@@ -214,14 +150,7 @@ export default function AppRoutes({
             register(user, user.role, handleAuthSuccess);
           }}
           onBackToHome={handleHomeNavigate}
-          onNavigateToLoginPage={() => {
-            setCurrentPage('login');
-            try {
-              if (typeof window !== 'undefined') {
-                window.history.pushState({ page: 'login' }, '', '/login');
-              }
-            } catch (e) {}
-          }}
+          onNavigateToLoginPage={() => setCurrentPage('login')}
         />
       </AuthLayout>
     );
@@ -239,19 +168,8 @@ export default function AppRoutes({
         setIsJobsOpen={setIsJobsOpen}
         currentUser={currentUser}
         onLogOut={handleLogout}
-        onAuthClick={(tab) => {
-          const target = tab === 'login' ? 'login' : 'join-now';
-          setCurrentPage(target);
-          if (typeof window !== 'undefined') {
-            window.history.pushState({ page: target }, '', `/${target}`);
-          }
-        }}
-        onDashboardClick={() => {
-          setCurrentPage('dashboard');
-          if (typeof window !== 'undefined') {
-            window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
-          }
-        }}
+        onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+        onDashboardClick={() => setCurrentPage('dashboard')}
       >
         {currentPage === 'details' ? (
           <CategoryDetails
@@ -269,41 +187,22 @@ export default function AppRoutes({
     );
   }
 
-  // Home / Landing Page: renders public LandingPage (Hero, Ecosystem, Pricing, Services, etc.)
+  // Home / Landing Page: renders full Customer Dashboard experience (hiding profile when guest)
   return (
-    <LandingLayout
-      theme={theme}
-      toggleTheme={toggleTheme}
-      onHomeClick={handleHomeNavigate} 
-      onCategoryClick={handleCategoryClick}
-      isJobsOpen={isJobsOpen}
-      setIsJobsOpen={setIsJobsOpen}
-      currentUser={currentUser}
-      onLogOut={handleLogout}
-      onAuthClick={(tab) => {
-        const target = tab === 'login' ? 'login' : 'join-now';
-        setCurrentPage(target);
-        if (typeof window !== 'undefined') {
-          window.history.pushState({ page: target }, '', `/${target}`);
-        }
-      }}
-      onDashboardClick={() => {
-        setCurrentPage('dashboard');
-        if (typeof window !== 'undefined') {
-          window.history.pushState({ page: 'dashboard' }, '', '/dashboard');
-        }
-      }}
-    >
-      <LandingPage
-        onJoinClick={() => {
-          setCurrentPage('join-now');
-          if (typeof window !== 'undefined') {
-            window.history.pushState({ page: 'join-now' }, '', '/join-now');
-          }
-        }}
-        onCategoryClick={handleCategoryClick}
-        theme={theme}
-      />
-    </LandingLayout>
+    <CustomerLayout>
+      <ErrorBoundary>
+        <CustomerDashboard 
+          key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
+          currentUser={currentUser} 
+          onLogOut={handleLogout} 
+          onJobsClick={() => setIsJobsOpen(true)}
+          onCategoryClick={handleCategoryClick}
+          isLandingPage={true}
+          hideProfile={!currentUser}
+          onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+          onNavigateToJoinNow={() => setCurrentPage('join-now')}
+        />
+      </ErrorBoundary>
+    </CustomerLayout>
   );
 }

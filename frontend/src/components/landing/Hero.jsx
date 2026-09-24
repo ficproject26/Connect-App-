@@ -68,7 +68,7 @@ export default function Hero({ onJoinClick }) {
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white leading-tight font-sans max-w-5xl">
           Everything Connected.
           <span translate="no" className="notranslate block text-gradient-gold mt-2 min-h-[1.2em] text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl lg:whitespace-nowrap">
-            <span>{typedText}</span>
+            {typedText}
             <span className="inline-block w-[3px] h-[0.85em] bg-brand-gold ml-1 animate-pulse" style={{ verticalAlign: 'middle' }} />
           </span>
         </h1>

@@ -649,44 +649,16 @@ router.get('/active-sessions', authenticateToken, (req: AuthenticatedRequest, re
 });
 
 // 6. POST: /api/auth/logout (Revoke Current Session)
-router.post('/logout', (req: Request, res: Response) => {
-  try {
-    const authHeader = req.headers['authorization'];
-    const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-    const tokenFromCookie = req.cookies ? req.cookies['connect_access_token'] : null;
-    const accessToken = tokenFromHeader || tokenFromCookie;
-
-    if (accessToken) {
-      try {
-        const payload = securityManager.verifyAccessToken(accessToken);
-        if (payload && payload.sessionId) {
-          securityManager.revokeSession(payload.sessionId);
-        }
-      } catch (err) {}
-    }
-
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
-      path: '/'
-    };
-
-    res.clearCookie('connect_access_token', cookieOptions);
-    res.clearCookie('connect_refresh_token', cookieOptions);
-    res.clearCookie('connect_access_token');
-    res.clearCookie('connect_refresh_token');
-
-    return res.json({
-      status: 'success',
-      message: 'Logged out successfully.'
-    });
-  } catch (err: any) {
-    return res.json({
-      status: 'success',
-      message: 'Logged out successfully.'
-    });
+router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res: Response) => {
+  if (req.sessionId) {
+    securityManager.revokeSession(req.sessionId);
   }
+  res.clearCookie('connect_access_token');
+  res.clearCookie('connect_refresh_token');
+  return res.json({
+    status: 'success',
+    message: 'Logged out successfully.'
+  });
 });
 
 // 7. POST: /api/auth/logout-all-devices (Force Logout All)
