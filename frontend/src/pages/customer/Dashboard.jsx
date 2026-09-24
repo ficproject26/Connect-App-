@@ -1324,6 +1324,23 @@ export default function CustomerDashboard({
       setCustomerOrders([]);
     }
   }, [currentUser]);
+
+  const handlePerformLogout = () => {
+    setIsProfileModalOpen(false);
+    setIsMobileMenuOpen(false);
+    setCustomerOrders([]);
+    setTrackingOrder(null);
+    setProfileName('');
+    setProfileEmail('');
+    setProfilePhone('');
+    setProfilePhoto('');
+    setAddresses([]);
+    setActiveProfileTab('orders');
+    if (typeof onLogOut === 'function') {
+      onLogOut();
+    }
+  };
+
   const [selectedOrdersTab, setSelectedOrdersTab] = useState('All Orders');
 
 
@@ -4424,7 +4441,13 @@ export default function CustomerDashboard({
             {!currentUser || hideProfile ? (
               <button
                 type="button"
-                onClick={() => setIsLoginModalOpen(true)}
+                onClick={() => {
+                  if (onAuthClick) {
+                    onAuthClick('login');
+                  } else {
+                    setIsLoginModalOpen(true);
+                  }
+                }}
                 className="px-3.5 py-2 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none shrink-0"
               >
                 Login
@@ -4476,8 +4499,12 @@ export default function CustomerDashboard({
                     <button
                       type="button"
                       onClick={() => {
-                        setIsLoginModalOpen(true);
                         setIsMobileMenuOpen(false);
+                        if (onAuthClick) {
+                          onAuthClick('login');
+                        } else {
+                          setIsLoginModalOpen(true);
+                        }
                       }}
                       className="px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase rounded-xl transition-colors cursor-pointer border-none"
                     >
@@ -4644,7 +4671,13 @@ export default function CustomerDashboard({
           {!currentUser || hideProfile ? (
             <button
               type="button"
-              onClick={() => setIsLoginModalOpen(true)}
+              onClick={() => {
+                if (onAuthClick) {
+                  onAuthClick('login');
+                } else {
+                  setIsLoginModalOpen(true);
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-full transition-all shadow-xs cursor-pointer border-none"
             >
               <User className="w-4 h-4 text-slate-950" />
@@ -10396,10 +10429,7 @@ wishlistProducts.forEach(item => addToCart(item));
 
                     {/* Mobile Explicit Logout Button */}
                     <button 
-                      onClick={() => {
-                        setIsProfileModalOpen(false);
-                        onLogOut();
-                      }}
+                      onClick={handlePerformLogout}
                       className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50 rounded-xl text-xs font-extrabold transition-colors flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
                       title="Logout"
                     >
@@ -10485,10 +10515,7 @@ wishlistProducts.forEach(item => addToCart(item));
 
               {/* Desktop Dedicated Full-Width Logout Button */}
               <button 
-                onClick={() => {
-                  setIsProfileModalOpen(false);
-                  onLogOut();
-                }}
+                onClick={handlePerformLogout}
                 className="hidden md:flex mt-6 w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-slate-900 dark:hover:bg-red-950/20 dark:border-red-900/50 rounded-xl text-xs font-bold transition-colors items-center justify-center gap-2 cursor-pointer shadow-xs"
               >
                 <LogOut className="w-4 h-4 text-red-600" />

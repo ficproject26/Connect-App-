@@ -5,12 +5,16 @@ export const CustomerContext = createContext(null);
 
 export function CustomerProvider({ children }) {
   const [walletBalance, setWalletBalance] = useState(() => {
+    const isUserLoggedIn = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('connect_current_user'));
+    if (!isUserLoggedIn) return 0.00;
     const saved = localStorage.getItem('connect_customer_wallet');
-    const parsed = saved ? parseFloat(saved) : 5000.00;
+    const parsed = saved ? parseFloat(saved) : 0.00;
     return isNaN(parsed) || parsed < 0 ? 0 : parsed;
   });
 
   const [transactions, setTransactions] = useState(() => {
+    const isUserLoggedIn = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('connect_current_user'));
+    if (!isUserLoggedIn) return [];
     const saved = localStorage.getItem('connect_customer_transactions');
     if (saved) {
       try {
@@ -23,27 +27,57 @@ export function CustomerProvider({ children }) {
   });
 
   const [membershipTier, setMembershipTier] = useState(() => {
+    const isUserLoggedIn = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('connect_current_user'));
+    if (!isUserLoggedIn) return 'None';
     return localStorage.getItem('connect_customer_tier') || 'None';
   });
 
   useEffect(() => {
-    localStorage.setItem('connect_customer_wallet', Math.max(0, walletBalance).toString());
+    const isUserLoggedIn = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('connect_current_user'));
+    if (isUserLoggedIn) {
+      localStorage.setItem('connect_customer_wallet', Math.max(0, walletBalance).toString());
+    } else {
+      localStorage.removeItem('connect_customer_wallet');
+    }
   }, [walletBalance]);
 
   useEffect(() => {
-    localStorage.setItem('connect_customer_transactions', JSON.stringify(transactions));
+    const isUserLoggedIn = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('connect_current_user'));
+    if (isUserLoggedIn) {
+      localStorage.setItem('connect_customer_transactions', JSON.stringify(transactions));
+    } else {
+      localStorage.removeItem('connect_customer_transactions');
+    }
   }, [transactions]);
 
   useEffect(() => {
-    if (membershipTier && membershipTier !== 'None') {
+    const isUserLoggedIn = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('connect_current_user'));
+    if (isUserLoggedIn && membershipTier && membershipTier !== 'None') {
       localStorage.setItem('connect_customer_tier', membershipTier);
     } else {
       localStorage.removeItem('connect_customer_tier');
     }
   }, [membershipTier]);
 
+  const resetCustomerState = useCallback(() => {
+    setWalletBalance(0);
+    setTransactions([]);
+    setMembershipTier('None');
+    try {
+      localStorage.removeItem('connect_customer_wallet');
+      localStorage.removeItem('connect_customer_transactions');
+      localStorage.removeItem('connect_customer_tier');
+    } catch (e) {}
+  }, []);
+
   const refreshWallet = useCallback(async (userIdentifier) => {
     try {
+      const isUserLoggedIn = typeof localStorage !== 'undefined' && Boolean(localStorage.getItem('connect_current_user'));
+      if (!isUserLoggedIn && !userIdentifier) {
+        setWalletBalance(0);
+        setTransactions([]);
+        return;
+      }
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const targetUser = userIdentifier || localStorage.getItem('connect_customer_id') || localStorage.getItem('connect_user_id') || '';
       
@@ -99,6 +133,7 @@ export function CustomerProvider({ children }) {
       addTransaction,
       updateTier,
       refreshWallet,
+      resetCustomerState,
       setWalletBalance,
       setTransactions
     }}>

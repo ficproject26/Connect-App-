@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { authService } from '../services/authService';
 
 export const AuthContext = createContext(null);
 
@@ -181,24 +182,41 @@ export function AuthProvider({ children }) {
     if (callback) callback(finalUser);
   };
 
-  const logout = () => {
+  const logout = useCallback(async () => {
+    // 1. Reset currentUser in memory immediately
     setCurrentUser(null);
+
+    // 2. Perform backend session revocation and cookie clearing
     try {
-      localStorage.removeItem('connect_current_user');
-      localStorage.removeItem('connect_token');
-      localStorage.removeItem('token');
-      localStorage.removeItem('connect_customer_id');
-      localStorage.removeItem('connect_user_id');
-      localStorage.removeItem('connect_current_page');
-      localStorage.removeItem('connect_active_profile_tab');
-      localStorage.removeItem('connect_profile_modal_open');
-      sessionStorage.removeItem('connect_current_user');
-      sessionStorage.removeItem('connect_token');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('connect_customer_id');
-      sessionStorage.removeItem('connect_user_id');
+      if (authService && typeof authService.logout === 'function') {
+        await authService.logout();
+      }
     } catch (e) {}
-  };
+
+    // 3. Wipe all customer auth/session storage keys
+    try {
+      const keysToRemove = [
+        'connect_current_user',
+        'connect_token',
+        'token',
+        'connect_customer_id',
+        'connect_user_id',
+        'connect_customer_tier',
+        'connect_customer_wallet',
+        'connect_customer_transactions',
+        'connect_active_profile_tab',
+        'connect_profile_modal_open',
+        'connect_user_orders',
+        'user_orders'
+      ];
+      keysToRemove.forEach(k => {
+        try { localStorage.removeItem(k); } catch (e) {}
+        try { sessionStorage.removeItem(k); } catch (e) {}
+      });
+      // Guarantee public landing page is the designated destination
+      localStorage.setItem('connect_current_page', 'home');
+    } catch (e) {}
+  }, []);
 
   const register = (formData, role, callback) => {
     let displayName = formData.name;

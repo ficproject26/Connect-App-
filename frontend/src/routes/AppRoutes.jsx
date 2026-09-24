@@ -1,5 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import useAuth from '../hooks/useAuth';
+import useCustomer from '../hooks/useCustomer';
 import { authService } from '../services/authService';
 import LandingLayout from '../layouts/LandingLayout';
 import AuthLayout from '../layouts/AuthLayout';
@@ -18,7 +19,9 @@ export default function AppRoutes({
   currentPage,
   setCurrentPage,
   activeCategory,
+  setActiveCategory,
   activeSubService,
+  setActiveSubService,
   theme,
   toggleTheme,
   isJobsOpen,
@@ -27,6 +30,7 @@ export default function AppRoutes({
   handleHomeNavigate
 }) {
   const { currentUser, login, logout, register } = useAuth();
+  const { resetCustomerState } = useCustomer();
   const isLoggingOutRef = useRef(false);
 
   const handleLogout = async () => {
@@ -34,31 +38,21 @@ export default function AppRoutes({
     isLoggingOutRef.current = true;
 
     try {
-      // 1. Perform session invalidation / cleanup via authService
-      try {
-        if (authService && typeof authService.logout === 'function') {
-          await authService.logout();
-        }
-      } catch (e) {}
-
-      // 2. Clear authentication session state and tokens
-      logout();
-
-      // 3. Clear localStorage page tracking to guarantee landing page
-      try {
-        localStorage.setItem('connect_current_page', 'home');
-        localStorage.removeItem('connect_active_profile_tab');
-        localStorage.removeItem('connect_profile_modal_open');
-      } catch (e) {}
-
-      // 4. Cleanly navigate directly to the public landing/home page
-      if (handleHomeNavigate) {
+      // 1. Immediately switch route to public landing page ('home')
+      setCurrentPage('home');
+      if (typeof handleHomeNavigate === 'function') {
         handleHomeNavigate();
-      } else {
-        setCurrentPage('home');
       }
 
-      // 5. Update browser URL to public landing ('/') and replace history state
+      // 2. Clear customer context state in memory and storage (wallet, tier, transactions)
+      if (typeof resetCustomerState === 'function') {
+        resetCustomerState();
+      }
+
+      // 3. Clear auth session state, cookies, storage, and tokens
+      await logout();
+
+      // 4. Update browser URL to public landing ('/') and replace history state
       // so browser back navigation cannot expose authenticated dashboard
       try {
         if (typeof window !== 'undefined') {
@@ -81,19 +75,30 @@ export default function AppRoutes({
 
   const effectiveUser = currentUser || null;
 
-  // Protected pages that require authenticated user session
-  const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
+  // Protected pages that strictly require authenticated user session
+  const protectedPages = [
+    'dashboard', 'profile', 'orders', 'bookings', 'jobs', 'myjobs',
+    'wallet', 'membership', 'membership-card', 'card', 'payments', 'settings'
+  ];
 
-  // Protected route auth guard: unauthenticated access to protected routes redirects to LoginPage
+  // Protected route auth guard: unauthenticated access to protected routes strictly redirects to Public Landing Page
   if (protectedPages.includes(currentPage) && !currentUser) {
     return (
-      <AuthLayout>
-        <LoginPage
-          onAuthSuccess={handleAuthSuccess}
-          onBackToHome={handleHomeNavigate}
-          onNavigateToJoinNow={() => setCurrentPage('join-now')}
-        />
-      </AuthLayout>
+      <CustomerLayout>
+        <ErrorBoundary>
+          <CustomerDashboard 
+            key="guest"
+            currentUser={null} 
+            onLogOut={handleLogout} 
+            onJobsClick={() => setIsJobsOpen(true)}
+            onCategoryClick={handleCategoryClick}
+            isLandingPage={true}
+            hideProfile={true}
+            onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+            onNavigateToJoinNow={() => setCurrentPage('join-now')}
+          />
+        </ErrorBoundary>
+      </CustomerLayout>
     );
   }
 

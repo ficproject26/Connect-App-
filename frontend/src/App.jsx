@@ -45,18 +45,21 @@ function AppContent() {
     try {
       const path = (typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+|\/+$/g, '') : '').toLowerCase();
       const user = localStorage.getItem('connect_current_user');
-      const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
+      const protectedPages = [
+        'dashboard', 'profile', 'orders', 'bookings', 'jobs', 'myjobs',
+        'wallet', 'membership', 'membership-card', 'card', 'payments', 'settings'
+      ];
 
-      if (path === 'login') return 'login';
+      if (path === 'login') return user ? 'dashboard' : 'login';
       if (protectedPages.includes(path)) {
-        return user ? (path === 'profile' ? 'dashboard' : path) : 'login';
+        return user ? (path === 'profile' ? 'dashboard' : path) : 'home';
       }
 
       const savedPage = localStorage.getItem('connect_current_page');
       if (savedPage) {
-        if (savedPage === 'login') return 'login';
+        if (savedPage === 'login') return user ? 'dashboard' : 'login';
         if (protectedPages.includes(savedPage)) {
-          return user ? savedPage : 'login';
+          return user ? (savedPage === 'profile' ? 'dashboard' : savedPage) : 'home';
         }
         return savedPage;
       }
@@ -131,22 +134,34 @@ function AppContent() {
   useEffect(() => {
     const handlePopState = (e) => {
       const user = localStorage.getItem('connect_current_user');
-      const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
+      const protectedPages = [
+        'dashboard', 'profile', 'orders', 'bookings', 'jobs', 'myjobs',
+        'wallet', 'membership', 'membership-card', 'card', 'payments', 'settings'
+      ];
       const targetPage = (e.state && e.state.page) ? e.state.page : (
         typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() : ''
       );
 
-      // Back navigation protection: if target is a protected route and user is logged out, redirect to login
+      // Back navigation protection: if target is a protected route and user is logged out, redirect to public landing page
       if (protectedPages.includes(targetPage) && !user) {
-        setCurrentPage('login');
+        setCurrentPage('home');
         if (typeof window !== 'undefined') {
-          window.history.replaceState({ page: 'login' }, '', '/login');
+          window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
         }
         return;
       }
 
       if (e.state) {
-        if (e.state.page) setCurrentPage(e.state.page);
+        if (e.state.page) {
+          if (protectedPages.includes(e.state.page) && !user) {
+            setCurrentPage('home');
+            if (typeof window !== 'undefined') {
+              window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
+            }
+            return;
+          }
+          setCurrentPage(e.state.page);
+        }
         if (e.state.category !== undefined) setActiveCategory(e.state.category);
         if (e.state.subService !== undefined) setActiveSubService(e.state.subService);
       }
