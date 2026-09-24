@@ -24,6 +24,39 @@ try {
   // Ignore storage access errors
 }
 
+// Protect against GSAP / Google Translate / Chrome Extensions / third-party DOM mutation removeChild errors in React
+if (typeof Node === 'function' && Node.prototype) {
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function (child) {
+    if (child && child.parentNode !== this) {
+      if (child.parentNode) {
+        try {
+          return child.parentNode.removeChild(child);
+        } catch (e) {
+          return child;
+        }
+      }
+      return child;
+    }
+    return originalRemoveChild.apply(this, arguments);
+  };
+
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function (newNode, referenceNode) {
+    if (referenceNode && referenceNode.parentNode !== this) {
+      if (referenceNode.parentNode) {
+        try {
+          return referenceNode.parentNode.insertBefore(newNode, referenceNode);
+        } catch (e) {
+          return newNode;
+        }
+      }
+      return newNode;
+    }
+    return originalInsertBefore.apply(this, arguments);
+  };
+}
+
 // Automatically reload page on new deployment bundle update (fixes 404 old chunk errors)
 window.addEventListener('vite:preloadError', () => {
   window.location.reload();

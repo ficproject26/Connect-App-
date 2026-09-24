@@ -47,20 +47,46 @@ function AppContent() {
       const user = localStorage.getItem('connect_current_user');
       const protectedPages = ['dashboard', 'profile', 'orders', 'bookings', 'settings', 'membership', 'payments', 'wallet', 'myjobs', 'card'];
 
-      if (path === 'login') return 'login';
+      if (path === 'login') {
+        if (user) {
+          if (typeof window !== 'undefined') {
+            window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
+          }
+          return 'dashboard';
+        }
+        return 'login';
+      }
+      if (path === 'join-now') return 'join-now';
+      if (path === 'details') return 'details';
+      if (path === 'sub-details') return 'sub-details';
+
       if (protectedPages.includes(path)) {
-        return user ? (path === 'profile' ? 'dashboard' : path) : 'login';
+        if (user) {
+          return path === 'profile' ? 'dashboard' : path;
+        } else {
+          if (typeof window !== 'undefined') {
+            window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
+          }
+          return 'home';
+        }
       }
 
       const savedPage = localStorage.getItem('connect_current_page');
       if (savedPage) {
-        if (savedPage === 'login') return 'login';
-        if (protectedPages.includes(savedPage)) {
-          return user ? savedPage : 'login';
+        if (savedPage === 'login') {
+          if (user) return 'dashboard';
+          return 'login';
         }
-        return savedPage;
+        if (protectedPages.includes(savedPage)) {
+          if (user) return savedPage;
+          try { localStorage.removeItem('connect_current_page'); } catch (e) {}
+          return 'home';
+        }
+        if (savedPage === 'join-now' || savedPage === 'details' || savedPage === 'sub-details') {
+          return savedPage;
+        }
       }
-      if (user) return 'dashboard';
+
       return 'home';
     } catch (e) {
       return 'home';
@@ -136,11 +162,22 @@ function AppContent() {
         typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() : ''
       );
 
-      // Back navigation protection: if target is a protected route and user is logged out, redirect to login
+      // Back navigation protection: if target is a protected route and user is logged out, redirect to landing ('/')
       if (protectedPages.includes(targetPage) && !user) {
-        setCurrentPage('login');
+        setCurrentPage('home');
+        setActiveCategory(null);
+        setActiveSubService(null);
         if (typeof window !== 'undefined') {
-          window.history.replaceState({ page: 'login' }, '', '/login');
+          window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
+        }
+        return;
+      }
+
+      // If user is logged in and navigates back to 'login', redirect to 'dashboard'
+      if (targetPage === 'login' && user) {
+        setCurrentPage('dashboard');
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({ page: 'dashboard' }, '', '/dashboard');
         }
         return;
       }
@@ -190,6 +227,11 @@ function AppContent() {
     setCurrentPage('home');
     setActiveCategory(null);
     setActiveSubService(null);
+    try {
+      if (typeof window !== 'undefined') {
+        window.history.pushState({ page: 'home', category: null, subService: null }, '', '/');
+      }
+    } catch (e) {}
   };
 
   return (

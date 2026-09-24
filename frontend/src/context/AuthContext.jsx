@@ -184,20 +184,68 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setCurrentUser(null);
     try {
-      localStorage.removeItem('connect_current_user');
-      localStorage.removeItem('connect_token');
-      localStorage.removeItem('token');
-      localStorage.removeItem('connect_customer_id');
-      localStorage.removeItem('connect_user_id');
-      localStorage.removeItem('connect_current_page');
-      localStorage.removeItem('connect_active_profile_tab');
-      localStorage.removeItem('connect_profile_modal_open');
-      sessionStorage.removeItem('connect_current_user');
-      sessionStorage.removeItem('connect_token');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('connect_customer_id');
-      sessionStorage.removeItem('connect_user_id');
-    } catch (e) {}
+      // 1. Core customer auth and session keys
+      const keysToRemove = [
+        'connect_current_user',
+        'connect_token',
+        'token',
+        'authToken',
+        'accessToken',
+        'connect_customer_id',
+        'connect_user_id',
+        'connect_current_page',
+        'connect_active_profile_tab',
+        'connect_profile_modal_open',
+        'connect_active_category',
+        'connect_active_sub_service',
+        'connect_active_tab',
+        'connect_selected_sub_category',
+        'connect_customer_wallet',
+        'connect_customer_transactions',
+        'connect_customer_tier',
+        'connect_cart',
+        'connect_selected_cart_items'
+      ];
+      keysToRemove.forEach(k => {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+
+      // Clear any dynamic profile phone or auth keys
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('connect_profile_phone_') || key.startsWith('connect_auth_') || key.startsWith('connect_session_'))) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) {}
+
+      // 2. SessionStorage cleanup
+      const sessionKeys = [
+        'connect_current_user',
+        'connect_token',
+        'token',
+        'authToken',
+        'accessToken',
+        'connect_customer_id',
+        'connect_user_id',
+        'connect_current_page'
+      ];
+      sessionKeys.forEach(k => {
+        try { sessionStorage.removeItem(k); } catch (e) {}
+      });
+
+      // 3. Auth Cookie cleanup
+      if (typeof document !== 'undefined') {
+        const cookies = ['connect_access_token', 'connect_refresh_token', 'token', 'jwt', 'connect_token'];
+        cookies.forEach(name => {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+        });
+      }
+    } catch (e) {
+      console.warn("Storage cleanup note during logout:", e);
+    }
   };
 
   const register = (formData, role, callback) => {
