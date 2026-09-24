@@ -1143,12 +1143,34 @@ export default function CustomerDashboard({
   useEffect(() => {
     setPreviewMembershipTier(membershipTier || 'Gold Elite');
   }, [membershipTier]);
+  const BANNER_CACHE_KEY = 'fic_customer_banners_v2';
+  const getCachedBanners = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem(BANNER_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch (e) {}
+    return [];
+  };
 
-  const [dbBanners, setDbBanners] = useState([]);
-  const [isBannersLoading, setIsBannersLoading] = useState(true);
-  const hasLoadedBannersRef = useRef(false);
+  const initialBanners = getCachedBanners();
+  const [dbBanners, setDbBanners] = useState(initialBanners);
+  const [isBannersLoading, setIsBannersLoading] = useState(initialBanners.length === 0);
+  const hasLoadedBannersRef = useRef(initialBanners.length > 0);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [isHeroBannerHovered, setIsHeroBannerHovered] = useState(false);
+
+  // Safety timer: ensure loading skeleton never stays stuck on screen even during network drops
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setIsBannersLoading(false);
+    }, 1500);
+    return () => clearTimeout(safetyTimer);
+  }, []);
 
   useEffect(() => {
     if (isHeroBannerHovered) return;
@@ -1609,46 +1631,93 @@ export default function CustomerDashboard({
   }, []);
 
   const fetchDbBanners = useCallback(async () => {
-    if (!hasLoadedBannersRef.current) {
+    // Only show skeleton if we have zero banners (neither memory nor cache)
+    if (!hasLoadedBannersRef.current && (!dbBanners || dbBanners.length === 0)) {
       setIsBannersLoading(true);
     }
     const adminUrl = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
     const mainUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const endpoints = [
-      adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
-      adminUrl ? `${adminUrl}/api/admin/banners` : '',
       mainUrl ? `${mainUrl}/api/public/banners` : '',
-      mainUrl ? `${mainUrl}/api/banners` : '',
-      '/api/admin/public/banners',
+      adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
       '/api/public/banners',
+      '/api/admin/public/banners',
+      mainUrl ? `${mainUrl}/api/banners` : '',
+      adminUrl ? `${adminUrl}/api/admin/banners` : '',
       '/api/banners'
     ];
     const unique = [...new Set(endpoints.filter(Boolean))];
+
     try {
-      for (const url of unique) {
+      const fetchWithTimeout = async (url) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3500);
-          const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, { signal: controller.signal });
+          const res = await fetch(url, { signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data)) {
-              setDbBanners(data);
-              return;
+            if (Array.isArray(data) && data.length > 0) {
+              return data;
             }
           }
-        } catch (err) {}
+          throw new Error('Not valid banner array');
+        } catch (err) {
+          clearTimeout(timeoutId);
+          throw err;
+        }
+      };
+
+      // Race all candidate endpoints in parallel for instant sub-second resolution
+      const fastestBanners = await Promise.any(unique.map(url => fetchWithTimeout(url)));
+      if (Array.isArray(fastestBanners)) {
+        setDbBanners(fastestBanners);
+        try {
+          if (typeof window !== 'undefined' && fastestBanners.length > 0) {
+            localStorage.setItem(BANNER_CACHE_KEY, JSON.stringify(fastestBanners));
+          }
+        } catch (e) {}
       }
+    } catch (err) {
+      // In case network completely fails, fallback to cached banners
+      try {
+        if (typeof window !== 'undefined') {
+          const cached = localStorage.getItem(BANNER_CACHE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setDbBanners(parsed);
+            }
+          }
+        }
+      } catch (e) {}
     } finally {
       setIsBannersLoading(false);
       hasLoadedBannersRef.current = true;
     }
-  }, []);
+  }, [dbBanners]);
 
-  // Poll dynamic categories and banners every 3 seconds for real-time synchronization
+  // Dynamic categories real-time synchronization
   useAutoRefresh(fetchDbCategories, 3000);
-  useAutoRefresh(fetchDbBanners, 3000);
+  // Background banners revalidation every 60s (avoiding network flooding)
+  useAutoRefresh(fetchDbBanners, 60000);
+
+  // Background refresh on tab focus/visibility
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchDbBanners();
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('visibilitychange', handleVisibility);
+      window.addEventListener('focus', handleVisibility);
+      return () => {
+        window.removeEventListener('visibilitychange', handleVisibility);
+        window.removeEventListener('focus', handleVisibility);
+      };
+    }
+  }, [fetchDbBanners]);
 
   useEffect(() => {
     fetchDbCategories();
@@ -5534,6 +5603,13 @@ export default function CustomerDashboard({
                       <img 
                         src={activeSlideObj.imageUrl} 
                         alt={activeSlideObj.title} 
+                        loading="eager"
+                        fetchpriority="high"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80';
+                        }}
                         className="w-full h-full object-cover rounded-r-2xl transition-transform duration-700 hover:scale-110" 
                       />
                     </div>

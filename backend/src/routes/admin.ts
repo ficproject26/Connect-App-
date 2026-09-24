@@ -36,12 +36,30 @@ router.get(['/categories', '/public/categories'], async (req: Request, res: Resp
   }
 });
 
+// In-memory cache for admin/public banners with 30s TTL
+let adminBannersCache: { data: any[]; timestamp: number } | null = null;
+const ADMIN_BANNERS_CACHE_TTL = 30 * 1000;
+export const invalidateAdminBannersCache = () => {
+  adminBannersCache = null;
+};
+
 // GET: /api/admin/public/banners
 router.get(['/public/banners', '/banners', '/public-banners', '/banners/public'], async (req: Request, res: Response) => {
   try {
+    const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+    if (!forceRefresh && adminBannersCache && (Date.now() - adminBannersCache.timestamp < ADMIN_BANNERS_CACHE_TTL)) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+      return res.json(adminBannersCache.data);
+    }
+
     const mongoDb = db.getDb();
     if (mongoDb) {
-      const banners = await mongoDb.collection('banners').find({ isActive: { $ne: false } }).toArray();
+      const banners = await mongoDb.collection('banners')
+        .find({ isActive: { $ne: false } })
+        .sort({ displayOrder: 1, createdAt: -1 })
+        .toArray();
+      adminBannersCache = { data: banners, timestamp: Date.now() };
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       return res.json(banners);
     }
     return res.json([]);

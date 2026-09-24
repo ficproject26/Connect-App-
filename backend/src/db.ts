@@ -311,6 +311,9 @@ class DatabaseManager {
       await this.safeCreateIndex('delivery_earnings', { delivery_partner_id: 1 });
       await this.safeCreateIndex('delivery_ratings', { id: 1 }, { unique: true, sparse: true });
       await this.safeCreateIndex('delivery_ratings', { target_partner_id: 1 });
+
+      await this.safeCreateIndex('banners', { isActive: 1, displayOrder: 1, createdAt: -1 });
+      await this.safeCreateIndex('ads', { isActive: 1, createdAt: -1 });
       console.log(`[DB]: MongoDB indexes verified/created successfully.`);
     } catch (err: any) {
       console.error(`[DB]: Failed to create indexes: ${err.message}`);

@@ -113,12 +113,30 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
     res.status(500).json({ error: err.message || 'Server error' });
   }
 });
+// In-memory cache for public banners with 30s TTL
+let publicBannersCache: { data: any[]; timestamp: number } | null = null;
+const BANNERS_CACHE_TTL = 30 * 1000;
+export const invalidatePublicBannersCache = () => {
+  publicBannersCache = null;
+};
+
 // Public Banners Endpoints
 app.get(['/api/public/banners', '/api/banners', '/api/public-banners', '/api/banners/public', '/api/admin/public/banners', '/api/admin/public-banners', '/api/admin/banners/public'], async (req, res) => {
   try {
+    const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+    if (!forceRefresh && publicBannersCache && (Date.now() - publicBannersCache.timestamp < BANNERS_CACHE_TTL)) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+      return res.json(publicBannersCache.data);
+    }
+
     const mongoDb = db.getDb();
     if (mongoDb) {
-      const banners = await mongoDb.collection('banners').find({ isActive: { $ne: false } }).toArray();
+      const banners = await mongoDb.collection('banners')
+        .find({ isActive: { $ne: false } })
+        .sort({ displayOrder: 1, createdAt: -1 })
+        .toArray();
+      publicBannersCache = { data: banners, timestamp: Date.now() };
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       return res.json(banners);
     }
     return res.json([]);
