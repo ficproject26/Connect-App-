@@ -37,7 +37,7 @@ export const getBackendUrl = () => {
     hostname.startsWith('10.') ||
     hostname.startsWith('172.')
   ) {
-    return `http://${hostname || 'localhost'}:8000`;
+    return `http://${hostname || 'localhost'}:8001`;
   }
   
   return 'https://api.ficapp.in';
@@ -69,7 +69,7 @@ export const getVendorBackendUrl = () => {
     hostname.startsWith('10.') ||
     hostname.startsWith('172.')
   ) {
-    return `http://${hostname || 'localhost'}:8000`;
+    return `http://${hostname || 'localhost'}:8001`;
   }
   
   return 'https://api.ficapp.in';
@@ -101,7 +101,7 @@ export const getAdminBackendUrl = () => {
     hostname.startsWith('10.') ||
     hostname.startsWith('172.')
   ) {
-    return `http://${hostname || 'localhost'}:8000`;
+    return `http://${hostname || 'localhost'}:8001`;
   }
   
   return 'https://api.ficapp.in';

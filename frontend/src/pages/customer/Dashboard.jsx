@@ -1143,6 +1143,39 @@ export default function CustomerDashboard({
   useEffect(() => {
     setPreviewMembershipTier(membershipTier || 'Gold Elite');
   }, [membershipTier]);
+  const DEFAULT_HERO_BANNERS = [
+    {
+      _id: 'default_promo_1',
+      title: 'Special Promotion',
+      description: 'Exclusive member privileges and discounts across top categories',
+      discount: 'CONNECT DEAL',
+      imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+      redirectLink: '/Services',
+      category: 'Services',
+      isActive: true
+    },
+    {
+      _id: 'default_promo_2',
+      title: 'Special Member Discounts',
+      description: 'Handpicked offers on groceries, gadgets, daily needs & booking',
+      discount: '20% OFF',
+      imageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80',
+      redirectLink: '/Products',
+      category: 'Products',
+      isActive: true
+    },
+    {
+      _id: 'default_promo_3',
+      title: '1 Week Exclusive Deals',
+      description: 'Limited-time verified partner offers with instant doorstep service',
+      discount: 'SPECIAL OFFER',
+      imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
+      redirectLink: '/Daily Needs',
+      category: 'Daily Needs',
+      isActive: true
+    }
+  ];
+
   const BANNER_CACHE_KEY = 'fic_customer_banners_v2';
   const getCachedBanners = () => {
     try {
@@ -1154,21 +1187,21 @@ export default function CustomerDashboard({
         }
       }
     } catch (e) {}
-    return [];
+    return DEFAULT_HERO_BANNERS;
   };
 
   const initialBanners = getCachedBanners();
   const [dbBanners, setDbBanners] = useState(initialBanners);
-  const [isBannersLoading, setIsBannersLoading] = useState(initialBanners.length === 0);
-  const hasLoadedBannersRef = useRef(initialBanners.length > 0);
+  const [isBannersLoading, setIsBannersLoading] = useState(false);
+  const hasLoadedBannersRef = useRef(true);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [isHeroBannerHovered, setIsHeroBannerHovered] = useState(false);
 
-  // Safety timer: ensure loading skeleton never stays stuck on screen even during network drops
+  // Safety timer: ensure loading state is never active longer than a fraction of a second
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
       setIsBannersLoading(false);
-    }, 1500);
+    }, 500);
     return () => clearTimeout(safetyTimer);
   }, []);
 
@@ -1648,27 +1681,27 @@ export default function CustomerDashboard({
   }, []);
 
   const fetchDbBanners = useCallback(async () => {
-    // Only show skeleton if we have zero banners (neither memory nor cache)
-    if (!hasLoadedBannersRef.current && (!dbBanners || dbBanners.length === 0)) {
-      setIsBannersLoading(true);
-    }
     const adminUrl = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
     const mainUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const endpoints = [
+      'https://api.ficapp.in/api/public/banners',
+      'https://api.ficapp.in/api/banners',
       mainUrl ? `${mainUrl}/api/public/banners` : '',
       adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
       '/api/public/banners',
       '/api/admin/public/banners',
       mainUrl ? `${mainUrl}/api/banners` : '',
       adminUrl ? `${adminUrl}/api/admin/banners` : '',
-      '/api/banners'
+      '/api/banners',
+      'http://localhost:8001/api/public/banners',
+      'http://localhost:8000/api/public/banners'
     ];
     const unique = [...new Set(endpoints.filter(Boolean))];
 
     try {
       const fetchWithTimeout = async (url) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
         try {
           const res = await fetch(url, { signal: controller.signal });
           clearTimeout(timeoutId);
@@ -1687,16 +1720,16 @@ export default function CustomerDashboard({
 
       // Race all candidate endpoints in parallel for instant sub-second resolution
       const fastestBanners = await Promise.any(unique.map(url => fetchWithTimeout(url)));
-      if (Array.isArray(fastestBanners)) {
+      if (Array.isArray(fastestBanners) && fastestBanners.length > 0) {
         setDbBanners(fastestBanners);
         try {
-          if (typeof window !== 'undefined' && fastestBanners.length > 0) {
+          if (typeof window !== 'undefined') {
             localStorage.setItem(BANNER_CACHE_KEY, JSON.stringify(fastestBanners));
           }
         } catch (e) {}
       }
     } catch (err) {
-      // In case network completely fails, fallback to cached banners
+      // In case network completely fails, fallback to cached banners if available
       try {
         if (typeof window !== 'undefined') {
           const cached = localStorage.getItem(BANNER_CACHE_KEY);
@@ -1712,7 +1745,7 @@ export default function CustomerDashboard({
       setIsBannersLoading(false);
       hasLoadedBannersRef.current = true;
     }
-  }, [dbBanners]);
+  }, []);
 
   // Dynamic categories real-time synchronization
   useAutoRefresh(fetchDbCategories, 3000);
@@ -5414,14 +5447,18 @@ export default function CustomerDashboard({
   };
 
   const renderHeroBanner = () => {
+    const rawBannerList = (Array.isArray(dbBanners) && dbBanners.length > 0) 
+      ? dbBanners 
+      : DEFAULT_HERO_BANNERS;
+
     const realDbSlides = [
-      ...dbBanners.map((banner, index) => {
+      ...rawBannerList.map((banner, index) => {
         const rawImg = banner.imageUrl || banner.image || banner.bannerImage || banner.photo || banner.img || banner.picture || '';
         return {
           id: `db-banner-${banner._id || index}`,
           isDb: true,
           title: banner.title || banner.name || banner.bannerTitle || banner.header || 'Special Promotion',
-          imageUrl: rawImg ? sanitizeImageUrl(rawImg, { subNavbarCategory: banner.category || banner.mainCategory }) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600',
+          imageUrl: rawImg ? sanitizeImageUrl(rawImg, { subNavbarCategory: banner.category || banner.mainCategory }) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
           redirectLink: banner.redirectLink || banner.link || banner.targetUrl || banner.url || (banner.category ? `/${banner.category}` : '/promotions'),
           targetAudience: banner.targetAudience || 'all',
           description: banner.description || banner.desc || banner.subtitle || 'Special Promotion Offer',
@@ -5530,7 +5567,7 @@ export default function CustomerDashboard({
           onMouseLeave={() => setIsHeroBannerHovered(false)}
           className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] min-h-[250px] sm:h-[340px] shrink-0 mt-4 md:mt-0 select-none group/slider"
         >
-          {isBannersLoading ? (
+          {isBannersLoading && totalSlides === 0 ? (
             /* Initial Loading Skeleton */
             <div className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 rounded-2xl overflow-hidden bg-[#0e0717]/85 border border-slate-800 flex flex-row items-stretch animate-pulse shadow-lg">
               <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between">
@@ -5637,7 +5674,7 @@ export default function CustomerDashboard({
                         src={activeSlideObj.imageUrl} 
                         alt={activeSlideObj.title} 
                         loading="eager"
-                        fetchpriority="high"
+                        fetchPriority="high"
                         decoding="async"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
