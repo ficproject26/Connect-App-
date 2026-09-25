@@ -811,7 +811,7 @@ export default function CustomerDashboard({
       localStorage.setItem('connect_current_user', JSON.stringify(userObj));
     } catch (e) {}
   });
-  const { walletBalance, membershipTier, updateTier, addTransaction, refreshWallet } = useCustomer();
+  const { walletBalance, membershipTier, updateTier, addTransaction, refreshWallet, setWalletBalance } = useCustomer();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(initialLoginModalOpen || false);
 
   useEffect(() => {
@@ -1298,6 +1298,9 @@ export default function CustomerDashboard({
 
             if (dbUser.membershipTier !== undefined) {
               updateTier(dbUser.membershipTier || 'None');
+            }
+            if (dbUser.walletBalance !== undefined && typeof setWalletBalance === 'function') {
+              setWalletBalance(typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 0.00);
             }
 
             login({
@@ -2162,6 +2165,15 @@ export default function CustomerDashboard({
     if (lower.includes('gold')) return 2;
     if (lower.includes('silver')) return 1;
     return 0;
+  };
+
+  const getMembershipButtonText = () => {
+    if (!currentUser) return "BECOME A MEMBER";
+    const tier = (currentMembershipTier || currentUser?.membershipTier || '').toLowerCase().trim();
+    if (tier.includes('diamond')) return "DIAMOND FAMILY";
+    if (tier.includes('gold')) return "GOLD FAMILY";
+    if (tier.includes('silver')) return "SILVER FAMILY";
+    return "BECOME A MEMBER";
   };
 
   const handleSelectOrUpgradeMembership = async (tier, onSuccessCallback = null) => {
@@ -5555,7 +5567,7 @@ export default function CustomerDashboard({
               onClick={() => setShowUpgradeModal(true)}
               className="inline-flex items-center justify-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-755 bg-white hover:bg-slate-50 px-6 py-3.5 rounded-full transition-all border border-slate-300 shadow-2xs hover:scale-[1.02] duration-300 cursor-pointer w-full sm:w-auto"
             >
-              <span>Become a Member</span>
+              <span>{getMembershipButtonText()}</span>
               <Award className="w-4 h-4 text-amber-500 fill-current ml-1" />
             </button>
           </div>

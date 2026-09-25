@@ -22,20 +22,26 @@ const buildUserLookupFilter = (target: any): any => {
     }
     return { $or: orClauses };
   }
-  const idStr = target.userId || target.customerId || target.id || target._id;
+  const orClauses: any[] = [];
+  const custId = (target.customerId || '').toString().trim();
+  const uId = (target.userId || target.id || target._id || '').toString().trim();
   const emailStr = (target.email || '').toLowerCase().trim();
   const phoneStr = (target.phone || '').replace(/\D/g, '');
-  const orClauses: any[] = [];
-  if (idStr) {
-    orClauses.push({ id: idStr });
-    orClauses.push({ customerId: idStr });
-    orClauses.push({ registrationId: idStr });
-    if (typeof idStr === 'string' && ObjectId.isValid(idStr)) {
-      orClauses.push({ _id: new ObjectId(idStr) });
+
+  if (custId) {
+    orClauses.push({ customerId: custId });
+    orClauses.push({ id: custId });
+    orClauses.push({ registrationId: custId });
+  }
+  if (uId && uId !== custId) {
+    orClauses.push({ id: uId });
+    orClauses.push({ customerId: uId });
+    if (typeof uId === 'string' && ObjectId.isValid(uId)) {
+      orClauses.push({ _id: new ObjectId(uId) });
     }
   }
   if (emailStr) orClauses.push({ email: emailStr });
-  if (phoneStr) orClauses.push({ phone: phoneStr });
+  if (phoneStr && phoneStr.length >= 10) orClauses.push({ phone: phoneStr });
   return orClauses.length > 0 ? { $or: orClauses } : { _id: null };
 };
 
@@ -46,13 +52,23 @@ router.get('/balance', async (req: Request, res: Response) => {
     const mongoDb = db.getDb();
     if (!mongoDb) return res.status(503).json({ success: false, error: 'Database unavailable' });
 
+    if (!userId && !customerId && !email && !phone) {
+      return res.json({
+        success: true,
+        walletBalance: 0.00,
+        userId: null,
+        customerId: null
+      });
+    }
+
     const filter = buildUserLookupFilter({ userId, customerId, email, phone });
     let dbUser = await mongoDb.collection('users').findOne(filter);
     if (!dbUser) {
       dbUser = await mongoDb.collection('customers').findOne(filter);
     }
 
-    const currentBalance = typeof dbUser?.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 5000.00;
+    // Default to 0.00 for new users with no wallet activity, never use hardcoded 5000
+    const currentBalance = typeof dbUser?.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 0.00;
 
     return res.json({
       success: true,
@@ -66,12 +82,21 @@ router.get('/balance', async (req: Request, res: Response) => {
   }
 });
 
-// 2. GET: /api/wallet/transactions (Audit ledger history from DB)
+// 2. GET: /api/wallet/transactions (Audit ledger history from DB - STRICTLY CUSTOMER SPECIFIC)
 router.get('/transactions', async (req: Request, res: Response) => {
   try {
     const { userId, customerId, email, phone, limit = 50 } = req.query;
     const mongoDb = db.getDb();
     if (!mongoDb) return res.status(503).json({ success: false, error: 'Database unavailable' });
+
+    // Guard: Unauthenticated or missing user identifiers MUST return empty list, NEVER leak all records
+    if (!userId && !customerId && !email && !phone) {
+      return res.json({
+        success: true,
+        count: 0,
+        transactions: []
+      });
+    }
 
     const filter = buildUserLookupFilter({ userId, customerId, email, phone });
     let dbUser = await mongoDb.collection('users').findOne(filter);
@@ -79,19 +104,35 @@ router.get('/transactions', async (req: Request, res: Response) => {
       dbUser = await mongoDb.collection('customers').findOne(filter);
     }
 
-    const targetCustId = dbUser?.customerId || dbUser?.id || dbUser?._id?.toString() || customerId || userId;
-    const userEmail = (dbUser?.email || email || '').toLowerCase().trim();
-    const userPhone = (dbUser?.phone || phone || '').replace(/\D/g, '');
+    const targetCustId = (customerId || dbUser?.customerId || '').toString().trim();
+    const targetUserId = (userId || dbUser?.id || dbUser?._id?.toString() || '').toString().trim();
+    const userEmail = (email || dbUser?.email || '').toString().toLowerCase().trim();
+    const userPhone = (phone || dbUser?.phone || '').toString().replace(/\D/g, '');
 
     const queryOr: any[] = [];
     if (targetCustId) {
       queryOr.push({ customerId: targetCustId });
-      queryOr.push({ userId: targetCustId });
     }
-    if (userEmail) queryOr.push({ userEmail });
-    if (userPhone) queryOr.push({ userPhone });
+    if (targetUserId) {
+      queryOr.push({ userId: targetUserId });
+    }
+    if (userEmail) {
+      queryOr.push({ userEmail });
+    }
+    if (userPhone && userPhone.length >= 10) {
+      queryOr.push({ userPhone });
+    }
 
-    const query = queryOr.length > 0 ? { $or: queryOr } : {};
+    // STRICT CHECK: If no valid customer query clause can be built, return empty array immediately
+    if (queryOr.length === 0) {
+      return res.json({
+        success: true,
+        count: 0,
+        transactions: []
+      });
+    }
+
+    const query = { $or: queryOr };
     const maxItems = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 50));
 
     const transactions = await mongoDb
@@ -178,11 +219,13 @@ router.post('/recharge/create-order', async (req: Request, res: Response) => {
     };
 
     let razorpayOrderId = '';
+    let isTestMode = false;
     try {
       const order = await razorpay.orders.create(orderOptions);
       razorpayOrderId = order.id;
     } catch (sdkErr: any) {
       console.warn('[Razorpay SDK Warning] Using simulated test order for wallet recharge:', sdkErr?.message || sdkErr);
+      isTestMode = true;
       razorpayOrderId = `order_test_wal_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
@@ -203,7 +246,8 @@ router.post('/recharge/create-order', async (req: Request, res: Response) => {
       amount: amountInPaise,
       amountRupees: numAmount,
       currency: 'INR',
-      key_id: keyId
+      key_id: keyId,
+      isTestMode: isTestMode
     });
   } catch (err: any) {
     console.error('Error creating wallet recharge order:', err);
@@ -224,7 +268,7 @@ router.post('/recharge/verify', async (req: Request, res: Response) => {
       phone
     } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (!razorpay_order_id || !razorpay_payment_id) {
       return res.status(400).json({
         success: false,
         error: 'Missing required Razorpay payment verification parameters.'
@@ -246,7 +290,7 @@ router.post('/recharge/verify', async (req: Request, res: Response) => {
     }
 
     if (existingTransaction) {
-      const currentBal = typeof dbUser?.walletBalance === 'number' ? dbUser.walletBalance : 5000;
+      const currentBal = typeof dbUser?.walletBalance === 'number' ? dbUser.walletBalance : 0.00;
       return res.json({
         success: true,
         message: 'Payment already processed and credited to wallet.',
@@ -282,17 +326,31 @@ router.post('/recharge/verify', async (req: Request, res: Response) => {
     }
 
     const nowIso = new Date().toISOString();
-    const prevBalance = typeof dbUser?.walletBalance === 'number' ? dbUser.walletBalance : 5000.00;
+    const prevBalance = typeof dbUser?.walletBalance === 'number' ? dbUser.walletBalance : 0.00;
     const newBalance = Math.round((prevBalance + verifiedCreditAmount) * 100) / 100;
 
     const transactionId = `TXN_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
 
     // 4. ATOMIC DATABASE WALLET CREDIT
+    const userDocUpdates: any = {
+      walletBalance: newBalance,
+      walletUpdatedAt: nowIso
+    };
+    const finalCustId = dbUser?.customerId || customerId;
+    const finalUserId = dbUser?.id || dbUser?._id?.toString() || userId;
+    const finalEmail = dbUser?.email || email;
+    const finalPhone = dbUser?.phone || phone;
+
+    if (finalCustId) userDocUpdates.customerId = finalCustId;
+    if (finalUserId) userDocUpdates.id = finalUserId;
+    if (finalEmail) userDocUpdates.email = finalEmail.toLowerCase().trim();
+    if (finalPhone) userDocUpdates.phone = finalPhone.replace(/\D/g, '');
+
     await mongoDb.collection('users').updateOne(
       filter,
       {
-        $set: { walletBalance: newBalance, walletUpdatedAt: nowIso },
-        $setOnInsert: { createdAt: nowIso }
+        $set: userDocUpdates,
+        $setOnInsert: { createdAt: nowIso, role: 'customer' }
       },
       { upsert: true }
     );
@@ -300,7 +358,7 @@ router.post('/recharge/verify', async (req: Request, res: Response) => {
     await mongoDb.collection('customers').updateOne(
       filter,
       {
-        $set: { walletBalance: newBalance, walletUpdatedAt: nowIso }
+        $set: userDocUpdates
       }
     ).catch(() => {});
 
@@ -367,7 +425,7 @@ router.post('/pay', async (req: Request, res: Response) => {
       dbUser = await mongoDb.collection('customers').findOne(filter);
     }
 
-    const currentBalance = typeof dbUser?.walletBalance === 'number' ? dbUser.walletBalance : 5000.00;
+    const currentBalance = typeof dbUser?.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 0.00;
 
     // Strict validation: Balance check
     if (currentBalance < payableAmount) {
@@ -386,10 +444,7 @@ router.post('/pay', async (req: Request, res: Response) => {
     // Only update if walletBalance is >= payableAmount at the exact moment of execution
     const atomicFilter = {
       ...filter,
-      $or: [
-        { walletBalance: { $gte: payableAmount } },
-        { walletBalance: { $exists: false } } // Fallback if initial doc didn't store walletBalance field yet
-      ]
+      walletBalance: { $gte: payableAmount }
     };
 
     const updateResult = await mongoDb.collection('users').updateOne(

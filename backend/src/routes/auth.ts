@@ -339,7 +339,7 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
         membershipTier: dbUser.membershipTier || 'None',
         membershipStatus: dbUser.membershipStatus || (dbUser.membershipTier && dbUser.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
         membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : [],
-        walletBalance: typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 5000.00
+        walletBalance: typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 0.00
       };
     }
 
@@ -573,7 +573,7 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     membershipTier: dbUser.membershipTier || 'None',
     membershipStatus: dbUser.membershipStatus || (dbUser.membershipTier && dbUser.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
     membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : [],
-    walletBalance: typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 5000.00
+    walletBalance: typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 0.00
   };
 
   return res.json({
@@ -861,7 +861,7 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
         membershipTier: safeProfile.membershipTier || 'None',
         membershipStatus: safeProfile.membershipStatus || (safeProfile.membershipTier && safeProfile.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
         membershipHistory: Array.isArray(safeProfile.membershipHistory) ? safeProfile.membershipHistory : [],
-        walletBalance: typeof safeProfile.walletBalance === 'number' ? Math.max(0, safeProfile.walletBalance) : 5000.00,
+        walletBalance: typeof safeProfile.walletBalance === 'number' ? Math.max(0, safeProfile.walletBalance) : 0.00,
         addresses: profileAddresses
       }
     });

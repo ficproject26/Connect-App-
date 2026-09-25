@@ -99,6 +99,12 @@ export function AuthProvider({ children }) {
           localStorage.setItem('connect_token', tokenToSave);
         }
         localStorage.setItem('connect_current_user', JSON.stringify(u));
+        if (u.customerId) {
+          localStorage.setItem('connect_customer_id', u.customerId);
+        }
+        if (u.id || u._id || u.customerId) {
+          localStorage.setItem('connect_user_id', u.id || u._id || u.customerId);
+        }
         return u;
       } catch (err) {
         console.warn("Failed to parse connect_current_user from localStorage:", err);
@@ -179,6 +185,8 @@ export function AuthProvider({ children }) {
     setCurrentUser(finalUser);
     localStorage.setItem('connect_current_user', JSON.stringify(finalUser));
     localStorage.setItem('connect_token', userToken);
+    localStorage.setItem('connect_customer_id', custId);
+    localStorage.setItem('connect_user_id', finalUser.id || finalUser._id || custId);
     if (callback) callback(finalUser);
   };
 
@@ -262,6 +270,8 @@ export function AuthProvider({ children }) {
     setCurrentUser(user);
     localStorage.setItem('connect_current_user', JSON.stringify(user));
     localStorage.setItem('connect_token', userToken);
+    localStorage.setItem('connect_customer_id', custId);
+    localStorage.setItem('connect_user_id', user.id || user._id || custId);
     if (callback) callback(user);
   };
 
