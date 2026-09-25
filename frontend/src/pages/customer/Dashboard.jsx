@@ -436,6 +436,73 @@ const getModalTerms = (item) => {
   };
 };
 
+export const extractVendorTravelPoints = (item) => {
+  if (!item) return { boardingPoints: [], droppingPoints: [] };
+
+  const parsePoints = (rawSingle, rawList, rawStoppings) => {
+    const points = [];
+    const seen = new Set();
+
+    const addPoint = (val, time = '') => {
+      if (!val || typeof val !== 'string') return;
+      const clean = val.trim();
+      if (!clean) return;
+      if (clean.includes(',') || clean.includes('\n')) {
+        const parts = clean.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
+        for (const p of parts) addPoint(p, time);
+        return;
+      }
+      const lower = clean.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        points.push({ name: clean, time: time || '' });
+      }
+    };
+
+    if (Array.isArray(rawList)) {
+      rawList.forEach(entry => {
+        if (typeof entry === 'string') {
+          addPoint(entry);
+        } else if (entry && typeof entry === 'object') {
+          const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
+          const time = entry.time || entry.timing || '';
+          addPoint(name, time);
+        }
+      });
+    }
+
+    if (typeof rawSingle === 'string') {
+      addPoint(rawSingle, item.boardingTime || item.arrivalTime || item.busTiming || '');
+    }
+
+    if (Array.isArray(rawStoppings)) {
+      rawStoppings.forEach(stop => {
+        if (typeof stop === 'string') {
+          addPoint(stop);
+        } else if (stop && typeof stop === 'object') {
+          addPoint(stop.stopName || stop.name || stop.location, stop.time || '');
+        }
+      });
+    }
+
+    return points;
+  };
+
+  const boardingPoints = parsePoints(
+    item.boardingPoint || item.boarding_point || item.pickupPoint || item.pickup_point,
+    item.boardingPoints || item.boarding_points || item.pickupPoints || item.pickup_points,
+    null
+  );
+
+  const droppingPoints = parsePoints(
+    item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
+    item.dropPoints || item.drop_points || item.droppingPoints || item.dropping_points,
+    null
+  );
+
+  return { boardingPoints, droppingPoints };
+};
+
 const isPreviousDate = (year, month, day) => {
   const date = new Date(year, month, day);
   date.setHours(0, 0, 0, 0);
@@ -1013,7 +1080,8 @@ export default function CustomerDashboard({
   const [activeBookNowModalItem, setActiveBookNowModalItem] = useState(null);
 
   useEffect(() => {
-    if (activeScheduleModalItem || activeBookNowModalItem) {
+    const activeItem = activeScheduleModalItem || activeBookNowModalItem;
+    if (activeItem) {
       const todayYMD = formatDateYYYYMMDD(new Date());
       const isToday = stayCheckInDate === todayYMD;
       if (isToday && isPastTimeForSelectedDate(checkInTime, stayCheckInDate)) {
@@ -1027,6 +1095,24 @@ export default function CustomerDashboard({
       setChildCount(0);
       setCustomTimeInput('');
       setActiveDateTab('checkIn');
+
+      // Initialize vendor boarding & dropping points for travel items
+      const isTravel = activeItem?.subNavbarCategory === 'Travel' || 
+                       activeItem?.mainCategory === 'Travel' || 
+                       activeItem?.tag === 'Travel' || 
+                       (activeItem?.category || '').toLowerCase().includes('travel') || 
+                       (activeItem?.category || '').toLowerCase().includes('bus') || 
+                       (activeItem?.category || '').toLowerCase().includes('car') || 
+                       (activeItem?.category || '').toLowerCase().includes('bike') || 
+                       (activeItem?.category || '').toLowerCase().includes('tour');
+      if (isTravel) {
+        const { boardingPoints: bps, droppingPoints: dps } = extractVendorTravelPoints(activeItem);
+        setBoardingPoint(bps.length > 0 ? bps[0].name : '');
+        setDroppingPoint(dps.length > 0 ? dps[0].name : '');
+      } else {
+        setBoardingPoint('');
+        setDroppingPoint('');
+      }
     }
   }, [activeScheduleModalItem, activeBookNowModalItem]);
 
@@ -8419,13 +8505,13 @@ export default function CustomerDashboard({
                 {/* Source */}
                 <div className="flex-1 text-center md:text-left w-full">
                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">From</span>
-                  <span className="text-sm font-black text-slate-900 dark:text-white block mt-1">{selectedProduct.fromCity || 'Bangalore'}</span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">Kempegowda Bus Stand</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white block mt-1">{selectedProduct.fromCity || selectedProduct.boardingPoint || 'Direct Origin'}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">{selectedProduct.boardingPoint || (selectedProduct.fromCity ? `${selectedProduct.fromCity} Terminal` : 'Vendor Boarding Point')}</span>
                 </div>
 
                 {/* Duration & Bus separator graphic */}
                 <div className="flex flex-col items-center justify-center shrink-0 select-none min-w-[120px]">
-                  <span className="text-[10px] font-bold text-slate-455 mb-1 block">8h 30m</span>
+                  <span className="text-[10px] font-bold text-slate-455 mb-1 block">{selectedProduct.busTiming || (selectedProduct.distance ? `${selectedProduct.distance}` : 'Scheduled Route')}</span>
                   <div className="relative w-28 flex items-center justify-center">
                     <span className="w-full h-0.5 bg-slate-200 dark:bg-slate-800 block" />
                     <span className="absolute w-2 h-2 rounded-full bg-slate-400 left-0" />
@@ -8436,8 +8522,8 @@ export default function CustomerDashboard({
                 {/* Destination */}
                 <div className="flex-1 text-center md:text-right w-full">
                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">To</span>
-                  <span className="text-sm font-black text-slate-900 dark:text-white block mt-1">{selectedProduct.toCity || 'Chennai'}</span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">Koyambedu Bus Stand</span>
+                  <span className="text-sm font-black text-slate-900 dark:text-white block mt-1">{selectedProduct.toCity || selectedProduct.dropPoint || selectedProduct.droppingPoint || 'Destination'}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block mt-0.5">{selectedProduct.dropPoint || selectedProduct.droppingPoint || (selectedProduct.toCity ? `${selectedProduct.toCity} Terminal` : 'Vendor Dropping Point')}</span>
                 </div>
               </div>
 
@@ -8445,19 +8531,19 @@ export default function CustomerDashboard({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-900/60 pt-4 mt-1">
                 <div>
                   <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Departure</span>
-                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">09:00 PM</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">{selectedProduct.boardingTime || selectedProduct.busTiming || 'Schedule on Booking'}</span>
                 </div>
                 <div>
                   <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Arrival</span>
-                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">05:30 AM</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">{selectedProduct.arrivalTime || 'Schedule on Booking'}</span>
                 </div>
                 <div>
                   <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Date</span>
-                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">21 May 2025, Wed</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">{formatDateFromYYYYMMDD(stayCheckInDate)}</span>
                 </div>
                 <div>
                   <span className="text-[9.5px] text-slate-400 uppercase font-bold block">Distance</span>
-                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">350 km</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-white block mt-0.5">{selectedProduct.distance || (selectedProduct.busTiming ? `Duration: ${selectedProduct.busTiming}` : 'Direct Route')}</span>
                 </div>
               </div>
             </div>
@@ -8604,87 +8690,69 @@ export default function CustomerDashboard({
                     </div>
                   </div>
                 )}
-                {travelDetailsTab === 'Boarding Points' && (
-                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                    {selectedProduct?.boardingPoint ? (
-                      <div>• {selectedProduct.boardingPoint} - {selectedProduct.boardingTime || selectedProduct.busTiming || '09:00 PM'}</div>
-                    ) : (
-                      <>
-                        <div>• Kempegowda Bus Stand (Majestic) - 09:00 PM</div>
-                        <div>• Madiwala (Near police station) - 09:30 PM</div>
-                        <div>• Electronic City (Toll Gate) - 09:50 PM</div>
-                      </>
-                    )}
-                  </div>
-                )}
-                {travelDetailsTab === 'Dropping Points' && (
-                  <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-300 text-xs">
-                    {selectedProduct?.dropPoint ? (
-                      <div>• {selectedProduct.dropPoint} - {selectedProduct.arrivalTime || '05:30 AM'}</div>
-                    ) : (
-                      <>
-                        <div>• Koyambedu Bus Stand - 05:30 AM</div>
-                        <div>• Poonamallee Bypass - 05:00 AM</div>
-                        <div>• Guindy (Near metro) - 05:45 AM</div>
-                      </>
-                    )}
-                  </div>
-                )}
+                {travelDetailsTab === 'Boarding Points' && (() => {
+                  const { boardingPoints } = extractVendorTravelPoints(selectedProduct);
+                  return (
+                    <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                      {boardingPoints.length > 0 ? (
+                        boardingPoints.map((pt, idx) => (
+                          <div key={idx}>• {pt.name} {pt.time ? `- ${pt.time}` : ''}</div>
+                        ))
+                      ) : (
+                        <div className="text-slate-400 italic">No boarding points available for this trip.</div>
+                      )}
+                    </div>
+                  );
+                })()}
+                {travelDetailsTab === 'Dropping Points' && (() => {
+                  const { droppingPoints } = extractVendorTravelPoints(selectedProduct);
+                  return (
+                    <div className="space-y-3 font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                      {droppingPoints.length > 0 ? (
+                        droppingPoints.map((pt, idx) => (
+                          <div key={idx}>• {pt.name} {pt.time ? `- ${pt.time}` : ''}</div>
+                        ))
+                      ) : (
+                        <div className="text-slate-400 italic">No dropping points available for this trip.</div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {travelDetailsTab === 'Stops' && (
                   <div className="space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-300 text-left">
-                    <div className="relative pl-6 border-l-2 border-blue-500 dark:border-blue-700 space-y-5">
-                      <div className="relative">
-                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                        <div>
-                          <div className="font-extrabold text-slate-900 dark:text-white text-xs">{selectedProduct?.boardingPoint || 'Bengaluru Majestic (Source)'}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Departure at {selectedProduct?.boardingTime || selectedProduct?.busTiming || '09:00 PM'}</div>
-                        </div>
+                    {Array.isArray(selectedProduct?.stoppings) && selectedProduct.stoppings.length > 0 ? (
+                      <div className="relative pl-6 border-l-2 border-blue-500 dark:border-blue-700 space-y-5">
+                        {selectedProduct.boardingPoint && (
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <div>
+                              <div className="font-extrabold text-slate-900 dark:text-white text-xs">{selectedProduct.boardingPoint} (Source)</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">Departure at {selectedProduct?.boardingTime || selectedProduct?.busTiming || 'Scheduled'}</div>
+                            </div>
+                          </div>
+                        )}
+                        {selectedProduct.stoppings.map((stop, idx) => (
+                          <div className="relative" key={idx}>
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <div>
+                              <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">{stop.stopName || `Stop ${idx + 1}`}</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">{stop.time ? `Arrival ${stop.time} ` : ''}{stop.distance ? `| ${stop.distance}` : ''}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {(selectedProduct.dropPoint || selectedProduct.droppingPoint) && (
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-emerald-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
+                            <div>
+                              <div className="font-extrabold text-slate-900 dark:text-white text-xs">{selectedProduct.dropPoint || selectedProduct.droppingPoint} (Destination)</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">Arrival at {selectedProduct?.arrivalTime || 'Scheduled'}</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      
-                      {(selectedProduct?.stoppings || []).map((stop, idx) => (
-                        <div className="relative" key={idx}>
-                          <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                          <div>
-                            <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">{stop.stopName || `Stop ${idx + 1}`}</div>
-                            <div className="text-[10px] text-slate-400 mt-0.5">Arrival {stop.time || '10:00 PM'} {stop.distance ? `| ${stop.distance} km` : ''}</div>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {!(selectedProduct?.stoppings && selectedProduct.stoppings.length > 0) && (
-                        <>
-                          <div className="relative">
-                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                            <div>
-                              <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Hosur Stop</div>
-                              <div className="text-[10px] text-slate-400 mt-0.5">Arrival 10:00 PM | 5 mins stop</div>
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                            <div>
-                              <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Krishnagiri Toll Plaza</div>
-                              <div className="text-[10px] text-slate-400 mt-0.5">Arrival 11:15 PM | 10 mins dinner break</div>
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-slate-300 dark:bg-slate-700 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                            <div>
-                              <div className="font-extrabold text-slate-800 dark:text-slate-300 text-xs">Vellore Bypass</div>
-                              <div className="text-[10px] text-slate-400 mt-0.5">Arrival 02:00 AM | 5 mins stop</div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      <div className="relative">
-                        <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-blue-500 border-4 border-white dark:border-[#030712] flex items-center justify-center shrink-0" />
-                        <div>
-                          <div className="font-extrabold text-slate-900 dark:text-white text-xs">{selectedProduct?.dropPoint || 'Chennai Koyambedu (Destination)'}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Arrival at {selectedProduct?.arrivalTime || '05:30 AM'}</div>
-                        </div>
-                      </div>
-                    </div>
+                    ) : (
+                      <div className="text-slate-400 italic">No intermediate stops configured for this trip.</div>
+                    )}
                   </div>
                 )}
 
@@ -10214,6 +10282,16 @@ export default function CustomerDashboard({
                     <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" />
                     <div className="text-left overflow-hidden">
                       <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
+                      {(item.boardingPoint || item.droppingPoint) && (
+                        <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate mt-0.5">
+                          {item.boardingPoint || 'N/A'} → {item.droppingPoint || 'N/A'}
+                        </p>
+                      )}
+                      {(item.adults || item.children) && (
+                        <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                          {item.adults || 1} Adult(s){item.children ? `, ${item.children} Child(ren)` : ''}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs font-extrabold text-[#f43397]">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
                         <span className="text-[10px] text-slate-400 line-through">₹{((item.originalPrice || item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
@@ -11951,11 +12029,30 @@ wishlistProducts.forEach(item => addToCart(item));
           activeScheduleModalItem?.tag === 'Stay' || 
           (activeScheduleModalItem?.category || '').toLowerCase().includes('stay') || 
           (activeScheduleModalItem?.category || '').toLowerCase().includes('hotel');
-        const isTravelItem = terms.summaryLabel === 'Travel Ticket';
-        const basePrice = activeScheduleModalItem.price || 0;
+        const isTravelItem = terms.summaryLabel === 'Travel Ticket' ||
+          activeScheduleModalItem?.subNavbarCategory === 'Travel' ||
+          activeScheduleModalItem?.mainCategory === 'Travel' ||
+          activeScheduleModalItem?.tag === 'Travel' ||
+          (activeScheduleModalItem?.category || '').toLowerCase().includes('travel') ||
+          (activeScheduleModalItem?.category || '').toLowerCase().includes('bus') ||
+          (activeScheduleModalItem?.category || '').toLowerCase().includes('tour');
+        const basePrice = Number(activeScheduleModalItem.price || 0);
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
-        const extraGuestFee = isStayItem ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
-        const totalPrice = isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
+
+        // Travel fare calculation: vendor configured unit fare * adults + vendor child fare * children
+        const vendorFare = basePrice;
+        const vendorChildFare = Number(
+          activeScheduleModalItem.childPrice != null && activeScheduleModalItem.childPrice !== '' && !isNaN(Number(activeScheduleModalItem.childPrice))
+            ? activeScheduleModalItem.childPrice
+            : vendorFare
+        );
+        const numAdults = Math.max(1, Number(adultCount || 1));
+        const numChildren = Math.max(0, Number(childCount || 0));
+        const travelTotalPrice = (numAdults * vendorFare) + (numChildren * vendorChildFare);
+
+        const extraGuestFee = (isStayItem || isTravelItem) ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
+        const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
+        const { boardingPoints: vendorBoardingPoints, droppingPoints: vendorDroppingPoints } = extractVendorTravelPoints(activeScheduleModalItem);
         const isDaySlot = checkInTime?.includes('AM') || checkInTime === '09:00 AM' || checkInTime === '10:00 AM' || checkInTime === '11:00 AM';
         const currentStayMode = stayMode || (isDaySlot ? 'Day Option' : 'Night Option');
         const durationUnit = currentStayMode === 'Day Option' || isDaySlot ? (diffNights === 1 ? 'Day' : 'Days') : (diffNights === 1 ? 'Night' : 'Nights');
@@ -12256,27 +12353,45 @@ wishlistProducts.forEach(item => addToCart(item));
                                   <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     BOARDING POINT <span className="text-rose-500">*</span>
                                   </label>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={boardingPoint}
-                                    onChange={(e) => setBoardingPoint(e.target.value)}
-                                    placeholder="Enter / select boarding point"
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-medium"
-                                  />
+                                  {vendorBoardingPoints.length > 0 ? (
+                                    <select
+                                      value={boardingPoint}
+                                      onChange={(e) => setBoardingPoint(e.target.value)}
+                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                    >
+                                      {vendorBoardingPoints.map((bp, idx) => (
+                                        <option key={`m1-bp-opt-${idx}`} value={bp.name}>
+                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                      No boarding points available for this trip.
+                                    </div>
+                                  )}
                                 </div>
                                 <div>
                                   <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     DROPPING POINT <span className="text-rose-500">*</span>
                                   </label>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={droppingPoint}
-                                    onChange={(e) => setDroppingPoint(e.target.value)}
-                                    placeholder="Enter / select dropping point"
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-medium"
-                                  />
+                                  {vendorDroppingPoints.length > 0 ? (
+                                    <select
+                                      value={droppingPoint}
+                                      onChange={(e) => setDroppingPoint(e.target.value)}
+                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                    >
+                                      {vendorDroppingPoints.map((dp, idx) => (
+                                        <option key={`m1-dp-opt-${idx}`} value={dp.name}>
+                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                      No dropping points available for this trip.
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -12598,20 +12713,56 @@ wishlistProducts.forEach(item => addToCart(item));
                       <div className="flex items-start gap-3">
                         <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{terms.label}</span>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Travel / Package' : terms.label}</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200">{activeScheduleModalItem.name}</span>
                           <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5 leading-none">{terms.category}</span>
                         </div>
                       </div>
 
+                      {isTravelItem && (
+                        <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-800/40 pt-3">
+                          <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Vendor</span>
+                            <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                              {activeScheduleModalItem.vendorName || activeScheduleModalItem.businessName || activeScheduleModalItem.brand || 'Verified Travel Vendor'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                         <Calendar className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Depart' : 'Check-In'}</span>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Departure Date' : 'Check-In'}</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckInDate)}</span>
                           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{checkInTime}</span>
                         </div>
                       </div>
+
+                      {isTravelItem && (
+                        <>
+                          <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-800/40 pt-3">
+                            <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Boarding Point</span>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                                {boardingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-800/40 pt-3">
+                            <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Dropping Point</span>
+                              <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                                {droppingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
 
                       {!isTravelItem && (
                         <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
@@ -12647,7 +12798,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             <span className="font-extrabold text-slate-800 dark:text-slate-200">
                               {adultCount + childCount} {adultCount + childCount === 1 ? 'Person' : 'People'}
                               <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5 leading-none">
-                                ({adultCount} Adults, {childCount} Children)
+                                ({numAdults} Adults{numChildren > 0 ? `, ${numChildren} Children` : ''})
                               </span>
                             </span>
                           </div>
@@ -12677,9 +12828,33 @@ wishlistProducts.forEach(item => addToCart(item));
 
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                         <CreditCard className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee</span>
-                          <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
+                        <div className="w-full">
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Fee Breakdown</span>
+                          {isTravelItem ? (
+                            <div className="space-y-1 mt-1">
+                              <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                <span>Adults ({numAdults} × ₹{vendorFare.toLocaleString()}):</span>
+                                <span className="font-bold text-slate-900 dark:text-white">₹{(numAdults * vendorFare).toLocaleString()}</span>
+                              </div>
+                              {numChildren > 0 && (
+                                <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                  <span>Children ({numChildren} × ₹{vendorChildFare.toLocaleString()}):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * vendorChildFare).toLocaleString()}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                                <span>Total Booking Amount:</span>
+                                <span className="text-sm font-black text-blue-600 dark:text-blue-400">₹{totalPrice.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
+                              {isStayItem && diffNights > 1 && (
+                                <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -12687,6 +12862,24 @@ wishlistProducts.forEach(item => addToCart(item));
 
                   <button
                     onClick={() => {
+                      if (isTravelItem) {
+                        if (vendorBoardingPoints.length === 0) {
+                          triggerNotification("No boarding points available for this trip. Booking cannot proceed.", "error");
+                          return;
+                        }
+                        if (vendorDroppingPoints.length === 0) {
+                          triggerNotification("No dropping points available for this trip. Booking cannot proceed.", "error");
+                          return;
+                        }
+                        if (!boardingPoint || !vendorBoardingPoints.some(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase())) {
+                          triggerNotification("Please select a valid boarding point configured for this trip.", "error");
+                          return;
+                        }
+                        if (!droppingPoint || !vendorDroppingPoints.some(dp => dp.name.toLowerCase() === droppingPoint.trim().toLowerCase())) {
+                          triggerNotification("Please select a valid dropping point configured for this trip.", "error");
+                          return;
+                        }
+                      }
                       const itemToCart = {
                         ...activeScheduleModalItem,
                         price: totalPrice,
@@ -12701,9 +12894,9 @@ wishlistProducts.forEach(item => addToCart(item));
                         bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
                         bookingType: selectedModalType,
                         stayMode: stayMode,
-                        adults: adultCount,
-                        children: childCount,
-                        guestDetails: guestList.slice(0, adultCount + childCount),
+                        adults: numAdults,
+                        children: numChildren,
+                        guestDetails: guestList.slice(0, numAdults + numChildren),
                         boardingPoint: isTravelItem ? (boardingPoint.trim() || undefined) : undefined,
                         droppingPoint: isTravelItem ? (droppingPoint.trim() || undefined) : undefined
                       };
@@ -12743,11 +12936,30 @@ wishlistProducts.forEach(item => addToCart(item));
           activeBookNowModalItem?.tag === 'Stay' || 
           (activeBookNowModalItem?.category || '').toLowerCase().includes('stay') || 
           (activeBookNowModalItem?.category || '').toLowerCase().includes('hotel');
-        const isTravelItem = terms.summaryLabel === 'Travel Ticket';
-        const basePrice = activeBookNowModalItem.price || 0;
+        const isTravelItem = terms.summaryLabel === 'Travel Ticket' ||
+          activeBookNowModalItem?.subNavbarCategory === 'Travel' ||
+          activeBookNowModalItem?.mainCategory === 'Travel' ||
+          activeBookNowModalItem?.tag === 'Travel' ||
+          (activeBookNowModalItem?.category || '').toLowerCase().includes('travel') ||
+          (activeBookNowModalItem?.category || '').toLowerCase().includes('bus') ||
+          (activeBookNowModalItem?.category || '').toLowerCase().includes('tour');
+        const basePrice = Number(activeBookNowModalItem.price || 0);
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
-        const extraGuestFee = isStayItem ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
-        const totalPrice = isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
+
+        // Travel fare calculation: vendor configured unit fare * adults + vendor child fare * children
+        const vendorFare = basePrice;
+        const vendorChildFare = Number(
+          activeBookNowModalItem.childPrice != null && activeBookNowModalItem.childPrice !== '' && !isNaN(Number(activeBookNowModalItem.childPrice))
+            ? activeBookNowModalItem.childPrice
+            : vendorFare
+        );
+        const numAdults = Math.max(1, Number(adultCount || 1));
+        const numChildren = Math.max(0, Number(childCount || 0));
+        const travelTotalPrice = (numAdults * vendorFare) + (numChildren * vendorChildFare);
+
+        const extraGuestFee = (isStayItem || isTravelItem) ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
+        const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
+        const { boardingPoints: vendorBoardingPoints, droppingPoints: vendorDroppingPoints } = extractVendorTravelPoints(activeBookNowModalItem);
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
             <div onClick={() => setActiveBookNowModalItem(null)} className="absolute inset-0" />
@@ -12942,6 +13154,61 @@ wishlistProducts.forEach(item => addToCart(item));
                               )}
                             </div>
                           </div>
+
+                          {/* Boarding Point & Dropping Point (Travel Category Only) */}
+                          {isTravelItem && (
+                            <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3 mt-3.5">
+                              <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <MapPin className="w-4 h-4 text-blue-500" /> Boarding & Dropping Points
+                              </span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    BOARDING POINT <span className="text-rose-500">*</span>
+                                  </label>
+                                  {vendorBoardingPoints.length > 0 ? (
+                                    <select
+                                      value={boardingPoint}
+                                      onChange={(e) => setBoardingPoint(e.target.value)}
+                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                    >
+                                      {vendorBoardingPoints.map((bp, idx) => (
+                                        <option key={`m2-bp-opt-${idx}`} value={bp.name}>
+                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                      No boarding points available for this trip.
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    DROPPING POINT <span className="text-rose-500">*</span>
+                                  </label>
+                                  {vendorDroppingPoints.length > 0 ? (
+                                    <select
+                                      value={droppingPoint}
+                                      onChange={(e) => setDroppingPoint(e.target.value)}
+                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                    >
+                                      {vendorDroppingPoints.map((dp, idx) => (
+                                        <option key={`m2-dp-opt-${idx}`} value={dp.name}>
+                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                      No dropping points available for this trip.
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -13288,6 +13555,15 @@ wishlistProducts.forEach(item => addToCart(item));
 
                     {/* Summary row matrix */}
                     <div className="space-y-3.5 text-xs text-left">
+                      {isTravelItem && (
+                        <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                          <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-blue-500" /> Vendor</span>
+                          <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
+                            {activeBookNowModalItem.vendorName || activeBookNowModalItem.businessName || activeBookNowModalItem.brand || 'Verified Travel Vendor'}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
                         <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> {isTravelItem ? 'Depart' : 'Check-In'}</span>
                         <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
@@ -13295,6 +13571,23 @@ wishlistProducts.forEach(item => addToCart(item));
                           <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-bold">{checkInTime}</span>
                         </span>
                       </div>
+
+                      {isTravelItem && (
+                        <>
+                          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                            <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-emerald-500" /> Boarding Point</span>
+                            <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
+                              {boardingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                            <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-rose-500" /> Dropping Point</span>
+                            <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
+                              {droppingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                            </span>
+                          </div>
+                        </>
+                      )}
 
                       {isStayItem && (
                         <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
@@ -13324,7 +13617,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           <span className="font-extrabold text-slate-855 dark:text-slate-200 text-right">
                             {adultCount + childCount} {adultCount + childCount === 1 ? 'Person' : 'People'}
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold leading-none">
-                              ({adultCount} Adults, {childCount} Children)
+                              ({numAdults} Adults{numChildren > 0 ? `, ${numChildren} Children` : ''})
                             </span>
                           </span>
                         </div>
@@ -13345,12 +13638,33 @@ wishlistProducts.forEach(item => addToCart(item));
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-slate-455" /> {terms.feeLabel}</span>
-                        <div className="text-right">
-                          <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
-                          {isStayItem && diffNights > 1 && (
-                            <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
+                      <div className="flex items-start justify-between">
+                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5 mt-0.5"><CreditCard className="w-4 h-4 text-slate-455" /> Fee Breakdown</span>
+                        <div className="text-right w-full max-w-[200px]">
+                          {isTravelItem ? (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                <span>Adults ({numAdults} × ₹{vendorFare.toLocaleString()}):</span>
+                                <span className="font-bold text-slate-900 dark:text-white">₹{(numAdults * vendorFare).toLocaleString()}</span>
+                              </div>
+                              {numChildren > 0 && (
+                                <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                  <span>Children ({numChildren} × ₹{vendorChildFare.toLocaleString()}):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * vendorChildFare).toLocaleString()}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                                <span>Total Booking:</span>
+                                <span className="text-sm font-black text-blue-600 dark:text-blue-400">₹{totalPrice.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
+                              {isStayItem && diffNights > 1 && (
+                                <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -13360,6 +13674,24 @@ wishlistProducts.forEach(item => addToCart(item));
                   <div className="mt-6 space-y-3">
                     <button
                       onClick={() => {
+                        if (isTravelItem) {
+                          if (vendorBoardingPoints.length === 0) {
+                            triggerNotification("No boarding points available for this trip. Booking cannot proceed.", "error");
+                            return;
+                          }
+                          if (vendorDroppingPoints.length === 0) {
+                            triggerNotification("No dropping points available for this trip. Booking cannot proceed.", "error");
+                            return;
+                          }
+                          if (!boardingPoint || !vendorBoardingPoints.some(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase())) {
+                            triggerNotification("Please select a valid boarding point configured for this trip.", "error");
+                            return;
+                          }
+                          if (!droppingPoint || !vendorDroppingPoints.some(dp => dp.name.toLowerCase() === droppingPoint.trim().toLowerCase())) {
+                            triggerNotification("Please select a valid dropping point configured for this trip.", "error");
+                            return;
+                          }
+                        }
                         const itemToCart = {
                           ...activeBookNowModalItem,
                           price: totalPrice,
@@ -13374,9 +13706,9 @@ wishlistProducts.forEach(item => addToCart(item));
                           bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
                           bookingType: selectedModalType,
                           stayMode: stayMode,
-                          adults: adultCount,
-                          children: childCount,
-                          guestDetails: guestList.slice(0, adultCount + childCount),
+                          adults: numAdults,
+                          children: numChildren,
+                          guestDetails: guestList.slice(0, numAdults + numChildren),
                           boardingPoint: isTravelItem ? (boardingPoint.trim() || undefined) : undefined,
                           droppingPoint: isTravelItem ? (droppingPoint.trim() || undefined) : undefined
                         };

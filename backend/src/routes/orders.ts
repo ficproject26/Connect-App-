@@ -1,8 +1,76 @@
 import { Router, Request, Response } from 'express';
 import { db, Order, DeliveryPartner, DeliveryAssignment } from '../db';
 import { socketManager } from '../socket';
+import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
 const router = Router();
+
+export function extractVendorTravelPoints(item: any): { boardingPoints: { name: string; time: string }[]; droppingPoints: { name: string; time: string }[] } {
+  if (!item) return { boardingPoints: [], droppingPoints: [] };
+
+  const parsePoints = (rawSingle: any, rawList: any, rawStoppings: any) => {
+    const points: { name: string; time: string }[] = [];
+    const seen = new Set<string>();
+
+    const addPoint = (val: any, time: string = '') => {
+      if (!val || typeof val !== 'string') return;
+      const clean = val.trim();
+      if (!clean) return;
+      if (clean.includes(',') || clean.includes('\n')) {
+        const parts = clean.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
+        for (const p of parts) addPoint(p, time);
+        return;
+      }
+      const lower = clean.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        points.push({ name: clean, time: time || '' });
+      }
+    };
+
+    if (Array.isArray(rawList)) {
+      rawList.forEach(entry => {
+        if (typeof entry === 'string') {
+          addPoint(entry);
+        } else if (entry && typeof entry === 'object') {
+          const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
+          const time = entry.time || entry.timing || '';
+          addPoint(name, time);
+        }
+      });
+    }
+
+    if (typeof rawSingle === 'string') {
+      addPoint(rawSingle, item.boardingTime || item.arrivalTime || item.busTiming || '');
+    }
+
+    if (Array.isArray(rawStoppings)) {
+      rawStoppings.forEach(stop => {
+        if (typeof stop === 'string') {
+          addPoint(stop);
+        } else if (stop && typeof stop === 'object') {
+          addPoint(stop.stopName || stop.name || stop.location, stop.time || '');
+        }
+      });
+    }
+
+    return points;
+  };
+
+  const boardingPoints = parsePoints(
+    item.boardingPoint || item.boarding_point || item.pickupPoint || item.pickup_point,
+    item.boardingPoints || item.boarding_points || item.pickupPoints || item.pickup_points,
+    null
+  );
+
+  const droppingPoints = parsePoints(
+    item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
+    item.dropPoints || item.drop_points || item.droppingPoints || item.dropping_points,
+    null
+  );
+
+  return { boardingPoints, droppingPoints };
+}
 
 // Distance utility function (Haversine formula in km)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -226,7 +294,8 @@ router.post('/', async (req: Request, res: Response) => {
     product_details, amount, customer_latitude, customer_longitude,
     type, appointmentDate, appointmentTimeSlot, doctorName,
     tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items,
-    experience, candidateEducation, memberId, boardingPoint, droppingPoint
+    experience, candidateEducation, memberId, boardingPoint, droppingPoint,
+    adults, children, guestDetails
   } = req.body;
 
   if (!customer_name || !customer_phone || !customer_address || amount === undefined || amount === null) {
@@ -254,12 +323,94 @@ router.post('/', async (req: Request, res: Response) => {
     const orderNo = prefix + Math.floor(100000 + Math.random() * 900000);
     const resolvedCustId = (customer_id || customerId || memberId || req.body.user_id || '').trim();
     const resolvedEmail = (customer_email || candidateEmail || '').trim();
+
+    let finalOrderAmount = typeof amount === 'number' ? amount : (parseFloat(amount) || 0);
+    let validatedBoardingPoint = typeof boardingPoint === 'string' ? boardingPoint.trim() : undefined;
+    let validatedDroppingPoint = typeof droppingPoint === 'string' ? droppingPoint.trim() : undefined;
+    let numAdults = typeof adults === 'number' ? adults : parseInt(adults, 10);
+    if (isNaN(numAdults) || numAdults < 0) numAdults = 1;
+    let numChildren = typeof children === 'number' ? children : parseInt(children, 10);
+    if (isNaN(numChildren) || numChildren < 0) numChildren = 0;
+
+    const mongoDb = db.getDb();
+    const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
+    const targetProdId = firstItem?.productId || firstItem?.id || req.body.productId;
+
+    let travelProduct: any = null;
+    if (mongoDb && targetProdId) {
+      const queries: any[] = [{ id: String(targetProdId) }, { _id: String(targetProdId) }];
+      try {
+        if (ObjectId.isValid(String(targetProdId))) {
+          queries.push({ _id: new ObjectId(String(targetProdId)) });
+        }
+      } catch (e) {}
+      travelProduct = await mongoDb.collection('products').findOne({ $or: queries });
+    }
+
+    const isTravelOrder = type === 'Travel' || (type || '').toLowerCase() === 'travel' || 
+      travelProduct?.subNavbarCategory === 'Travel' || travelProduct?.mainCategory === 'Travel' ||
+      firstItem?.type === 'Travel' || firstItem?.subNavbarCategory === 'Travel';
+
+    if (isTravelOrder) {
+      if (numAdults + numChildren < 1) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'At least 1 passenger is required for travel booking.'
+        });
+      }
+
+      if (travelProduct) {
+        // Enforce vendor configured unit fare
+        const unitFare = typeof travelProduct.price === 'number' ? travelProduct.price : (parseFloat(travelProduct.price) || 0);
+        const adultFare = typeof travelProduct.adultPrice === 'number' && travelProduct.adultPrice > 0 ? travelProduct.adultPrice : unitFare;
+        const childFare = typeof travelProduct.childPrice === 'number' && travelProduct.childPrice > 0 ? travelProduct.childPrice : adultFare;
+        const expectedTotalFare = (numAdults * adultFare) + (numChildren * childFare);
+        
+        // Strict pricing integrity: The vendor configured unit fare is the source of truth
+        finalOrderAmount = expectedTotalFare;
+
+        // Boarding and Dropping point validation against real vendor configuration
+        const { boardingPoints: allowedBps, droppingPoints: allowedDps } = extractVendorTravelPoints(travelProduct);
+
+        if (allowedBps.length > 0) {
+          if (!validatedBoardingPoint) {
+            return res.status(400).json({
+              status: 'error',
+              message: 'Boarding point is required. Please select one of the vendor-provided boarding points.'
+            });
+          }
+          const isBpValid = allowedBps.some(pt => pt.name.toLowerCase().trim() === validatedBoardingPoint!.toLowerCase().trim());
+          if (!isBpValid) {
+            return res.status(400).json({
+              status: 'error',
+              message: `Invalid boarding point "${validatedBoardingPoint}". Please select one of the vendor-provided boarding points: ${allowedBps.map(p => p.name).join(', ')}.`
+            });
+          }
+        }
+
+        if (allowedDps.length > 0) {
+          if (!validatedDroppingPoint) {
+            return res.status(400).json({
+              status: 'error',
+              message: 'Dropping point is required. Please select one of the vendor-provided dropping points.'
+            });
+          }
+          const isDpValid = allowedDps.some(pt => pt.name.toLowerCase().trim() === validatedDroppingPoint!.toLowerCase().trim());
+          if (!isDpValid) {
+            return res.status(400).json({
+              status: 'error',
+              message: `Invalid dropping point "${validatedDroppingPoint}". Please select one of the vendor-provided dropping points: ${allowedDps.map(p => p.name).join(', ')}.`
+            });
+          }
+        }
+      }
+    }
     
     const newOrder = await db.createOrder({
       id: orderId,
       order_number: orderNo,
-      vendor_id: vendor_id || 'v1',
-      vendorId: vendor_id || 'v1',
+      vendor_id: vendor_id || travelProduct?.vendorId || 'v1',
+      vendorId: vendor_id || travelProduct?.vendorId || 'v1',
       customer_id: resolvedCustId,
       customerId: resolvedCustId,
       memberId: resolvedCustId,
@@ -270,10 +421,10 @@ router.post('/', async (req: Request, res: Response) => {
       customer_address,
       customer_latitude: customer_latitude || 12.9400,
       customer_longitude: customer_longitude || 77.6250,
-      product_details: product_details || 'Generic Connect Item',
-      amount,
-      totalAmount: amount,
-      finalAmount: amount,
+      product_details: product_details || travelProduct?.name || 'Generic Connect Item',
+      amount: finalOrderAmount,
+      totalAmount: finalOrderAmount,
+      finalAmount: finalOrderAmount,
       status: 'Order Received',
       type: type || 'Order',
       appointmentDate,
@@ -286,6 +437,11 @@ router.post('/', async (req: Request, res: Response) => {
       candidateResume,
       experience,
       candidateEducation,
+      boardingPoint: validatedBoardingPoint,
+      droppingPoint: validatedDroppingPoint,
+      adults: numAdults,
+      children: numChildren,
+      guestDetails: Array.isArray(guestDetails) ? guestDetails : undefined,
       items: items || []
     });
 
@@ -304,12 +460,6 @@ router.post('/', async (req: Request, res: Response) => {
     socketManager.broadcast('new_order_placed', newOrder);
 
     // Auto Assign algorithm
-    // In our system flow:
-    // 1. Order Received
-    // 2. Vendor accepts and sets status to Preparing
-    // 3. Vendor finishes preparing and marks Ready For Pickup -> triggers Auto Assignment!
-    // But to satisfy "When Order Created: System automatically finds Nearest Available", we can trigger auto assign right away for immediate delivery orders!
-    // Let's trigger it immediately to demonstrate the automated dispatch pipeline.
     setTimeout(async () => {
       await runAutoAssignment(orderId);
     }, 1500);
@@ -319,19 +469,24 @@ router.post('/', async (req: Request, res: Response) => {
       const syncData = JSON.stringify({
         id: orderId,
         order_number: orderNo,
-        vendorId: vendor_id || 'v1',
-        memberId: 'cust_dhanush',
+        vendorId: vendor_id || travelProduct?.vendorId || 'v1',
+        memberId: resolvedCustId || 'cust_dhanush',
         memberName: customer_name,
         type: type || 'Order',
         items: items || [{
-          productId: 'v_prod_mock',
-          name: product_details || 'Generic Connect Item',
-          price: amount,
+          productId: targetProdId || 'v_prod_mock',
+          name: product_details || travelProduct?.name || 'Generic Connect Item',
+          price: finalOrderAmount,
           quantity: 1
         }],
-        totalAmount: amount,
+        totalAmount: finalOrderAmount,
         discountApplied: 0,
-        finalAmount: amount,
+        finalAmount: finalOrderAmount,
+        boardingPoint: validatedBoardingPoint,
+        droppingPoint: validatedDroppingPoint,
+        adults: numAdults,
+        children: numChildren,
+        guestDetails: Array.isArray(guestDetails) ? guestDetails : undefined,
         candidateEmail: candidateEmail || req.body.candidateEmail,
         candidateResume: candidateResume || req.body.candidateResume,
         experience: experience || req.body.experience,
