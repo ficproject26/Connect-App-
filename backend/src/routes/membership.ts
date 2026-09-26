@@ -438,8 +438,12 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
       : rawMode.includes('bank') ? 'Net Banking'
       : 'UPI';
 
+    const isUpgrade = Boolean(currentTierName && currentTierName !== 'None' && currentTierName.toLowerCase() !== newTierName.toLowerCase());
+    const prevTierNorm = currentTierName.includes('Diamond') ? 'Diamond' : currentTierName.includes('Gold') ? 'Gold' : currentTierName.includes('Silver') ? 'Silver' : '';
+
     const adminMembershipRequest = {
-      customerId: dbUser?._id ? dbUser._id : null,
+      customerId: resolvedUserId || dbUser?._id || null,
+      customerCode: resolvedCustomerId || dbUser?.customerId || '',
       customerName: resolvedName || 'Connect Member',
       customerEmail: resolvedEmail,
       customerPhone: resolvedPhone,
@@ -451,12 +455,23 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
       validityStartDate: new Date(startDate),
       validityExpiryDate: new Date(expiryDate),
       amount: requestedConfig.priceRupees,
-      status: 'Approved',
+      status: isUpgrade ? 'Upgraded' : 'Approved',
       transactionId: razorpay_payment_id,
-      createdAt: new Date(nowIso)
+      orderId: razorpay_order_id,
+      isUpgraded: isUpgrade,
+      previousTier: prevTierNorm,
+      upgradeDate: isUpgrade ? new Date(nowIso) : null,
+      upgradeAmount: isUpgrade ? requestedConfig.priceRupees : 0,
+      upgradeTransactionId: isUpgrade ? razorpay_payment_id : '',
+      history: Array.isArray(dbUser?.membershipHistory) ? dbUser.membershipHistory : [],
+      updatedAt: new Date(nowIso)
     };
 
-    await mongoDb.collection('membershiprequests').insertOne(adminMembershipRequest).catch(err => {
+    await mongoDb.collection('membershiprequests').updateOne(
+      { $or: [{ transactionId: razorpay_payment_id }, { membershipId }] },
+      { $set: adminMembershipRequest, $setOnInsert: { createdAt: new Date(nowIso) } },
+      { upsert: true }
+    ).catch(err => {
       console.warn('[Membership] Sync to membershiprequests warning:', err.message);
     });
 
