@@ -1041,13 +1041,13 @@ export default function CustomerDashboard({
     } catch (e) {}
     return {
       city: 'Bangalore',
-      state: 'Karnataka',
+      state: '',
       area: 'Koramangala, 5th Block'
     };
   });
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [recentLocations, setRecentLocations] = useState([
-    { city: 'Bangalore', state: 'Karnataka', area: 'Koramangala, 5th Block' },
+    { city: 'Bangalore', state: '', area: 'Koramangala, 5th Block' },
     { city: 'Chennai', state: 'Tamil Nadu', area: 'Anna Nagar' },
     { city: 'Krishnagiri', state: 'Tamil Nadu', area: 'Krishnagiri Town' }
   ]);
@@ -1497,7 +1497,7 @@ export default function CustomerDashboard({
         locality: currentUser?.city || '',
         address: regAddrStr,
         city: currentUser?.city || '',
-        state: currentUser?.state || 'Karnataka',
+        state: currentUser?.state || '',
         landmark: '',
         altPhone: '',
         type: 'Home',
@@ -2905,15 +2905,61 @@ export default function CustomerDashboard({
     salary: true
   });
 
-  const IndianStates = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
-    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", 
-    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", 
-    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
-    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
-    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", 
-    "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-  ];
+  const [IndianStates, setIndianStates] = useState([]);
+  const [dbDistricts, setDbDistricts] = useState([]);
+
+  useEffect(() => {
+    const fetchStates = async () => {
+      const endpoints = [
+        '/api/territory/states',
+        'https://api.ficapp.in/api/territory/states',
+        'http://127.0.0.1:8004/api/territory/states',
+        'http://localhost:8004/api/territory/states'
+      ];
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, { headers: { 'Accept': 'application/json' } });
+          if (res.ok) {
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : (data.states || data.data || []);
+            if (list.length > 0) {
+              setIndianStates(list.map(s => typeof s === 'string' ? s : s.name).filter(Boolean).sort());
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+    };
+    fetchStates();
+  }, []);
+
+  useEffect(() => {
+    if (!addressForm.state) {
+      setDbDistricts([]);
+      return;
+    }
+    const fetchDistricts = async () => {
+      const endpoints = [
+        `/api/territory/districts?state=${encodeURIComponent(addressForm.state)}`,
+        `https://api.ficapp.in/api/territory/districts?state=${encodeURIComponent(addressForm.state)}`,
+        `http://127.0.0.1:8004/api/territory/districts?state=${encodeURIComponent(addressForm.state)}`
+      ];
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, { headers: { 'Accept': 'application/json' } });
+          if (res.ok) {
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : (data.districts || data.data || []);
+            if (list.length > 0) {
+              setDbDistricts(list.map(d => typeof d === 'string' ? d : d.name).filter(Boolean).sort());
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+    };
+    fetchDistricts();
+  }, [addressForm.state]);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -3002,9 +3048,9 @@ export default function CustomerDashboard({
       return null;
     }
 
-    const city = (addressForm.city || 'Bangalore').trim();
+    const city = (addressForm.city || (dbDistricts.length > 0 ? dbDistricts[0] : '')).trim();
     const locality = (addressForm.locality || '').trim() || city || streetAddress.split(',')[0] || 'Locality';
-    const state = (addressForm.state || 'Karnataka').trim();
+    const state = (addressForm.state || (IndianStates.length > 0 ? IndianStates[0] : '')).trim();
 
     const addressPayload = {
       ...addressForm,
@@ -3222,7 +3268,7 @@ export default function CustomerDashboard({
         address: 'Koramangala',
         locality: 'Koramangala',
         city: 'Bangalore',
-        state: 'Karnataka',
+        state: '',
         pincode: '560034'
       };
 
@@ -4479,7 +4525,7 @@ export default function CustomerDashboard({
                               if (data && data.address) {
                                 const addr = data.address;
                                 const city = addr.city || addr.town || addr.city_district || addr.county || 'Bangalore';
-                                const state = addr.state || 'Karnataka';
+                                const state = addr.state || '';
                                 const area = addr.suburb || addr.neighbourhood || addr.village || 'City Center';
                                 const updated = { city, state, area };
                                 setSelectedLocation(updated);

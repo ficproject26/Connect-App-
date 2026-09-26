@@ -11,6 +11,7 @@ import ordersRouter from './routes/orders';
 import mapsRouter from './routes/maps';
 import membershipRouter from './routes/membership';
 import walletRouter from './routes/wallet';
+import territoryRouter from './routes/territory';
 import { socketManager } from './socket';
 import { db } from './db';
 import { helmetSecurityMiddleware, sanitizeInputsMiddleware } from './security/middleware';
@@ -82,6 +83,7 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/maps', mapsRouter);
 app.use('/api/membership', membershipRouter);
 app.use('/api/wallet', walletRouter);
+app.use('/api/territory', territoryRouter);
 
 // Public Categories Endpoints
 app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
