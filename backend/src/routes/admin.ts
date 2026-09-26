@@ -1,12 +1,25 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { securityManager } from '../security/securityManager';
+import { ObjectId } from 'mongodb';
+import {
+  eventPublisher,
+  cacheManager,
+  RealtimeEntities,
+  RealtimeActions
+} from '../realtime';
 
 const router = Router();
 
 // GET: /api/admin/categories & /api/admin/public/categories
 router.get(['/categories', '/public/categories'], async (req: Request, res: Response) => {
   try {
+    const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+    if (!forceRefresh) {
+      const cached = await cacheManager.get('cache:categories:tree');
+      if (cached) return res.json(cached);
+    }
+
     const mongoDb = db.getDb();
     if (mongoDb) {
       const all = await mongoDb.collection('categories').find().sort({ sortOrder: 1, name: 1 }).toArray();
@@ -27,11 +40,111 @@ router.get(['/categories', '/public/categories'], async (req: Request, res: Resp
         }
       });
 
-      return res.json(roots.length > 0 ? roots : all);
+      const responseData = roots.length > 0 ? roots : all;
+      await cacheManager.set('cache:categories:tree', responseData, 120);
+      return res.json(responseData);
     }
     return res.json([]);
   } catch (err: any) {
     console.error("Error fetching categories in backend:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// POST: /api/admin/categories (Create category with real-time broadcast)
+router.post('/categories', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
+
+    const payload = { ...req.body };
+    delete payload._id;
+    const result = await mongoDb.collection('categories').insertOne({
+      ...payload,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    const savedCategory = {
+      ...payload,
+      _id: result.insertedId,
+      id: result.insertedId.toString()
+    };
+
+    await cacheManager.invalidatePattern('cache:categories:*');
+    await eventPublisher.publishEvent(
+      RealtimeEntities.CATEGORY,
+      RealtimeActions.CREATED,
+      savedCategory.id,
+      savedCategory
+    );
+
+    return res.status(201).json({ status: 'success', category: savedCategory });
+  } catch (err: any) {
+    console.error("Error creating category:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// PUT: /api/admin/categories/:id (Update category with real-time broadcast)
+router.put('/categories/:id', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
+
+    const { id } = req.params;
+    let query: any = { _id: id };
+    if (ObjectId.isValid(id)) {
+      query = { $or: [{ _id: new ObjectId(id) }, { _id: id }, { id: id }] };
+    }
+
+    const updateData = { ...req.body, updatedAt: new Date().toISOString() };
+    delete updateData._id;
+    delete updateData.id;
+
+    await mongoDb.collection('categories').updateOne(query, { $set: updateData });
+    const updated = await mongoDb.collection('categories').findOne(query);
+
+    await cacheManager.invalidatePattern('cache:categories:*');
+    await eventPublisher.publishEvent(
+      RealtimeEntities.CATEGORY,
+      RealtimeActions.UPDATED,
+      id,
+      updated
+    );
+
+    return res.json({ status: 'success', category: updated });
+  } catch (err: any) {
+    console.error("Error updating category:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// DELETE: /api/admin/categories/:id (Delete category with real-time broadcast)
+router.delete('/categories/:id', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
+
+    const { id } = req.params;
+    let query: any = { _id: id };
+    if (ObjectId.isValid(id)) {
+      query = { $or: [{ _id: new ObjectId(id) }, { _id: id }, { id: id }] };
+    }
+
+    await mongoDb.collection('categories').deleteOne(query);
+
+    await cacheManager.invalidatePattern('cache:categories:*');
+    await eventPublisher.publishEvent(
+      RealtimeEntities.CATEGORY,
+      RealtimeActions.DELETED,
+      id,
+      { id }
+    );
+
+    return res.json({ status: 'success', message: 'Category deleted successfully.' });
+  } catch (err: any) {
+    console.error("Error deleting category:", err);
     res.status(500).json({ error: err.message || 'Server error' });
   }
 });
@@ -204,6 +317,13 @@ router.post('/exclusive-offers', async (req: Request, res: Response) => {
     const col = await getOffersCollection();
     if (col) {
       await col.insertOne(newOffer as any);
+      await cacheManager.invalidatePattern('cache:offers:*');
+      await eventPublisher.publishEvent(
+        RealtimeEntities.OFFER,
+        RealtimeActions.CREATED,
+        newOffer._id,
+        newOffer
+      );
       return res.status(201).json({ status: 'success', offer: newOffer });
     }
     return res.status(500).json({ error: 'Database unavailable' });
@@ -226,6 +346,13 @@ router.put('/exclusive-offers/:id', async (req: Request, res: Response) => {
         { $set: updateData },
         { returnDocument: 'after' }
       );
+      await cacheManager.invalidatePattern('cache:offers:*');
+      await eventPublisher.publishEvent(
+        RealtimeEntities.OFFER,
+        RealtimeActions.UPDATED,
+        id,
+        result
+      );
       return res.json({ status: 'success', offer: result });
     }
     return res.status(500).json({ error: 'Database unavailable' });
@@ -242,6 +369,13 @@ router.delete('/exclusive-offers/:id', async (req: Request, res: Response) => {
     const col = await getOffersCollection();
     if (col) {
       await col.deleteOne({ _id: id as any });
+      await cacheManager.invalidatePattern('cache:offers:*');
+      await eventPublisher.publishEvent(
+        RealtimeEntities.OFFER,
+        RealtimeActions.DELETED,
+        id,
+        { id }
+      );
       return res.json({ status: 'success', message: 'Offer deleted successfully.' });
     }
     return res.status(500).json({ error: 'Database unavailable' });
@@ -299,45 +433,73 @@ router.post('/security/unlock-account', (req: Request, res: Response) => {
   });
 });
 
-// Mock Data
-const dashboardStats = {
-  activeMembers: 10450,
-  premiumVendors: 520,
-  citiesActive: 53,
-  monthlyRevenue: 135400,
-};
+// GET: /api/admin/dashboard (Real authoritative stats from MongoDB)
+router.get('/dashboard', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const [userCount, vendorCount, recentUsers, revenueAgg] = await Promise.all([
+        mongoDb.collection('users').countDocuments(),
+        mongoDb.collection('vendors').countDocuments(),
+        mongoDb.collection('users').find().sort({ createdAt: -1 }).limit(10).toArray(),
+        mongoDb.collection('orders').aggregate([
+          { $match: { status: { $in: ['Delivered', 'Completed'] } } },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]).toArray()
+      ]);
 
-const recentMembers = [
-  { id: '1', name: 'Dhanush An', email: 'dhanush@connect.app', tier: 'Gold Elite', status: 'Active', joinDate: '2026-06-01' },
-  { id: '2', name: 'Sophia Miller', email: 'sophia@connect.app', tier: 'Diamond Prestige', status: 'Active', joinDate: '2026-06-05' },
-  { id: '3', name: 'David Chen', email: 'david@connect.app', tier: 'Silver Tier', status: 'Pending', joinDate: '2026-06-09' },
-  { id: '4', name: 'Elena Rostova', email: 'elena@connect.app', tier: 'Diamond Prestige', status: 'Active', joinDate: '2026-06-09' },
-];
+      const monthlyRevenue = (revenueAgg.length > 0 && revenueAgg[0].total) ? revenueAgg[0].total : 0;
 
-const mockVendors = [
-  { id: 'v1', name: 'Aether Dining', category: 'Food', rating: 4.9, active: true },
-  { id: 'v2', name: 'Luxe Staycations', category: 'Stay', rating: 4.8, active: true },
-  { id: 'v3', name: 'FlyGlobal Lounges', category: 'Travel', rating: 4.7, active: true },
-  { id: 'v4', name: 'Prime Spa & Salon', category: 'Services', rating: 4.6, active: false },
-];
-
-// GET: /api/admin/dashboard
-router.get('/dashboard', (req: Request, res: Response) => {
-  res.json({
-    status: 'success',
-    data: {
-      stats: dashboardStats,
-      recentMembers: recentMembers
+      return res.json({
+        status: 'success',
+        data: {
+          stats: {
+            activeMembers: userCount,
+            premiumVendors: vendorCount,
+            citiesActive: userCount > 0 ? 1 : 0,
+            monthlyRevenue: monthlyRevenue
+          },
+          recentMembers: recentUsers.map((u: any) => ({
+            id: u._id?.toString() || u.id,
+            name: u.name || u.fullName || u.email || 'Member',
+            email: u.email || '',
+            tier: u.membershipTier || u.tier || 'Standard',
+            status: u.status || (u.isActive !== false ? 'Active' : 'Inactive'),
+            joinDate: u.createdAt || new Date().toISOString()
+          }))
+        }
+      });
     }
-  });
+
+    return res.json({
+      status: 'success',
+      data: {
+        stats: { activeMembers: 0, premiumVendors: 0, citiesActive: 0, monthlyRevenue: 0 },
+        recentMembers: []
+      }
+    });
+  } catch (err: any) {
+    console.error("Error loading admin dashboard stats:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
 });
 
-// GET: /api/admin/vendors
-router.get('/vendors', (req: Request, res: Response) => {
-  res.json({
-    status: 'success',
-    data: mockVendors
-  });
+// GET: /api/admin/vendors (Real vendors from MongoDB)
+router.get('/vendors', async (req: Request, res: Response) => {
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const vendors = await mongoDb.collection('vendors').find().sort({ createdAt: -1 }).toArray();
+      return res.json({
+        status: 'success',
+        data: vendors
+      });
+    }
+    return res.json({ status: 'success', data: [] });
+  } catch (err: any) {
+    console.error("Error loading vendors list:", err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
 });
 
 // POST: /api/admin/settings

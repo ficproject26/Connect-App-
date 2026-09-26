@@ -17,6 +17,14 @@ import { db } from './db';
 import { helmetSecurityMiddleware, sanitizeInputsMiddleware } from './security/middleware';
 import { uploadToCloudinary, isPersistentImageUrl } from './cloudinary';
 import { ObjectId } from 'mongodb';
+import {
+  initRealtimeInfrastructure,
+  eventPublisher,
+  cacheManager,
+  RealtimeEntities,
+  RealtimeActions,
+  getRealtimeHealth
+} from './realtime';
 
 // Load environmental variables
 dotenv.config();
@@ -88,6 +96,12 @@ app.use('/api/territory', territoryRouter);
 // Public Categories Endpoints
 app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
   try {
+    const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+    if (!forceRefresh) {
+      const cached = await cacheManager.get('cache:categories:tree');
+      if (cached) return res.json(cached);
+    }
+
     const mongoDb = db.getDb();
     if (mongoDb) {
       const all = await mongoDb.collection('categories').find().sort({ sortOrder: 1, name: 1 }).toArray();
@@ -107,7 +121,9 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
         }
       });
 
-      return res.json(roots.length > 0 ? roots : all);
+      const responseData = roots.length > 0 ? roots : all;
+      await cacheManager.set('cache:categories:tree', responseData, 120);
+      return res.json(responseData);
     }
     return res.json([]);
   } catch (err: any) {
@@ -115,20 +131,22 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
     res.status(500).json({ error: err.message || 'Server error' });
   }
 });
-// In-memory cache for public banners with 30s TTL
-let publicBannersCache: { data: any[]; timestamp: number } | null = null;
-const BANNERS_CACHE_TTL = 30 * 1000;
-export const invalidatePublicBannersCache = () => {
-  publicBannersCache = null;
+
+// Cache invalidator for public banners
+export const invalidatePublicBannersCache = async () => {
+  await cacheManager.invalidatePattern('cache:banners:*');
 };
 
 // Public Banners Endpoints
 app.get(['/api/public/banners', '/api/banners', '/api/public-banners', '/api/banners/public', '/api/admin/public/banners', '/api/admin/public-banners', '/api/admin/banners/public'], async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
-    if (!forceRefresh && publicBannersCache && (Date.now() - publicBannersCache.timestamp < BANNERS_CACHE_TTL)) {
-      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-      return res.json(publicBannersCache.data);
+    if (!forceRefresh) {
+      const cached = await cacheManager.get('cache:banners:public');
+      if (cached) {
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+        return res.json(cached);
+      }
     }
 
     const mongoDb = db.getDb();
@@ -137,7 +155,7 @@ app.get(['/api/public/banners', '/api/banners', '/api/public-banners', '/api/ban
         .find({ isActive: { $ne: false } })
         .sort({ displayOrder: 1, createdAt: -1 })
         .toArray();
-      publicBannersCache = { data: banners, timestamp: Date.now() };
+      await cacheManager.set('cache:banners:public', banners, 120);
       res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       return res.json(banners);
     }
@@ -151,9 +169,16 @@ app.get(['/api/public/banners', '/api/banners', '/api/public-banners', '/api/ban
 // Public Ads Endpoints
 app.get(['/api/public/ads', '/api/ads'], async (req, res) => {
   try {
+    const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+    if (!forceRefresh) {
+      const cached = await cacheManager.get('cache:ads:public');
+      if (cached) return res.json(cached);
+    }
+
     const mongoDb = db.getDb();
     if (mongoDb) {
       const ads = await mongoDb.collection('ads').find({ isActive: { $ne: false } }).toArray();
+      await cacheManager.set('cache:ads:public', ads, 120);
       return res.json(ads);
     }
     return res.json([]);
@@ -163,19 +188,20 @@ app.get(['/api/public/ads', '/api/ads'], async (req, res) => {
   }
 });
 
-// In-memory cache for public products with 30s TTL
-let publicProductsCache: { data: any[]; timestamp: number } | null = null;
-const PRODUCTS_CACHE_TTL = 30 * 1000;
-export const invalidatePublicProductsCache = () => {
-  publicProductsCache = null;
+// Cache invalidator for public products
+export const invalidatePublicProductsCache = async () => {
+  await cacheManager.invalidatePattern('cache:products:*');
 };
 
 // Public Products Endpoints (Customer & Vendor products)
 app.get(['/api/public/products', '/api/products'], async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
-    if (!forceRefresh && publicProductsCache && (Date.now() - publicProductsCache.timestamp < PRODUCTS_CACHE_TTL)) {
-      return res.json(publicProductsCache.data);
+    if (!forceRefresh) {
+      const cached = await cacheManager.get('cache:products:public');
+      if (cached) {
+        return res.json(cached);
+      }
     }
 
     const mongoDb = db.getDb();
@@ -330,10 +356,7 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
         };
       });
 
-      publicProductsCache = {
-        data: mappedActiveProducts,
-        timestamp: Date.now()
-      };
+      await cacheManager.set('cache:products:public', mappedActiveProducts, 120);
 
       return res.json(mappedActiveProducts);
     }
@@ -467,12 +490,20 @@ app.post(['/api/products', '/api/public/products', '/api/admin/products'], async
     };
 
     const insertResult = await mongoDb.collection('products').insertOne(newProduct);
-    invalidatePublicProductsCache();
+    await invalidatePublicProductsCache();
     const savedProduct = {
       ...newProduct,
       _id: insertResult.insertedId,
       id: insertResult.insertedId.toString()
     };
+
+    // Publish event after DB commit
+    await eventPublisher.publishEvent(
+      RealtimeEntities.PRODUCT,
+      RealtimeActions.CREATED,
+      savedProduct.id,
+      savedProduct
+    );
 
     return res.status(201).json({
       success: true,
@@ -560,16 +591,26 @@ const handleUpdateProduct = async (req: any, res: any) => {
     updatePayload.updatedAt = new Date().toISOString();
 
     await mongoDb.collection('products').updateOne(query, { $set: updatePayload });
-    invalidatePublicProductsCache();
+    await invalidatePublicProductsCache();
 
     const finalProduct = await mongoDb.collection('products').findOne(query);
+    const mappedFinal = {
+      ...finalProduct,
+      id: finalProduct?._id?.toString() || id
+    };
+
+    // Publish event after DB commit
+    await eventPublisher.publishEvent(
+      RealtimeEntities.PRODUCT,
+      RealtimeActions.UPDATED,
+      mappedFinal.id,
+      mappedFinal
+    );
+
     return res.json({
       success: true,
       message: 'Product updated successfully while preserving images.',
-      product: {
-        ...finalProduct,
-        id: finalProduct?._id?.toString()
-      }
+      product: mappedFinal
     });
   } catch (err: any) {
     console.error("Error updating product:", err);
@@ -593,7 +634,16 @@ app.delete(['/api/products/:id', '/api/public/products/:id', '/api/admin/product
     }
 
     await mongoDb.collection('products').deleteOne(query);
-    invalidatePublicProductsCache();
+    await invalidatePublicProductsCache();
+
+    // Publish event after DB commit
+    await eventPublisher.publishEvent(
+      RealtimeEntities.PRODUCT,
+      RealtimeActions.DELETED,
+      id,
+      { id }
+    );
+
     return res.json({ success: true, message: 'Product deleted successfully.' });
   } catch (err: any) {
     console.error("Error deleting product:", err);
@@ -606,11 +656,37 @@ app.delete('/api/public/products/delete-all', async (req, res) => {
     const mongoDb = db.getDb();
     if (mongoDb) {
       await mongoDb.collection('products').deleteMany({});
+      await invalidatePublicProductsCache();
+      await eventPublisher.publishEvent(
+        RealtimeEntities.PRODUCT,
+        RealtimeActions.DELETED,
+        'all',
+        { all: true }
+      );
       return res.json({ success: true, message: 'All products deleted successfully.' });
     }
     return res.status(500).json({ error: 'Database unavailable' });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// Observability Health & Metrics Endpoints
+app.get(['/api/realtime/health', '/health/realtime'], async (req, res) => {
+  try {
+    const health = await getRealtimeHealth();
+    return res.json(health);
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', error: err.message });
+  }
+});
+
+app.get(['/api/realtime/metrics', '/metrics/realtime'], async (req, res) => {
+  try {
+    const metrics = await getRealtimeHealth();
+    return res.json(metrics);
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', error: err.message });
   }
 });
 
@@ -641,9 +717,11 @@ app.use((err: any, req: any, res: any, next: any) => {
   res.status(err.status || 500).json({ status: 'error', message: err.message || 'Internal Server Error' });
 });
 
-// Create HTTP server and attach Socket.IO
+// Create HTTP server and initialize global real-time architecture
 const server = http.createServer(app);
-socketManager.init(server);
+initRealtimeInfrastructure(server).catch(err => {
+  console.error('[Realtime]: Infrastructure initialization issue:', err);
+});
 
 // Bind server immediately to 0.0.0.0 on PORT for Render cloud port scanner detection
 server.listen(Number(PORT), '0.0.0.0', () => {

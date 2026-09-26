@@ -8,6 +8,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
 import { CustomerProvider } from './context/CustomerContext';
 import { VendorProvider } from './context/VendorContext';
+import { RealtimeProvider } from './context/RealtimeContext';
 
 // Routes
 import AppRoutes from './routes/AppRoutes';
@@ -246,11 +247,13 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <CustomerProvider>
-          <VendorProvider>
-            <AppContent />
-          </VendorProvider>
-        </CustomerProvider>
+        <RealtimeProvider>
+          <CustomerProvider>
+            <VendorProvider>
+              <AppContent />
+            </VendorProvider>
+          </CustomerProvider>
+        </RealtimeProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

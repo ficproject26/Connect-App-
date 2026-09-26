@@ -3,6 +3,7 @@ import { db, Order, DeliveryPartner, DeliveryAssignment } from '../db';
 import { socketManager } from '../socket';
 import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
+import { eventPublisher, RealtimeEntities, RealtimeActions } from '../realtime';
 const router = Router();
 
 export function extractVendorTravelPoints(item: any): { boardingPoints: { name: string; time: string }[]; droppingPoints: { name: string; time: string }[] } {
@@ -453,11 +454,18 @@ router.post('/', async (req: Request, res: Response) => {
       notes: `Order placed successfully by ${customer_name}`
     });
 
-    // Notify vendor of new order
+    // Notify vendor and broadcast
     socketManager.emitToVendor(newOrder.vendor_id, 'new_order_received', newOrder);
-
-    // Notify all clients (especially delivery partners) of the new order
     socketManager.broadcast('new_order_placed', newOrder);
+
+    // Publish structured event to Redis message broker & WebSockets
+    await eventPublisher.publishEvent(
+      RealtimeEntities.ORDER,
+      RealtimeActions.CREATED,
+      newOrder.id,
+      newOrder,
+      { role: 'vendor', userId: newOrder.vendor_id }
+    );
 
     // Auto Assign algorithm
     setTimeout(async () => {
@@ -474,7 +482,7 @@ router.post('/', async (req: Request, res: Response) => {
         memberName: customer_name,
         type: type || 'Order',
         items: items || [{
-          productId: targetProdId || 'v_prod_mock',
+          productId: targetProdId || '',
           name: product_details || travelProduct?.name || 'Generic Connect Item',
           price: finalOrderAmount,
           quantity: 1
@@ -555,6 +563,13 @@ router.post('/:id/prepare', async (req: Request, res: Response) => {
     });
 
     socketManager.emitToOrder(id, 'order_status_updated', { status: 'Preparing' });
+    await eventPublisher.publishEvent(
+      RealtimeEntities.ORDER,
+      RealtimeActions.STATUS_CHANGED,
+      id,
+      { orderId: id, status: 'Preparing', updated },
+      { room: `order:${id}` }
+    );
 
     res.json({
       status: 'success',
@@ -583,6 +598,13 @@ router.post('/:id/ready', async (req: Request, res: Response) => {
     });
 
     socketManager.emitToOrder(id, 'order_status_updated', { status: 'Ready For Pickup' });
+    await eventPublisher.publishEvent(
+      RealtimeEntities.ORDER,
+      RealtimeActions.STATUS_CHANGED,
+      id,
+      { orderId: id, status: 'Ready For Pickup', updated },
+      { room: `order:${id}` }
+    );
 
     // Trigger auto-assignment if not already assigned
     const currentAssignment = await db.getAssignmentForOrder(id);
@@ -665,6 +687,13 @@ router.put('/:id/status', async (req: Request, res: Response) => {
     });
 
     socketManager.emitToOrder(id, 'order_status_updated', { status });
+    await eventPublisher.publishEvent(
+      RealtimeEntities.ORDER,
+      RealtimeActions.STATUS_CHANGED,
+      id,
+      { orderId: id, status, updated },
+      { room: `order:${id}` }
+    );
 
     res.json({
       status: 'success',

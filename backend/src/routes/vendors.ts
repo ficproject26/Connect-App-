@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { socketManager } from '../socket';
+import { eventPublisher, RealtimeEntities, RealtimeActions } from '../realtime';
 
 const router = Router();
 
@@ -61,6 +62,15 @@ router.post('/delivery-partners', async (req: Request, res: Response) => {
 
     socketManager.broadcast('partner_added', newPartner);
 
+    // Publish to centralized real-time architecture
+    await eventPublisher.publishEvent(
+      RealtimeEntities.DELIVERY_PARTNER,
+      RealtimeActions.CREATED,
+      String(newPartner.id || partnerId),
+      newPartner,
+      { role: 'all' }
+    );
+
     res.status(201).json({
       status: 'success',
       message: 'Delivery partner added successfully.',
@@ -97,6 +107,15 @@ router.put('/delivery-partners/:id', async (req: Request, res: Response) => {
       });
     }
 
+    // Publish to centralized real-time architecture
+    await eventPublisher.publishEvent(
+      RealtimeEntities.DELIVERY_PARTNER,
+      updates.status || updates.availability !== undefined ? RealtimeActions.STATUS_CHANGED : RealtimeActions.UPDATED,
+      String(id),
+      updatedPartner,
+      { role: 'all' }
+    );
+
     res.json({
       status: 'success',
       message: 'Delivery partner updated successfully.',
@@ -123,7 +142,16 @@ router.delete('/delivery-partners/:id', async (req: Request, res: Response) => {
     }
     
     socketManager.broadcast('partner_deleted', { partnerId: id });
-    
+
+    // Publish to centralized real-time architecture
+    await eventPublisher.publishEvent(
+      RealtimeEntities.DELIVERY_PARTNER,
+      RealtimeActions.DELETED,
+      String(id),
+      { partnerId: id },
+      { role: 'all' }
+    );
+
     res.json({
       status: 'success',
       message: 'Delivery partner removed successfully.'
