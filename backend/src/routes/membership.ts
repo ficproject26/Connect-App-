@@ -1,3 +1,4 @@
+import { eventPublisher, RealtimeEntities, RealtimeActions, wsServer } from '../realtime';
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
@@ -441,6 +442,22 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
     const isUpgrade = Boolean(currentTierName && currentTierName !== 'None' && currentTierName.toLowerCase() !== newTierName.toLowerCase());
     const prevTierNorm = currentTierName.includes('Diamond') ? 'Diamond' : currentTierName.includes('Gold') ? 'Gold' : currentTierName.includes('Silver') ? 'Silver' : '';
 
+    const historyArray = Array.isArray(dbUser?.membershipHistory) ? [...dbUser.membershipHistory] : [];
+    if (isUpgrade || currentTierName) {
+      historyArray.push({
+        plan: newTierName,
+        previousPlan: currentTierName,
+        paymentId: razorpay_payment_id,
+        orderId: razorpay_order_id,
+        membershipId,
+        amount: requestedConfig.priceRupees,
+        status: 'SUCCESS',
+        startDate,
+        expiryDate,
+        date: nowIso
+      });
+    }
+
     const adminMembershipRequest = {
       customerId: resolvedUserId || dbUser?._id || null,
       customerCode: resolvedCustomerId || dbUser?.customerId || '',
@@ -463,15 +480,26 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
       upgradeDate: isUpgrade ? new Date(nowIso) : null,
       upgradeAmount: isUpgrade ? requestedConfig.priceRupees : 0,
       upgradeTransactionId: isUpgrade ? razorpay_payment_id : '',
-      history: Array.isArray(dbUser?.membershipHistory) ? dbUser.membershipHistory : [],
+      history: historyArray,
       updatedAt: new Date(nowIso)
     };
 
+    // Match existing request by customer identity first (customerCode or customerId) to update in-place on upgrade
+    const customerFilterClauses: any[] = [];
+    if (resolvedCustomerId || dbUser?.customerId) {
+      customerFilterClauses.push({ customerCode: resolvedCustomerId || dbUser?.customerId });
+    }
+    if (resolvedUserId || dbUser?._id) {
+      customerFilterClauses.push({ customerId: resolvedUserId || dbUser?._id });
+    }
+    customerFilterClauses.push({ transactionId: razorpay_payment_id });
+    customerFilterClauses.push({ membershipId });
+
     await mongoDb.collection('membershiprequests').updateOne(
-      { $or: [{ transactionId: razorpay_payment_id }, { membershipId }] },
+      { $or: customerFilterClauses },
       { $set: adminMembershipRequest, $setOnInsert: { createdAt: new Date(nowIso) } },
       { upsert: true }
-    ).catch(err => {
+    ).catch((err: any) => {
       console.warn('[Membership] Sync to membershiprequests warning:', err.message);
     });
 
@@ -483,10 +511,18 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
       cardNumber: membershipId,
       expiryDate: new Date(expiryDate),
       status: 'active',
-      createdAt: new Date(nowIso)
+      updatedAt: new Date(nowIso)
     };
 
-    await mongoDb.collection('cardholders').insertOne(adminCardHolder).catch(err => {
+    const cardHolderFilters: any[] = [{ cardNumber: membershipId }];
+    if (resolvedEmail) cardHolderFilters.push({ email: resolvedEmail });
+    if (resolvedPhone) cardHolderFilters.push({ phone: resolvedPhone });
+
+    await mongoDb.collection('cardholders').updateOne(
+      { $or: cardHolderFilters },
+      { $set: adminCardHolder, $setOnInsert: { createdAt: new Date(nowIso) } },
+      { upsert: true }
+    ).catch((err: any) => {
       console.warn('[Membership] Sync to cardholders warning:', err.message);
     });
 
@@ -522,6 +558,22 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
       $set: updateFields,
       $push: { membershipHistory: historyEntry } as any
     }).catch(() => {});
+
+    // ── 7. BROADCAST REAL-TIME NOTIFICATION (Redis Pub/Sub & WebSockets) ────
+    try {
+      await eventPublisher.publishEvent(
+        RealtimeEntities.MEMBERSHIP,
+        isUpgrade ? RealtimeActions.UPDATED : RealtimeActions.CREATED,
+        membershipId,
+        adminMembershipRequest,
+        { role: 'all' }
+      );
+      wsServer.broadcast('membership_updated', adminMembershipRequest);
+      wsServer.broadcast('membership:updated', adminMembershipRequest);
+      console.log(`[Realtime]: Published ${RealtimeEntities.MEMBERSHIP} ${isUpgrade ? 'UPDATED' : 'CREATED'} event for ${membershipId}`);
+    } catch (realtimeErr: any) {
+      console.warn('[Realtime]: Error broadcasting membership event:', realtimeErr.message);
+    }
 
     // Update membership order status to COMPLETED
     await mongoDb.collection('membership_orders').updateOne(
