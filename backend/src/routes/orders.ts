@@ -296,7 +296,8 @@ router.post('/', async (req: Request, res: Response) => {
     type, appointmentDate, appointmentTimeSlot, doctorName,
     tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items,
     experience, candidateEducation, memberId, boardingPoint, droppingPoint,
-    adults, children, guestDetails
+    adults, children, guestDetails,
+    paymentMethod, payment_method, paymentStatus, payment_status, transactionId, paidAt, paymentId
   } = req.body;
 
   if (!customer_name || !customer_phone || !customer_address || amount === undefined || amount === null) {
@@ -407,6 +408,37 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
     
+    // Normalize payment details
+    const rawMethod = paymentMethod || payment_method || (req.body.isCOD ? 'Cash on Delivery' : 'Connect Wallet');
+    const lowerMethod = String(rawMethod).toLowerCase();
+    let resolvedPaymentMethod = 'Connect Wallet';
+    if (lowerMethod.includes('cash') || lowerMethod.includes('cod')) {
+      resolvedPaymentMethod = 'Cash on Delivery';
+    } else if (lowerMethod.includes('wallet')) {
+      resolvedPaymentMethod = 'Connect Wallet';
+    } else if (lowerMethod === 'upi') {
+      resolvedPaymentMethod = 'UPI';
+    } else if (lowerMethod === 'card') {
+      resolvedPaymentMethod = 'Card';
+    } else if (lowerMethod.includes('bank')) {
+      resolvedPaymentMethod = 'Net Banking';
+    } else if (lowerMethod.includes('razorpay') || lowerMethod.includes('online')) {
+      resolvedPaymentMethod = 'Online (Razorpay)';
+    } else {
+      resolvedPaymentMethod = rawMethod;
+    }
+
+    const isCod = resolvedPaymentMethod === 'Cash on Delivery';
+    let resolvedPaymentStatus = paymentStatus || payment_status;
+    if (!resolvedPaymentStatus) {
+      resolvedPaymentStatus = isCod ? 'Pending' : 'Paid';
+    } else if (['SUCCESS', 'PAID', 'COMPLETED'].includes(String(resolvedPaymentStatus).toUpperCase())) {
+      resolvedPaymentStatus = 'Paid';
+    }
+
+    const resolvedTxnId = transactionId || paymentId || (!isCod ? ('TXN_' + orderNo) : undefined);
+    const resolvedPaidAt = resolvedPaymentStatus === 'Paid' ? (paidAt || new Date().toISOString()) : undefined;
+
     const newOrder = await db.createOrder({
       id: orderId,
       order_number: orderNo,
@@ -428,6 +460,12 @@ router.post('/', async (req: Request, res: Response) => {
       finalAmount: finalOrderAmount,
       status: 'Order Received',
       type: type || 'Order',
+      paymentMethod: resolvedPaymentMethod,
+      payment_method: resolvedPaymentMethod,
+      paymentStatus: resolvedPaymentStatus,
+      payment_status: resolvedPaymentStatus,
+      ...(resolvedTxnId && { transactionId: resolvedTxnId }),
+      ...(resolvedPaidAt && { paidAt: resolvedPaidAt }),
       appointmentDate,
       appointmentTimeSlot,
       doctorName,
@@ -490,6 +528,12 @@ router.post('/', async (req: Request, res: Response) => {
         totalAmount: finalOrderAmount,
         discountApplied: 0,
         finalAmount: finalOrderAmount,
+        paymentMethod: resolvedPaymentMethod,
+        payment_method: resolvedPaymentMethod,
+        paymentStatus: resolvedPaymentStatus,
+        payment_status: resolvedPaymentStatus,
+        ...(resolvedTxnId && { transactionId: resolvedTxnId }),
+        ...(resolvedPaidAt && { paidAt: resolvedPaidAt }),
         boardingPoint: validatedBoardingPoint,
         droppingPoint: validatedDroppingPoint,
         adults: numAdults,

@@ -3249,7 +3249,7 @@ export default function CustomerDashboard({
       }
 
       // 2. PROCEED TO CREATE/CONFIRM ORDER
-      await processFinalOrderPlacement('WALLET');
+      await processFinalOrderPlacement('WALLET', payData?.transaction?.transactionId || ('TXN_' + Date.now()));
     } catch (err) {
       console.error("Wallet payment error:", err);
       setRazorpayProcessing(false);
@@ -3257,7 +3257,7 @@ export default function CustomerDashboard({
     }
   };
 
-  const processFinalOrderPlacement = async (paymentMethod = 'RAZORPAY') => {
+  const processFinalOrderPlacement = async (paymentMethod = 'RAZORPAY', txnId = null) => {
     try {
       const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
       if (selectedCart.length === 0) return;
@@ -3274,8 +3274,30 @@ export default function CustomerDashboard({
 
       const fullAddressString = `${chosenAddr.address || chosenAddr.locality || ''}, ${chosenAddr.locality || ''}, ${chosenAddr.city || ''}, ${chosenAddr.state || ''} - ${chosenAddr.pincode || ''}`.replace(/^,\s*/, '').replace(/,\s*,/g, ',');
 
+      let methodName = 'Online (Razorpay)';
+      let payStatus = 'Paid';
+      if (paymentMethod === 'WALLET' || paymentMethod === 'Wallet') {
+        methodName = 'Connect Wallet';
+        payStatus = 'Paid';
+      } else if (paymentMethod === 'COD' || paymentMethod === 'cod') {
+        methodName = 'Cash on Delivery';
+        payStatus = 'Pending';
+      } else if (paymentMethod === 'UPI' || paymentMethod === 'upi') {
+        methodName = 'UPI';
+        payStatus = 'Paid';
+      } else if (paymentMethod === 'Card' || paymentMethod === 'card') {
+        methodName = 'Card';
+        payStatus = 'Paid';
+      } else if (paymentMethod === 'Net Banking' || paymentMethod === 'netbanking') {
+        methodName = 'Net Banking';
+        payStatus = 'Paid';
+      }
+
       for (const item of selectedCart) {
         const vendorId = item.vendorId || item.vendor_id || '3w8hhon38mqg7ni0u';
+        const finalTxnId = txnId || (payStatus === 'Paid' ? ('TXN_' + Math.floor(100000 + Math.random() * 900000)) : undefined);
+        const itemAmount = (item.price || 0) * (item.quantity || 1);
+
         await apiFetch('/orders', {
           method: 'POST',
           body: JSON.stringify({
@@ -3288,8 +3310,15 @@ export default function CustomerDashboard({
             customer_latitude: 12.9498,
             customer_longitude: 77.6289,
             product_details: item.name || item.title || 'Item',
-            amount: (item.price || 0) * (item.quantity || 1),
-            payment_method: paymentMethod,
+            amount: itemAmount,
+            totalAmount: itemAmount,
+            finalAmount: itemAmount,
+            paymentMethod: methodName,
+            payment_method: methodName,
+            paymentStatus: payStatus,
+            payment_status: payStatus,
+            transactionId: finalTxnId,
+            paidAt: payStatus === 'Paid' ? new Date().toISOString() : null,
             items: [{
               productId: item.id || item._id,
               name: item.name || item.title,
@@ -3313,8 +3342,10 @@ export default function CustomerDashboard({
       setOrderSuccess(true);
       setIsRazorpayModalOpen(false);
       setRazorpayProcessing(false);
-      if (paymentMethod === 'WALLET') {
+      if (methodName === 'Connect Wallet') {
         triggerNotification("Wallet payment successful & Order placed!");
+      } else if (methodName === 'Cash on Delivery') {
+        triggerNotification("Order placed with Cash on Delivery!");
       } else {
         triggerNotification("Payment authorized & Order placed successfully!");
       }
@@ -3612,6 +3643,11 @@ export default function CustomerDashboard({
                 </thead>
                 <tbody>
                   {customerOrders.map(ord => {
+                    const rawM = ord.paymentMethod || ord.payment_method || 'Connect Wallet';
+                    const isOrdCod = String(rawM).toLowerCase().includes('cash') || String(rawM).toLowerCase().includes('cod');
+                    const isDelivered = ['Delivered', 'Completed'].includes(ord.status);
+                    const isPaid = ord.paymentStatus === 'Paid' || ord.payment_status === 'Paid' || isDelivered || (!isOrdCod && ord.paymentStatus !== 'Failed' && ord.paymentStatus !== 'Pending');
+
                     let statusColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
                     let statusLabel = "Paid";
                     
@@ -3621,17 +3657,25 @@ export default function CustomerDashboard({
                     } else if (ord.status === "Refunded" || ord.is_refunded) {
                       statusColor = "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
                       statusLabel = "Refunded";
-                    } else if (ord.status?.toLowerCase().includes("refund")) {
-                      statusColor = "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20";
-                      statusLabel = "Refunded";
+                    } else if (isPaid) {
+                      statusColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
+                      statusLabel = "Paid";
+                    } else if (isOrdCod) {
+                      statusColor = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+                      statusLabel = "COD Pending";
+                    } else {
+                      statusColor = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+                      statusLabel = ord.paymentStatus || "Pending";
                     }
+
+                    const txnDisplay = ord.transactionId || ('TXN_' + (ord.order_number || String(ord.id || '').slice(-6)).toUpperCase());
 
                     return (
                       <tr key={ord.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-800 dark:text-slate-100 transition-colors">
-                        <td className="py-3 px-3 font-mono text-[10px] text-slate-500 dark:text-slate-400">TXN_{ord.order_number || String(ord.id || '').slice(-6).toUpperCase()}</td>
+                        <td className="py-3 px-3 font-mono text-[10px] text-slate-500 dark:text-slate-400">{txnDisplay}</td>
                         <td className="py-3 px-3 max-w-[150px] truncate font-medium">{ord.product_details}</td>
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</td>
-                        <td className="py-3 px-3 font-semibold text-slate-600 dark:text-slate-300">Connect Wallet</td>
+                        <td className="py-3 px-3 font-semibold text-slate-600 dark:text-slate-300">{rawM}</td>
                         <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">₹{ord.amount}</td>
                         <td className="py-3 px-3 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusColor}`}>
@@ -14452,7 +14496,8 @@ wishlistProducts.forEach(item => addToCart(item));
                       { id: 'upi', label: 'UPI / QR', icon: '📱' },
                       { id: 'card', label: 'Cards', icon: '💳' },
                       { id: 'netbanking', label: 'Banking', icon: '🏦' },
-                      { id: 'wallet', label: 'Wallet', icon: '👛' }
+                      { id: 'wallet', label: 'Wallet', icon: '👛' },
+                      { id: 'cod', label: 'Cash on Delivery', icon: '💵' }
                     ].map(m => (
                       <button
                         key={m.id}
@@ -14522,6 +14567,18 @@ wishlistProducts.forEach(item => addToCart(item));
                       </div>
                     )}
 
+                    {razorpayPayMethod === 'cod' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-xs font-extrabold">
+                          <span>Cash on Delivery (Pay on Delivery)</span>
+                          <span className="text-amber-500 text-[10px] font-black uppercase bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200">COD</span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                          Pay in cash when your order is delivered to your doorstep. No advance online payment is required.
+                        </p>
+                      </div>
+                    )}
+
                     {razorpayPayMethod === 'wallet' && (() => {
                       const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
                       const totalPayable = selectedCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
@@ -14581,19 +14638,42 @@ wishlistProducts.forEach(item => addToCart(item));
                         Insufficient Balance
                       </button>
                     );
-                  })() : (
+                  })() : razorpayPayMethod === 'cod' ? (
                     <button
                       type="button"
                       disabled={razorpayProcessing}
                       onClick={() => {
                         setRazorpayProcessing(true);
                         setTimeout(() => {
-                          processFinalOrderPlacement();
-                        }, 1200);
+                          processFinalOrderPlacement('COD');
+                        }, 500);
+                      }}
+                      className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                    >
+                      {razorpayProcessing ? (
+                        <span>Placing Cash on Delivery Order...</span>
+                      ) : (
+                        <span>Place Order (Cash on Delivery)</span>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={razorpayProcessing}
+                      onClick={() => {
+                        setRazorpayProcessing(true);
+                        const method = razorpayPayMethod === 'upi' ? 'UPI' : razorpayPayMethod === 'card' ? 'Card' : razorpayPayMethod === 'netbanking' ? 'Net Banking' : 'Online (Razorpay)';
+                        setTimeout(() => {
+                          processFinalOrderPlacement(method);
+                        }, 800);
                       }}
                       className="w-full py-3.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
                     >
-                      <span>Pay ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()} via Razorpay</span>
+                      {razorpayProcessing ? (
+                        <span>Authorizing Payment...</span>
+                      ) : (
+                        <span>Pay ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()} via {razorpayPayMethod === 'upi' ? 'UPI' : razorpayPayMethod === 'card' ? 'Card' : razorpayPayMethod === 'netbanking' ? 'Net Banking' : 'Razorpay'}</span>
+                      )}
                     </button>
                   )}
                 </>

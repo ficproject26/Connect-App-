@@ -54,6 +54,14 @@ export interface Order {
   customer_longitude: number;
   product_details: string;
   amount: number;
+  paymentMethod?: string;
+  payment_method?: string;
+  paymentStatus?: string;
+  payment_status?: string;
+  transactionId?: string;
+  paidAt?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
   status:
     | 'Order Received'
     | 'Preparing'
@@ -540,10 +548,16 @@ class DatabaseManager {
   }
 
   public async updateOrderStatus(id: string, status: Order['status']): Promise<Order | null> {
+    const updateFields: any = { status };
+    if (['Delivered', 'Completed'].includes(status)) {
+      updateFields.paymentStatus = 'Paid';
+      updateFields.payment_status = 'Paid';
+      updateFields.paidAt = new Date().toISOString();
+    }
     if (this.mongoDb) {
       return this.mongoDb.collection<Order>('orders').findOneAndUpdate(
-        { id },
-        { $set: { status } },
+        { $or: [{ id }, { order_number: id }] },
+        { $set: updateFields },
         { returnDocument: 'after', projection: { _id: 0 } }
       );
     }
