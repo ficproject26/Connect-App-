@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { io } from 'socket.io-client';
-import { getSocketUrl } from '../../services/apiSetup';
+import { socketService } from '../../services/socketService';
 import logoImg from '../../assets/images/forge india logo.jpg';
 import {
   Shield, User, Briefcase, ShoppingBag, Globe,
@@ -230,27 +229,12 @@ export default function Navbar({
 
     loadCategories();
 
-    // Socket.IO Real-time synchronization
-    let socket;
-    try {
-      const socketUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-        ? 'http://localhost:8001' 
-        : 'https://api.ficapp.in';
-
-      socket = io(socketUrl, { 
-        transports: ['polling', 'websocket'],
-        reconnectionAttempts: 2,
-        reconnectionDelay: 10000,
-        timeout: 8000
-      });
-      socket.on('categories:updated', () => {
-        // Real-time category update received
-        loadCategories();
-      });
-    } catch (err) {}
+    // Centralized real-time category synchronization
+    const onCategoriesUpdated = () => loadCategories();
+    socketService.on('categories:updated', onCategoriesUpdated);
 
     return () => {
-      if (socket) socket.disconnect();
+      socketService.off('categories:updated', onCategoriesUpdated);
     };
   }, []);
 

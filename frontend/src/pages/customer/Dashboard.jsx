@@ -1770,52 +1770,44 @@ export default function CustomerDashboard({
   }, []);
 
   const fetchDbBanners = useCallback(async () => {
-    const adminUrl = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
     const mainUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    const isLocal = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.')
+    );
+
     const endpoints = [
-      'https://api.ficapp.in/api/public/banners',
-      'https://api.ficapp.in/api/banners',
       mainUrl ? `${mainUrl}/api/public/banners` : '',
-      adminUrl ? `${adminUrl}/api/admin/public/banners` : '',
-      '/api/public/banners',
-      '/api/admin/public/banners',
+      'https://api.ficapp.in/api/public/banners',
       mainUrl ? `${mainUrl}/api/banners` : '',
-      adminUrl ? `${adminUrl}/api/admin/banners` : '',
-      '/api/banners',
-      'http://localhost:8001/api/public/banners',
-      'http://localhost:8000/api/public/banners'
+      'https://api.ficapp.in/api/banners',
+      ...(isLocal ? ['http://localhost:8001/api/public/banners', '/api/public/banners'] : [])
     ];
     const unique = [...new Set(endpoints.filter(Boolean))];
 
     try {
-      const fetchWithTimeout = async (url) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+      for (const url of unique) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
           const res = await fetch(url, { signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-              return data;
+              setDbBanners(data);
+              try {
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(BANNER_CACHE_KEY, JSON.stringify(data));
+                }
+              } catch (e) {}
+              return;
             }
           }
-          throw new Error('Not valid banner array');
-        } catch (err) {
-          clearTimeout(timeoutId);
-          throw err;
+        } catch {
+          // Gracefully continue to next valid endpoint
         }
-      };
-
-      // Race all candidate endpoints in parallel for instant sub-second resolution
-      const fastestBanners = await Promise.any(unique.map(url => fetchWithTimeout(url)));
-      if (Array.isArray(fastestBanners) && fastestBanners.length > 0) {
-        setDbBanners(fastestBanners);
-        try {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(BANNER_CACHE_KEY, JSON.stringify(fastestBanners));
-          }
-        } catch (e) {}
       }
     } catch (err) {
       // In case network completely fails, fallback to cached banners if available
@@ -1862,30 +1854,17 @@ export default function CustomerDashboard({
     fetchDbCategories();
     fetchDbBanners();
 
-    let socket;
-    try {
-      const socketUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-        ? 'http://localhost:8001' 
-        : 'https://api.ficapp.in';
+    const onCategoriesUpdated = () => fetchDbCategories();
+    const onBannersUpdated = () => fetchDbBanners();
 
-      socket = io(socketUrl, { 
-        transports: ['polling', 'websocket'],
-        reconnectionAttempts: 2,
-        reconnectionDelay: 10000,
-        timeout: 8000
-      });
-      socket.on('categories:updated', () => {
-        fetchDbCategories();
-      });
-      socket.on('banners:updated', () => {
-        fetchDbBanners();
-      });
-    } catch (err) {}
+    socketService.on('categories:updated', onCategoriesUpdated);
+    socketService.on('banners:updated', onBannersUpdated);
 
     return () => {
-      if (socket) socket.disconnect();
+      socketService.off('categories:updated', onCategoriesUpdated);
+      socketService.off('banners:updated', onBannersUpdated);
     };
-  }, []);
+  }, [fetchDbCategories, fetchDbBanners]);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
@@ -2905,18 +2884,33 @@ export default function CustomerDashboard({
     salary: true
   });
 
-  const [IndianStates, setIndianStates] = useState([]);
+  const DEFAULT_INDIAN_STATES = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", 
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", 
+    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
+    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", 
+    "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+  ];
+
+  const [IndianStates, setIndianStates] = useState(DEFAULT_INDIAN_STATES);
   const [dbDistricts, setDbDistricts] = useState([]);
 
   useEffect(() => {
     const fetchStates = async () => {
+      const baseUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const isLocal = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' || 
+        window.location.hostname === '127.0.0.1'
+      );
       const endpoints = [
-        '/api/territory/states',
+        baseUrl ? `${baseUrl}/api/territory/states` : '',
         'https://api.ficapp.in/api/territory/states',
-        'http://127.0.0.1:8004/api/territory/states',
-        'http://localhost:8004/api/territory/states'
+        ...(isLocal ? ['http://localhost:8001/api/territory/states', '/api/territory/states'] : [])
       ];
-      for (const ep of endpoints) {
+      const unique = [...new Set(endpoints.filter(Boolean))];
+      for (const ep of unique) {
         try {
           const res = await fetch(ep, { headers: { 'Accept': 'application/json' } });
           if (res.ok) {
@@ -2939,12 +2933,19 @@ export default function CustomerDashboard({
       return;
     }
     const fetchDistricts = async () => {
+      const baseUrl = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const isLocal = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' || 
+        window.location.hostname === '127.0.0.1'
+      );
+      const encoded = encodeURIComponent(addressForm.state);
       const endpoints = [
-        `/api/territory/districts?state=${encodeURIComponent(addressForm.state)}`,
-        `https://api.ficapp.in/api/territory/districts?state=${encodeURIComponent(addressForm.state)}`,
-        `http://127.0.0.1:8004/api/territory/districts?state=${encodeURIComponent(addressForm.state)}`
+        baseUrl ? `${baseUrl}/api/territory/districts?state=${encoded}` : '',
+        `https://api.ficapp.in/api/territory/districts?state=${encoded}`,
+        ...(isLocal ? [`http://localhost:8001/api/territory/districts?state=${encoded}`, `/api/territory/districts?state=${encoded}`] : [])
       ];
-      for (const ep of endpoints) {
+      const unique = [...new Set(endpoints.filter(Boolean))];
+      for (const ep of unique) {
         try {
           const res = await fetch(ep, { headers: { 'Accept': 'application/json' } });
           if (res.ok) {

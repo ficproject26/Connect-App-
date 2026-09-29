@@ -29,7 +29,10 @@
             str.includes('preloaded using link preload') ||
             str.includes('preload but not used') ||
             str.includes('ERR_NETWORK_IO_SUSPENDED') ||
-            str.includes('NETWORK_IO_SUSPENDED')
+            str.includes('NETWORK_IO_SUSPENDED') ||
+            str.includes('ERR_CONNECTION_REFUSED') ||
+            str.includes('WebSocket connection to') ||
+            str.includes('ERR_NAME_NOT_RESOLVED')
           );
         };
 
