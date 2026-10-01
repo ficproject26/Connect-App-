@@ -25,28 +25,34 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
       const lower = clean.toLowerCase();
       if (!seen.has(lower)) {
         seen.add(lower);
-        points.push({ name: clean, time: time || '', landmark: landmark || '' });
+        points.push({ name: clean, time: (time || defaultTime || '').trim(), landmark: (landmark || '').trim() });
       }
     };
 
-    if (Array.isArray(rawList)) {
+    // Priority 1: Configured repeatable list from vendor route
+    if (Array.isArray(rawList) && rawList.length > 0) {
       rawList.forEach(entry => {
         if (typeof entry === 'string') {
-          addPoint(entry);
+          addPoint(entry, defaultTime);
         } else if (entry && typeof entry === 'object' && entry.active !== false) {
           const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
-          const time = entry.time || entry.timing || '';
+          const time = entry.time || entry.timing || defaultTime || '';
           const landmark = entry.landmark || entry.address || '';
           addPoint(name, time, landmark);
         }
       });
+      return points;
     }
 
-    if (typeof rawSingle === 'string') {
+    // Priority 2: Fallback to legacy single point
+    if (typeof rawSingle === 'string' && rawSingle.trim()) {
       addPoint(rawSingle, defaultTime);
+    } else if (rawSingle && typeof rawSingle === 'object') {
+      addPoint(rawSingle.name || rawSingle.point, rawSingle.time || defaultTime, rawSingle.landmark || '');
     }
 
-    if (Array.isArray(rawStoppings)) {
+    // Priority 3: Fallback to route stoppings
+    if (points.length === 0 && Array.isArray(rawStoppings) && rawStoppings.length > 0) {
       rawStoppings.forEach(stop => {
         if (typeof stop === 'string') {
           addPoint(stop);
@@ -68,9 +74,9 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
 
   const droppingPoints = parsePoints(
     item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
-    item.dropPoints || item.drop_points || item.droppingPoints || item.dropping_points,
+    item.droppingPoints || item.dropping_points || item.dropPoints || item.drop_points,
     null,
-    item.arrivalTime || item.busTiming || ''
+    item.arrivalTime || ''
   );
 
   return { boardingPoints, droppingPoints };

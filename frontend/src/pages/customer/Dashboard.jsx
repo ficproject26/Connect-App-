@@ -472,28 +472,34 @@ export const extractVendorTravelPoints = (item) => {
       const lower = clean.toLowerCase();
       if (!seen.has(lower)) {
         seen.add(lower);
-        points.push({ name: clean, time: time || '', landmark: landmark || '' });
+        points.push({ name: clean, time: (time || defaultTime || '').trim(), landmark: (landmark || '').trim() });
       }
     };
 
-    if (Array.isArray(rawList)) {
+    // Priority 1: Configured repeatable list from vendor route
+    if (Array.isArray(rawList) && rawList.length > 0) {
       rawList.forEach(entry => {
         if (typeof entry === 'string') {
-          addPoint(entry);
+          addPoint(entry, defaultTime);
         } else if (entry && typeof entry === 'object' && entry.active !== false) {
           const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
-          const time = entry.time || entry.timing || '';
+          const time = entry.time || entry.timing || defaultTime || '';
           const landmark = entry.landmark || entry.address || '';
           addPoint(name, time, landmark);
         }
       });
+      return points;
     }
 
-    if (typeof rawSingle === 'string') {
+    // Priority 2: Fallback to legacy single point
+    if (typeof rawSingle === 'string' && rawSingle.trim()) {
       addPoint(rawSingle, defaultTime);
+    } else if (rawSingle && typeof rawSingle === 'object') {
+      addPoint(rawSingle.name || rawSingle.point, rawSingle.time || defaultTime, rawSingle.landmark || '');
     }
 
-    if (Array.isArray(rawStoppings)) {
+    // Priority 3: Fallback to route stoppings
+    if (points.length === 0 && Array.isArray(rawStoppings) && rawStoppings.length > 0) {
       rawStoppings.forEach(stop => {
         if (typeof stop === 'string') {
           addPoint(stop);
@@ -515,9 +521,9 @@ export const extractVendorTravelPoints = (item) => {
 
   const droppingPoints = parsePoints(
     item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
-    item.dropPoints || item.drop_points || item.droppingPoints || item.dropping_points,
+    item.droppingPoints || item.dropping_points || item.dropPoints || item.drop_points,
     null,
-    item.arrivalTime || item.busTiming || ''
+    item.arrivalTime || ''
   );
 
   return { boardingPoints, droppingPoints };
@@ -12466,7 +12472,12 @@ wishlistProducts.forEach(item => addToCart(item));
                                   {vendorBoardingPoints.length > 0 ? (
                                     <select
                                       value={boardingPoint}
-                                      onChange={(e) => setBoardingPoint(e.target.value)}
+                                      onChange={(e) => {
+                                        const selectedName = e.target.value;
+                                        setBoardingPoint(selectedName);
+                                        const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === selectedName.trim().toLowerCase());
+                                        if (matched?.time) setCheckInTime(matched.time);
+                                      }}
                                       className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
                                     >
                                       <option value="">Select Boarding Point ▼</option>
@@ -12859,7 +12870,10 @@ wishlistProducts.forEach(item => addToCart(item));
                             <div>
                               <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Boarding Point</span>
                               <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                                {boardingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                                {boardingPoint ? (() => {
+                                const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase());
+                                return matched ? `${matched.name}${matched.time ? ` (${matched.time})` : ''}` : boardingPoint;
+                              })() : <span className="text-amber-500 italic">Not Selected</span>}
                               </span>
                             </div>
                           </div>
@@ -12869,7 +12883,10 @@ wishlistProducts.forEach(item => addToCart(item));
                             <div>
                               <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Dropping Point</span>
                               <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                                {droppingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                                {droppingPoint ? (() => {
+                                const matched = vendorDroppingPoints.find(dp => dp.name.toLowerCase() === droppingPoint.trim().toLowerCase());
+                                return matched ? `${matched.name}${matched.time ? ` (${matched.time})` : ''}` : droppingPoint;
+                              })() : <span className="text-amber-500 italic">Not Selected</span>}
                               </span>
                             </div>
                           </div>
@@ -13287,7 +13304,12 @@ wishlistProducts.forEach(item => addToCart(item));
                                   {vendorBoardingPoints.length > 0 ? (
                                     <select
                                       value={boardingPoint}
-                                      onChange={(e) => setBoardingPoint(e.target.value)}
+                                      onChange={(e) => {
+                                        const selectedName = e.target.value;
+                                        setBoardingPoint(selectedName);
+                                        const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === selectedName.trim().toLowerCase());
+                                        if (matched?.time) setCheckInTime(matched.time);
+                                      }}
                                       className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
                                     >
                                       <option value="">Select Boarding Point ▼</option>
@@ -13697,13 +13719,19 @@ wishlistProducts.forEach(item => addToCart(item));
                           <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
                             <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-emerald-500" /> Boarding Point</span>
                             <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
-                              {boardingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                              {boardingPoint ? (() => {
+                                const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase());
+                                return matched ? `${matched.name}${matched.time ? ` (${matched.time})` : ''}` : boardingPoint;
+                              })() : <span className="text-amber-500 italic">Not Selected</span>}
                             </span>
                           </div>
                           <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
                             <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-rose-500" /> Dropping Point</span>
                             <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
-                              {droppingPoint || <span className="text-amber-500 italic">Not Selected</span>}
+                              {droppingPoint ? (() => {
+                                const matched = vendorDroppingPoints.find(dp => dp.name.toLowerCase() === droppingPoint.trim().toLowerCase());
+                                return matched ? `${matched.name}${matched.time ? ` (${matched.time})` : ''}` : droppingPoint;
+                              })() : <span className="text-amber-500 italic">Not Selected</span>}
                             </span>
                           </div>
                         </>
