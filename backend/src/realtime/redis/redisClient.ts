@@ -49,15 +49,12 @@ class RedisManager {
     const redisOptions: any = {
       retryStrategy: (times: number) => {
         this.reconnectAttempts = times;
-        if (times > 10) {
-          // Keep fallback active while attempting backoff retry every 15 seconds
-          return 15000;
-        }
-        return Math.min(times * 1000, 5000);
+        return Math.min(times * 1000, 10000);
       },
-      maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
-      connectTimeout: 4000,
+      maxRetriesPerRequest: null,
+      enableOfflineQueue: true,
+      connectTimeout: 10000,
+      keepAlive: 10000,
       lazyConnect: true
     };
 
@@ -115,20 +112,25 @@ class RedisManager {
     if (!client) return;
 
     client.on('error', (err: any) => {
-      this.lastError = err.message || 'Redis error';
+      this.lastError = err?.message || 'Redis error';
       if (this.mode === 'redis') {
         this.mode = 'fallback';
         this.isConnected = false;
-        console.warn(`[Redis]: ${name} connection dropped (${err.message}). Switched to in-memory fallback.`);
+        console.warn(`[Redis]: ${name} connection dropped (${err?.message || 'offline'}). Switched to in-memory fallback.`);
       }
     });
 
-    client.on('ready', () => {
+    client.on('ready', async () => {
+      this.isConnected = true;
+      this.lastError = null;
       if (this.mode !== 'redis') {
         this.mode = 'redis';
-        this.isConnected = true;
-        this.lastError = null;
         console.log(`[Redis]: ${name} connection ready. Operating in full Redis Pub/Sub mode.`);
+      }
+      if (name === 'Subscriber' && this.subscriber) {
+        for (const channel of this.subscriptions.keys()) {
+          await this.subscriber.subscribe(channel).catch(() => {});
+        }
       }
     });
 

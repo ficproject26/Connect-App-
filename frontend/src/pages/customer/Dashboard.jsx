@@ -436,26 +436,43 @@ const getModalTerms = (item) => {
   };
 };
 
+export const formatTravelPointDisplay = (pt) => {
+  if (!pt) return '';
+  if (typeof pt === 'string') return pt;
+  const name = pt.name || '';
+  const time = pt.time ? ` (${pt.time})` : '';
+  const landmark = pt.landmark ? ` - ${pt.landmark}` : '';
+  return `${name}${time}${landmark}`.trim();
+};
+
+export const formatTravelPointSimple = (pt) => {
+  if (!pt) return '';
+  if (typeof pt === 'string') return pt;
+  const name = pt.name || '';
+  const time = pt.time ? ` (${pt.time})` : '';
+  return `${name}${time}`.trim();
+};
+
 export const extractVendorTravelPoints = (item) => {
   if (!item) return { boardingPoints: [], droppingPoints: [] };
 
-  const parsePoints = (rawSingle, rawList, rawStoppings) => {
+  const parsePoints = (rawSingle, rawList, rawStoppings, defaultTime = '') => {
     const points = [];
     const seen = new Set();
 
-    const addPoint = (val, time = '') => {
+    const addPoint = (val, time = '', landmark = '') => {
       if (!val || typeof val !== 'string') return;
       const clean = val.trim();
       if (!clean) return;
       if (clean.includes(',') || clean.includes('\n')) {
         const parts = clean.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
-        for (const p of parts) addPoint(p, time);
+        for (const p of parts) addPoint(p, time, landmark);
         return;
       }
       const lower = clean.toLowerCase();
       if (!seen.has(lower)) {
         seen.add(lower);
-        points.push({ name: clean, time: time || '' });
+        points.push({ name: clean, time: time || '', landmark: landmark || '' });
       }
     };
 
@@ -463,16 +480,17 @@ export const extractVendorTravelPoints = (item) => {
       rawList.forEach(entry => {
         if (typeof entry === 'string') {
           addPoint(entry);
-        } else if (entry && typeof entry === 'object') {
+        } else if (entry && typeof entry === 'object' && entry.active !== false) {
           const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
           const time = entry.time || entry.timing || '';
-          addPoint(name, time);
+          const landmark = entry.landmark || entry.address || '';
+          addPoint(name, time, landmark);
         }
       });
     }
 
     if (typeof rawSingle === 'string') {
-      addPoint(rawSingle, item.boardingTime || item.arrivalTime || item.busTiming || '');
+      addPoint(rawSingle, defaultTime);
     }
 
     if (Array.isArray(rawStoppings)) {
@@ -491,13 +509,15 @@ export const extractVendorTravelPoints = (item) => {
   const boardingPoints = parsePoints(
     item.boardingPoint || item.boarding_point || item.pickupPoint || item.pickup_point,
     item.boardingPoints || item.boarding_points || item.pickupPoints || item.pickup_points,
-    null
+    null,
+    item.boardingTime || item.busTiming || ''
   );
 
   const droppingPoints = parsePoints(
     item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
     item.dropPoints || item.drop_points || item.droppingPoints || item.dropping_points,
-    null
+    null,
+    item.arrivalTime || item.busTiming || ''
   );
 
   return { boardingPoints, droppingPoints };
@@ -1106,9 +1126,8 @@ export default function CustomerDashboard({
                        (activeItem?.category || '').toLowerCase().includes('bike') || 
                        (activeItem?.category || '').toLowerCase().includes('tour');
       if (isTravel) {
-        const { boardingPoints: bps, droppingPoints: dps } = extractVendorTravelPoints(activeItem);
-        setBoardingPoint(bps.length > 0 ? bps[0].name : '');
-        setDroppingPoint(dps.length > 0 ? dps[0].name : '');
+        setBoardingPoint('');
+        setDroppingPoint('');
       } else {
         setBoardingPoint('');
         setDroppingPoint('');
@@ -10375,7 +10394,7 @@ export default function CustomerDashboard({
                       <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
                       {(item.boardingPoint || item.droppingPoint) && (
                         <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate mt-0.5">
-                          {item.boardingPoint || 'N/A'} → {item.droppingPoint || 'N/A'}
+                          {formatTravelPointSimple(item.boardingPoint) || 'N/A'} → {formatTravelPointSimple(item.droppingPoint) || 'N/A'}
                         </p>
                       )}
                       {(item.adults || item.children) && (
@@ -10947,10 +10966,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                   <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
                                     <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Travel Route Points:</p>
                                     <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
-                                      📍 Boarding Point: <strong className="text-slate-900 dark:text-white">{trackingOrder.boardingPoint || trackingOrder.boarding_point || 'Not provided'}</strong>
+                                      📍 Boarding Point: <strong className="text-slate-900 dark:text-white">{formatTravelPointDisplay(trackingOrder.boardingPoint || trackingOrder.boarding_point) || 'Not provided'}</strong>
                                     </p>
                                     <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
-                                      🏁 Dropping Point: <strong className="text-slate-900 dark:text-white">{trackingOrder.droppingPoint || trackingOrder.dropping_point || 'Not provided'}</strong>
+                                      🏁 Dropping Point: <strong className="text-slate-900 dark:text-white">{formatTravelPointDisplay(trackingOrder.droppingPoint || trackingOrder.dropping_point) || 'Not provided'}</strong>
                                     </p>
                                   </div>
                                 )}
@@ -12450,9 +12469,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                       onChange={(e) => setBoardingPoint(e.target.value)}
                                       className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
                                     >
+                                      <option value="">Select Boarding Point ▼</option>
                                       {vendorBoardingPoints.map((bp, idx) => (
                                         <option key={`m1-bp-opt-${idx}`} value={bp.name}>
-                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}
+                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}{bp.landmark ? ` - ${bp.landmark}` : ''}
                                         </option>
                                       ))}
                                     </select>
@@ -12472,9 +12492,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                       onChange={(e) => setDroppingPoint(e.target.value)}
                                       className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
                                     >
+                                      <option value="">Select Dropping Point ▼</option>
                                       {vendorDroppingPoints.map((dp, idx) => (
                                         <option key={`m1-dp-opt-${idx}`} value={dp.name}>
-                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}
+                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}{dp.landmark ? ` - ${dp.landmark}` : ''}
                                         </option>
                                       ))}
                                     </select>
@@ -12988,8 +13009,14 @@ wishlistProducts.forEach(item => addToCart(item));
                         adults: numAdults,
                         children: numChildren,
                         guestDetails: guestList.slice(0, numAdults + numChildren),
-                        boardingPoint: isTravelItem ? (boardingPoint.trim() || undefined) : undefined,
-                        droppingPoint: isTravelItem ? (droppingPoint.trim() || undefined) : undefined
+                        boardingPoint: isTravelItem ? (() => {
+                          const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase());
+                          return { name: matched?.name || boardingPoint.trim(), time: matched?.time || '', landmark: matched?.landmark || '' };
+                        })() : undefined,
+                        droppingPoint: isTravelItem ? (() => {
+                          const matched = vendorDroppingPoints.find(dp => dp.name.toLowerCase() === droppingPoint.trim().toLowerCase());
+                          return { name: matched?.name || droppingPoint.trim(), time: matched?.time || '', landmark: matched?.landmark || '' };
+                        })() : undefined
                       };
                       addToCart(itemToCart);
                       setActiveScheduleModalItem(null);
@@ -13263,9 +13290,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                       onChange={(e) => setBoardingPoint(e.target.value)}
                                       className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
                                     >
+                                      <option value="">Select Boarding Point ▼</option>
                                       {vendorBoardingPoints.map((bp, idx) => (
                                         <option key={`m2-bp-opt-${idx}`} value={bp.name}>
-                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}
+                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}{bp.landmark ? ` - ${bp.landmark}` : ''}
                                         </option>
                                       ))}
                                     </select>
@@ -13285,9 +13313,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                       onChange={(e) => setDroppingPoint(e.target.value)}
                                       className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
                                     >
+                                      <option value="">Select Dropping Point ▼</option>
                                       {vendorDroppingPoints.map((dp, idx) => (
                                         <option key={`m2-dp-opt-${idx}`} value={dp.name}>
-                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}
+                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}{dp.landmark ? ` - ${dp.landmark}` : ''}
                                         </option>
                                       ))}
                                     </select>
@@ -13800,8 +13829,14 @@ wishlistProducts.forEach(item => addToCart(item));
                           adults: numAdults,
                           children: numChildren,
                           guestDetails: guestList.slice(0, numAdults + numChildren),
-                          boardingPoint: isTravelItem ? (boardingPoint.trim() || undefined) : undefined,
-                          droppingPoint: isTravelItem ? (droppingPoint.trim() || undefined) : undefined
+                          boardingPoint: isTravelItem ? (() => {
+                          const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase());
+                          return { name: matched?.name || boardingPoint.trim(), time: matched?.time || '', landmark: matched?.landmark || '' };
+                        })() : undefined,
+                        droppingPoint: isTravelItem ? (() => {
+                          const matched = vendorDroppingPoints.find(dp => dp.name.toLowerCase() === droppingPoint.trim().toLowerCase());
+                          return { name: matched?.name || droppingPoint.trim(), time: matched?.time || '', landmark: matched?.landmark || '' };
+                        })() : undefined
                         };
                         addToCart(itemToCart);
                         setActiveBookNowModalItem(null);

@@ -6,26 +6,26 @@ import Razorpay from 'razorpay';
 import { eventPublisher, RealtimeEntities, RealtimeActions } from '../realtime';
 const router = Router();
 
-export function extractVendorTravelPoints(item: any): { boardingPoints: { name: string; time: string }[]; droppingPoints: { name: string; time: string }[] } {
+export function extractVendorTravelPoints(item: any): { boardingPoints: { name: string; time: string; landmark?: string }[]; droppingPoints: { name: string; time: string; landmark?: string }[] } {
   if (!item) return { boardingPoints: [], droppingPoints: [] };
 
-  const parsePoints = (rawSingle: any, rawList: any, rawStoppings: any) => {
-    const points: { name: string; time: string }[] = [];
+  const parsePoints = (rawSingle: any, rawList: any, rawStoppings: any, defaultTime: string = '') => {
+    const points: { name: string; time: string; landmark?: string }[] = [];
     const seen = new Set<string>();
 
-    const addPoint = (val: any, time: string = '') => {
+    const addPoint = (val: any, time: string = '', landmark: string = '') => {
       if (!val || typeof val !== 'string') return;
       const clean = val.trim();
       if (!clean) return;
       if (clean.includes(',') || clean.includes('\n')) {
         const parts = clean.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
-        for (const p of parts) addPoint(p, time);
+        for (const p of parts) addPoint(p, time, landmark);
         return;
       }
       const lower = clean.toLowerCase();
       if (!seen.has(lower)) {
         seen.add(lower);
-        points.push({ name: clean, time: time || '' });
+        points.push({ name: clean, time: time || '', landmark: landmark || '' });
       }
     };
 
@@ -33,16 +33,17 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
       rawList.forEach(entry => {
         if (typeof entry === 'string') {
           addPoint(entry);
-        } else if (entry && typeof entry === 'object') {
+        } else if (entry && typeof entry === 'object' && entry.active !== false) {
           const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
           const time = entry.time || entry.timing || '';
-          addPoint(name, time);
+          const landmark = entry.landmark || entry.address || '';
+          addPoint(name, time, landmark);
         }
       });
     }
 
     if (typeof rawSingle === 'string') {
-      addPoint(rawSingle, item.boardingTime || item.arrivalTime || item.busTiming || '');
+      addPoint(rawSingle, defaultTime);
     }
 
     if (Array.isArray(rawStoppings)) {
@@ -61,13 +62,15 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
   const boardingPoints = parsePoints(
     item.boardingPoint || item.boarding_point || item.pickupPoint || item.pickup_point,
     item.boardingPoints || item.boarding_points || item.pickupPoints || item.pickup_points,
-    null
+    null,
+    item.boardingTime || item.busTiming || ''
   );
 
   const droppingPoints = parsePoints(
     item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
     item.dropPoints || item.drop_points || item.droppingPoints || item.dropping_points,
-    null
+    null,
+    item.arrivalTime || item.busTiming || ''
   );
 
   return { boardingPoints, droppingPoints };
@@ -297,6 +300,7 @@ router.post('/', async (req: Request, res: Response) => {
     tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items,
     experience, candidateEducation, memberId, boardingPoint, droppingPoint,
     adults, children, guestDetails,
+    checkInDate, checkInTime, checkOutDate, checkOutTime, guestList, vehicleDetails, roomsCount, nightsCount, specialRequests,
     paymentMethod, payment_method, paymentStatus, payment_status, transactionId, paidAt, paymentId
   } = req.body;
 
@@ -327,8 +331,27 @@ router.post('/', async (req: Request, res: Response) => {
     const resolvedEmail = (customer_email || candidateEmail || '').trim();
 
     let finalOrderAmount = typeof amount === 'number' ? amount : (parseFloat(amount) || 0);
-    let validatedBoardingPoint = typeof boardingPoint === 'string' ? boardingPoint.trim() : undefined;
-    let validatedDroppingPoint = typeof droppingPoint === 'string' ? droppingPoint.trim() : undefined;
+    let validatedBoardingPoint: any = undefined;
+    if (typeof boardingPoint === 'string' && boardingPoint.trim()) {
+      validatedBoardingPoint = { name: boardingPoint.trim(), time: '', landmark: '' };
+    } else if (boardingPoint && typeof boardingPoint === 'object') {
+      validatedBoardingPoint = {
+        name: (boardingPoint.name || '').trim(),
+        time: (boardingPoint.time || '').trim(),
+        landmark: (boardingPoint.landmark || '').trim()
+      };
+    }
+
+    let validatedDroppingPoint: any = undefined;
+    if (typeof droppingPoint === 'string' && droppingPoint.trim()) {
+      validatedDroppingPoint = { name: droppingPoint.trim(), time: '', landmark: '' };
+    } else if (droppingPoint && typeof droppingPoint === 'object') {
+      validatedDroppingPoint = {
+        name: (droppingPoint.name || '').trim(),
+        time: (droppingPoint.time || '').trim(),
+        landmark: (droppingPoint.landmark || '').trim()
+      };
+    }
     let numAdults = typeof adults === 'number' ? adults : parseInt(adults, 10);
     if (isNaN(numAdults) || numAdults < 0) numAdults = 1;
     let numChildren = typeof children === 'number' ? children : parseInt(children, 10);
@@ -375,35 +398,39 @@ router.post('/', async (req: Request, res: Response) => {
         const { boardingPoints: allowedBps, droppingPoints: allowedDps } = extractVendorTravelPoints(travelProduct);
 
         if (allowedBps.length > 0) {
-          if (!validatedBoardingPoint) {
+          if (!validatedBoardingPoint || !validatedBoardingPoint.name) {
             return res.status(400).json({
               status: 'error',
               message: 'Boarding point is required. Please select one of the vendor-provided boarding points.'
             });
           }
-          const isBpValid = allowedBps.some(pt => pt.name.toLowerCase().trim() === validatedBoardingPoint!.toLowerCase().trim());
-          if (!isBpValid) {
+          const matchedBp = allowedBps.find(pt => pt.name.toLowerCase().trim() === validatedBoardingPoint.name.toLowerCase().trim());
+          if (!matchedBp) {
             return res.status(400).json({
               status: 'error',
-              message: `Invalid boarding point "${validatedBoardingPoint}". Please select one of the vendor-provided boarding points: ${allowedBps.map(p => p.name).join(', ')}.`
+              message: `Invalid boarding point "${validatedBoardingPoint.name}". Please select one of the vendor-provided boarding points: ${allowedBps.map(p => p.name).join(', ')}.`
             });
           }
+          if (!validatedBoardingPoint.time) validatedBoardingPoint.time = matchedBp.time || '';
+          if (!validatedBoardingPoint.landmark) validatedBoardingPoint.landmark = matchedBp.landmark || '';
         }
 
         if (allowedDps.length > 0) {
-          if (!validatedDroppingPoint) {
+          if (!validatedDroppingPoint || !validatedDroppingPoint.name) {
             return res.status(400).json({
               status: 'error',
               message: 'Dropping point is required. Please select one of the vendor-provided dropping points.'
             });
           }
-          const isDpValid = allowedDps.some(pt => pt.name.toLowerCase().trim() === validatedDroppingPoint!.toLowerCase().trim());
-          if (!isDpValid) {
+          const matchedDp = allowedDps.find(pt => pt.name.toLowerCase().trim() === validatedDroppingPoint.name.toLowerCase().trim());
+          if (!matchedDp) {
             return res.status(400).json({
               status: 'error',
-              message: `Invalid dropping point "${validatedDroppingPoint}". Please select one of the vendor-provided dropping points: ${allowedDps.map(p => p.name).join(', ')}.`
+              message: `Invalid dropping point "${validatedDroppingPoint.name}". Please select one of the vendor-provided dropping points: ${allowedDps.map(p => p.name).join(', ')}.`
             });
           }
+          if (!validatedDroppingPoint.time) validatedDroppingPoint.time = matchedDp.time || '';
+          if (!validatedDroppingPoint.landmark) validatedDroppingPoint.landmark = matchedDp.landmark || '';
         }
       }
     }
@@ -480,7 +507,16 @@ router.post('/', async (req: Request, res: Response) => {
       droppingPoint: validatedDroppingPoint,
       adults: numAdults,
       children: numChildren,
-      guestDetails: Array.isArray(guestDetails) ? guestDetails : undefined,
+      guestDetails: Array.isArray(guestDetails) ? guestDetails : (Array.isArray(guestList) ? guestList : undefined),
+      guestList: Array.isArray(guestList) ? guestList : (Array.isArray(guestDetails) ? guestDetails : undefined),
+      checkInDate: checkInDate || req.body.check_in_date || appointmentDate,
+      checkInTime: checkInTime || req.body.check_in_time,
+      checkOutDate: checkOutDate || req.body.check_out_date,
+      checkOutTime: checkOutTime || req.body.check_out_time,
+      roomsCount: roomsCount || req.body.numberOfRooms,
+      nightsCount: nightsCount || req.body.numberOfNights,
+      vehicleDetails: vehicleDetails || null,
+      specialRequests: specialRequests || req.body.notes || null,
       items: items || []
     });
 
@@ -538,7 +574,16 @@ router.post('/', async (req: Request, res: Response) => {
         droppingPoint: validatedDroppingPoint,
         adults: numAdults,
         children: numChildren,
-        guestDetails: Array.isArray(guestDetails) ? guestDetails : undefined,
+        guestDetails: Array.isArray(guestDetails) ? guestDetails : (Array.isArray(guestList) ? guestList : undefined),
+        guestList: Array.isArray(guestList) ? guestList : (Array.isArray(guestDetails) ? guestDetails : undefined),
+        checkInDate: checkInDate || req.body.check_in_date || appointmentDate,
+        checkInTime: checkInTime || req.body.check_in_time,
+        checkOutDate: checkOutDate || req.body.check_out_date,
+        checkOutTime: checkOutTime || req.body.check_out_time,
+        roomsCount: roomsCount || req.body.numberOfRooms,
+        nightsCount: nightsCount || req.body.numberOfNights,
+        vehicleDetails: vehicleDetails || null,
+        specialRequests: specialRequests || req.body.notes || null,
         candidateEmail: candidateEmail || req.body.candidateEmail,
         candidateResume: candidateResume || req.body.candidateResume,
         experience: experience || req.body.experience,

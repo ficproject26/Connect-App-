@@ -93,8 +93,12 @@ export interface Order {
   candidateResume?: string;
   experience?: string;
   candidateEducation?: string;
-  boardingPoint?: string;
-  droppingPoint?: string;
+  boardingPoint?: any;
+  droppingPoint?: any;
+  travelDate?: string;
+  journeyDate?: string;
+  departureDate?: string;
+  departureTime?: string;
   adults?: number;
   children?: number;
   guestDetails?: any[];

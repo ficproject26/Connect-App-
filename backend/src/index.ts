@@ -29,6 +29,15 @@ import {
 // Load environmental variables
 dotenv.config();
 
+// Global Process Crash Prevention Guards
+process.on('uncaughtException', (err: any) => {
+  console.error('[Process]: Uncaught exception (gracefully handled):', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('[Process]: Unhandled promise rejection (gracefully handled):', reason?.message || reason);
+});
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
