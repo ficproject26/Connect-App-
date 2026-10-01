@@ -456,23 +456,31 @@ export const formatTravelPointSimple = (pt) => {
 export const extractVendorTravelPoints = (item) => {
   if (!item) return { boardingPoints: [], droppingPoints: [] };
 
-  const parsePoints = (rawSingle, rawList, rawStoppings, defaultTime = '') => {
+  const parsePoints = (rawSingle, rawList, rawStoppings, defaultTime = '', isBoarding = true) => {
     const points = [];
     const seen = new Set();
 
-    const addPoint = (val, time = '', landmark = '') => {
+    const addPoint = (val, time = '', landmark = '', id = undefined) => {
       if (!val || typeof val !== 'string') return;
       const clean = val.trim();
       if (!clean) return;
       if (clean.includes(',') || clean.includes('\n')) {
         const parts = clean.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
-        for (const p of parts) addPoint(p, time, landmark);
+        for (const p of parts) addPoint(p, time, landmark, id);
         return;
       }
       const lower = clean.toLowerCase();
       if (!seen.has(lower)) {
         seen.add(lower);
-        points.push({ name: clean, time: (time || defaultTime || '').trim(), landmark: (landmark || '').trim() });
+        const finalTime = (time || defaultTime || '').trim();
+        points.push({
+          id,
+          name: clean,
+          departureTime: isBoarding ? finalTime : undefined,
+          arrivalTime: !isBoarding ? finalTime : undefined,
+          time: finalTime,
+          landmark: (landmark || '').trim()
+        });
       }
     };
 
@@ -483,9 +491,10 @@ export const extractVendorTravelPoints = (item) => {
           addPoint(entry, defaultTime);
         } else if (entry && typeof entry === 'object' && entry.active !== false) {
           const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
-          const time = entry.time || entry.timing || defaultTime || '';
+          const time = entry.departureTime || entry.arrivalTime || entry.time || entry.timing || defaultTime || '';
           const landmark = entry.landmark || entry.address || '';
-          addPoint(name, time, landmark);
+          const id = entry.id || entry._id || undefined;
+          addPoint(name, time, landmark, id);
         }
       });
       return points;
@@ -495,7 +504,8 @@ export const extractVendorTravelPoints = (item) => {
     if (typeof rawSingle === 'string' && rawSingle.trim()) {
       addPoint(rawSingle, defaultTime);
     } else if (rawSingle && typeof rawSingle === 'object') {
-      addPoint(rawSingle.name || rawSingle.point, rawSingle.time || defaultTime, rawSingle.landmark || '');
+      const timeVal = rawSingle.departureTime || rawSingle.arrivalTime || rawSingle.time || defaultTime;
+      addPoint(rawSingle.name || rawSingle.point, timeVal, rawSingle.landmark || '', rawSingle.id);
     }
 
     // Priority 3: Fallback to route stoppings
@@ -504,7 +514,7 @@ export const extractVendorTravelPoints = (item) => {
         if (typeof stop === 'string') {
           addPoint(stop);
         } else if (stop && typeof stop === 'object') {
-          addPoint(stop.stopName || stop.name || stop.location, stop.time || '');
+          addPoint(stop.stopName || stop.name || stop.location, stop.time || '', '', stop.id);
         }
       });
     }
@@ -516,14 +526,16 @@ export const extractVendorTravelPoints = (item) => {
     item.boardingPoint || item.boarding_point || item.pickupPoint || item.pickup_point,
     item.boardingPoints || item.boarding_points || item.pickupPoints || item.pickup_points,
     null,
-    item.boardingTime || item.busTiming || ''
+    item.boardingTime || item.busTiming || '',
+    true
   );
 
   const droppingPoints = parsePoints(
     item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
     item.droppingPoints || item.dropping_points || item.dropPoints || item.drop_points,
     null,
-    item.arrivalTime || ''
+    item.arrivalTime || '',
+    false
   );
 
   return { boardingPoints, droppingPoints };

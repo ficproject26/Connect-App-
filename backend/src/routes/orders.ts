@@ -6,26 +6,34 @@ import Razorpay from 'razorpay';
 import { eventPublisher, RealtimeEntities, RealtimeActions } from '../realtime';
 const router = Router();
 
-export function extractVendorTravelPoints(item: any): { boardingPoints: { name: string; time: string; landmark?: string }[]; droppingPoints: { name: string; time: string; landmark?: string }[] } {
+export function extractVendorTravelPoints(item: any): { boardingPoints: { id?: string; name: string; departureTime?: string; time: string; landmark?: string }[]; droppingPoints: { id?: string; name: string; arrivalTime?: string; time: string; landmark?: string }[] } {
   if (!item) return { boardingPoints: [], droppingPoints: [] };
 
-  const parsePoints = (rawSingle: any, rawList: any, rawStoppings: any, defaultTime: string = '') => {
-    const points: { name: string; time: string; landmark?: string }[] = [];
+  const parsePoints = (rawSingle: any, rawList: any, rawStoppings: any, defaultTime: string = '', isBoarding: boolean = true) => {
+    const points: { id?: string; name: string; departureTime?: string; arrivalTime?: string; time: string; landmark?: string }[] = [];
     const seen = new Set<string>();
 
-    const addPoint = (val: any, time: string = '', landmark: string = '') => {
+    const addPoint = (val: any, time: string = '', landmark: string = '', id?: string) => {
       if (!val || typeof val !== 'string') return;
       const clean = val.trim();
       if (!clean) return;
       if (clean.includes(',') || clean.includes('\n')) {
         const parts = clean.split(/[,\n]+/).map(p => p.trim()).filter(Boolean);
-        for (const p of parts) addPoint(p, time, landmark);
+        for (const p of parts) addPoint(p, time, landmark, id);
         return;
       }
       const lower = clean.toLowerCase();
       if (!seen.has(lower)) {
         seen.add(lower);
-        points.push({ name: clean, time: (time || defaultTime || '').trim(), landmark: (landmark || '').trim() });
+        const finalTime = (time || defaultTime || '').trim();
+        points.push({
+          id,
+          name: clean,
+          departureTime: isBoarding ? finalTime : undefined,
+          arrivalTime: !isBoarding ? finalTime : undefined,
+          time: finalTime,
+          landmark: (landmark || '').trim()
+        });
       }
     };
 
@@ -36,9 +44,10 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
           addPoint(entry, defaultTime);
         } else if (entry && typeof entry === 'object' && entry.active !== false) {
           const name = entry.name || entry.point || entry.location || entry.stopName || entry.title || '';
-          const time = entry.time || entry.timing || defaultTime || '';
+          const time = entry.departureTime || entry.arrivalTime || entry.time || entry.timing || defaultTime || '';
           const landmark = entry.landmark || entry.address || '';
-          addPoint(name, time, landmark);
+          const id = entry.id || entry._id || undefined;
+          addPoint(name, time, landmark, id);
         }
       });
       return points;
@@ -48,7 +57,8 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
     if (typeof rawSingle === 'string' && rawSingle.trim()) {
       addPoint(rawSingle, defaultTime);
     } else if (rawSingle && typeof rawSingle === 'object') {
-      addPoint(rawSingle.name || rawSingle.point, rawSingle.time || defaultTime, rawSingle.landmark || '');
+      const timeVal = rawSingle.departureTime || rawSingle.arrivalTime || rawSingle.time || defaultTime;
+      addPoint(rawSingle.name || rawSingle.point, timeVal, rawSingle.landmark || '', rawSingle.id);
     }
 
     // Priority 3: Fallback to route stoppings
@@ -57,7 +67,7 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
         if (typeof stop === 'string') {
           addPoint(stop);
         } else if (stop && typeof stop === 'object') {
-          addPoint(stop.stopName || stop.name || stop.location, stop.time || '');
+          addPoint(stop.stopName || stop.name || stop.location, stop.time || '', '', stop.id);
         }
       });
     }
@@ -69,14 +79,16 @@ export function extractVendorTravelPoints(item: any): { boardingPoints: { name: 
     item.boardingPoint || item.boarding_point || item.pickupPoint || item.pickup_point,
     item.boardingPoints || item.boarding_points || item.pickupPoints || item.pickup_points,
     null,
-    item.boardingTime || item.busTiming || ''
+    item.boardingTime || item.busTiming || '',
+    true
   );
 
   const droppingPoints = parsePoints(
     item.dropPoint || item.drop_point || item.droppingPoint || item.dropping_point || item.destination,
     item.droppingPoints || item.dropping_points || item.dropPoints || item.drop_points,
     null,
-    item.arrivalTime || ''
+    item.arrivalTime || '',
+    false
   );
 
   return { boardingPoints, droppingPoints };
@@ -339,25 +351,32 @@ router.post('/', async (req: Request, res: Response) => {
     let finalOrderAmount = typeof amount === 'number' ? amount : (parseFloat(amount) || 0);
     let validatedBoardingPoint: any = undefined;
     if (typeof boardingPoint === 'string' && boardingPoint.trim()) {
-      validatedBoardingPoint = { name: boardingPoint.trim(), time: '', landmark: '' };
+      validatedBoardingPoint = { name: boardingPoint.trim(), departureTime: '', time: '', landmark: '' };
     } else if (boardingPoint && typeof boardingPoint === 'object') {
+      const bTime = (boardingPoint.departureTime || boardingPoint.time || '').trim();
       validatedBoardingPoint = {
+        id: boardingPoint.id || boardingPoint._id || undefined,
         name: (boardingPoint.name || '').trim(),
-        time: (boardingPoint.time || '').trim(),
+        departureTime: bTime,
+        time: bTime,
         landmark: (boardingPoint.landmark || '').trim()
       };
     }
 
     let validatedDroppingPoint: any = undefined;
     if (typeof droppingPoint === 'string' && droppingPoint.trim()) {
-      validatedDroppingPoint = { name: droppingPoint.trim(), time: '', landmark: '' };
+      validatedDroppingPoint = { name: droppingPoint.trim(), arrivalTime: '', time: '', landmark: '' };
     } else if (droppingPoint && typeof droppingPoint === 'object') {
+      const dTime = (droppingPoint.arrivalTime || droppingPoint.time || '').trim();
       validatedDroppingPoint = {
+        id: droppingPoint.id || droppingPoint._id || undefined,
         name: (droppingPoint.name || '').trim(),
-        time: (droppingPoint.time || '').trim(),
+        arrivalTime: dTime,
+        time: dTime,
         landmark: (droppingPoint.landmark || '').trim()
       };
     }
+
     let numAdults = typeof adults === 'number' ? adults : parseInt(adults, 10);
     if (isNaN(numAdults) || numAdults < 0) numAdults = 1;
     let numChildren = typeof children === 'number' ? children : parseInt(children, 10);
