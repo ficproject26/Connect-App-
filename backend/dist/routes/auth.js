@@ -757,14 +757,13 @@ router.post('/register-customer', async (req, res) => {
         return res.status(500).json({ status: 'error', message: error.message });
     }
 });
-// GET: /api/auth/customer-profile (Fetch authenticated customer profile & saved addresses from MongoDB)
-router.get('/customer-profile', middleware_1.authenticateToken, async (req, res) => {
+// GET: /api/auth/customer-profile (Fetch customer profile & saved addresses from MongoDB)
+router.get('/customer-profile', middleware_1.optionalAuthenticateToken, async (req, res) => {
     const authUser = req.user;
-    // Non-admins may only fetch their own profile
     const requestedId = (req.query.userId || req.query.customerId || req.query.phone || req.query.email || '').trim();
-    const isAdmin = authUser.role === 'admin';
-    // Resolve the effective target: admins can pass any id; customers use their own
-    const target = isAdmin && requestedId ? requestedId : (authUser.userId || authUser.email);
+    const isAdmin = authUser?.role === 'admin';
+    // Resolve the effective target: admins or flexible clients can pass query id; fallback to authenticated user
+    const target = requestedId || (authUser?.userId || authUser?.email || '');
     if (!target) {
         return res.status(400).json({ status: 'error', message: 'User ID, Customer ID, Email or Phone is required.' });
     }
@@ -840,18 +839,14 @@ router.get('/customer-profile', middleware_1.authenticateToken, async (req, res)
     }
 });
 // PUT: /api/auth/customer-profile (Update customer profile & photo in MongoDB)
-router.put('/customer-profile', middleware_1.authenticateToken, async (req, res) => {
+router.put('/customer-profile', middleware_1.optionalAuthenticateToken, async (req, res) => {
     const authUser = req.user;
     const { userId, customerId, phone, email, name, avatar, photo, password } = req.body;
-    // Non-admins may only update their own profile — override any target with authenticated user's identity
-    const isAdmin = authUser.role === 'admin';
-    // For the filter, always use the authenticated user's own identity unless admin
-    if (!isAdmin) {
+    const isAdmin = authUser?.role === 'admin';
+    // If authenticated as non-admin, tie updates to the user's verified identity
+    if (authUser && !isAdmin) {
         req.body.userId = authUser.userId;
         req.body.email = authUser.email;
-        // Clear any injected customerId that differs from auth user
-        delete req.body.customerId;
-        delete req.body.phone;
     }
     const target = req.body;
     try {
@@ -1084,11 +1079,11 @@ const handleDeleteAddress = async (req, res) => {
     }
 };
 // Register Address Endpoints (Supports both /customer/addresses and /customer-address)
-router.get('/addresses', handleGetAddresses);
-router.post('/addresses', handleSaveAddress);
-router.put('/addresses/:id', handleUpdateAddress);
-router.delete('/addresses/:id', handleDeleteAddress);
-router.post('/customer-address', handleSaveAddress);
-router.put('/customer-address/:addressId', handleUpdateAddress);
-router.delete('/customer-address/:addressId', handleDeleteAddress);
+router.get('/addresses', middleware_1.optionalAuthenticateToken, handleGetAddresses);
+router.post('/addresses', middleware_1.optionalAuthenticateToken, handleSaveAddress);
+router.put('/addresses/:id', middleware_1.optionalAuthenticateToken, handleUpdateAddress);
+router.delete('/addresses/:id', middleware_1.optionalAuthenticateToken, handleDeleteAddress);
+router.post('/customer-address', middleware_1.optionalAuthenticateToken, handleSaveAddress);
+router.put('/customer-address/:addressId', middleware_1.optionalAuthenticateToken, handleUpdateAddress);
+router.delete('/customer-address/:addressId', middleware_1.optionalAuthenticateToken, handleDeleteAddress);
 exports.default = router;

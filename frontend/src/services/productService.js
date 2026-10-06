@@ -379,8 +379,7 @@ export const productService = {
         const endpoints = [
           baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
           baseUrl ? `${baseUrl}/api/public/products` : null,
-          '/api/public/products',
-          'https://connect-app-7s6g.onrender.com/api/public/products'
+          '/api/public/products'
         ];
         const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
 

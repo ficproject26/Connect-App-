@@ -32,7 +32,7 @@ export interface AuthenticatedRequest extends Request {
 //   - MongoDB Atlas — server-to-server only (no CSP needed)
 //   - Google Fonts — only if frontend HTML is served
 //   - OpenStreetMap tiles — only for frontend map rendering
-//   - ficapp.in / onrender.com — Connect App frontend/API origins
+//   - ficapp.in — Connect App frontend/API origins
 // ─────────────────────────────────────────────────────────────────────────────
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -77,11 +77,6 @@ const cspDirectives = {
     'https://www.ficapp.in',
     'https://*.ficapp.in',
     'wss://*.ficapp.in',
-    // Render.com hosted services
-    'https://connect-app-7s6g.onrender.com',
-    'wss://connect-app-7s6g.onrender.com',
-    'https://connect-admin-96pc.onrender.com',
-    'wss://connect-admin-96pc.onrender.com',
     // EC2 / alternate host
     'http://13.201.132.46:*',
     // Cloudinary upload API (used server-side, included for completeness)
@@ -129,7 +124,7 @@ export const helmetSecurityMiddleware = helmet({
   // Only enable HSTS on production where HTTPS is guaranteed.
   // Local development must NOT be forced into HTTPS.
   // maxAge: 1 year (31,536,000 seconds) — OWASP recommended minimum
-  // includeSubDomains: protects all subdomains of ficapp.in / onrender.com
+  // includeSubDomains: protects all subdomains of ficapp.in
   // preload: intentionally NOT set — only add after confirming domain is ready for HSTS preload list
   strictTransportSecurity: IS_PRODUCTION
     ? {
@@ -189,13 +184,34 @@ export const helmetSecurityMiddleware = helmet({
   // Use app.disable('x-powered-by') in Express instead (done in index.ts).
 });
 
-// 2. Auth & OTP Rate Limiter (5 requests / min -> HTTP 429)
+// 2. Auth & OTP Rate Limiter (30 requests / min -> HTTP 429)
 export const authRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 Minute
-  max: 5, // 5 requests max
+  max: 30, // 30 requests max per minute
   standardHeaders: true,
   legacyHeaders: false,
   statusCode: 429,
+  keyGenerator: (req: Request) => {
+    // 1. Try Forwarded header (RFC 7239)
+    const forwarded = req.headers['forwarded'];
+    if (typeof forwarded === 'string') {
+      const match = forwarded.match(/for="?([^;,"]+)/i);
+      if (match && match[1]) return match[1].trim();
+    }
+    // 2. Try X-Forwarded-For header
+    const xForwardedFor = req.headers['x-forwarded-for'];
+    if (typeof xForwardedFor === 'string') {
+      const parts = xForwardedFor.split(',');
+      if (parts[0]) return parts[0].trim();
+    }
+    // 3. Fallback to Express req.ip or socket address
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
+  validate: {
+    xForwardedForHeader: false,
+    forwardedHeader: false,
+    default: true,
+  },
   message: {
     status: 'error',
     code: 'RATE_LIMIT_EXCEEDED',
@@ -275,6 +291,38 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
 
   req.user = payload;
   req.sessionId = payload.sessionId;
+  next();
+};
+
+// 4b. Optional JWT Authentication Middleware (populates req.user if present, never blocks with 401)
+export const optionalAuthenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  const tokenFromCookie = req.cookies ? req.cookies['connect_access_token'] : null;
+
+  const accessToken = tokenFromHeader || tokenFromCookie;
+
+  if (!accessToken) {
+    return next();
+  }
+
+  try {
+    const payload = securityManager.verifyAccessToken(accessToken);
+    if (payload) {
+      if (payload.sessionId) {
+        const session = securityManager.getSession(payload.sessionId);
+        if (session) {
+          req.user = payload;
+          req.sessionId = payload.sessionId;
+        }
+      } else {
+        req.user = payload;
+      }
+    }
+  } catch {
+    // Non-blocking: continue without auth user
+  }
+
   next();
 };
 

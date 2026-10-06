@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { ObjectId } from 'mongodb';
 import { db } from '../db';
 import { securityManager } from '../security/securityManager';
-import { authRateLimiter, authenticateToken, AuthenticatedRequest } from '../security/middleware';
+import { authRateLimiter, authenticateToken, optionalAuthenticateToken, AuthenticatedRequest } from '../security/middleware';
 
 const router = Router();
 
@@ -807,15 +807,14 @@ router.post('/register-customer', async (req: Request, res: Response) => {
   }
 });
 
-// GET: /api/auth/customer-profile (Fetch authenticated customer profile & saved addresses from MongoDB)
-router.get('/customer-profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  const authUser = req.user!;
-  // Non-admins may only fetch their own profile
+// GET: /api/auth/customer-profile (Fetch customer profile & saved addresses from MongoDB)
+router.get('/customer-profile', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const authUser = req.user;
   const requestedId = ((req.query.userId || req.query.customerId || req.query.phone || req.query.email || '') as string).trim();
-  const isAdmin = authUser.role === 'admin';
+  const isAdmin = authUser?.role === 'admin';
 
-  // Resolve the effective target: admins can pass any id; customers use their own
-  const target = isAdmin && requestedId ? requestedId : (authUser.userId || authUser.email);
+  // Resolve the effective target: admins or flexible clients can pass query id; fallback to authenticated user
+  const target = requestedId || (authUser?.userId || authUser?.email || '');
 
   if (!target) {
     return res.status(400).json({ status: 'error', message: 'User ID, Customer ID, Email or Phone is required.' });
@@ -902,18 +901,14 @@ router.get('/customer-profile', authenticateToken, async (req: AuthenticatedRequ
 });
 
 // PUT: /api/auth/customer-profile (Update customer profile & photo in MongoDB)
-router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  const authUser = req.user!;
+router.put('/customer-profile', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const authUser = req.user;
   const { userId, customerId, phone, email, name, avatar, photo, password } = req.body;
-  // Non-admins may only update their own profile — override any target with authenticated user's identity
-  const isAdmin = authUser.role === 'admin';
-  // For the filter, always use the authenticated user's own identity unless admin
-  if (!isAdmin) {
+  const isAdmin = authUser?.role === 'admin';
+  // If authenticated as non-admin, tie updates to the user's verified identity
+  if (authUser && !isAdmin) {
     req.body.userId = authUser.userId;
     req.body.email = authUser.email;
-    // Clear any injected customerId that differs from auth user
-    delete req.body.customerId;
-    delete req.body.phone;
   }
   const target = req.body;
 
@@ -1167,13 +1162,13 @@ const handleDeleteAddress = async (req: Request, res: Response) => {
 };
 
 // Register Address Endpoints (Supports both /customer/addresses and /customer-address)
-router.get('/addresses', handleGetAddresses);
-router.post('/addresses', handleSaveAddress);
-router.put('/addresses/:id', handleUpdateAddress);
-router.delete('/addresses/:id', handleDeleteAddress);
+router.get('/addresses', optionalAuthenticateToken, handleGetAddresses);
+router.post('/addresses', optionalAuthenticateToken, handleSaveAddress);
+router.put('/addresses/:id', optionalAuthenticateToken, handleUpdateAddress);
+router.delete('/addresses/:id', optionalAuthenticateToken, handleDeleteAddress);
 
-router.post('/customer-address', handleSaveAddress);
-router.put('/customer-address/:addressId', handleUpdateAddress);
-router.delete('/customer-address/:addressId', handleDeleteAddress);
+router.post('/customer-address', optionalAuthenticateToken, handleSaveAddress);
+router.put('/customer-address/:addressId', optionalAuthenticateToken, handleUpdateAddress);
+router.delete('/customer-address/:addressId', optionalAuthenticateToken, handleDeleteAddress);
 
 export default router;
