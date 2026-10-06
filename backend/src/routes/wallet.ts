@@ -195,8 +195,17 @@ router.post('/recharge/create-order', async (req: Request, res: Response) => {
       dbUser = await mongoDb.collection('customers').findOne(filter);
     }
 
-    const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_THLM17MgXLM2tP';
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'nrlFSNfeqYOJiGJc4cU2sm1R';
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!keyId || !keySecret) {
+      console.error('[Razorpay Error]: RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET environment variable is missing.');
+      return res.status(503).json({
+        success: false,
+        code: 'PAYMENT_CONFIG_MISSING',
+        error: 'Razorpay payment gateway credentials are not configured on this server.'
+      });
+    }
 
     const razorpay = new Razorpay({
       key_id: keyId,
@@ -224,7 +233,17 @@ router.post('/recharge/create-order', async (req: Request, res: Response) => {
       const order = await razorpay.orders.create(orderOptions);
       razorpayOrderId = order.id;
     } catch (sdkErr: any) {
-      console.warn('[Razorpay SDK Warning] Using simulated test order for wallet recharge:', sdkErr?.message || sdkErr);
+      const errMsg = sdkErr?.error?.description || sdkErr?.message || 'Razorpay order creation failed';
+      console.error('[Razorpay Error]: Wallet recharge order creation failed:', errMsg);
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(502).json({
+          success: false,
+          code: 'PAYMENT_GATEWAY_ERROR',
+          error: `Razorpay rejected recharge order: ${errMsg}`
+        });
+      }
+      // Non-production sandbox fallback only
+      console.warn('[Razorpay Warning]: Using dev sandbox order fallback for wallet in non-production environment');
       isTestMode = true;
       razorpayOrderId = `order_test_wal_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
     }
@@ -300,12 +319,20 @@ router.post('/recharge/verify', async (req: Request, res: Response) => {
     }
 
     // 2. SERVER-SIDE SIGNATURE VERIFICATION
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'nrlFSNfeqYOJiGJc4cU2sm1R';
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keySecret) {
+      return res.status(503).json({
+        success: false,
+        error: 'Razorpay secret key is not configured.'
+      });
+    }
+
     const textToVerify = `${razorpay_order_id}|${razorpay_payment_id}`;
     const generatedSignature = crypto.createHmac('sha256', keySecret).update(textToVerify).digest('hex');
 
     const isSignatureValid = (generatedSignature === razorpay_signature);
-    const isTestOrder = razorpay_order_id.startsWith('order_test_') || razorpay_payment_id.startsWith('pay_test_');
+    // In production, test orders are strictly prohibited
+    const isTestOrder = process.env.NODE_ENV !== 'production' && (razorpay_order_id.startsWith('order_test_') || razorpay_payment_id.startsWith('pay_test_'));
 
     if (!isSignatureValid && !isTestOrder) {
       return res.status(400).json({

@@ -39,7 +39,8 @@ export function RealtimeProvider({ children }) {
       }
       lastConnectAttempt.current = attemptKey;
 
-      socketService.connect(userId, role);
+      const token = localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('admin_token') || '';
+      socketService.connect(userId, role, token);
     } catch (e) {
       // Operate gracefully if localStorage is unavailable
     }

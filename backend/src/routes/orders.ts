@@ -272,16 +272,26 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/create-razorpay-order', async (req: Request, res: Response) => {
   try {
     const { amount } = req.body;
-    const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_THLM17MgXLM2tP';
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'nrlFSNfeqYOJiGJc4cU2sm1R';
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!keyId || !keySecret) {
+      console.error('[Razorpay Error]: RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET environment variable is missing.');
+      return res.status(503).json({
+        success: false,
+        code: 'PAYMENT_CONFIG_MISSING',
+        error: 'Razorpay payment gateway credentials are not configured on this server.'
+      });
+    }
 
     const instance = new Razorpay({
       key_id: keyId,
       key_secret: keySecret,
     });
 
+    const parsedAmount = Math.round((Number(amount) || 1) * 100);
     const options = {
-      amount: Math.round((amount || 1) * 100), // convert to paise
+      amount: parsedAmount,
       currency: "INR",
       receipt: "receipt_order_" + Math.floor(Math.random() * 1000000),
     };
@@ -290,24 +300,52 @@ router.post('/create-razorpay-order', async (req: Request, res: Response) => {
       const order = await instance.orders.create(options);
       return res.json({ success: true, order_id: order.id, amount: options.amount, key_id: keyId });
     } catch (sdkError: any) {
-      console.warn('[Razorpay SDK Warning] Using fallback test order ID:', sdkError?.message || sdkError);
+      const errMsg = sdkError?.error?.description || sdkError?.message || 'Razorpay order creation failed';
+      console.error('[Razorpay Error]: Order initialization failed:', errMsg);
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(502).json({
+          success: false,
+          code: 'PAYMENT_GATEWAY_ERROR',
+          error: `Razorpay rejected order creation: ${errMsg}`
+        });
+      }
+      // Non-production sandbox fallback only
+      console.warn('[Razorpay Warning]: Using dev sandbox order fallback in non-production environment');
       return res.json({
         success: true,
         order_id: 'order_test_' + Math.floor(Math.random() * 1000000),
         amount: options.amount,
-        key_id: keyId
+        key_id: keyId,
+        isTestMode: true
       });
     }
-  } catch (error) {
-    console.error('Error in Razorpay order creation:', error);
-    res.json({
-      success: true,
-      order_id: 'order_test_' + Math.floor(Math.random() * 1000000),
-      amount: 10000,
-      key_id: 'rzp_test_THLM17MgXLM2tP'
+  } catch (error: any) {
+    console.error('[Razorpay Error]: Internal error in Razorpay order creation:', error?.message || error);
+    res.status(500).json({
+      success: false,
+      code: 'SERVER_ERROR',
+      error: 'An internal error occurred while initializing payment.'
     });
   }
 });
+
+// Throttled logging for vendor backend order synchronization
+let lastVendorSyncErrorTime = 0;
+let suppressedVendorSyncErrors = 0;
+function logVendorSyncThrottled(msg: string) {
+  const now = Date.now();
+  if (now - lastVendorSyncErrorTime > 60000) {
+    if (suppressedVendorSyncErrors > 0) {
+      console.warn(`[Sync Order Warning]: (Suppressed ${suppressedVendorSyncErrors} repeated warnings) ${msg}`);
+    } else {
+      console.warn(`[Sync Order Warning]: ${msg}`);
+    }
+    lastVendorSyncErrorTime = now;
+    suppressedVendorSyncErrors = 0;
+  } else {
+    suppressedVendorSyncErrors++;
+  }
+}
 
 // POST: /api/orders
 router.post('/', async (req: Request, res: Response) => {
@@ -621,30 +659,53 @@ router.post('/', async (req: Request, res: Response) => {
         prescriptionUrl
       });
 
-      const http = require('http');
-      const reqPost = http.request({
-        hostname: '127.0.0.1',
-        port: 8000,
-        path: '/api/public/orders',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(syncData)
+      // Forward order to vendor backend (configurable endpoint with throttled error reporting)
+      if (process.env.ENABLE_VENDOR_SYNC !== 'false') {
+        const vendorUrlRaw = process.env.VENDOR_BACKEND_URL || process.env.VENDOR_API_URL || 'http://127.0.0.1:8000';
+        let vendorUrl: URL;
+        try {
+          vendorUrl = new URL('/api/public/orders', vendorUrlRaw);
+        } catch {
+          vendorUrl = new URL('http://127.0.0.1:8000/api/public/orders');
         }
-      }, (resPost: any) => {
-        resPost.on('data', (d: any) => {
-          console.log('[Sync Order]: Vendor backend response:', d.toString());
+
+        const client = vendorUrl.protocol === 'https:' ? require('https') : require('http');
+        const reqPost = client.request({
+          protocol: vendorUrl.protocol,
+          hostname: vendorUrl.hostname,
+          port: vendorUrl.port || (vendorUrl.protocol === 'https:' ? 443 : 80),
+          path: vendorUrl.pathname + vendorUrl.search,
+          method: 'POST',
+          timeout: 4000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(syncData)
+          }
+        }, (resPost: any) => {
+          let respData = '';
+          resPost.on('data', (d: any) => { respData += d.toString(); });
+          resPost.on('end', () => {
+            if (resPost.statusCode >= 200 && resPost.statusCode < 300) {
+              console.log('[Sync Order]: Vendor backend accepted order.');
+            } else {
+              logVendorSyncThrottled(`Vendor backend (${vendorUrl.origin}) returned status ${resPost.statusCode}: ${respData.slice(0, 100)}`);
+            }
+          });
         });
-      });
 
-      reqPost.on('error', (e: any) => {
-        console.warn('[Sync Order Error]: Failed to forward order to vendor backend:', e.message);
-      });
+        reqPost.on('timeout', () => {
+          reqPost.destroy(new Error('Connection timed out'));
+        });
 
-      reqPost.write(syncData);
-      reqPost.end();
+        reqPost.on('error', (e: any) => {
+          logVendorSyncThrottled(`Failed to forward order to vendor backend (${vendorUrl.origin}): ${e.message}`);
+        });
+
+        reqPost.write(syncData);
+        reqPost.end();
+      }
     } catch (err: any) {
-      console.warn('[Sync Order Error]:', err.message);
+      logVendorSyncThrottled(err.message);
     }
 
     res.status(201).json({

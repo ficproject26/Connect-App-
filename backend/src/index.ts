@@ -41,6 +41,11 @@ process.on('unhandledRejection', (reason: any) => {
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+// Configure Express trust proxy for Nginx reverse proxy topology.
+// 1 = Trust first hop (Nginx reverse proxy), enabling express-rate-limit to correctly
+// resolve client IP from X-Forwarded-For without trusting spoofed upstream headers.
+app.set('trust proxy', 1);
+
 // Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
 app.disable('x-powered-by');
 

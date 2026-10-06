@@ -240,16 +240,33 @@ router.post('/create-order', async (req: Request, res: Response) => {
         razorpayOrderId = order.id;
         console.log(`[Membership] Razorpay order created: ${razorpayOrderId} for plan ${requestedConfig.name}`);
       } catch (sdkErr: any) {
-        console.error('[Membership] Razorpay order creation failed:', sdkErr?.error?.description || sdkErr?.message || sdkErr);
-        // Key might be valid format but rejected — fall back to test mode
+        const errMsg = sdkErr?.error?.description || sdkErr?.message || 'Razorpay order creation failed';
+        console.error('[Membership] Razorpay order creation failed:', errMsg);
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(502).json({
+            success: false,
+            code: 'PAYMENT_GATEWAY_ERROR',
+            error: `Razorpay rejected membership order: ${errMsg}`
+          });
+        }
+        // Fall back to test mode in dev only
+        console.warn('[Membership] Using dev test order fallback in non-production environment');
         isTestMode = true;
         razorpayOrderId = `order_test_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
       }
     } else {
-      // Keys are invalid/missing — use internal test-mode flow
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[Membership Error]: Razorpay keys are invalid or missing in production.');
+        return res.status(503).json({
+          success: false,
+          code: 'PAYMENT_CONFIG_MISSING',
+          error: 'Razorpay payment gateway credentials are not configured or invalid on this server.'
+        });
+      }
+      // Keys are invalid/missing — use internal test-mode flow in dev only
       isTestMode = true;
       razorpayOrderId = `order_test_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-      console.log(`[Membership] Test-mode order (invalid Razorpay keys): ${razorpayOrderId}`);
+      console.log(`[Membership] Dev test-mode order: ${razorpayOrderId}`);
     }
 
     // Persist pending order record

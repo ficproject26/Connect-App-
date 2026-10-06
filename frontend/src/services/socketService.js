@@ -37,15 +37,28 @@ class SocketServiceClient {
     }
   }
 
-  connect(userId, role) {
+  connect(userId, role, token) {
     this.setupLifecycleListeners();
 
-    if (this.socket && (this.socket.connected || this.socket.active) && this.lastUserId === userId && this.lastRole === role) {
+    // Safely retrieve token from parameter or localStorage
+    const authToken = token || (typeof localStorage !== 'undefined' ? (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('admin_token') || localStorage.getItem('vendor_token') || '') : '');
+
+    // Fallback userId if missing to prevent sending malformed { role: 'admin' } payload
+    const effectiveUserId = userId || (typeof localStorage !== 'undefined' ? (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('connect_current_user') || '{}');
+        return u.id || u._id || u.userId || u.email;
+      } catch { return null; }
+    })() : null) || 'guest';
+
+    const effectiveRole = role || 'customer';
+
+    if (this.socket && (this.socket.connected || this.socket.active) && this.lastUserId === effectiveUserId && this.lastRole === effectiveRole) {
       return;
     }
 
-    this.lastUserId = userId;
-    this.lastRole = role;
+    this.lastUserId = effectiveUserId;
+    this.lastRole = effectiveRole;
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       return;
@@ -62,18 +75,33 @@ class SocketServiceClient {
         : 'https://api.ficapp.in';
 
       this.socket = io(socketUrl, {
-        transports: ['polling', 'websocket'],
+        auth: {
+          token: authToken,
+          userId: effectiveUserId,
+          role: effectiveRole
+        },
+        query: {
+          token: authToken,
+          userId: effectiveUserId,
+          role: effectiveRole
+        },
+        transports: ['websocket', 'polling'],
         upgrade: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 3000,
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
         reconnectionDelayMax: 10000,
         timeout: 10000,
         autoConnect: true
       });
 
       this.socket.on('connect', () => {
-        // Register client details
-        this.socket.emit('register', { userId, role });
+        // Register client details with verified identity and auth token
+        this.socket.emit('register', {
+          userId: effectiveUserId,
+          role: effectiveRole,
+          token: authToken
+        });
       });
 
       this.socket.on('connect_error', () => {

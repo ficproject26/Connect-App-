@@ -32,29 +32,50 @@ class WebSocketServer {
 
     console.log('[WebSocketServer]: Centralized Real-Time WebSocket Server initialized.');
 
+// Throttled logging for WebSocket warnings to prevent production log spam
+let lastSocketLogTime = 0;
+let suppressedSocketLogs = 0;
+function logSocketWarningThrottled(msg: string) {
+  const now = Date.now();
+  if (now - lastSocketLogTime > 60000) {
+    if (suppressedSocketLogs > 0) {
+      console.warn(`[WebSocketServer]: (Suppressed ${suppressedSocketLogs} repeated warnings) ${msg}`);
+    } else {
+      console.warn(`[WebSocketServer]: ${msg}`);
+    }
+    lastSocketLogTime = now;
+    suppressedSocketLogs = 0;
+  } else {
+    suppressedSocketLogs++;
+  }
+}
+
     // Connection Authentication & Registration Middleware
     this.io.use((socket: Socket, next) => {
       try {
-        const token = socket.handshake.auth?.token || socket.handshake.query?.token;
-        const userId = socket.handshake.auth?.userId || socket.handshake.query?.userId;
-        const role = socket.handshake.auth?.role || socket.handshake.query?.role || 'customer';
+        const authHeader = (socket.handshake.headers?.authorization || socket.handshake.headers?.['x-auth-token'] || '') as string;
+        const headerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+        const token = socket.handshake.auth?.token || headerToken || socket.handshake.query?.token;
+        const requestedUserId = socket.handshake.auth?.userId || socket.handshake.query?.userId;
+        const secret = process.env.JWT_SECRET || 'dev_only_jwt_secret_DO_NOT_USE_IN_PRODUCTION_min32chars';
 
         if (token && typeof token === 'string') {
           try {
-            const secret = process.env.JWT_SECRET || 'connect_app_jwt_secret_key_2026';
-            const decoded: any = jwt.verify(token, secret);
-            socket.data.userId = decoded.id || decoded.userId || decoded._id;
-            socket.data.role = decoded.role || role;
+            const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+            const decoded: any = jwt.verify(cleanToken, secret);
+            socket.data.userId = decoded.id || decoded.userId || decoded._id || requestedUserId || `user_${socket.id.substring(0, 6)}`;
+            socket.data.role = decoded.role || decoded.userType || 'customer';
             socket.data.authenticated = true;
           } catch {
-            // Token verification failed; fall back to guest/unverified client
-            socket.data.userId = userId || `guest_${socket.id.substring(0, 6)}`;
-            socket.data.role = role;
+            // Token verification failed; fall back to guest/customer, NEVER grant unauthenticated admin
+            socket.data.userId = requestedUserId || `guest_${socket.id.substring(0, 6)}`;
+            socket.data.role = 'customer';
             socket.data.authenticated = false;
           }
         } else {
-          socket.data.userId = userId || `guest_${socket.id.substring(0, 6)}`;
-          socket.data.role = role;
+          // No token provided: unauthenticated connections can NEVER assume admin/manager/delivery roles
+          socket.data.userId = requestedUserId || `guest_${socket.id.substring(0, 6)}`;
+          socket.data.role = 'customer';
           socket.data.authenticated = false;
         }
 
@@ -81,22 +102,82 @@ class WebSocketServer {
       // Automatically join initial role & user rooms
       this.joinUserRooms(socket, clientInfo.userId, clientInfo.role);
 
-      // 1. Explicit Register Event (for clients that authenticate post-connection)
-      socket.on('register', (data: { userId: string; role: string; token?: string }) => {
-        if (!data || !data.userId) return;
-        clientInfo.userId = data.userId;
-        clientInfo.role = data.role || 'customer';
-        socket.data.userId = clientInfo.userId;
-        socket.data.role = clientInfo.role;
+      // 1. Explicit Register Event (with server-side token & role verification)
+      socket.on('register', (data: any) => {
+        if (!data || typeof data !== 'object') {
+          logSocketWarningThrottled(`Invalid registration data received from socket ${socket.id}: ${JSON.stringify(data)}`);
+          return;
+        }
 
-        this.joinUserRooms(socket, clientInfo.userId, clientInfo.role);
-        console.log(`[WebSocketServer]: Registered client ${socket.id} as ${clientInfo.role}:${clientInfo.userId}`);
+        const requestedRole = data.role || 'customer';
+        const rawToken = data.token || socket.handshake.auth?.token || socket.handshake.query?.token;
+        const secret = process.env.JWT_SECRET || 'dev_only_jwt_secret_DO_NOT_USE_IN_PRODUCTION_min32chars';
+
+        let effectiveUserId = data.userId || socket.data.userId || `user_${socket.id.substring(0, 6)}`;
+        let effectiveRole = 'customer';
+        let isAuthenticated = false;
+
+        if (rawToken && typeof rawToken === 'string') {
+          try {
+            const cleanToken = rawToken.startsWith('Bearer ') ? rawToken.slice(7) : rawToken;
+            const decoded: any = jwt.verify(cleanToken, secret);
+            const tokenRole = decoded.role || decoded.userType;
+            const tokenUserId = decoded.id || decoded.userId || decoded._id;
+
+            if (tokenUserId) effectiveUserId = tokenUserId;
+            if (['admin', 'manager', 'vendor', 'delivery', 'agent'].includes(tokenRole)) {
+              effectiveRole = tokenRole;
+              isAuthenticated = true;
+            } else {
+              effectiveRole = tokenRole || 'customer';
+              isAuthenticated = true;
+            }
+          } catch {
+            // Token verification failed
+            if (requestedRole === 'admin' || requestedRole === 'manager') {
+              logSocketWarningThrottled(`Unauthorized admin registration attempt on socket ${socket.id} (invalid token)`);
+              socket.emit('registered', {
+                status: 'error',
+                code: 'UNAUTHORIZED_ROLE',
+                message: 'Admin role requires valid JWT authentication'
+              });
+              return;
+            }
+          }
+        } else {
+          // No token provided: reject privileged registration
+          if (requestedRole === 'admin' || requestedRole === 'manager') {
+            logSocketWarningThrottled(`Unauthenticated privileged registration attempt { role: '${requestedRole}' } on socket ${socket.id} without token`);
+            socket.emit('registered', {
+              status: 'error',
+              code: 'UNAUTHORIZED_ROLE',
+              message: 'Authentication token is required for privileged roles'
+            });
+            return;
+          }
+          effectiveRole = 'customer';
+        }
+
+        // Leave previous role/user rooms if identity changed
+        if (clientInfo.userId && clientInfo.role) {
+          socket.leave(`user:${clientInfo.userId}`);
+          socket.leave(`${clientInfo.role}:${clientInfo.userId}`);
+          if (clientInfo.role === 'admin') socket.leave('admins');
+        }
+
+        clientInfo.userId = effectiveUserId;
+        clientInfo.role = effectiveRole;
+        socket.data.userId = effectiveUserId;
+        socket.data.role = effectiveRole;
+        socket.data.authenticated = isAuthenticated;
+
+        this.joinUserRooms(socket, effectiveUserId, effectiveRole);
 
         socket.emit('registered', {
           status: 'ok',
           socketId: socket.id,
-          userId: clientInfo.userId,
-          role: clientInfo.role
+          userId: effectiveUserId,
+          role: effectiveRole
         });
       });
 
@@ -167,7 +248,10 @@ class WebSocketServer {
       socket.on('disconnect', (reason) => {
         const info = this.clients.get(socket.id);
         if (info) {
-          console.log(`[WebSocketServer]: Client disconnected: ${socket.id} (${info.role}:${info.userId}, reason: ${reason})`);
+          // Only log unusual disconnections to prevent production log spamming
+          if (reason !== 'client namespace disconnect' && reason !== 'transport close') {
+            console.log(`[WebSocketServer]: Client disconnected: ${socket.id} (${info.role}:${info.userId}, reason: ${reason})`);
+          }
           if (info.role === 'delivery') {
             this.io?.emit('partner_status_changed', {
               partnerId: info.userId,
