@@ -40,9 +40,7 @@ const PORT = process.env.PORT || 8000;
 app.set('trust proxy', 1);
 // Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
 app.disable('x-powered-by');
-// OWASP Security Headers (Helmet v8) & Input Sanitization
-app.use(middleware_1.helmetSecurityMiddleware);
-// Universal CORS Header Middleware
+// Universal CORS Header Middleware (evaluated first so every response contains CORS headers)
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin) {
@@ -66,6 +64,8 @@ app.use((0, cors_1.default)({
     origin: true,
     credentials: true
 }));
+// OWASP Security Headers (Helmet v8) & Input Sanitization
+app.use(middleware_1.helmetSecurityMiddleware);
 const path_1 = __importDefault(require("path"));
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json({ limit: '10mb' }));

@@ -70,9 +70,13 @@ const cspDirectives = {
   // Connect (XHR/fetch/WebSocket): self + all known Connect App API/WS endpoints + Cloudinary upload API + Razorpay
   connectSrc: [
     "'self'",
-    // Production API domain
+    // Production API and frontend domains
     'https://api.ficapp.in',
     'wss://api.ficapp.in',
+    'https://ficapp.in',
+    'https://www.ficapp.in',
+    'https://*.ficapp.in',
+    'wss://*.ficapp.in',
     // Render.com hosted services
     'https://connect-app-7s6g.onrender.com',
     'wss://connect-app-7s6g.onrender.com',

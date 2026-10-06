@@ -49,10 +49,7 @@ app.set('trust proxy', 1);
 // Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
 app.disable('x-powered-by');
 
-// OWASP Security Headers (Helmet v8) & Input Sanitization
-app.use(helmetSecurityMiddleware);
-
-// Universal CORS Header Middleware
+// Universal CORS Header Middleware (evaluated first so every response contains CORS headers)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin) {
@@ -77,6 +74,9 @@ app.use(cors({
   origin: true,
   credentials: true
 }));
+
+// OWASP Security Headers (Helmet v8) & Input Sanitization
+app.use(helmetSecurityMiddleware);
 
 import path from 'path';
 
