@@ -661,12 +661,12 @@ router.post('/', async (req: Request, res: Response) => {
 
       // Forward order to vendor backend (configurable endpoint with throttled error reporting)
       if (process.env.ENABLE_VENDOR_SYNC !== 'false') {
-        const vendorUrlRaw = process.env.VENDOR_BACKEND_URL || process.env.VENDOR_API_URL || 'http://127.0.0.1:8000';
+        const vendorUrlRaw = process.env.VENDOR_BACKEND_URL || process.env.VENDOR_API_URL || 'http://127.0.0.1:8002';
         let vendorUrl: URL;
         try {
           vendorUrl = new URL('/api/public/orders', vendorUrlRaw);
         } catch {
-          vendorUrl = new URL('http://127.0.0.1:8000/api/public/orders');
+          vendorUrl = new URL('http://127.0.0.1:8002/api/public/orders');
         }
 
         const client = vendorUrl.protocol === 'https:' ? require('https') : require('http');

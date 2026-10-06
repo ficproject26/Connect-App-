@@ -745,6 +745,15 @@ server.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`[Server]: Connect App Backend running on 0.0.0.0:${PORT} with DevSecOps Security`);
 });
 
+server.on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[Server FATAL]: Port ${PORT} is already in use by another process. Please check 'sudo lsof -i :${PORT}' or ensure previous PM2 process gracefully shut down.`);
+    process.exit(1);
+  } else {
+    console.error('[Server Error]:', err);
+  }
+});
+
 // Connect to Database asynchronously
 db.connect()
   .then(() => {
