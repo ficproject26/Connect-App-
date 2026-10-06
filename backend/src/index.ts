@@ -41,7 +41,10 @@ process.on('unhandledRejection', (reason: any) => {
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// OWASP Security Headers (Helmet) & Input Sanitization
+// Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
+app.disable('x-powered-by');
+
+// OWASP Security Headers (Helmet v8) & Input Sanitization
 app.use(helmetSecurityMiddleware);
 
 // Universal CORS Header Middleware

@@ -3,9 +3,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || 'yvsm7ze0';
-const API_KEY = process.env.CLOUDINARY_API_KEY || '777368858137395';
-const API_SECRET = process.env.CLOUDINARY_API_SECRET || '3E133kSyEa7piWMxGrbmwuRIT_4';
+// SECURITY: Cloudinary credentials must ONLY come from environment variables.
+// Never hardcode API keys or secrets in source code.
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || '';
+const API_KEY = process.env.CLOUDINARY_API_KEY || '';
+const API_SECRET = process.env.CLOUDINARY_API_SECRET || '';
+
+if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+  console.warn('[Cloudinary] WARNING: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, or CLOUDINARY_API_SECRET environment variable is not set. Image uploads will fail.');
+}
 
 export interface CloudinaryUploadResult {
   success: boolean;

@@ -284,7 +284,49 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
       userDetails = { id: partner.id, name: partner.name, email: identifier, role: 'delivery' };
 
     } else if (role === 'admin') {
-      userDetails = { id: 'admin_1', name: 'System Admin', email: identifier, role: 'admin' };
+      // SECURITY FIX: Admin must authenticate against the admins collection in DB.
+      // No bypass — wrong/missing password → 401.
+      const mongoDb = db.getDb();
+      if (!mongoDb) {
+        return res.status(503).json({ status: 'error', message: 'Database unavailable. Cannot authenticate admin.' });
+      }
+      const adminRecord = await mongoDb.collection('admins').findOne({
+        $or: [{ email: identifier }, { phone: identifier }]
+      });
+      if (!adminRecord) {
+        const failedInfo = securityManager.recordFailedLogin(identifier, ip, device.deviceName);
+        return res.status(401).json({
+          status: 'error',
+          code: 'INVALID_CREDENTIALS',
+          message: failedInfo.message,
+          attempts: failedInfo.attempts,
+          requireCaptcha: failedInfo.requireCaptcha
+        });
+      }
+      if (!password) {
+        return res.status(400).json({ status: 'error', code: 'PASSWORD_REQUIRED', message: 'Password is required for admin login.' });
+      }
+      const isAdminPasswordValid = await bcrypt.compare(password, adminRecord.password).catch(() => false);
+      if (!isAdminPasswordValid) {
+        const failedInfo = securityManager.recordFailedLogin(identifier, ip, device.deviceName);
+        return res.status(401).json({
+          status: 'error',
+          code: 'INVALID_CREDENTIALS',
+          message: failedInfo.message,
+          attempts: failedInfo.attempts,
+          requireCaptcha: failedInfo.requireCaptcha
+        });
+      }
+      const adminStatus = (adminRecord.status || '').toLowerCase();
+      if (adminRecord.isActive === false || adminStatus === 'suspended' || adminStatus === 'inactive') {
+        return res.status(403).json({ status: 'error', code: 'ACCOUNT_INACTIVE', message: 'Admin account is inactive or suspended.' });
+      }
+      userDetails = {
+        id: adminRecord._id?.toString() || adminRecord.id || 'admin_' + Date.now(),
+        name: adminRecord.name || 'System Admin',
+        email: adminRecord.email || identifier,
+        role: 'admin'
+      };
     } else {
       const dbUser = await findCustomerInMongo(identifier);
 
@@ -311,7 +353,7 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
 
       if (password) {
         const isMatch = await bcrypt.compare(password, dbUser.password).catch(() => false);
-        if (!isMatch && dbUser.password !== password) {
+        if (!isMatch) {
           return res.status(401).json({
             status: 'error',
             code: 'INVALID_CREDENTIALS',
@@ -479,8 +521,7 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
     return res.json({
       status: 'success',
       message: `OTP sent successfully to ${target}. Valid for 5 minutes.`,
-      cooldownSeconds,
-      devOtpPreview: otp
+      cooldownSeconds
     });
   } catch (err: any) {
     return res.status(429).json({ status: 'error', message: err.message });
@@ -722,29 +763,14 @@ router.post('/register-customer', async (req: Request, res: Response) => {
       });
 
       if (existing) {
-        // If user already exists, update user profile and address details rather than throwing 400 error!
-        const updateFields: any = {
-          updatedAt: new Date().toISOString()
-        };
-        if (name) updateFields.name = name;
-        if (address) updateFields.address = address;
-        if (city) updateFields.city = city;
-        if (pincode) updateFields.pincode = pincode;
-        if (aadhaarNumber) updateFields.aadhaar = aadhaarNumber;
-        if (panNumber) updateFields.pan = panNumber;
-        if (hashedPassword) updateFields.password = hashedPassword;
-
-        const existingAddrs: any[] = Array.isArray(existing.addresses) ? existing.addresses : [];
-        if (address && existingAddrs.length === 0) {
-          updateFields.addresses = initialAddresses;
-        }
-
-        await mongoDb.collection('users').updateOne({ _id: existing._id }, { $set: updateFields }).catch(() => {});
-        await mongoDb.collection('customers').updateOne({ _id: existing._id }, { $set: updateFields }).catch(() => {});
-
-        const updatedUser = await mongoDb.collection('users').findOne({ _id: existing._id });
-        const { password: _, ...safeUser } = updatedUser || existing;
-        return res.json({ status: 'success', message: 'Customer account updated successfully', user: safeUser, data: safeUser });
+        // SECURITY FIX: Never silently update an existing user's credentials via registration.
+        // This prevented account takeover where an attacker could overwrite another user's
+        // password, Aadhaar, or PAN simply by knowing their email/phone.
+        return res.status(409).json({
+          status: 'error',
+          code: 'ACCOUNT_EXISTS',
+          message: 'An account with this email or mobile number already exists. Please log in instead.'
+        });
       }
     }
 
@@ -782,9 +808,14 @@ router.post('/register-customer', async (req: Request, res: Response) => {
 });
 
 // GET: /api/auth/customer-profile (Fetch authenticated customer profile & saved addresses from MongoDB)
-router.get('/customer-profile', async (req: Request, res: Response) => {
-  const { userId, customerId, phone, email } = req.query;
-  const target = ((userId || customerId || phone || email || '') as string).trim();
+router.get('/customer-profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const authUser = req.user!;
+  // Non-admins may only fetch their own profile
+  const requestedId = ((req.query.userId || req.query.customerId || req.query.phone || req.query.email || '') as string).trim();
+  const isAdmin = authUser.role === 'admin';
+
+  // Resolve the effective target: admins can pass any id; customers use their own
+  const target = isAdmin && requestedId ? requestedId : (authUser.userId || authUser.email);
 
   if (!target) {
     return res.status(400).json({ status: 'error', message: 'User ID, Customer ID, Email or Phone is required.' });
@@ -871,8 +902,19 @@ router.get('/customer-profile', async (req: Request, res: Response) => {
 });
 
 // PUT: /api/auth/customer-profile (Update customer profile & photo in MongoDB)
-router.put('/customer-profile', async (req: Request, res: Response) => {
+router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const authUser = req.user!;
   const { userId, customerId, phone, email, name, avatar, photo, password } = req.body;
+  // Non-admins may only update their own profile — override any target with authenticated user's identity
+  const isAdmin = authUser.role === 'admin';
+  // For the filter, always use the authenticated user's own identity unless admin
+  if (!isAdmin) {
+    req.body.userId = authUser.userId;
+    req.body.email = authUser.email;
+    // Clear any injected customerId that differs from auth user
+    delete req.body.customerId;
+    delete req.body.phone;
+  }
   const target = req.body;
 
   try {

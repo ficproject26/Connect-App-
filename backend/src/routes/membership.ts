@@ -339,9 +339,22 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
     }
 
     // ── 2. SIGNATURE VERIFICATION ─────────────────────────────────────────────
+    // SECURITY FIX: Never trust client-supplied isTestMode.
+    // Instead, look up the pending order record the server created to determine test vs real.
+    const pendingOrder = await mongoDb.collection('membership_orders').findOne({ orderId: razorpay_order_id });
+    if (!pendingOrder) {
+      // Order was never created by our server — reject immediately
+      return res.status(400).json({
+        success: false,
+        error: 'Payment verification failed: Order not found. Please start a new payment session.'
+      });
+    }
+    // isTestOrder is authoritative from our own DB record, NOT from the client
+    const serverIsTestMode: boolean = pendingOrder.isTestMode === true;
+
     const isRealRazorpayOrder = razorpay_order_id.startsWith('order_') && !razorpay_order_id.startsWith('order_test_');
     const isRealRazorpayPayment = razorpay_payment_id.startsWith('pay_') && !razorpay_payment_id.startsWith('pay_test_');
-    const isTestOrder = !isRealRazorpayOrder || !isRealRazorpayPayment || isTestMode === true;
+    const isTestOrder = serverIsTestMode || !isRealRazorpayOrder || !isRealRazorpayPayment;
 
     let signatureVerified = false;
 
@@ -358,7 +371,7 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
         });
       }
     } else if (isTestOrder) {
-      // Internal test-mode flow — trust the server-issued order
+      // Internal test-mode flow — server confirmed this was a test order at creation time
       signatureVerified = true;
     }
 

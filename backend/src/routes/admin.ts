@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { securityManager } from '../security/securityManager';
 import { ObjectId } from 'mongodb';
+import { authenticateToken, authorizeRoles, AuthenticatedRequest } from '../security/middleware';
 import {
   eventPublisher,
   cacheManager,
@@ -10,6 +11,7 @@ import {
 } from '../realtime';
 
 const router = Router();
+const adminAuth = [authenticateToken, authorizeRoles('admin')];
 
 // GET: /api/admin/categories & /api/admin/public/categories
 router.get(['/categories', '/public/categories'], async (req: Request, res: Response) => {
@@ -52,7 +54,7 @@ router.get(['/categories', '/public/categories'], async (req: Request, res: Resp
 });
 
 // POST: /api/admin/categories (Create category with real-time broadcast)
-router.post('/categories', async (req: Request, res: Response) => {
+router.post('/categories', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
@@ -87,7 +89,7 @@ router.post('/categories', async (req: Request, res: Response) => {
 });
 
 // PUT: /api/admin/categories/:id (Update category with real-time broadcast)
-router.put('/categories/:id', async (req: Request, res: Response) => {
+router.put('/categories/:id', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
@@ -121,7 +123,7 @@ router.put('/categories/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE: /api/admin/categories/:id (Delete category with real-time broadcast)
-router.delete('/categories/:id', async (req: Request, res: Response) => {
+router.delete('/categories/:id', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (!mongoDb) return res.status(500).json({ error: 'Database unavailable' });
@@ -296,7 +298,7 @@ router.get('/exclusive-offers/all', async (req: Request, res: Response) => {
 });
 
 // POST: /api/admin/exclusive-offers (Create & Publish Offer)
-router.post('/exclusive-offers', async (req: Request, res: Response) => {
+router.post('/exclusive-offers', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const { title, discount, code, desc, category } = req.body;
     if (!title || !discount || !code) {
@@ -334,7 +336,7 @@ router.post('/exclusive-offers', async (req: Request, res: Response) => {
 });
 
 // PUT: /api/admin/exclusive-offers/:id (Update or toggle offer)
-router.put('/exclusive-offers/:id', async (req: Request, res: Response) => {
+router.put('/exclusive-offers/:id', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -363,7 +365,7 @@ router.put('/exclusive-offers/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE: /api/admin/exclusive-offers/:id (Delete offer)
-router.delete('/exclusive-offers/:id', async (req: Request, res: Response) => {
+router.delete('/exclusive-offers/:id', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const col = await getOffersCollection();
@@ -387,7 +389,7 @@ router.delete('/exclusive-offers/:id', async (req: Request, res: Response) => {
 
 
 // Admin Security Control Center API Routes
-router.get('/security/metrics', (req: Request, res: Response) => {
+router.get('/security/metrics', ...adminAuth, (req: Request, res: Response) => {
   const metrics = securityManager.getSecurityMetrics();
   return res.json({
     status: 'success',
@@ -395,7 +397,7 @@ router.get('/security/metrics', (req: Request, res: Response) => {
   });
 });
 
-router.get('/security/logs', (req: Request, res: Response) => {
+router.get('/security/logs', ...adminAuth, (req: Request, res: Response) => {
   const logs = securityManager.getAuditLogs();
   return res.json({
     status: 'success',
@@ -403,7 +405,7 @@ router.get('/security/logs', (req: Request, res: Response) => {
   });
 });
 
-router.get('/security/locked-accounts', (req: Request, res: Response) => {
+router.get('/security/locked-accounts', ...adminAuth, (req: Request, res: Response) => {
   const records = securityManager.getAllUserSecurityRecords();
   const locked = records.filter(r => r.isPermanentlyLocked || (r.accountLockedUntil && new Date(r.accountLockedUntil).getTime() > Date.now()));
   return res.json({
@@ -412,7 +414,7 @@ router.get('/security/locked-accounts', (req: Request, res: Response) => {
   });
 });
 
-router.post('/security/unlock-account', (req: Request, res: Response) => {
+router.post('/security/unlock-account', ...adminAuth, (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ status: 'error', message: 'Email or Mobile required.' });
   
@@ -434,7 +436,7 @@ router.post('/security/unlock-account', (req: Request, res: Response) => {
 });
 
 // GET: /api/admin/dashboard (Real authoritative stats from MongoDB)
-router.get('/dashboard', async (req: Request, res: Response) => {
+router.get('/dashboard', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {
@@ -485,7 +487,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
 });
 
 // GET: /api/admin/vendors (Real vendors from MongoDB)
-router.get('/vendors', async (req: Request, res: Response) => {
+router.get('/vendors', ...adminAuth, async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (mongoDb) {
@@ -503,7 +505,7 @@ router.get('/vendors', async (req: Request, res: Response) => {
 });
 
 // POST: /api/admin/settings
-router.post('/settings', (req: Request, res: Response) => {
+router.post('/settings', ...adminAuth, (req: Request, res: Response) => {
   const { theme, maintenanceMode } = req.body;
   res.json({
     status: 'success',
