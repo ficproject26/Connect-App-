@@ -14,7 +14,14 @@ import walletRouter from './routes/wallet';
 import territoryRouter from './routes/territory';
 import { socketManager } from './socket';
 import { db } from './db';
-import { helmetSecurityMiddleware, sanitizeInputsMiddleware } from './security/middleware';
+import {
+  helmetSecurityMiddleware,
+  sanitizeInputsMiddleware,
+  corsSecurityMiddleware,
+  globalApiRateLimiter,
+  uploadRateLimiter,
+  isAllowedOrigin
+} from './security/middleware';
 import { uploadToCloudinary, isPersistentImageUrl } from './cloudinary';
 import { ObjectId } from 'mongodb';
 import {
@@ -49,31 +56,8 @@ app.set('trust proxy', true);
 // Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
 app.disable('x-powered-by');
 
-// Universal CORS Header Middleware (evaluated first so every response contains CORS headers)
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  const reqHeaders = req.headers['access-control-request-headers'];
-  res.setHeader('Access-Control-Allow-Headers', (Array.isArray(reqHeaders) ? reqHeaders.join(',') : reqHeaders) || 'x-auth-token, Content-Type, Authorization, Cache-Control, Pragma, Expires, expires, x-requested-with, Accept, Origin');
-  res.setHeader('Access-Control-Max-Age', '86400');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-  next();
-});
-
-// Enable CORS with Credentials
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+// Enterprise CORS Protection Middleware (Restricted to Trusted Origins, no arbitrary origin reflection)
+app.use(corsSecurityMiddleware);
 
 // OWASP Security Headers (Helmet v8) & Input Sanitization
 app.use(helmetSecurityMiddleware);
@@ -97,6 +81,9 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Production API Rate Limiting (500 requests per 15 minutes per client IP/session)
+app.use('/api/', globalApiRateLimiter);
 
 // Mount Routes
 app.use('/api/admin', adminRouter);
@@ -384,8 +371,8 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
   }
 });
 
-// Direct Image Upload Endpoint (Persists permanently to Cloudinary)
-app.post(['/api/upload', '/api/products/upload-image', '/api/admin/upload'], async (req, res) => {
+// Direct Image Upload Endpoint (Persists permanently to Cloudinary with rate limiting)
+app.post(['/api/upload', '/api/products/upload-image', '/api/admin/upload'], uploadRateLimiter, async (req, res) => {
   try {
     const { image, file, folder } = req.body;
     const rawImage = image || file;
@@ -720,18 +707,22 @@ app.use((req, res, next) => {
   res.status(404).json({ status: 'error', message: `Route ${req.method} ${req.url} not found` });
 });
 
-// Global Express Error Handler with CORS headers
+// Global Express Error Handler with OWASP Safe Error Sanitization
 app.use((err: any, req: any, res: any, next: any) => {
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  console.error('Server Error:', err);
-  res.status(err.status || 500).json({ status: 'error', message: err.message || 'Internal Server Error' });
+
+  console.error('[Unhandled Server Error]:', err?.stack || err);
+  const status = typeof err.status === 'number' ? err.status : (typeof err.statusCode === 'number' ? err.statusCode : 500);
+  const message = (process.env.NODE_ENV === 'production' && status >= 500)
+    ? 'An unexpected error occurred. Please try again later.'
+    : (err.message || 'Internal Server Error');
+
+  res.status(status).json({ status: 'error', message });
 });
 
 // Create HTTP server and initialize global real-time architecture

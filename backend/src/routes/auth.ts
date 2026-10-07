@@ -786,8 +786,8 @@ router.post('/register-customer', async (req: Request, res: Response) => {
       address: address || '',
       city: city || '',
       pincode: pincode || '',
-      aadhaar: aadhaarNumber || '',
-      pan: panNumber || '',
+      aadhaar: aadhaarNumber ? securityManager.encryptAES256GCM(String(aadhaarNumber).trim()) : '',
+      pan: panNumber ? securityManager.encryptAES256GCM(String(panNumber).trim().toUpperCase()) : '',
       role: 'customer',
       status: 'Active',
       isActive: true,
@@ -812,6 +812,26 @@ router.get('/customer-profile', optionalAuthenticateToken, async (req: Authentic
   const authUser = req.user;
   const requestedId = ((req.query.userId || req.query.customerId || req.query.phone || req.query.email || '') as string).trim();
   const isAdmin = authUser?.role === 'admin';
+
+  // IDOR Protection: Non-admins can only view their own profile
+  if (authUser && !isAdmin && requestedId) {
+    const selfId = (authUser.userId || authUser.customerId || authUser.registrationId || '').toLowerCase().trim();
+    const selfEmail = (authUser.email || '').toLowerCase().trim();
+    const selfPhone = (authUser.phone || '').replace(/\D/g, '');
+    const reqClean = requestedId.toLowerCase().trim();
+    const reqCleanDigits = requestedId.replace(/\D/g, '');
+
+    const isMatch = (selfId && reqClean === selfId) ||
+                    (selfEmail && reqClean === selfEmail) ||
+                    (selfPhone && reqCleanDigits && selfPhone === reqCleanDigits);
+
+    if (!isMatch) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied: You cannot view profile details of another account.'
+      });
+    }
+  }
 
   // Resolve the effective target: admins or flexible clients can pass query id; fallback to authenticated user
   const target = requestedId || (authUser?.userId || authUser?.email || '');
@@ -872,6 +892,31 @@ router.get('/customer-profile', optionalAuthenticateToken, async (req: Authentic
     const profileAddresses = deduplicateAddresses(rawAddresses);
     const resolvedCustId = safeProfile.registrationId || safeProfile.customerId || getOrGenerateCustomerId(safeProfile);
 
+    // Decrypt or safely mask sensitive identity documents
+    let displayAadhaar = '';
+    if (safeProfile.aadhaar) {
+      try {
+        const rawAadhaar = safeProfile.aadhaar.startsWith('v1:')
+          ? securityManager.decryptAES256GCM(safeProfile.aadhaar)
+          : safeProfile.aadhaar;
+        displayAadhaar = rawAadhaar.length >= 4 ? `XXXX-XXXX-${rawAadhaar.slice(-4)}` : rawAadhaar;
+      } catch (e) {
+        displayAadhaar = 'XXXX-XXXX-****';
+      }
+    }
+
+    let displayPan = '';
+    if (safeProfile.pan) {
+      try {
+        const rawPan = safeProfile.pan.startsWith('v1:')
+          ? securityManager.decryptAES256GCM(safeProfile.pan)
+          : safeProfile.pan;
+        displayPan = rawPan.length >= 4 ? `XXXXXX${rawPan.slice(-4)}` : rawPan;
+      } catch (e) {
+        displayPan = 'XXXXXX****';
+      }
+    }
+
     return res.json({
       status: 'success',
       user: {
@@ -888,6 +933,8 @@ router.get('/customer-profile', optionalAuthenticateToken, async (req: Authentic
         role: safeProfile.role || 'customer',
         customerId: resolvedCustId,
         registrationId: resolvedCustId,
+        aadhaar: displayAadhaar,
+        pan: displayPan,
         membershipTier: safeProfile.membershipTier || 'None',
         membershipStatus: safeProfile.membershipStatus || (safeProfile.membershipTier && safeProfile.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
         membershipHistory: Array.isArray(safeProfile.membershipHistory) ? safeProfile.membershipHistory : [],

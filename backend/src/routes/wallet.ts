@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { db } from '../db';
 import { ObjectId } from 'mongodb';
+import { paymentRateLimiter } from '../security/middleware';
 
 const router = Router();
 
@@ -165,8 +166,8 @@ router.get('/transactions', async (req: Request, res: Response) => {
   }
 });
 
-// 3. POST: /api/wallet/recharge/create-order (Create Razorpay order for recharge)
-router.post('/recharge/create-order', async (req: Request, res: Response) => {
+// 3. POST: /api/wallet/recharge/create-order (Create Razorpay order with paymentRateLimiter)
+router.post('/recharge/create-order', paymentRateLimiter, async (req: Request, res: Response) => {
   try {
     const { amount, userId, customerId, email, phone } = req.body;
     const numAmount = parseFloat(amount);
@@ -274,8 +275,8 @@ router.post('/recharge/create-order', async (req: Request, res: Response) => {
   }
 });
 
-// 4. POST: /api/wallet/recharge/verify (Verify signature & credit wallet atomically)
-router.post('/recharge/verify', async (req: Request, res: Response) => {
+// 4. POST: /api/wallet/recharge/verify (Verify signature & credit wallet atomically with paymentRateLimiter)
+router.post('/recharge/verify', paymentRateLimiter, async (req: Request, res: Response) => {
   try {
     const {
       razorpay_order_id,
@@ -341,9 +342,24 @@ router.post('/recharge/verify', async (req: Request, res: Response) => {
       });
     }
 
-    // 3. RETRIEVE PENDING RECHARGE ORDER FOR EXACT VERIFIED AMOUNT
+    // 3. RETRIEVE PENDING RECHARGE ORDER FOR EXACT SERVER-AUTHORITATIVE AMOUNT
     const pendingOrder = await mongoDb.collection('wallet_recharge_orders').findOne({ orderId: razorpay_order_id });
-    const verifiedCreditAmount = pendingOrder?.amountRupees || (req.body.amount ? parseFloat(req.body.amount) : 0);
+
+    if (!pendingOrder && process.env.NODE_ENV === 'production') {
+      return res.status(400).json({
+        success: false,
+        error: 'Recharge order record not found. Verification rejected.'
+      });
+    }
+
+    if (pendingOrder && pendingOrder.status === 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        error: 'This recharge order has already been finalized.'
+      });
+    }
+
+    const verifiedCreditAmount = pendingOrder?.amountRupees || (process.env.NODE_ENV === 'production' ? 0 : (req.body.amount ? parseFloat(req.body.amount) : 0));
 
     if (verifiedCreditAmount <= 0) {
       return res.status(400).json({
@@ -430,8 +446,8 @@ router.post('/recharge/verify', async (req: Request, res: Response) => {
   }
 });
 
-// 5. POST: /api/wallet/pay (Customer Product Payment using Wallet)
-router.post('/pay', async (req: Request, res: Response) => {
+// 5. POST: /api/wallet/pay (Customer Product Payment using Wallet with paymentRateLimiter)
+router.post('/pay', paymentRateLimiter, async (req: Request, res: Response) => {
   try {
     const { amount, orderId, orderDetails, userId, customerId, email, phone } = req.body;
     const payableAmount = parseFloat(amount);

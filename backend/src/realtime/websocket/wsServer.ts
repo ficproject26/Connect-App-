@@ -2,6 +2,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import { StandardEventPayload } from '../events/eventTypes';
+import { isAllowedOrigin } from '../../security/middleware';
 
 export interface ConnectedClientInfo {
   socketId: string;
@@ -21,7 +22,13 @@ class WebSocketServer {
   public init(server: http.Server): SocketIOServer {
     this.io = new SocketIOServer(server, {
       cors: {
-        origin: '*',
+        origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+          if (!origin || isAllowedOrigin(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error('Origin not allowed by WebSocket CORS policy'));
+          }
+        },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         credentials: true
       },

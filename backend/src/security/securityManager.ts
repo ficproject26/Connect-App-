@@ -1,15 +1,27 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
-// JWT Secrets initialization with safe defaults to guarantee server startup
+// Production Secrets Management
 const _jwtSecret = process.env.JWT_SECRET;
 const _refreshSecret = process.env.REFRESH_TOKEN_SECRET;
 
-if (!_jwtSecret) {
-  console.warn('[Security Warning]: JWT_SECRET is not set in environment. Using default secure key.');
-}
-if (!_refreshSecret) {
-  console.warn('[Security Warning]: REFRESH_TOKEN_SECRET is not set in environment. Using default secure key.');
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  if (!_jwtSecret || _jwtSecret === 'connect_app_jwt_super_secret_key_2026_enterprise' || _jwtSecret.length < 32) {
+    console.error('[CRITICAL SECURITY ERROR]: JWT_SECRET must be configured with at least 32 characters in production.');
+  }
+  if (!_refreshSecret || _refreshSecret === 'connect_app_refresh_token_super_secret_key_2026' || _refreshSecret.length < 32) {
+    console.error('[CRITICAL SECURITY ERROR]: REFRESH_TOKEN_SECRET must be configured with at least 32 characters in production.');
+  }
+} else {
+  if (!_jwtSecret) {
+    console.warn('[Security Warning]: JWT_SECRET is not set in environment. Using default secure dev key.');
+  }
+  if (!_refreshSecret) {
+    console.warn('[Security Warning]: REFRESH_TOKEN_SECRET is not set in environment. Using default secure dev key.');
+  }
 }
 
 const JWT_SECRET = _jwtSecret || 'connect_app_jwt_super_secret_key_2026_enterprise';
@@ -71,32 +83,79 @@ class SecurityManager {
     return await bcrypt.compare(plaintext, hash);
   }
 
-  // 2. JWT Access Token Generation (15 Min Expiry)
+  // 2. JWT Access Token Generation (15 Min Expiry, HS256 Pinned)
   generateAccessToken(payload: { userId: string; email: string; role: string; sessionId: string }): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
   }
 
-  // 3. JWT Refresh Token Generation (7 Days Expiry)
+  // 3. JWT Refresh Token Generation (7 Days Expiry, HS256 Pinned)
   generateRefreshToken(payload: { userId: string; email: string; role: string; sessionId: string }): string {
-    return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+    return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
   }
 
-  // 4. Verify Access Token
+  // 4. Verify Access Token (Strict Algorithm Verification)
   verifyAccessToken(token: string): any {
     try {
-      return jwt.verify(token, JWT_SECRET);
+      return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     } catch (err) {
       return null;
     }
   }
 
-  // 5. Verify Refresh Token
+  // 5. Verify Refresh Token (Strict Algorithm Verification)
   verifyRefreshToken(token: string): any {
     try {
-      return jwt.verify(token, REFRESH_TOKEN_SECRET);
+      return jwt.verify(token, REFRESH_TOKEN_SECRET, { algorithms: ['HS256'] });
     } catch (err) {
       return null;
     }
+  }
+
+  // 5b. AES-256-GCM Authenticated Encryption for Data at Rest
+  private getAESKey(): Buffer {
+    const rawKey = process.env.DATA_ENCRYPTION_KEY || process.env.AES_SECRET_KEY || JWT_SECRET;
+    return crypto.createHash('sha256').update(rawKey).digest();
+  }
+
+  encryptAES256GCM(plaintext: string): string {
+    if (!plaintext || typeof plaintext !== 'string') return '';
+    const key = this.getAESKey();
+    const iv = crypto.randomBytes(12); // 96-bit unique IV recommended for AES-GCM
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+
+    let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag(); // 128-bit authentication tag
+
+    // Standard versioned format: v1:ivHex:authTagHex:encryptedHex
+    return `v1:${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+  }
+
+  decryptAES256GCM(payload: string): string {
+    if (!payload || typeof payload !== 'string') return '';
+    const parts = payload.split(':');
+    if (parts.length !== 4 || parts[0] !== 'v1') {
+      throw new Error('Invalid encrypted payload format. Expected v1:iv:authTag:ciphertext');
+    }
+
+    const [, ivHex, tagHex, encryptedHex] = parts;
+    const key = this.getAESKey();
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(tagHex, 'hex');
+
+    if (iv.length !== 12) {
+      throw new Error('Invalid IV length for AES-GCM (must be 12 bytes)');
+    }
+    if (authTag.length !== 16) {
+      throw new Error('Invalid authentication tag length for AES-GCM (must be 16 bytes)');
+    }
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+
+    let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
   }
 
   // 6. Register Active Session & Token Rotation

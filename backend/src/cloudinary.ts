@@ -40,10 +40,55 @@ export async function uploadToCloudinary(
     return { success: true, url: trimmed, secure_url: trimmed };
   }
 
+  // 1. File Size Protection (Reject payloads exceeding 10MB)
+  if (trimmed.length > 15 * 1024 * 1024) {
+    return { success: false, url: '', secure_url: '', error: 'Payload exceeds maximum permissible upload size limit (10MB).' };
+  }
+
+  // 2. Format & MIME Type Validation (Reject executables, scripts, html, and SVG XSS)
+  if (trimmed.startsWith('data:')) {
+    const match = trimmed.match(/^data:([^;]+);base64,/i);
+    if (!match) {
+      return { success: false, url: '', secure_url: '', error: 'Malformed base64 data URI.' };
+    }
+    const mimeType = match[1].toLowerCase();
+    const ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+    if (!ALLOWED_MIMES.includes(mimeType)) {
+      return { success: false, url: '', secure_url: '', error: `MIME type '${mimeType}' is not permitted. Only verified image formats are accepted.` };
+    }
+  } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    // 3. SSRF & Protocol Protection
+    if (trimmed.startsWith('http://')) {
+      return { success: false, url: '', secure_url: '', error: 'Insecure plaintext HTTP image URLs are not permitted. Use HTTPS.' };
+    }
+    try {
+      const parsed = new URL(trimmed);
+      const host = parsed.hostname.toLowerCase();
+      if (
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        host === '0.0.0.0' ||
+        host.startsWith('192.168.') ||
+        host.startsWith('10.') ||
+        host.startsWith('172.16.') ||
+        host.startsWith('169.254.')
+      ) {
+        return { success: false, url: '', secure_url: '', error: 'Requests to internal network addresses are restricted.' };
+      }
+    } catch {
+      return { success: false, url: '', secure_url: '', error: 'Invalid URL format.' };
+    }
+  } else {
+    return { success: false, url: '', secure_url: '', error: 'Invalid image format: must be an HTTPS URL or base64 image data URI.' };
+  }
+
+  // 4. Folder Path Traversal Protection
+  const safeFolder = /^[a-zA-Z0-9_-]{1,50}$/.test(folder) ? folder : 'products';
+
   try {
     const timestamp = Math.floor(Date.now() / 1000);
     // Cloudinary signature parameters must be sorted alphabetically
-    const strToSign = `folder=${folder}&timestamp=${timestamp}${API_SECRET}`;
+    const strToSign = `folder=${safeFolder}&timestamp=${timestamp}${API_SECRET}`;
     const signature = crypto.createHash('sha1').update(strToSign).digest('hex');
 
     const formData = new URLSearchParams();
@@ -51,7 +96,7 @@ export async function uploadToCloudinary(
     formData.append('api_key', API_KEY);
     formData.append('timestamp', timestamp.toString());
     formData.append('signature', signature);
-    formData.append('folder', folder);
+    formData.append('folder', safeFolder);
 
     const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
     const response = await fetch(uploadUrl, {

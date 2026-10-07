@@ -10,6 +10,10 @@ export interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
     sessionId: string;
+    customerId?: string;
+    registrationId?: string;
+    phone?: string;
+    [key: string]: any;
   };
   sessionId?: string;
 }
@@ -77,8 +81,6 @@ const cspDirectives = {
     'https://www.ficapp.in',
     'https://*.ficapp.in',
     'wss://*.ficapp.in',
-    // EC2 / alternate host
-    'http://13.201.132.46:*',
     // Cloudinary upload API (used server-side, included for completeness)
     'https://api.cloudinary.com',
     // Razorpay payment API
@@ -184,6 +186,37 @@ export const helmetSecurityMiddleware = helmet({
   // Use app.disable('x-powered-by') in Express instead (done in index.ts).
 });
 
+// Client IP resolution helper for robust reverse proxy handling
+export const resolveClientIp = (req: Request): string => {
+  const forwarded = req.headers['forwarded'];
+  if (typeof forwarded === 'string') {
+    const match = forwarded.match(/for="?([^;,"]+)/i);
+    if (match && match[1]) return match[1].trim();
+  }
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  if (typeof xForwardedFor === 'string') {
+    const parts = xForwardedFor.split(',');
+    if (parts[0]) return parts[0].trim();
+  }
+  return req.ip || req.socket.remoteAddress || '127.0.0.1';
+};
+
+// 1. Global API Rate Limiter (500 requests / 15 min -> HTTP 429)
+export const globalApiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  keyGenerator: (req: Request) => resolveClientIp(req),
+  validate: { xForwardedForHeader: false, forwardedHeader: false, default: true },
+  message: {
+    status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many requests. Please slow down.'
+  }
+});
+
 // 2. Auth & OTP Rate Limiter (30 requests / min -> HTTP 429)
 export const authRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 Minute
@@ -191,22 +224,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   statusCode: 429,
-  keyGenerator: (req: Request) => {
-    // 1. Try Forwarded header (RFC 7239)
-    const forwarded = req.headers['forwarded'];
-    if (typeof forwarded === 'string') {
-      const match = forwarded.match(/for="?([^;,"]+)/i);
-      if (match && match[1]) return match[1].trim();
-    }
-    // 2. Try X-Forwarded-For header
-    const xForwardedFor = req.headers['x-forwarded-for'];
-    if (typeof xForwardedFor === 'string') {
-      const parts = xForwardedFor.split(',');
-      if (parts[0]) return parts[0].trim();
-    }
-    // 3. Fallback to Express req.ip or socket address
-    return req.ip || req.socket.remoteAddress || 'unknown';
-  },
+  keyGenerator: (req: Request) => resolveClientIp(req),
   validate: {
     xForwardedForHeader: false,
     forwardedHeader: false,
@@ -219,16 +237,88 @@ export const authRateLimiter = rateLimit({
   }
 });
 
+// 2b. Payment & Wallet Rate Limiter (15 requests / min -> HTTP 429)
+export const paymentRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  keyGenerator: (req: Request) => resolveClientIp(req),
+  validate: { xForwardedForHeader: false, forwardedHeader: false, default: true },
+  message: {
+    status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Payment request rate limit reached. Please wait 1 minute before trying again.'
+  }
+});
+
+// 2c. File Upload Rate Limiter (20 uploads / 5 min -> HTTP 429)
+export const uploadRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  keyGenerator: (req: Request) => resolveClientIp(req),
+  validate: { xForwardedForHeader: false, forwardedHeader: false, default: true },
+  message: {
+    status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Upload rate limit reached. Please wait a few minutes before trying again.'
+  }
+});
+
+// CORS Trusted Origin Validation
+export const TRUSTED_ORIGINS = [
+  'https://ficapp.in',
+  'https://www.ficapp.in',
+  'https://api.ficapp.in'
+];
+
+export const isAllowedOrigin = (origin?: string): boolean => {
+  if (!origin) return false;
+  if (TRUSTED_ORIGINS.includes(origin)) return true;
+  if (origin.endsWith('.ficapp.in')) return true;
+  if (!IS_PRODUCTION) {
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      return true;
+    }
+  }
+  return false;
+};
+
+export const corsSecurityMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  if (origin && isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else if (!origin) {
+    // Non-browser / same-origin requests
+    res.setHeader('Access-Control-Allow-Origin', TRUSTED_ORIGINS[0]);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  const reqHeaders = req.headers['access-control-request-headers'];
+  res.setHeader('Access-Control-Allow-Headers', (Array.isArray(reqHeaders) ? reqHeaders.join(',') : reqHeaders) || 'x-auth-token, Content-Type, Authorization, Cache-Control, Pragma, Expires, expires, x-requested-with, Accept, Origin');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+};
+
 // 3. Input Sanitizer Middleware (XSS, SQL Injection & Mongo Injection protection)
-const sanitizeValue = (val: any): any => {
+export const sanitizeValue = (val: any): any => {
   if (typeof val === 'string') {
     if (val.startsWith('data:') && val.includes(';base64,')) {
       return val;
     }
     return val
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Strip script tags
       .replace(/<[^>]*>?/gm, '') // Strip HTML tags
-      .replace(/(?:--|\/\*|\*\/|xp_)/gi, '') // Strip SQL injection tokens
-      .replace(/\$(?:gt|gte|lt|lte|ne|eq|where|regex)/gi, ''); // Strip Mongo operator injection
+      .replace(/(?:--|\/\*|\*\/|xp_|;\s*drop\b|;\s*truncate\b)/gi, '') // Strip SQL injection tokens
+      .replace(/\$(?:gt|gte|lt|lte|ne|in|nin|exists|regex|where|expr|or|and)/gi, ''); // Strip Mongo operator injection
   }
   if (Array.isArray(val)) {
     return val.map(sanitizeValue);

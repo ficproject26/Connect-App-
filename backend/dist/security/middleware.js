@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authorizeRoles = exports.optionalAuthenticateToken = exports.authenticateToken = exports.sanitizeInputsMiddleware = exports.authRateLimiter = exports.helmetSecurityMiddleware = void 0;
+exports.authorizeRoles = exports.optionalAuthenticateToken = exports.authenticateToken = exports.sanitizeInputsMiddleware = exports.sanitizeValue = exports.corsSecurityMiddleware = exports.isAllowedOrigin = exports.TRUSTED_ORIGINS = exports.uploadRateLimiter = exports.paymentRateLimiter = exports.authRateLimiter = exports.globalApiRateLimiter = exports.resolveClientIp = exports.helmetSecurityMiddleware = void 0;
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const securityManager_1 = require("./securityManager");
@@ -63,8 +63,6 @@ const cspDirectives = {
         'https://www.ficapp.in',
         'https://*.ficapp.in',
         'wss://*.ficapp.in',
-        // EC2 / alternate host
-        'http://13.201.132.46:*',
         // Cloudinary upload API (used server-side, included for completeness)
         'https://api.cloudinary.com',
         // Razorpay payment API
@@ -150,6 +148,38 @@ exports.helmetSecurityMiddleware = (0, helmet_1.default)({
     // NOTE: hidePoweredBy was removed in Helmet v7+.
     // Use app.disable('x-powered-by') in Express instead (done in index.ts).
 });
+// Client IP resolution helper for robust reverse proxy handling
+const resolveClientIp = (req) => {
+    const forwarded = req.headers['forwarded'];
+    if (typeof forwarded === 'string') {
+        const match = forwarded.match(/for="?([^;,"]+)/i);
+        if (match && match[1])
+            return match[1].trim();
+    }
+    const xForwardedFor = req.headers['x-forwarded-for'];
+    if (typeof xForwardedFor === 'string') {
+        const parts = xForwardedFor.split(',');
+        if (parts[0])
+            return parts[0].trim();
+    }
+    return req.ip || req.socket.remoteAddress || '127.0.0.1';
+};
+exports.resolveClientIp = resolveClientIp;
+// 1. Global API Rate Limiter (500 requests / 15 min -> HTTP 429)
+exports.globalApiRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    statusCode: 429,
+    keyGenerator: (req) => (0, exports.resolveClientIp)(req),
+    validate: { xForwardedForHeader: false, forwardedHeader: false, default: true },
+    message: {
+        status: 'error',
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Too many requests. Please slow down.'
+    }
+});
 // 2. Auth & OTP Rate Limiter (30 requests / min -> HTTP 429)
 exports.authRateLimiter = (0, express_rate_limit_1.default)({
     windowMs: 60 * 1000, // 1 Minute
@@ -157,24 +187,7 @@ exports.authRateLimiter = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
     statusCode: 429,
-    keyGenerator: (req) => {
-        // 1. Try Forwarded header (RFC 7239)
-        const forwarded = req.headers['forwarded'];
-        if (typeof forwarded === 'string') {
-            const match = forwarded.match(/for="?([^;,"]+)/i);
-            if (match && match[1])
-                return match[1].trim();
-        }
-        // 2. Try X-Forwarded-For header
-        const xForwardedFor = req.headers['x-forwarded-for'];
-        if (typeof xForwardedFor === 'string') {
-            const parts = xForwardedFor.split(',');
-            if (parts[0])
-                return parts[0].trim();
-        }
-        // 3. Fallback to Express req.ip or socket address
-        return req.ip || req.socket.remoteAddress || 'unknown';
-    },
+    keyGenerator: (req) => (0, exports.resolveClientIp)(req),
     validate: {
         xForwardedForHeader: false,
         forwardedHeader: false,
@@ -186,6 +199,77 @@ exports.authRateLimiter = (0, express_rate_limit_1.default)({
         message: 'Too many requests. Please wait 1 minute before trying again.'
     }
 });
+// 2b. Payment & Wallet Rate Limiter (15 requests / min -> HTTP 429)
+exports.paymentRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    statusCode: 429,
+    keyGenerator: (req) => (0, exports.resolveClientIp)(req),
+    validate: { xForwardedForHeader: false, forwardedHeader: false, default: true },
+    message: {
+        status: 'error',
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Payment request rate limit reached. Please wait 1 minute before trying again.'
+    }
+});
+// 2c. File Upload Rate Limiter (20 uploads / 5 min -> HTTP 429)
+exports.uploadRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 5 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    statusCode: 429,
+    keyGenerator: (req) => (0, exports.resolveClientIp)(req),
+    validate: { xForwardedForHeader: false, forwardedHeader: false, default: true },
+    message: {
+        status: 'error',
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Upload rate limit reached. Please wait a few minutes before trying again.'
+    }
+});
+// CORS Trusted Origin Validation
+exports.TRUSTED_ORIGINS = [
+    'https://ficapp.in',
+    'https://www.ficapp.in',
+    'https://api.ficapp.in'
+];
+const isAllowedOrigin = (origin) => {
+    if (!origin)
+        return false;
+    if (exports.TRUSTED_ORIGINS.includes(origin))
+        return true;
+    if (origin.endsWith('.ficapp.in'))
+        return true;
+    if (!IS_PRODUCTION) {
+        if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+            return true;
+        }
+    }
+    return false;
+};
+exports.isAllowedOrigin = isAllowedOrigin;
+const corsSecurityMiddleware = (req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && (0, exports.isAllowedOrigin)(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    else if (!origin) {
+        // Non-browser / same-origin requests
+        res.setHeader('Access-Control-Allow-Origin', exports.TRUSTED_ORIGINS[0]);
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    const reqHeaders = req.headers['access-control-request-headers'];
+    res.setHeader('Access-Control-Allow-Headers', (Array.isArray(reqHeaders) ? reqHeaders.join(',') : reqHeaders) || 'x-auth-token, Content-Type, Authorization, Cache-Control, Pragma, Expires, expires, x-requested-with, Accept, Origin');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+    next();
+};
+exports.corsSecurityMiddleware = corsSecurityMiddleware;
 // 3. Input Sanitizer Middleware (XSS, SQL Injection & Mongo Injection protection)
 const sanitizeValue = (val) => {
     if (typeof val === 'string') {
@@ -193,31 +277,33 @@ const sanitizeValue = (val) => {
             return val;
         }
         return val
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Strip script tags
             .replace(/<[^>]*>?/gm, '') // Strip HTML tags
-            .replace(/(?:--|\/\*|\*\/|xp_)/gi, '') // Strip SQL injection tokens
-            .replace(/\$(?:gt|gte|lt|lte|ne|eq|where|regex)/gi, ''); // Strip Mongo operator injection
+            .replace(/(?:--|\/\*|\*\/|xp_|;\s*drop\b|;\s*truncate\b)/gi, '') // Strip SQL injection tokens
+            .replace(/\$(?:gt|gte|lt|lte|ne|in|nin|exists|regex|where|expr|or|and)/gi, ''); // Strip Mongo operator injection
     }
     if (Array.isArray(val)) {
-        return val.map(sanitizeValue);
+        return val.map(exports.sanitizeValue);
     }
     if (val && typeof val === 'object') {
         const cleanObj = {};
         for (const key of Object.keys(val)) {
             if (!key.startsWith('$')) { // Prevent mongo key injection ($where, $ne)
-                cleanObj[key] = sanitizeValue(val[key]);
+                cleanObj[key] = (0, exports.sanitizeValue)(val[key]);
             }
         }
         return cleanObj;
     }
     return val;
 };
+exports.sanitizeValue = sanitizeValue;
 const sanitizeInputsMiddleware = (req, res, next) => {
     if (req.body)
-        req.body = sanitizeValue(req.body);
+        req.body = (0, exports.sanitizeValue)(req.body);
     if (req.query)
-        req.query = sanitizeValue(req.query);
+        req.query = (0, exports.sanitizeValue)(req.query);
     if (req.params)
-        req.params = sanitizeValue(req.params);
+        req.params = (0, exports.sanitizeValue)(req.params);
     next();
 };
 exports.sanitizeInputsMiddleware = sanitizeInputsMiddleware;

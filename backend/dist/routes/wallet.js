@@ -8,6 +8,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const razorpay_1 = __importDefault(require("razorpay"));
 const db_1 = require("../db");
 const mongodb_1 = require("mongodb");
+const middleware_1 = require("../security/middleware");
 const router = (0, express_1.Router)();
 const buildUserLookupFilter = (target) => {
     if (!target)
@@ -159,8 +160,8 @@ router.get('/transactions', async (req, res) => {
         res.status(500).json({ success: false, error: err.message || 'Server error fetching wallet transactions' });
     }
 });
-// 3. POST: /api/wallet/recharge/create-order (Create Razorpay order for recharge)
-router.post('/recharge/create-order', async (req, res) => {
+// 3. POST: /api/wallet/recharge/create-order (Create Razorpay order with paymentRateLimiter)
+router.post('/recharge/create-order', middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { amount, userId, customerId, email, phone } = req.body;
         const numAmount = parseFloat(amount);
@@ -258,8 +259,8 @@ router.post('/recharge/create-order', async (req, res) => {
         res.status(500).json({ success: false, error: err.message || 'Server error creating recharge order' });
     }
 });
-// 4. POST: /api/wallet/recharge/verify (Verify signature & credit wallet atomically)
-router.post('/recharge/verify', async (req, res) => {
+// 4. POST: /api/wallet/recharge/verify (Verify signature & credit wallet atomically with paymentRateLimiter)
+router.post('/recharge/verify', middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId, customerId, email, phone } = req.body;
         if (!razorpay_order_id || !razorpay_payment_id) {
@@ -308,9 +309,21 @@ router.post('/recharge/verify', async (req, res) => {
                 error: 'Payment verification failed: Invalid signature. Wallet cannot be credited.'
             });
         }
-        // 3. RETRIEVE PENDING RECHARGE ORDER FOR EXACT VERIFIED AMOUNT
+        // 3. RETRIEVE PENDING RECHARGE ORDER FOR EXACT SERVER-AUTHORITATIVE AMOUNT
         const pendingOrder = await mongoDb.collection('wallet_recharge_orders').findOne({ orderId: razorpay_order_id });
-        const verifiedCreditAmount = pendingOrder?.amountRupees || (req.body.amount ? parseFloat(req.body.amount) : 0);
+        if (!pendingOrder && process.env.NODE_ENV === 'production') {
+            return res.status(400).json({
+                success: false,
+                error: 'Recharge order record not found. Verification rejected.'
+            });
+        }
+        if (pendingOrder && pendingOrder.status === 'COMPLETED') {
+            return res.status(400).json({
+                success: false,
+                error: 'This recharge order has already been finalized.'
+            });
+        }
+        const verifiedCreditAmount = pendingOrder?.amountRupees || (process.env.NODE_ENV === 'production' ? 0 : (req.body.amount ? parseFloat(req.body.amount) : 0));
         if (verifiedCreditAmount <= 0) {
             return res.status(400).json({
                 success: false,
@@ -380,8 +393,8 @@ router.post('/recharge/verify', async (req, res) => {
         res.status(500).json({ success: false, error: err.message || 'Server error verifying recharge payment' });
     }
 });
-// 5. POST: /api/wallet/pay (Customer Product Payment using Wallet)
-router.post('/pay', async (req, res) => {
+// 5. POST: /api/wallet/pay (Customer Product Payment using Wallet with paymentRateLimiter)
+router.post('/pay', middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { amount, orderId, orderDetails, userId, customerId, email, phone } = req.body;
         const payableAmount = parseFloat(amount);

@@ -1406,9 +1406,16 @@ export default function CustomerDashboard({
 
     const uniqueEndpoints = [...new Set(endpoints)];
 
+    const authToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
+    const authHeaders = { 'Accept': 'application/json' };
+    if (authToken) authHeaders['Authorization'] = `Bearer ${authToken}`;
+
     for (const url of uniqueEndpoints) {
       try {
-        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
+        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+          headers: authHeaders,
+          credentials: 'include'
+        });
         if (res.ok) {
           const data = await res.json();
           if (data && data.status === 'success' && data.user) {

@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.invalidatePublicProductsCache = exports.invalidatePublicBannersCache = void 0;
 const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const http_1 = __importDefault(require("http"));
@@ -40,30 +39,8 @@ const PORT = process.env.PORT || 8000;
 app.set('trust proxy', true);
 // Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
 app.disable('x-powered-by');
-// Universal CORS Header Middleware (evaluated first so every response contains CORS headers)
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-    }
-    else {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    const reqHeaders = req.headers['access-control-request-headers'];
-    res.setHeader('Access-Control-Allow-Headers', (Array.isArray(reqHeaders) ? reqHeaders.join(',') : reqHeaders) || 'x-auth-token, Content-Type, Authorization, Cache-Control, Pragma, Expires, expires, x-requested-with, Accept, Origin');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    if (req.method === 'OPTIONS') {
-        return res.status(204).end();
-    }
-    next();
-});
-// Enable CORS with Credentials
-app.use((0, cors_1.default)({
-    origin: true,
-    credentials: true
-}));
+// Enterprise CORS Protection Middleware (Restricted to Trusted Origins, no arbitrary origin reflection)
+app.use(middleware_1.corsSecurityMiddleware);
 // OWASP Security Headers (Helmet v8) & Input Sanitization
 app.use(middleware_1.helmetSecurityMiddleware);
 const path_1 = __importDefault(require("path"));
@@ -82,6 +59,8 @@ app.get('/', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+// Production API Rate Limiting (500 requests per 15 minutes per client IP/session)
+app.use('/api/', middleware_1.globalApiRateLimiter);
 // Mount Routes
 app.use('/api/admin', admin_1.default);
 app.use('/api/auth', auth_1.default);
@@ -365,8 +344,8 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
         res.status(500).json({ error: err.message || 'Server error' });
     }
 });
-// Direct Image Upload Endpoint (Persists permanently to Cloudinary)
-app.post(['/api/upload', '/api/products/upload-image', '/api/admin/upload'], async (req, res) => {
+// Direct Image Upload Endpoint (Persists permanently to Cloudinary with rate limiting)
+app.post(['/api/upload', '/api/products/upload-image', '/api/admin/upload'], middleware_1.uploadRateLimiter, async (req, res) => {
     try {
         const { image, file, folder } = req.body;
         const rawImage = image || file;
@@ -654,19 +633,20 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.status(404).json({ status: 'error', message: `Route ${req.method} ${req.url} not found` });
 });
-// Global Express Error Handler with CORS headers
+// Global Express Error Handler with OWASP Safe Error Sanitization
 app.use((err, req, res, next) => {
     const origin = req.headers.origin;
-    if (origin) {
+    if (origin && (0, middleware_1.isAllowedOrigin)(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
-    else {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    console.error('Server Error:', err);
-    res.status(err.status || 500).json({ status: 'error', message: err.message || 'Internal Server Error' });
+    console.error('[Unhandled Server Error]:', err?.stack || err);
+    const status = typeof err.status === 'number' ? err.status : (typeof err.statusCode === 'number' ? err.statusCode : 500);
+    const message = (process.env.NODE_ENV === 'production' && status >= 500)
+        ? 'An unexpected error occurred. Please try again later.'
+        : (err.message || 'Internal Server Error');
+    res.status(status).json({ status: 'error', message });
 });
 // Create HTTP server and initialize global real-time architecture
 const server = http_1.default.createServer(app);

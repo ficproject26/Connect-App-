@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.wsServer = void 0;
 const socket_io_1 = require("socket.io");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const middleware_1 = require("../../security/middleware");
 class WebSocketServer {
     constructor() {
         this.io = null;
@@ -16,7 +17,14 @@ class WebSocketServer {
     init(server) {
         this.io = new socket_io_1.Server(server, {
             cors: {
-                origin: '*',
+                origin: (origin, callback) => {
+                    if (!origin || (0, middleware_1.isAllowedOrigin)(origin)) {
+                        callback(null, true);
+                    }
+                    else {
+                        callback(new Error('Origin not allowed by WebSocket CORS policy'));
+                    }
+                },
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
                 credentials: true
             },

@@ -4,6 +4,7 @@ import { socketManager } from '../socket';
 import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
 import { eventPublisher, RealtimeEntities, RealtimeActions } from '../realtime';
+import { optionalAuthenticateToken, AuthenticatedRequest, paymentRateLimiter } from '../security/middleware';
 const router = Router();
 
 export function extractVendorTravelPoints(item: any): { boardingPoints: { id?: string; name: string; departureTime?: string; time: string; landmark?: string }[]; droppingPoints: { id?: string; name: string; arrivalTime?: string; time: string; landmark?: string }[] } {
@@ -210,10 +211,26 @@ export async function runAutoAssignment(orderId: string): Promise<DeliveryPartne
   return partner;
 }
 
-// GET: /api/orders
-router.get('/', async (req: Request, res: Response) => {
+// GET: /api/orders (Authoritative IDOR protection: Customers may only view their own orders)
+router.get('/', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const vendorId = req.query.vendorId as string;
-  const customerId = req.query.customerId as string;
+  let customerId = (req.query.customerId as string || '').trim();
+  const authUser = req.user;
+
+  // IDOR Protection: If requester is a customer, verify ownership
+  if (authUser && authUser.role === 'customer') {
+    const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
+    if (customerId && customerId !== selfCustId && customerId !== authUser.userId) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied: You cannot view orders belonging to another customer account.'
+      });
+    }
+    if (!customerId && !vendorId) {
+      customerId = selfCustId || '';
+    }
+  }
+
   try {
     const orders = await db.getOrders(vendorId, customerId);
     res.json({
@@ -228,9 +245,11 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET: /api/orders/:id
-router.get('/:id', async (req: Request, res: Response) => {
+// GET: /api/orders/:id (Authoritative IDOR protection: Non-admins can only view their own order)
+router.get('/:id', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
+  const authUser = req.user;
+
   try {
     const order = await db.getOrder(id);
     if (!order) {
@@ -238,6 +257,24 @@ router.get('/:id', async (req: Request, res: Response) => {
         status: 'error',
         message: 'Order not found.'
       });
+    }
+
+    // IDOR Protection: Customers may only view their own order
+    if (authUser && authUser.role === 'customer') {
+      const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
+      const orderCustId = order.customer_id || order.customerId;
+      const orderEmail = (order.customer_email || '').toLowerCase().trim();
+      const authEmail = (authUser.email || '').toLowerCase().trim();
+
+      const isMatch = (orderCustId && (orderCustId === selfCustId || orderCustId === authUser.userId)) ||
+                      (orderEmail && authEmail && orderEmail === authEmail);
+
+      if (!isMatch) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Access denied: You do not have permission to view this order.'
+        });
+      }
     }
 
     const timeline = await db.getStatusHistory(id);
@@ -268,8 +305,8 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Razorpay Order Creation Endpoint
-router.post('/create-razorpay-order', async (req: Request, res: Response) => {
+// Razorpay Order Creation Endpoint (Protected with paymentRateLimiter)
+router.post('/create-razorpay-order', paymentRateLimiter, async (req: Request, res: Response) => {
   try {
     const { amount } = req.body;
     const keyId = process.env.RAZORPAY_KEY_ID;
@@ -843,22 +880,46 @@ router.post('/:id/rate', async (req: Request, res: Response) => {
   }
 });
 
-// PUT: /api/orders/:id/status
-router.put('/:id/status', async (req: Request, res: Response) => {
+// PUT: /api/orders/:id/status (Workflow & Business Logic State Transition Security)
+router.put('/:id/status', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 
+  const ALLOWED_STATUSES = [
+    'Pending', 'Confirmed', 'Preparing', 'Ready', 'Out for Delivery',
+    'Delivered', 'Cancelled', 'Rejected', 'Completed'
+  ];
+
+  if (!status || typeof status !== 'string' || !ALLOWED_STATUSES.includes(status.trim())) {
+    return res.status(400).json({
+      status: 'error',
+      message: `Invalid status. Must be one of: ${ALLOWED_STATUSES.join(', ')}`
+    });
+  }
+
+  const cleanStatus = status.trim();
+  const authUser = req.user;
+
+  // Authorization Boundary: Customers can only cancel orders, cannot mark Delivered or Ready
+  if (authUser && authUser.role === 'customer' && cleanStatus !== 'Cancelled') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Customer accounts are only permitted to cancel pending orders.'
+    });
+  }
+
   try {
-    const updated = await db.updateOrderStatus(id, status);
+    const updated = await db.updateOrderStatus(id, cleanStatus as any);
     if (!updated) {
       return res.status(404).json({ status: 'error', message: 'Order not found' });
     }
 
+    const updater = authUser?.role ? `${authUser.role.charAt(0).toUpperCase() + authUser.role.slice(1)}` : 'Vendor';
     await db.logStatusHistory({
       order_id: id,
-      status,
-      updated_by: 'Vendor',
-      notes: `Order status updated to ${status} by Vendor`
+      status: cleanStatus,
+      updated_by: updater,
+      notes: `Order status updated to ${cleanStatus} by ${updater}`
     });
 
     socketManager.emitToOrder(id, 'order_status_updated', { status });
