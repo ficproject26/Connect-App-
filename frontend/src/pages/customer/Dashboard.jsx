@@ -2060,22 +2060,23 @@ export default function CustomerDashboard({
   // Connect to Socket and bind updates
   useEffect(() => {
     if (!currentUser?.id) {
-      socketService.disconnect();
       return;
     }
     const customerId = currentUser.id;
     socketService.connect(customerId, 'customer');
 
-    socketService.on('order_status_updated', (data) => {
+    const handleOrderStatus = (data) => {
       loadCustomerOrders();
       if (trackingOrder && trackingOrder.id === data.orderId) {
         setTrackingOrder(prev => prev ? { ...prev, status: data.status } : null);
         refreshTrackingDetails(trackingOrder.id);
       }
-    });
+    };
+
+    socketService.on('order_status_updated', handleOrderStatus);
 
     return () => {
-      socketService.disconnect();
+      socketService.off('order_status_updated', handleOrderStatus);
     };
   }, [currentUser?.id, loadCustomerOrders, trackingOrder]);
 

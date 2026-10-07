@@ -53,8 +53,11 @@ window.addEventListener('unhandledrejection', (event) => {
     reason.includes('runtime.lastError') ||
     reason.includes('feature_collector') ||
     reason.includes('using deprecated parameters') ||
+    reason.includes('initialization function') ||
+    reason.includes('pass a single object instead') ||
     reason.includes('ERR_NETWORK_IO_SUSPENDED') ||
-    reason.includes('NETWORK_IO_SUSPENDED')
+    reason.includes('NETWORK_IO_SUSPENDED') ||
+    reason.includes('WebSocket')
   ) {
     event.preventDefault();
     if (event.stopImmediatePropagation) event.stopImmediatePropagation();

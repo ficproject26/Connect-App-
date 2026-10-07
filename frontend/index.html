@@ -26,12 +26,16 @@
             str.includes('runtime.lastError') ||
             str.includes('feature_collector') ||
             str.includes('using deprecated parameters') ||
+            str.includes('initialization function') ||
+            str.includes('pass a single object instead') ||
             str.includes('preloaded using link preload') ||
             str.includes('preload but not used') ||
             str.includes('ERR_NETWORK_IO_SUSPENDED') ||
             str.includes('NETWORK_IO_SUSPENDED') ||
             str.includes('ERR_CONNECTION_REFUSED') ||
             str.includes('WebSocket connection to') ||
+            str.includes('WebSocket is closed before the connection is established') ||
+            str.includes('closed before the connection is established') ||
             str.includes('ERR_NAME_NOT_RESOLVED')
           );
         };
@@ -40,7 +44,11 @@
           return function (...args) {
             const stack = (new Error().stack || '') + '';
             if (stack.includes('feature_collector') || stack.includes('runtime.lastError')) return;
-            if (args.some(isIgnorableNoise) || isIgnorableNoise(args.map(a => String(a || '')).join(' '))) return;
+            const combined = args.map(a => {
+              if (typeof a === 'string') return a;
+              try { return JSON.stringify(a); } catch { return String(a); }
+            }).join(' ');
+            if (isIgnorableNoise(combined) || args.some(isIgnorableNoise)) return;
             origFn.apply(console, args);
           };
         };

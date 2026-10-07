@@ -53,7 +53,7 @@ class SocketServiceClient {
 
     const effectiveRole = role || 'customer';
 
-    if (this.socket && (this.socket.connected || this.socket.active) && this.lastUserId === effectiveUserId && this.lastRole === effectiveRole) {
+    if (this.socket && (this.socket.connected || this.socket.active || this.isConnecting) && this.lastUserId === effectiveUserId && this.lastRole === effectiveRole) {
       return;
     }
 
@@ -65,9 +65,14 @@ class SocketServiceClient {
     }
 
     if (this.socket) {
-      this.socket.disconnect();
+      try {
+        this.socket.removeAllListeners();
+        this.socket.disconnect();
+      } catch (e) {}
       this.socket = null;
     }
+
+    this.isConnecting = true;
 
     try {
       const socketUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
@@ -85,17 +90,18 @@ class SocketServiceClient {
           userId: effectiveUserId,
           role: effectiveRole
         },
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         upgrade: true,
         reconnection: true,
         reconnectionAttempts: 10,
-        reconnectionDelay: 2000,
+        reconnectionDelay: 3000,
         reconnectionDelayMax: 10000,
-        timeout: 10000,
+        timeout: 15000,
         autoConnect: true
       });
 
       this.socket.on('connect', () => {
+        this.isConnecting = false;
         // Register client details with verified identity and auth token
         this.socket.emit('register', {
           userId: effectiveUserId,
@@ -105,7 +111,12 @@ class SocketServiceClient {
       });
 
       this.socket.on('connect_error', () => {
+        this.isConnecting = false;
         // Silently operate in local emulation mode if socket backend is offline/unreachable
+      });
+
+      this.socket.on('disconnect', () => {
+        this.isConnecting = false;
       });
 
       // Bind all registered event listeners to the new socket
@@ -115,14 +126,21 @@ class SocketServiceClient {
         });
       });
     } catch (e) {
+      this.isConnecting = false;
       // Socket connection failed; operate in local emulation mode
     }
   }
 
   disconnect() {
+    this.isConnecting = false;
     if (this.socket) {
-      this.socket.disconnect();
+      try {
+        this.socket.removeAllListeners();
+        this.socket.disconnect();
+      } catch (e) {}
       this.socket = null;
+      this.lastUserId = null;
+      this.lastRole = null;
     }
   }
 

@@ -27,7 +27,7 @@ class WebSocketServer {
       },
       pingInterval: 25000,
       pingTimeout: 20000,
-      transports: ['websocket', 'polling']
+      transports: ['polling', 'websocket']
     });
 
     console.log('[WebSocketServer]: Centralized Real-Time WebSocket Server initialized.');
