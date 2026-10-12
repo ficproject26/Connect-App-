@@ -123,50 +123,60 @@ const inferSubNavbarCategory = (p) => {
   return rawSubNav || rawMainCat || 'Products';
 };
 
+const isDeadImageUrl = (u) => {
+  if (!u || typeof u !== 'string') return true;
+  const lower = u.trim().toLowerCase();
+  return !lower || lower === 'null' || lower === 'undefined' || lower.includes('connect-vendor.onrender.com') || lower.includes('.onrender.com');
+};
+
 const extractRawImage = (p) => {
   if (!p) return '';
-  if (typeof p.image === 'string' && p.image.trim()) return p.image.trim();
-  if (typeof p.imageUrl === 'string' && p.imageUrl.trim()) return p.imageUrl.trim();
-  if (typeof p.imageURL === 'string' && p.imageURL.trim()) return p.imageURL.trim();
-  if (typeof p.imgUrl === 'string' && p.imgUrl.trim()) return p.imgUrl.trim();
-  if (typeof p.serviceImage === 'string' && p.serviceImage.trim()) return p.serviceImage.trim();
-  if (typeof p.catalogImage === 'string' && p.catalogImage.trim()) return p.catalogImage.trim();
-  if (typeof p.productImage === 'string' && p.productImage.trim()) return p.productImage.trim();
-  if (typeof p.thumbnailUrl === 'string' && p.thumbnailUrl.trim()) return p.thumbnailUrl.trim();
-  if (typeof p.thumbnailURL === 'string' && p.thumbnailURL.trim()) return p.thumbnailURL.trim();
-  if (typeof p.mediaUrl === 'string' && p.mediaUrl.trim()) return p.mediaUrl.trim();
-  if (typeof p.mediaURL === 'string' && p.mediaURL.trim()) return p.mediaURL.trim();
-  if (typeof p.media === 'string' && p.media.trim()) return p.media.trim();
+  if (typeof p.image === 'string' && !isDeadImageUrl(p.image)) return p.image.trim();
+  if (typeof p.imageUrl === 'string' && !isDeadImageUrl(p.imageUrl)) return p.imageUrl.trim();
+  if (typeof p.imageURL === 'string' && !isDeadImageUrl(p.imageURL)) return p.imageURL.trim();
+  if (typeof p.imgUrl === 'string' && !isDeadImageUrl(p.imgUrl)) return p.imgUrl.trim();
+  if (typeof p.serviceImage === 'string' && !isDeadImageUrl(p.serviceImage)) return p.serviceImage.trim();
+  if (typeof p.catalogImage === 'string' && !isDeadImageUrl(p.catalogImage)) return p.catalogImage.trim();
+  if (typeof p.productImage === 'string' && !isDeadImageUrl(p.productImage)) return p.productImage.trim();
+  if (typeof p.thumbnailUrl === 'string' && !isDeadImageUrl(p.thumbnailUrl)) return p.thumbnailUrl.trim();
+  if (typeof p.thumbnailURL === 'string' && !isDeadImageUrl(p.thumbnailURL)) return p.thumbnailURL.trim();
+  if (typeof p.mediaUrl === 'string' && !isDeadImageUrl(p.mediaUrl)) return p.mediaUrl.trim();
+  if (typeof p.mediaURL === 'string' && !isDeadImageUrl(p.mediaURL)) return p.mediaURL.trim();
+  if (typeof p.media === 'string' && !isDeadImageUrl(p.media)) return p.media.trim();
   
   if (Array.isArray(p.images) && p.images.length > 0) {
-    const first = p.images[0];
-    if (typeof first === 'string' && first.trim()) return first.trim();
-    if (first && typeof first === 'object') {
-      const url = first.url || first.src || first.path || first.imageUrl || first.imageURL || first.location || '';
-      if (url && typeof url === 'string' && url.trim()) return url.trim();
+    const first = p.images.find(img => {
+      const u = typeof img === 'string' ? img : (img?.url || img?.src || img?.path || img?.imageUrl || '');
+      return !isDeadImageUrl(u);
+    });
+    if (first) {
+      const u = typeof first === 'string' ? first : (first?.url || first?.src || first?.path || first?.imageUrl || '');
+      if (u) return u.trim();
     }
   }
   if (Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
-    const first = p.imageUrls[0];
-    if (typeof first === 'string' && first.trim()) return first.trim();
+    const first = p.imageUrls.find(u => !isDeadImageUrl(u));
+    if (first && typeof first === 'string') return first.trim();
   }
 
-  if (typeof p.photo === 'string' && p.photo.trim()) return p.photo.trim();
+  if (typeof p.photo === 'string' && !isDeadImageUrl(p.photo)) return p.photo.trim();
   if (Array.isArray(p.photos) && p.photos.length > 0) {
-    const first = p.photos[0];
-    if (typeof first === 'string' && first.trim()) return first.trim();
-    if (first && typeof first === 'object') {
-      const url = first.url || first.src || first.path || first.imageUrl || first.imageURL || '';
-      if (url && typeof url === 'string' && url.trim()) return url.trim();
+    const first = p.photos.find(img => {
+      const u = typeof img === 'string' ? img : (img?.url || img?.src || '');
+      return !isDeadImageUrl(u);
+    });
+    if (first) {
+      const u = typeof first === 'string' ? first : (first?.url || first?.src || '');
+      if (u) return u.trim();
     }
   }
 
-  if (typeof p.picture === 'string' && p.picture.trim()) return p.picture.trim();
-  if (typeof p.thumbnail === 'string' && p.thumbnail.trim()) return p.thumbnail.trim();
-  if (typeof p.img === 'string' && p.img.trim()) return p.img.trim();
-  if (typeof p.file === 'string' && p.file.trim()) return p.file.trim();
-  if (typeof p.coverImage === 'string' && p.coverImage.trim()) return p.coverImage.trim();
-  if (typeof p.bannerImage === 'string' && p.bannerImage.trim()) return p.bannerImage.trim();
+  if (typeof p.picture === 'string' && !isDeadImageUrl(p.picture)) return p.picture.trim();
+  if (typeof p.thumbnail === 'string' && !isDeadImageUrl(p.thumbnail)) return p.thumbnail.trim();
+  if (typeof p.img === 'string' && !isDeadImageUrl(p.img)) return p.img.trim();
+  if (typeof p.file === 'string' && !isDeadImageUrl(p.file)) return p.file.trim();
+  if (typeof p.coverImage === 'string' && !isDeadImageUrl(p.coverImage)) return p.coverImage.trim();
+  if (typeof p.bannerImage === 'string' && !isDeadImageUrl(p.bannerImage)) return p.bannerImage.trim();
 
   return '';
 };
@@ -191,6 +201,11 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
         return url;
       }
     } catch (e) {}
+    return getCategoryFallbackImage(pContext);
+  }
+
+  // Prevent loading assets from suspended or dead ephemeral Render instances
+  if (url.includes('connect-vendor.onrender.com') || url.includes('.onrender.com')) {
     return getCategoryFallbackImage(pContext);
   }
 

@@ -310,20 +310,33 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
                     return false;
                 return true;
             });
+            const isDeadUrl = (url) => {
+                if (!url || typeof url !== 'string')
+                    return true;
+                const lower = url.trim().toLowerCase();
+                return !lower || lower === 'null' || lower === 'undefined' || lower.includes('connect-vendor.onrender.com') || lower.includes('.onrender.com');
+            };
             const mappedActiveProducts = activeProducts.map((p) => {
-                let primaryImg = p.imageUrl || p.image || '';
+                let primaryImg = !isDeadUrl(p.imageUrl) ? p.imageUrl : (!isDeadUrl(p.image) ? p.image : '');
                 if (!primaryImg && Array.isArray(p.images) && p.images.length > 0) {
-                    const first = p.images[0];
-                    primaryImg = typeof first === 'string' ? first : (first?.url || '');
+                    const first = p.images.find((img) => {
+                        const u = typeof img === 'string' ? img : (img?.url || '');
+                        return !isDeadUrl(u);
+                    });
+                    primaryImg = first ? (typeof first === 'string' ? first : (first?.url || '')) : '';
                 }
                 if (!primaryImg && Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
-                    primaryImg = p.imageUrls[0] || '';
+                    const first = p.imageUrls.find((u) => !isDeadUrl(u));
+                    primaryImg = first || '';
                 }
                 const normalizedImages = Array.isArray(p.images) && p.images.length > 0
-                    ? p.images.map((img) => typeof img === 'string' ? { url: img } : img)
+                    ? p.images.map((img) => {
+                        const u = typeof img === 'string' ? img : (img?.url || '');
+                        return !isDeadUrl(u) ? { url: u } : null;
+                    }).filter(Boolean)
                     : (primaryImg ? [{ url: primaryImg }] : []);
                 const normalizedImageUrls = Array.isArray(p.imageUrls) && p.imageUrls.length > 0
-                    ? p.imageUrls
+                    ? p.imageUrls.filter((u) => !isDeadUrl(u))
                     : (primaryImg ? [primaryImg] : []);
                 return {
                     ...p,
