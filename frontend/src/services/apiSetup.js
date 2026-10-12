@@ -11,7 +11,7 @@ const formatUrl = (url) => {
   return cleaned;
 };
 
-const isLocalHostname = (hostname) => {
+export const isLocalHostname = (hostname) => {
   return (
     !hostname || 
     hostname === 'localhost' || 

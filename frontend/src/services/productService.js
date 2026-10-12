@@ -1,4 +1,4 @@
-import { getBackendUrl, getVendorBackendUrl } from './apiSetup';
+import { getBackendUrl, getVendorBackendUrl, isLocalHostname } from './apiSetup';
 
 const sanitizeString = (str) => {
   if (typeof str !== 'string') return str;
@@ -376,11 +376,15 @@ export const productService = {
 
         const baseVendorUrl = getVendorBackendUrl();
         const baseUrl = getBackendUrl();
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+        const isLocal = isLocalHostname(hostname);
         const endpoints = [
           baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
           baseUrl ? `${baseUrl}/api/public/products` : null,
-          'http://localhost:8004/api/public/products',
-          'http://localhost:8001/api/public/products',
+          ...(isLocal ? [
+            'http://localhost:8004/api/public/products',
+            'http://localhost:8001/api/public/products'
+          ] : []),
           '/api/public/products'
         ];
         const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];

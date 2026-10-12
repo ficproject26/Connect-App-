@@ -1,4 +1,4 @@
-import { getBackendUrl, getAdminBackendUrl } from './apiSetup';
+import { getBackendUrl, getAdminBackendUrl, isLocalHostname } from './apiSetup';
 
 export const BASE_TAXONOMY = {
   "Services": {},
@@ -268,10 +268,14 @@ export const fetchAdminCategories = async (forceRefresh = false) => {
   }
 
   activeFetchCategoriesPromise = (async () => {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isLocal = isLocalHostname(hostname);
     const urlsToTry = [
       `${getBackendUrl()}/api/public/categories?t=${Date.now()}`,
-      `http://localhost:8004/api/public/categories?t=${Date.now()}`,
-      `http://localhost:8001/api/public/categories?t=${Date.now()}`,
+      ...(isLocal ? [
+        `http://localhost:8004/api/public/categories?t=${Date.now()}`,
+        `http://localhost:8001/api/public/categories?t=${Date.now()}`
+      ] : []),
       `/api/public/categories?t=${Date.now()}`,
       `/api/admin/categories?t=${Date.now()}`,
       `${getAdminBackendUrl()}/api/admin/categories?t=${Date.now()}`
