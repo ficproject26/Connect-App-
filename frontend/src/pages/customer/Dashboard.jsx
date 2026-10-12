@@ -1206,6 +1206,7 @@ export default function CustomerDashboard({
   const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
   const [favorites, setFavorites] = useState([]);
   const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
+  const [dbCategories, setDbCategories] = useState([]);
   const [activeTab, setActiveTab] = useState(() => {
     try {
       const savedTab = localStorage.getItem('connect_active_tab');
@@ -1305,9 +1306,6 @@ export default function CustomerDashboard({
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-  const [dbCategories, setDbCategories] = useState([]);
-
-
 
   // Dynamic Sub-navbar categories
   const subNavbarCategories = useMemo(() => {
