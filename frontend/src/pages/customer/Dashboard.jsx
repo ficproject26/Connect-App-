@@ -1044,8 +1044,8 @@ export default function CustomerDashboard({
     }
   }, []);
 
-  // Poll vendor products every 5 seconds with tab visibility tracking
-  useAutoRefresh(loadVendorProducts, 5000);
+  // Poll vendor products every 15 seconds with tab visibility tracking
+  useAutoRefresh(loadVendorProducts, 15000);
 
   const [adminOffers, setAdminOffers] = useState([]);
   const [adminAds, setAdminAds] = useState([]);
@@ -1080,8 +1080,8 @@ export default function CustomerDashboard({
     }
   }, []);
 
-  // Poll admin promotions every 5 seconds with tab visibility tracking
-  useAutoRefresh(fetchAdminPromotions, 5000);
+  // Poll admin promotions every 30 seconds with tab visibility tracking
+  useAutoRefresh(fetchAdminPromotions, 30000);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -1984,7 +1984,7 @@ export default function CustomerDashboard({
   }, []);
 
   // Dynamic categories real-time synchronization
-  useAutoRefresh(fetchDbCategories, 3000);
+  useAutoRefresh(fetchDbCategories, 30000);
   // Background banners revalidation every 60s (avoiding network flooding)
   useAutoRefresh(fetchDbBanners, 60000);
 

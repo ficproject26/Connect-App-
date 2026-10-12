@@ -201,14 +201,32 @@ export const resolveClientIp = (req: Request): string => {
   return req.ip || req.socket.remoteAddress || '127.0.0.1';
 };
 
-// 1. Global API Rate Limiter (500 requests / 15 min -> HTTP 429)
+// 1. Global API Rate Limiter (10,000 requests / 15 min -> HTTP 429; skips public read-only catalog traffic)
 export const globalApiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 10000,
   standardHeaders: true,
   legacyHeaders: false,
   statusCode: 429,
   keyGenerator: (req: Request) => resolveClientIp(req),
+  skip: (req: Request) => {
+    // Skip rate limiting for public read-only catalog, category, banner, ad, offer, and territory traffic
+    if (req.method === 'GET' || req.method === 'OPTIONS') {
+      const url = req.originalUrl || req.url || req.path || '';
+      if (
+        url.includes('/public') ||
+        url.includes('/categories') ||
+        url.includes('/territory') ||
+        url.includes('/banners') ||
+        url.includes('/products') ||
+        url.includes('/ads') ||
+        url.includes('/exclusive-offers')
+      ) {
+        return true;
+      }
+    }
+    return false;
+  },
   validate: { xForwardedForHeader: false, forwardedHeader: false, default: true },
   message: {
     status: 'error',
