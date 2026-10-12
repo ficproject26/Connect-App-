@@ -1001,10 +1001,13 @@ export default function CustomerDashboard({
               updated.foodType = 'Veg';
             }
           }
-          // Patch Travel (Bus) items with fromCity, toCity, busType, busClass
-          if (p.subNavbarCategory === 'Travel') {
-            updated.fromCity = p.fromCity || 'Bangalore';
-            updated.toCity = p.toCity || 'Chennai';
+          // Patch Travel items with real fromCity, toCity, busType, busClass
+          if (p.subNavbarCategory === 'Travel' || p.mainCategory === 'Travel' || (p.category || '').toLowerCase().includes('travel')) {
+            const pts = extractVendorTravelPoints(p);
+            const primaryDrop = p.dropPoint || p.drop_point || p.droppingPoint || p.dropping_point || p.destination || pts.droppingPoints[0]?.name || p.toCity;
+            const primaryBoard = p.boardingPoint || p.boarding_point || p.pickupPoint || p.pickup_point || pts.boardingPoints[0]?.name || p.fromCity;
+            updated.fromCity = p.fromCity || primaryBoard || p.city || 'Bangalore';
+            updated.toCity = p.toCity || primaryDrop || '';
             updated.busType = (p.description?.toLowerCase().includes('non-ac') || p.name?.toLowerCase().includes('non-ac')) ? 'Non-AC' : 'AC';
             updated.busClass = (p.description?.toLowerCase().includes('seater') || p.name?.toLowerCase().includes('seater')) ? 'Seater' : 'Sleeper';
           }
@@ -1202,6 +1205,7 @@ export default function CustomerDashboard({
   const [stayGuestsCount, setStayGuestsCount] = useState(2);
   const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
   const [favorites, setFavorites] = useState([]);
+  const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
   const [activeTab, setActiveTab] = useState(() => {
     try {
       const savedTab = localStorage.getItem('connect_active_tab');
@@ -1226,21 +1230,75 @@ export default function CustomerDashboard({
     try {
       if (typeof window !== 'undefined') {
         const currentState = window.history.state || {};
+        const urlParams = new URLSearchParams(window.location.search);
+        const childParam = urlParams.get('child') || urlParams.get('subCategory');
+        const subParam = urlParams.get('sub');
+        const currentSub = childParam || selectedSubNavbarCategory;
+
         if (!currentState.tab) {
-          window.history.replaceState({ ...currentState, tab: activeTab, subCategory: selectedSubNavbarCategory }, '');
-        } else if (currentState.tab !== activeTab || currentState.subCategory !== selectedSubNavbarCategory) {
-          window.history.pushState({ ...currentState, tab: activeTab, subCategory: selectedSubNavbarCategory }, '');
+          window.history.replaceState({ ...currentState, tab: activeTab, subCategory: currentSub, secondLevel: subParam || sidebarActiveCat }, '');
+        } else if (currentState.tab !== activeTab || currentState.subCategory !== currentSub) {
+          window.history.pushState({ ...currentState, tab: activeTab, subCategory: currentSub, secondLevel: subParam || sidebarActiveCat }, '');
         }
       }
     } catch (e) {}
-  }, [activeTab, selectedSubNavbarCategory]);
+  }, [activeTab, selectedSubNavbarCategory, sidebarActiveCat]);
+
+  // Initial and refresh URL parameters sync for direct link navigation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        const childParam = params.get('child') || params.get('subCategory');
+        const subParam = params.get('sub');
+        const catIdParam = params.get('categoryId');
+
+        if (tabParam && ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].some(t => t.toLowerCase() === tabParam.toLowerCase())) {
+          setActiveTab(tabParam);
+        }
+        if (subParam) {
+          setSidebarActiveCat(subParam);
+        }
+        if (childParam) {
+          setSelectedSubNavbarCategory(childParam);
+          setSelectedCategories([childParam]);
+        } else if (catIdParam && Array.isArray(dbCategories) && dbCategories.length > 0) {
+          const match = dbCategories.find(c => c._id === catIdParam || c.id === catIdParam);
+          if (match) {
+            const resolvedName = match.subSubcategory || match.subcategory || match.name;
+            if (resolvedName) {
+              setSelectedSubNavbarCategory(resolvedName);
+              setSelectedCategories([resolvedName]);
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  }, [dbCategories]);
 
   useEffect(() => {
     const handlePopState = (e) => {
       if (e.state && e.state.tab) {
         setActiveTab(e.state.tab);
-        if (e.state.subCategory) {
-          setSelectedSubNavbarCategory(e.state.subCategory);
+        if (e.state.secondLevel) {
+          setSidebarActiveCat(e.state.secondLevel);
+        }
+        if (e.state.subCategory || e.state.childCategory) {
+          const target = e.state.childCategory || e.state.subCategory;
+          setSelectedSubNavbarCategory(target);
+          setSelectedCategories([target]);
+        }
+      } else if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        const childParam = params.get('child') || params.get('subCategory');
+        const subParam = params.get('sub');
+        if (tabParam) setActiveTab(tabParam);
+        if (subParam) setSidebarActiveCat(subParam);
+        if (childParam) {
+          setSelectedSubNavbarCategory(childParam);
+          setSelectedCategories([childParam]);
         }
       }
     };
@@ -1344,7 +1402,6 @@ export default function CustomerDashboard({
   const [selectedCuisines, setSelectedCuisines] = useState([]);
   const [selectedDistances, setSelectedDistances] = useState([]);
   const [selectedFoodType, setSelectedFoodType] = useState('All');
-  const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
 
   const [selectedAccomTypes, setSelectedAccomTypes] = useState([]);
   const [selectedTravelTypes, setSelectedTravelTypes] = useState([]);
@@ -3195,6 +3252,11 @@ export default function CustomerDashboard({
 
   const getCartCheckoutButtonText = () => {
     const selected = cart.filter(item => selectedCartItems.includes(item.id));
+    const hasOutOfStock = selected.some(item => {
+      const live = products.find(p => String(p.id) === String(item.id) || String(p._id) === String(item.id) || (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase()));
+      return isVendorProductUnavailable(live || item);
+    });
+    if (hasOutOfStock) return "Item(s) Out of Stock";
     const hasBooking = selected.some(item => 
       ['Services', 'Stay', 'Travel'].includes(item.subNavbarCategory) || 
       ['Services', 'Stay', 'Travel'].includes(item.tag)
@@ -3211,6 +3273,23 @@ export default function CustomerDashboard({
     const selected = cart.filter(item => selectedCartItems.includes(item.id));
     if (selected.length === 0) {
       triggerNotification("Please select items in cart to proceed.", "error");
+      return;
+    }
+    const outOfStockItems = selected.filter(item => {
+      const live = products.find(p => String(p.id) === String(item.id) || String(p._id) === String(item.id) || (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase()));
+      return isVendorProductUnavailable(live || item);
+    });
+    if (outOfStockItems.length > 0) {
+      triggerNotification(`Cannot checkout: "${outOfStockItems[0].name}" is currently out of stock. Please remove or uncheck it to proceed.`, "error");
+      return;
+    }
+    const overStockItems = selected.filter(item => {
+      const live = products.find(p => String(p.id) === String(item.id) || String(p._id) === String(item.id) || (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase()));
+      const maxStock = live?.stock !== undefined && live?.stock !== null ? parseInt(live.stock) : (item.stock !== undefined && item.stock !== null ? parseInt(item.stock) : Infinity);
+      return !isNaN(maxStock) && (item.quantity || 1) > maxStock;
+    });
+    if (overStockItems.length > 0) {
+      triggerNotification(`Quantity for "${overStockItems[0].name}" exceeds available stock.`, "error");
       return;
     }
     if (!selectedCheckoutAddressId && addresses.length > 0) {
@@ -3777,8 +3856,9 @@ export default function CustomerDashboard({
 
   const addToCart = (product) => {
     if (!product) return;
-    if (isVendorProductUnavailable(product)) {
-      triggerNotification("Vendor is currently unavailable for this item.");
+    const live = products.find(p => String(p.id) === String(product.id) || String(p._id) === String(product._id || product.id) || (p.name && product.name && p.name.trim().toLowerCase() === product.name.trim().toLowerCase()));
+    if (isVendorProductUnavailable(live || product)) {
+      triggerNotification("Vendor is currently unavailable for this item (Out of Stock).", "error");
       return;
     }
     const prodId = product.id || `prod-${Date.now()}`;
@@ -3811,6 +3891,16 @@ export default function CustomerDashboard({
       return prev
         .map(item => {
           if (item.id === id) {
+            const live = products.find(p => String(p.id) === String(id) || String(p._id) === String(id) || (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase()));
+            if (delta > 0 && isVendorProductUnavailable(live || item)) {
+              triggerNotification("Item is currently out of stock.", "error");
+              return item;
+            }
+            const maxStock = live?.stock !== undefined && live?.stock !== null ? parseInt(live.stock) : (item.stock !== undefined && item.stock !== null ? parseInt(item.stock) : Infinity);
+            if (delta > 0 && !isNaN(maxStock) && (item.quantity || 1) >= maxStock) {
+              triggerNotification(`Cannot add more than available stock (${maxStock}).`, "error");
+              return item;
+            }
             const newQty = (item.quantity || 1) + delta;
             return newQty > 0 ? { ...item, quantity: newQty } : null;
           }
@@ -3997,12 +4087,19 @@ export default function CustomerDashboard({
         });
 
         const matchingDbIds = new Set();
+        const matchingNames = new Set([targetSub, targetSingular]);
+
         matchingDbCats.forEach(c => {
           if (c._id) matchingDbIds.add(c._id.toString().toLowerCase());
           if (c.id) matchingDbIds.add(c.id.toString().toLowerCase());
           if (c.mainCategoryId) matchingDbIds.add(c.mainCategoryId.toString().toLowerCase());
           if (c.subCategoryId) matchingDbIds.add(c.subCategoryId.toString().toLowerCase());
           if (c.childCategoryId) matchingDbIds.add(c.childCategoryId.toString().toLowerCase());
+          if (c.parentId) matchingDbIds.add(c.parentId.toString().toLowerCase());
+
+          if (c.subSubcategory) matchingNames.add(c.subSubcategory.toLowerCase().trim());
+          if (c.subcategory) matchingNames.add(c.subcategory.toLowerCase().trim());
+          if (c.name && !isMainCategoryTabName(c.name)) matchingNames.add(c.name.toLowerCase().trim());
         });
 
         const pMainId = String(product.mainCategoryId || product.mainCategory_id || product.categoryId || '').toLowerCase().trim();
@@ -4025,20 +4122,25 @@ export default function CustomerDashboard({
         const pTag = (product.tag || '').toLowerCase().trim();
         const pName = (product.name || '').toLowerCase().trim();
 
-        const matchesByName = 
-          pSubNav === targetSub || pSubNav === targetSingular ||
-          pMain === targetSub || pMain === targetSingular ||
-          pCat === targetSub || pCat === targetSingular ||
-          pSubCat === targetSub || pSubCat === targetSingular ||
-          pSubSubCat === targetSub || pSubSubCat === targetSingular ||
-          pTag === targetSub || pTag === targetSingular ||
-          pSubNav.includes(targetSub) || pSubNav.includes(targetSingular) ||
-          pMain.includes(targetSub) || pMain.includes(targetSingular) ||
-          pCat.includes(targetSub) || pCat.includes(targetSingular) ||
-          pSubCat.includes(targetSub) || pSubCat.includes(targetSingular) ||
-          pSubSubCat.includes(targetSub) || pSubSubCat.includes(targetSingular) ||
-          pTag.includes(targetSub) || pTag.includes(targetSingular) ||
-          pName.includes(targetSub) || pName.includes(targetSingular);
+        const matchesByName = Array.from(matchingNames).some(name => {
+          if (!name) return false;
+          const singular = name.endsWith('s') && name.length > 3 ? name.slice(0, -1) : name;
+          return (
+            pSubNav === name || pSubNav === singular ||
+            pMain === name || pMain === singular ||
+            pCat === name || pCat === singular ||
+            pSubCat === name || pSubCat === singular ||
+            pSubSubCat === name || pSubSubCat === singular ||
+            pTag === name || pTag === singular ||
+            pName === name || pName === singular ||
+            pSubNav.includes(name) || pSubNav.includes(singular) ||
+            pCat.includes(name) || pCat.includes(singular) ||
+            pSubCat.includes(name) || pSubCat.includes(singular) ||
+            pSubSubCat.includes(name) || pSubSubCat.includes(singular) ||
+            pTag.includes(name) || pTag.includes(singular) ||
+            pName.includes(name) || pName.includes(singular)
+          );
+        });
 
         matchesSubNavbar = matchesById || matchesByName;
       }
@@ -4216,11 +4318,39 @@ export default function CustomerDashboard({
         const matchesRatingFilter = selectedRating === null || 
           product.rating >= selectedRating;
 
-        const matchesFrom = !fromLocation || 
-          (product.fromCity && product.fromCity.toLowerCase() === (fromLocation || '').toLowerCase());
-        
-        const matchesTo = !toLocation || 
-          (product.toCity && product.toCity.toLowerCase() === (toLocation || '').toLowerCase());
+        const travelPts = extractVendorTravelPoints(product);
+        const allDestinations = [
+          product.toCity,
+          product.dropPoint,
+          product.drop_point,
+          product.droppingPoint,
+          product.dropping_point,
+          product.destination,
+          product.to,
+          ...(travelPts.droppingPoints || []).map(dp => dp.name)
+        ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+        const allDepartures = [
+          product.fromCity,
+          product.boardingPoint,
+          product.boarding_point,
+          product.pickupPoint,
+          product.pickup_point,
+          product.from,
+          product.city,
+          product.vendorCity,
+          ...(travelPts.boardingPoints || []).map(bp => bp.name)
+        ].filter(Boolean).map(s => String(s).trim().toLowerCase());
+
+        const normTo = (toLocation || '').trim().toLowerCase();
+        const matchesTo = !normTo || normTo === 'all' || allDestinations.some(dest => 
+          dest === normTo || dest.includes(normTo) || normTo.includes(dest)
+        );
+
+        const normFrom = (fromLocation || '').trim().toLowerCase();
+        const matchesFrom = !normFrom || normFrom === 'all' || allDepartures.some(dep => 
+          dep === normFrom || dep.includes(normFrom) || normFrom.includes(dep)
+        );
         
         const matchesBusType = !selectedBusType || 
           (product.busType && product.busType.toLowerCase() === (selectedBusType || '').toLowerCase());
@@ -4507,15 +4637,15 @@ export default function CustomerDashboard({
 
   const renderDashboardHeader = () => {
     return (
-      <header className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-2.5 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
+      <header className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-2.5 sm:px-6 py-2 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-4 w-full text-slate-800 dark:text-slate-200 shadow-xs transition-colors sticky top-0 z-40">
         {/* Row 1 for Mobile / Left Section for Desktop */}
-        <div className="flex items-center justify-between gap-2 sm:gap-4 w-full md:w-auto overflow-visible">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-4 w-full md:w-auto overflow-visible">
           {/* Logo */}
-          <div className="flex items-center gap-2 select-none cursor-pointer shrink-0" onClick={clearAllFilters}>
+          <div className="flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer shrink-0" onClick={clearAllFilters}>
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60 shrink-0 shadow-3xs">
               <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
             </div>
-            <span className="text-xs sm:text-base font-black tracking-tight text-slate-900 dark:text-white font-sans whitespace-nowrap hidden min-[320px]:inline">Connect App</span>
+            <span className="text-xs sm:text-base font-black tracking-tight text-slate-900 dark:text-white font-sans whitespace-nowrap hidden min-[380px]:inline">Connect App</span>
           </div>
 
           {/* Location Selector */}
@@ -4526,10 +4656,10 @@ export default function CustomerDashboard({
                 e.stopPropagation();
                 setIsLocationDropdownOpen(prev => !prev);
               }}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 transition-all shadow-3xs"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 border border-slate-200 dark:border-slate-800 rounded-full bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 transition-all shadow-3xs"
             >
-              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-              <span className="truncate max-w-[85px] sm:max-w-[120px]">{selectedLocation.city || 'Bangalore'}</span>
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+              <span className="truncate max-w-[70px] min-[360px]:max-w-[85px] sm:max-w-[120px]">{selectedLocation.city || 'Bangalore'}</span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${isLocationDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -4685,7 +4815,7 @@ export default function CustomerDashboard({
           </div>
 
           {/* Mobile Right Action Group: Clean Menu Button & Profile Avatar */}
-          <div className="flex md:hidden items-center gap-2.5 shrink-0">
+          <div className="flex md:hidden items-center gap-1.5 sm:gap-2.5 shrink-0">
             <button 
               onClick={() => {
                 setIsMobileMenuOpen(prev => {
@@ -4696,10 +4826,10 @@ export default function CustomerDashboard({
                   return next;
                 });
               }}
-              className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:text-amber-500 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/60 shadow-3xs flex items-center justify-center z-[10000]"
+              className="relative p-1.5 sm:p-2 rounded-xl bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:text-amber-500 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700/60 shadow-3xs flex items-center justify-center z-[10000]"
               title="Open Menu"
             >
-              {isMobileMenuOpen ? <X className="w-5.5 h-5.5 text-amber-500" /> : <Menu className="w-5.5 h-5.5 text-slate-800 dark:text-slate-100" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-amber-500" /> : <Menu className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-slate-800 dark:text-slate-100" />}
               {(cart.length > 0 || (currentUser && !hideProfile && unreadCount > 0) || favorites.length > 0) && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
               )}
@@ -4715,7 +4845,7 @@ export default function CustomerDashboard({
                     setIsLoginModalOpen(true);
                   }
                 }}
-                className="px-3.5 py-2 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none shrink-0"
+                className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-[11px] sm:text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none shrink-0"
               >
                 Login
               </button>
@@ -5072,13 +5202,7 @@ export default function CustomerDashboard({
                 value={activeSubCat}
                 onChange={(e) => {
                   const val = e.target.value;
-                  const targetMain = currentMainCategory;
-                  setActiveTab(targetMain);
                   setSidebarActiveCat(val);
-                  setSelectedSubNavbarCategory(val === 'ALL' ? targetMain : val);
-                  setSelectedCategories(val === 'ALL' ? [] : [val]);
-                  setSearchQuery('');
-                  setHoveredLink(null);
                 }}
                 className="w-full appearance-none bg-slate-50 dark:bg-slate-800/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-2xl py-3 pl-4 pr-10 text-xs font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-2xs transition-all cursor-pointer"
               >
@@ -5100,13 +5224,7 @@ export default function CustomerDashboard({
               <button
                 type="button"
                 onClick={() => {
-                  const targetMain = currentMainCategory;
-                  setActiveTab(targetMain);
                   setSidebarActiveCat('ALL');
-                  setSelectedSubNavbarCategory(targetMain);
-                  setSelectedCategories([]);
-                  setSearchQuery('');
-                  setHoveredLink(null);
                 }}
                 className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
                   activeSubCat === 'ALL'
@@ -5123,13 +5241,7 @@ export default function CustomerDashboard({
                     key={catKey}
                     type="button"
                     onClick={() => {
-                      const targetMain = currentMainCategory;
-                      setActiveTab(targetMain);
                       setSidebarActiveCat(catKey);
-                      setSelectedSubNavbarCategory(catKey);
-                      setSelectedCategories([catKey]);
-                      setSearchQuery('');
-                      setHoveredLink(null);
                     }}
                     className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
                       isActive
@@ -5154,13 +5266,10 @@ export default function CustomerDashboard({
               <button
                 type="button"
                 onClick={() => {
-                  const targetMain = currentMainCategory;
-                  setActiveTab(targetMain);
                   setSidebarActiveCat('ALL');
-                  setSelectedSubNavbarCategory(targetMain);
-                  setSelectedCategories([]);
-                  setSearchQuery('');
-                  setHoveredLink(null);
+                }}
+                onMouseEnter={() => {
+                  setSidebarActiveCat('ALL');
                 }}
                 className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
                   activeSubCat === 'ALL'
@@ -5180,13 +5289,10 @@ export default function CustomerDashboard({
                     key={catKey}
                     type="button"
                     onClick={() => {
-                      const targetMain = currentMainCategory;
-                      setActiveTab(targetMain);
                       setSidebarActiveCat(catKey);
-                      setSelectedSubNavbarCategory(catKey);
-                      setSelectedCategories([catKey]);
-                      setSearchQuery('');
-                      setHoveredLink(null);
+                    }}
+                    onMouseEnter={() => {
+                      setSidebarActiveCat(catKey);
                     }}
                     className={`w-full text-left py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-between group/cat shrink-0 select-none ${
                       isActive
@@ -5215,12 +5321,48 @@ export default function CustomerDashboard({
                     key={childTitle}
                     onClick={() => {
                       const targetMain = currentMainCategory;
+                      const matchingDoc = (dbCategories || []).find(c => 
+                        c && c.isActive !== false && !c.isDeleted &&
+                        (c.subSubcategory?.trim().toLowerCase() === childTitle.toLowerCase() ||
+                         (c.level === 'child' && c.name?.trim().toLowerCase() === childTitle.toLowerCase()))
+                      );
+                      const childId = matchingDoc?._id || matchingDoc?.id;
+
                       setActiveTab(targetMain);
                       setSidebarActiveCat(activeSubCat || 'ALL');
                       setSelectedSubNavbarCategory(childTitle);
                       setSelectedCategories([childTitle]);
                       setSearchQuery('');
                       setHoveredLink(null);
+
+                      if (typeof window !== 'undefined') {
+                        try {
+                          const url = new URL(window.location.href);
+                          url.searchParams.set('tab', targetMain);
+                          if (activeSubCat && activeSubCat !== 'ALL') {
+                            url.searchParams.set('sub', activeSubCat);
+                          } else {
+                            url.searchParams.delete('sub');
+                          }
+                          url.searchParams.set('child', childTitle);
+                          if (childId) {
+                            url.searchParams.set('categoryId', childId.toString());
+                          } else {
+                            url.searchParams.delete('categoryId');
+                          }
+                          window.history.pushState(
+                            {
+                              tab: targetMain,
+                              subCategory: childTitle,
+                              secondLevel: activeSubCat,
+                              childCategory: childTitle,
+                              categoryId: childId ? childId.toString() : undefined
+                            },
+                            '',
+                            url.pathname + url.search + url.hash
+                          );
+                        } catch (e) {}
+                      }
 
                       setTimeout(() => {
                         const el = document.getElementById('products-section') || document.getElementById('catalog-grid');
@@ -5665,7 +5807,7 @@ export default function CustomerDashboard({
         {/* FLOATING HOVER MEGA DROPDOWN PANEL (Full Width Overlay) */}
         {!isMobileMenuOpen && isDropdownOpen && (
           <div 
-            className="absolute top-full left-0 right-0 w-full z-40 px-2 sm:px-4 md:px-6 py-2 animate-fade-in pointer-events-auto"
+            className="absolute top-full left-0 right-0 w-full z-40 px-2 sm:px-4 md:px-6 py-2 animate-fade-in pointer-events-auto before:content-[''] before:absolute before:-top-3 before:left-0 before:right-0 before:h-3"
             onMouseEnter={() => {
               if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
             }}
@@ -7052,8 +7194,13 @@ export default function CustomerDashboard({
                     onChange={(e) => setFromLocation(e.target.value)}
                     className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
+                    <option value="">From: All Locations</option>
                     <option value="Bangalore">From: Bangalore</option>
                     <option value="Chennai">From: Chennai</option>
+                    <option value="Krishnagiri">From: Krishnagiri</option>
+                    <option value="Trichy">From: Trichy</option>
+                    <option value="Coimbatore">From: Coimbatore</option>
+                    <option value="Dindigul">From: Dindigul</option>
                     <option value="Hyderabad">From: Hyderabad</option>
                     <option value="Mumbai">From: Mumbai</option>
                     <option value="Delhi">From: Delhi</option>
@@ -7063,7 +7210,13 @@ export default function CustomerDashboard({
                     onChange={(e) => setToLocation(e.target.value)}
                     className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
+                    <option value="">To: All Destinations</option>
                     <option value="Goa">To: Goa</option>
+                    <option value="Chennai">To: Chennai</option>
+                    <option value="Madurai">To: Madurai</option>
+                    <option value="Salem">To: Salem</option>
+                    <option value="Dindigul">To: Dindigul</option>
+                    <option value="Gandhipuram">To: Gandhipuram</option>
                     <option value="Coorg">To: Coorg</option>
                     <option value="Ooty">To: Ooty</option>
                     <option value="Mysore">To: Mysore</option>
@@ -9739,13 +9892,13 @@ export default function CustomerDashboard({
                 const entries = Object.entries(specs).filter(([k, v]) => v && String(v).trim());
                 if (entries.length > 0) {
                   return (
-                    <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 mb-6">
-                      <h4 className="text-[10.5px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-3.5">
+                    <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-xl p-3 sm:p-3.5 mb-3 sm:mb-4">
+                      <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-2">
                         Product Specifications
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                         {entries.map(([key, val]) => (
-                          <div key={key} className="flex justify-between items-center text-xs py-2 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-2xs">
+                          <div key={key} className="flex justify-between items-center text-[11px] py-1.5 px-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-2xs">
                             <span className="font-semibold text-slate-400">{key}:</span>
                             <span className="font-extrabold text-slate-800 dark:text-white">{String(val)}</span>
                           </div>
@@ -9757,15 +9910,15 @@ export default function CustomerDashboard({
                 const hls = getProductHighlights(selectedProduct);
                 if (hls.length > 0) {
                   return (
-                    <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 mb-6">
-                      <h4 className="text-[10.5px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-3.5">
+                    <div className="bg-slate-50 dark:bg-slate-950/35 border border-slate-200 dark:border-slate-800/60 rounded-xl p-3 sm:p-3.5 mb-3 sm:mb-4">
+                      <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none mb-2">
                         Highlights
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-0.5">
                         {hls.map((hl, idx) => (
-                          <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
-                            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-700 dark:text-slate-300">
+                            <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                             </div>
                             <span className="font-medium text-left">{hl}</span>
                           </div>
@@ -9779,19 +9932,19 @@ export default function CustomerDashboard({
             </div>
 
             {/* Description & Action buttons */}
-            <div className="space-y-4 mt-6">
+            <div className="space-y-3 mt-3 sm:mt-4">
               {/* Action Buttons Row */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-4 pt-2 w-full">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-1 w-full">
                 <button
                   onClick={() => triggerNotification("Initiating chat session...")}
-                  className="w-full sm:w-auto px-4 py-3 sm:py-3.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 h-11 sm:h-12 shrink-0 shadow-xs"
+                  className="w-full sm:w-auto px-3.5 py-2 sm:py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 h-9 sm:h-10 shrink-0 shadow-xs"
                 >
-                  <svg className="w-4 h-4 text-slate-500 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                  <svg className="w-3.5 h-3.5 text-slate-500 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                   <span>{getActionButtons(selectedProduct).chatText}</span>
                 </button>
                 
                 {isVendorProductUnavailable(selectedProduct) ? (
-                  <div className="flex-1 py-3.5 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 h-11 sm:h-12 select-none">
+                  <div className="flex-1 py-2 px-3 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-black text-[11px] sm:text-xs uppercase tracking-wide rounded-xl flex items-center justify-center text-center gap-1.5 min-h-[36px] sm:h-10 leading-snug select-none">
                     <span>Vendor Currently Unavailable (Out of Stock)</span>
                   </div>
                 ) : getActionButtons(selectedProduct).showBooking ? (
@@ -10397,82 +10550,104 @@ export default function CustomerDashboard({
                 <p className="text-xs text-slate-400 dark:text-slate-500">Add stylish clothing or luxury goods from the marketplace to check out.</p>
               </div>
             ) : (
-              cart.map((item) => (
-                <div 
-                  key={item.id}
-                  className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-900 relative animate-fade-in text-slate-800 dark:text-slate-200 gap-3"
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <input 
-                      type="checkbox"
-                      checked={selectedCartItems.includes(item.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCartItems(prev => [...prev, item.id]);
-                        } else {
-                          setSelectedCartItems(prev => prev.filter(id => id !== item.id));
-                        }
-                      }}
-                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-[#f43397] focus:ring-[#f43397] cursor-pointer shrink-0"
-                    />
-                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" />
-                    <div className="text-left overflow-hidden">
-                      <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
-                      {(item.boardingPoint || item.droppingPoint) && (
-                        <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate mt-0.5">
-                          {formatTravelPointSimple(item.boardingPoint) || 'N/A'} → {formatTravelPointSimple(item.droppingPoint) || 'N/A'}
-                        </p>
-                      )}
-                      {(item.adults || item.children) && (
-                        <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                          {item.adults || 1} Adult(s){item.children ? `, ${item.children} Child(ren)` : ''}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-extrabold text-[#f43397]">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-400 line-through">₹{((item.originalPrice || item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
+              cart.map((item) => {
+                const live = products.find(p => String(p.id) === String(item.id) || String(p._id) === String(item.id) || (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase()));
+                const isOutOfStock = isVendorProductUnavailable(live || item);
+                const maxStock = live?.stock !== undefined && live?.stock !== null ? parseInt(live.stock) : (item.stock !== undefined && item.stock !== null ? parseInt(item.stock) : Infinity);
+                const currentQty = item.quantity || 1;
+                const isMaxQty = !isNaN(maxStock) && currentQty >= maxStock;
+
+                return (
+                  <div 
+                    key={item.id}
+                    className={`flex items-center justify-between p-3.5 rounded-2xl border relative animate-fade-in text-slate-800 dark:text-slate-200 gap-3 ${
+                      isOutOfStock 
+                        ? 'bg-red-50/40 dark:bg-red-950/20 border-red-200 dark:border-red-900/50' 
+                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <input 
+                        type="checkbox"
+                        checked={selectedCartItems.includes(item.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCartItems(prev => [...prev, item.id]);
+                          } else {
+                            setSelectedCartItems(prev => prev.filter(id => id !== item.id));
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-[#f43397] focus:ring-[#f43397] cursor-pointer shrink-0"
+                      />
+                      <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" />
+                      <div className="text-left overflow-hidden">
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
+                        {isOutOfStock && (
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60 inline-block mt-0.5">
+                            Out of Stock
+                          </span>
+                        )}
+                        {(item.boardingPoint || item.droppingPoint) && (
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate mt-0.5">
+                            {formatTravelPointSimple(item.boardingPoint) || 'N/A'} → {formatTravelPointSimple(item.droppingPoint) || 'N/A'}
+                          </p>
+                        )}
+                        {(item.adults || item.children) && (
+                          <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                            {item.adults || 1} Adult(s){item.children ? `, ${item.children} Child(ren)` : ''}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-extrabold text-[#f43397]">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400 line-through">₹{((item.originalPrice || item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Add / Decrease Item Quantity Buttons - Only for Products, Daily Needs, and Food orders */}
+                      {isProductOrderCartItem(item) && (
+                        <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
+                          <button 
+                            type="button"
+                            onClick={() => updateCartQuantity(item.id, -1)}
+                            className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black text-xs cursor-pointer border-none transition-all"
+                            title="Decrease quantity"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+
+                          <span className="w-5 text-center text-xs font-black text-slate-900 dark:text-white">
+                            {item.quantity || 1}
+                          </span>
+
+                          <button 
+                            type="button"
+                            disabled={isOutOfStock || isMaxQty}
+                            onClick={() => updateCartQuantity(item.id, 1)}
+                            className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs border-none transition-all shadow-3xs ${
+                              isOutOfStock || isMaxQty
+                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-50'
+                                : 'bg-[#FFC107] hover:bg-amber-500 text-slate-950 cursor-pointer'
+                            }`}
+                            title={isOutOfStock ? "Item out of stock" : isMaxQty ? "Max available stock reached" : "Increase quantity"}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+
+                      <button 
+                        onClick={() => removeFromCart(item.id)}
+                        className="p-1.5 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl text-slate-400 cursor-pointer transition-colors"
+                        title="Remove item"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Add / Decrease Item Quantity Buttons - Only for Products, Daily Needs, and Food orders */}
-                    {isProductOrderCartItem(item) && (
-                      <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-3xs">
-                        <button 
-                          type="button"
-                          onClick={() => updateCartQuantity(item.id, -1)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black text-xs cursor-pointer border-none transition-all"
-                          title="Decrease quantity"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-
-                        <span className="w-5 text-center text-xs font-black text-slate-900 dark:text-white">
-                          {item.quantity || 1}
-                        </span>
-
-                        <button 
-                          type="button"
-                          onClick={() => updateCartQuantity(item.id, 1)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs cursor-pointer border-none transition-all shadow-3xs"
-                          title="Increase quantity"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-
-                    <button 
-                      onClick={() => removeFromCart(item.id)}
-                      className="p-1.5 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl text-slate-400 cursor-pointer transition-colors"
-                      title="Remove item"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
@@ -10946,7 +11121,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             </div>
                           </div>
                         </div>
-                      ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(trackingOrder.type) ? (
+                      ) : (activeProfileTab === 'bookings' || ['Booking', 'Stay', 'Travel', 'Appointment', 'Services', 'Service', 'Hospital', 'Doctor'].includes(trackingOrder.type)) ? (
                         /* Beautiful Booking Status Tracking UI */
                         <div className="space-y-4 animate-fade-in">
                           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
@@ -11302,7 +11477,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           </div>
 
                           {/* Stats Grid cards */}
-                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
                             {[
                               { 
                                 label: activeProfileTab === 'orders' ? 'Total Orders' : activeProfileTab === 'bookings' ? 'Total Bookings' : 'Total Applications', 
@@ -11339,14 +11514,14 @@ wishlistProducts.forEach(item => addToCart(item));
                             ].map((stat, i) => {
                               const StatIcon = stat.icon;
                               return (
-                                <div key={i} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 rounded-2xl flex items-center gap-4 shadow-xs text-left">
-                                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 ${stat.bgColor}`}>
-                                    <StatIcon className={`w-5 h-5 ${stat.iconColor}`} />
+                                <div key={i} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2.5 sm:p-4 rounded-2xl flex items-center gap-2.5 sm:gap-4 shadow-xs text-left min-w-0 overflow-hidden">
+                                  <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border shrink-0 ${stat.bgColor}`}>
+                                    <StatIcon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.iconColor}`} />
                                   </div>
-                                  <div className="text-left leading-none">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{stat.label}</span>
-                                    <span className="text-xl font-black text-slate-900 dark:text-white block mt-1.5">{stat.value}</span>
-                                    <span className="text-[9px] font-semibold text-slate-400 mt-1 block">{stat.sub}</span>
+                                  <div className="text-left leading-none min-w-0 flex-1 overflow-hidden">
+                                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">{stat.label}</span>
+                                    <span className="text-base sm:text-xl font-black text-slate-900 dark:text-white block mt-1 sm:mt-1.5 leading-none">{stat.value}</span>
+                                    <span className="text-[8.5px] sm:text-[9px] font-semibold text-slate-400 mt-1 block truncate">{stat.sub}</span>
                                   </div>
                                 </div>
                               );
@@ -11575,10 +11750,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                           >
                                             View Status
                                           </button>
-                                        ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? (
+                                        ) : (['Booking', 'Stay', 'Travel', 'Appointment', 'Services', 'Service', 'Hospital', 'Doctor'].includes(ord.type) || activeProfileTab === 'bookings') ? (
                                           <button 
                                             onClick={() => {
-                                              setActiveProfileTab('bookings');
+                                              setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
                                               setTrackingOrder(ord);
                                             }} 
                                             className="px-2.5 py-1 bg-blue-600 text-white hover:bg-blue-700 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
@@ -11590,7 +11765,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                             {!['Delivered', 'Cancelled'].includes(ord.status) && (
                                               <button 
                                                 onClick={() => {
-                                                  setActiveProfileTab('orders');
+                                                  setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
                                                   setTrackingOrder(ord);
                                                 }} 
                                                 className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
@@ -11601,7 +11776,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                             {['Delivered'].includes(ord.status) && (
                                               <button 
                                                 onClick={() => {
-                                                  setActiveProfileTab('orders');
+                                                  setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
                                                   setTrackingOrder(ord);
                                                 }} 
                                                 className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer"
@@ -12315,21 +12490,21 @@ wishlistProducts.forEach(item => addToCart(item));
 
                     {/* Check-In & Check-Out Cards with Available / Not Available dates & times */}
                     <div className="space-y-4 mb-4 select-none">
-                      {/* Check-In / Departure Details Card */}
+                      {/* Check-In / Departure / Appointment Details Card */}
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : 'Check-In Details'}
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : isStayItem ? 'Check-In Details' : 'Appointment Details'}
                           </span>
                           <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-full">
                             {formatDateFromYYYYMMDD(stayCheckInDate)} • {checkInTime}
                           </span>
                         </div>
 
-                        {/* Check-In / Departure Date Strip */}
+                        {/* Check-In / Departure / Appointment Date Strip */}
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : 'Select Check-In Date'}</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : isStayItem ? 'Select Check-In Date' : 'Select Appointment Date'}</span>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -12389,9 +12564,9 @@ wishlistProducts.forEach(item => addToCart(item));
                           </div>
                         </div>
 
-                        {/* Check-In / Departure Time Slots */}
+                        {/* Check-In / Departure / Appointment Time Slots */}
                         <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : 'Select Check-In Time Slot'}</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : isStayItem ? 'Select Check-In Time Slot' : 'Select Appointment Time Slot'}</span>
                           <div className="grid grid-cols-5 gap-2">
                             {checkInTimeSlots
                               .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
@@ -12434,13 +12609,13 @@ wishlistProducts.forEach(item => addToCart(item));
                             })}
                           </div>
 
-                          {/* Manual Departure Time Entry */}
+                          {/* Manual Departure / Check-In / Appointment Time Entry */}
                           <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-blue-50/50 dark:bg-blue-950/20 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/30">
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                               <div>
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : 'Manual Check-In Time Entry'}</span>
-                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : 'Select or type custom check-in time'}</span>
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : isStayItem ? 'Manual Check-In Time Entry' : 'Manual Appointment Time Entry'}</span>
+                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : isStayItem ? 'Select or type custom check-in time' : 'Select or type custom appointment time'}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -12833,24 +13008,40 @@ wishlistProducts.forEach(item => addToCart(item));
                     )}
                   </div>
 
-                  {/* Duration Summary Badge */}
+                  {/* Duration / Appointment Summary Badge */}
                   {(() => {
-                    const s = new Date(stayCheckInDate + 'T00:00:00');
-                    const e = new Date(stayCheckOutDate + 'T00:00:00');
-                    const diff = Math.max(1, Math.ceil((e - s) / 86400000));
+                    if (isStayItem) {
+                      const s = new Date(stayCheckInDate + 'T00:00:00');
+                      const e = new Date(stayCheckOutDate + 'T00:00:00');
+                      const diff = Math.max(1, Math.ceil((e - s) / 86400000));
+                      return (
+                        <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
+                          <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                          <span>Stay Summary: {diff} {durationUnit} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                        </div>
+                      );
+                    }
+                    if (isTravelItem) {
+                      return (
+                        <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
+                          <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                          <span>Travel Summary: Departure Date: {formatDateFromYYYYMMDD(stayCheckInDate)} at {checkInTime}</span>
+                        </div>
+                      );
+                    }
                     return (
                       <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
                         <Clock className="w-4 h-4 text-blue-500 shrink-0" />
-                        <span>Stay Summary: {diff} {durationUnit} (Check-In: {checkInTime} | Check-Out: {checkOutTime})</span>
+                        <span>Appointment Summary: Date: {formatDateFromYYYYMMDD(stayCheckInDate)} at {checkInTime}</span>
                       </div>
                     );
                   })()}
                 </div>
 
-                {/* Column 4: Appointment Summary */}
+                {/* Column 4: Appointment / Booking Summary */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div className="space-y-5">
-                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left">Appointment Summary</h3>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left">{isTravelItem ? 'Travel Summary' : isStayItem ? 'Stay Summary' : 'Appointment Summary'}</h3>
                     
                     <div className="space-y-3.5 text-xs text-left">
                       <div className="flex items-start gap-3">
@@ -12877,7 +13068,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       <div className="flex items-start gap-3 border-t border-slate-100 dark:border-slate-855/40 pt-3">
                         <Calendar className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Departure Date' : 'Check-In'}</span>
+                          <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">{isTravelItem ? 'Departure Date' : isStayItem ? 'Check-In' : 'Appointment Date'}</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200 block">{formatDateFromYYYYMMDD(stayCheckInDate)}</span>
                           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">{checkInTime}</span>
                         </div>
@@ -13011,6 +13202,18 @@ wishlistProducts.forEach(item => addToCart(item));
 
                   <button
                     onClick={() => {
+                      if (!stayCheckInDate) {
+                        triggerNotification("Please select a required date.", "error");
+                        return;
+                      }
+                      if (!checkInTime) {
+                        triggerNotification("Please select a required time slot.", "error");
+                        return;
+                      }
+                      if (isPastTimeForSelectedDate(checkInTime, stayCheckInDate)) {
+                        triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
+                        return;
+                      }
                       if (isTravelItem) {
                         if (vendorBoardingPoints.length === 0) {
                           triggerNotification("No boarding points available for this trip. Booking cannot proceed.", "error");
@@ -13040,7 +13243,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         checkOutDate: isTravelItem ? undefined : stayCheckOutDate,
                         checkInTime: checkInTime,
                         checkOutTime: isTravelItem ? undefined : checkOutTime,
-                        bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
+                        bookingTime: isTravelItem ? checkInTime : isStayItem ? `${checkInTime} - ${checkOutTime}` : checkInTime,
                         bookingType: selectedModalType,
                         stayMode: stayMode,
                         adults: numAdults,
@@ -13060,8 +13263,10 @@ wishlistProducts.forEach(item => addToCart(item));
                       setIsCartOpen(true);
                       if (isTravelItem) {
                         triggerNotification(`Travel Booking scheduled & added to Cart! Departure: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime})`);
-                      } else {
+                      } else if (isStayItem) {
                         triggerNotification(`Booking scheduled & added to Cart! Check-In: ${formatDateFromYYYYMMDD(stayCheckInDate)} (${checkInTime}), Check-Out: ${formatDateFromYYYYMMDD(stayCheckOutDate)} (${checkOutTime}) (${diffNights} nights)`);
+                      } else {
+                        triggerNotification(`Appointment scheduled & added to Cart! Date: ${formatDateFromYYYYMMDD(stayCheckInDate)} at ${checkInTime}`);
                       }
                     }}
                     className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1 border-none active:scale-[0.99]"
@@ -13147,21 +13352,21 @@ wishlistProducts.forEach(item => addToCart(item));
 
                     {/* Check-In & Check-Out Cards with Available / Not Available view */}
                     <div className="space-y-4 mb-4 select-none">
-                      {/* Check-In / Departure Details Card */}
+                      {/* Check-In / Departure / Appointment Details Card */}
                       <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : 'Check-In Details'}
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : isStayItem ? 'Check-In Details' : 'Appointment Details'}
                           </span>
                           <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-full">
                             {formatDateFromYYYYMMDD(stayCheckInDate)} • {checkInTime}
                           </span>
                         </div>
 
-                        {/* Check-In / Departure Date Strip */}
+                        {/* Check-In / Departure / Appointment Date Strip */}
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : 'Select Check-In Date'}</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : isStayItem ? 'Select Check-In Date' : 'Select Appointment Date'}</span>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -13221,9 +13426,9 @@ wishlistProducts.forEach(item => addToCart(item));
                           </div>
                         </div>
 
-                        {/* Check-In / Departure Time Slots */}
+                        {/* Check-In / Departure / Appointment Time Slots */}
                         <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : 'Select Check-In Time Slot'}</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : isStayItem ? 'Select Check-In Time Slot' : 'Select Appointment Time Slot'}</span>
                           <div className="grid grid-cols-5 gap-2">
                             {checkInTimeSlots
                               .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
@@ -13266,13 +13471,13 @@ wishlistProducts.forEach(item => addToCart(item));
                             })}
                           </div>
 
-                          {/* Manual Departure Time Entry */}
+                          {/* Manual Departure / Appointment Time Entry */}
                           <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-blue-50/50 dark:bg-blue-950/20 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/30">
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                               <div>
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : 'Manual Check-In Time Entry'}</span>
-                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : 'Select or type custom check-in time'}</span>
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : isStayItem ? 'Manual Check-In Time Entry' : 'Manual Appointment Time Entry'}</span>
+                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : isStayItem ? 'Select or type custom check-in time' : 'Select or type custom appointment time'}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -13686,7 +13891,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     return (
                       <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 text-[10px] font-extrabold text-blue-700 dark:text-blue-300 mt-4 leading-relaxed text-left">
                         <Clock className="w-4 h-4 text-blue-500 shrink-0" />
-                        <span>Booking Summary: Date: {formatDateFromYYYYMMDD(stayCheckInDate)} at {checkInTime}</span>
+                        <span>Appointment Summary: Date: {formatDateFromYYYYMMDD(stayCheckInDate)} at {checkInTime}</span>
                       </div>
                     );
                   })()}
@@ -13695,7 +13900,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 {/* Column 3: Confirmation Summary */}
                 <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800/80 flex flex-col justify-between">
                   <div className="space-y-5">
-                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left">Your Appointment</h3>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider text-left">{isTravelItem ? 'Your Trip' : isStayItem ? 'Your Stay' : 'Your Appointment'}</h3>
                     
                     {/* Mini Profile card */}
                     <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#030712] border border-slate-100 dark:border-slate-800 rounded-xl p-3 select-none">
@@ -13727,7 +13932,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       )}
 
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
-                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> {isTravelItem ? 'Depart' : 'Check-In'}</span>
+                        <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> {isTravelItem ? 'Depart' : isStayItem ? 'Check-In' : 'Appointment Date'}</span>
                         <span className="font-extrabold text-slate-900 dark:text-slate-200 text-right">
                           {formatDateFromYYYYMMDD(stayCheckInDate)}
                           <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-bold">{checkInTime}</span>
@@ -13842,6 +14047,18 @@ wishlistProducts.forEach(item => addToCart(item));
                   <div className="mt-6 space-y-3">
                     <button
                       onClick={() => {
+                        if (!stayCheckInDate) {
+                          triggerNotification("Please select a required date.", "error");
+                          return;
+                        }
+                        if (!checkInTime) {
+                          triggerNotification("Please select a required time slot.", "error");
+                          return;
+                        }
+                        if (isPastTimeForSelectedDate(checkInTime, stayCheckInDate)) {
+                          triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
+                          return;
+                        }
                         if (isTravelItem) {
                           if (vendorBoardingPoints.length === 0) {
                             triggerNotification("No boarding points available for this trip. Booking cannot proceed.", "error");
@@ -13871,7 +14088,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           checkOutDate: isTravelItem ? undefined : stayCheckOutDate,
                           checkInTime: checkInTime,
                           checkOutTime: isTravelItem ? undefined : checkOutTime,
-                          bookingTime: isTravelItem ? checkInTime : `${checkInTime} - ${checkOutTime}`,
+                          bookingTime: isTravelItem ? checkInTime : isStayItem ? `${checkInTime} - ${checkOutTime}` : checkInTime,
                           bookingType: selectedModalType,
                           stayMode: stayMode,
                           adults: numAdults,

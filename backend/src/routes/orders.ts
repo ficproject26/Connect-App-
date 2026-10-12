@@ -461,6 +461,40 @@ router.post('/', async (req: Request, res: Response) => {
     const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
     const targetProdId = firstItem?.productId || firstItem?.id || req.body.productId;
 
+    // Validate stock and availability for products in items
+    if (mongoDb && Array.isArray(items) && items.length > 0) {
+      for (const it of items) {
+        const itId = it?.productId || it?.id || it?._id;
+        if (itId) {
+          const q: any[] = [{ id: String(itId) }, { _id: String(itId) }];
+          try {
+            if (ObjectId.isValid(String(itId))) {
+              q.push({ _id: new ObjectId(String(itId)) });
+            }
+          } catch (e) {}
+          const dbProd = await mongoDb.collection('products').findOne({ $or: q });
+          if (dbProd) {
+            const isUnavail = dbProd.status === 'Unavailable' || dbProd.status === 'Out of Stock' || dbProd.status === 'Inactive' ||
+              dbProd.isAvailable === false || dbProd.isActive === false ||
+              (dbProd.stock !== undefined && dbProd.stock !== null && parseInt(dbProd.stock) <= 0);
+            if (isUnavail) {
+              return res.status(400).json({
+                status: 'error',
+                message: `Product "${dbProd.name || it.name || 'Selected item'}" is currently out of stock.`
+              });
+            }
+            const requestedQty = Number(it.quantity || 1);
+            if (dbProd.stock !== undefined && dbProd.stock !== null && parseInt(dbProd.stock) < requestedQty) {
+              return res.status(400).json({
+                status: 'error',
+                message: `Requested quantity for "${dbProd.name || it.name}" exceeds available stock (${dbProd.stock} available).`
+              });
+            }
+          }
+        }
+      }
+    }
+
     let travelProduct: any = null;
     if (mongoDb && targetProdId) {
       const queries: any[] = [{ id: String(targetProdId) }, { _id: String(targetProdId) }];

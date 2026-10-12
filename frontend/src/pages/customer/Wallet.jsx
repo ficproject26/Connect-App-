@@ -292,12 +292,12 @@ export default function Wallet() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+            <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
               <span>Active Account</span>
             </span>
-            <span className="text-xs text-slate-400 font-bold">Connect Instant Pay</span>
+            <span className="text-xs text-slate-400 font-bold whitespace-nowrap">Connect Instant Pay</span>
           </div>
         </div>
 
@@ -312,7 +312,7 @@ export default function Wallet() {
             <div className="relative flex-grow">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">₹</span>
               <input 
-                type="number"
+                type="number" 
                 placeholder="Enter deposit amount (e.g. 5000)"
                 value={depositAmount}
                 disabled={isProcessing}
@@ -366,19 +366,23 @@ export default function Wallet() {
               return (
                 <div 
                   key={txn.id || index} 
-                  className="p-3.5 sm:p-4.5 bg-slate-50/50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-400/40 transition-all"
+                  className="p-3 sm:p-4 bg-slate-50/50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-400/40 transition-all"
                 >
-                  <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-                    <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${isDeposit ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
-                      {isDeposit ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                  <div className="flex items-center space-x-2.5 sm:space-x-4 min-w-0 flex-1">
+                    <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${isDeposit ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
+                      {isDeposit ? <ArrowDownRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" /> : <ArrowUpRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />}
                     </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white block truncate">{rawDesc}</span>
+                    <div className="text-left min-w-0 flex-1 overflow-hidden">
+                      <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white block truncate leading-tight">{rawDesc}</span>
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                          {txn.category || (isDeposit ? 'Deposit' : 'Order Payment')} • {txn.date}
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider whitespace-nowrap">
+                          {txn.category || (isDeposit ? 'Deposit' : 'Order Payment')}
                         </span>
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                        <span className="text-slate-400 text-[10px]">•</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider whitespace-nowrap">
+                          {txn.date}
+                        </span>
+                        <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full border whitespace-nowrap ${
                           (txn.status || 'SUCCESS').toUpperCase() === 'SUCCESS' 
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
                             : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
@@ -388,7 +392,7 @@ export default function Wallet() {
                       </div>
                     </div>
                   </div>
-                  <span className={`text-sm sm:text-lg font-black font-mono shrink-0 ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                  <span className={`text-xs sm:text-base font-black font-mono shrink-0 whitespace-nowrap ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                     {isDeposit ? '+' : '-'}₹{Math.abs(txn.amount).toLocaleString()}
                   </span>
                 </div>
