@@ -129,7 +129,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       setSuccess(true);
 
       const loggedUser = data.user || { email: email.trim(), role: 'customer' };
-      login(loggedUser, 'customer', (finalUser) => {
+      login({ ...loggedUser, _isExplicitAuth: true }, 'customer', (finalUser) => {
         setTimeout(() => {
           setSuccess(false);
           if (onLoginSuccess) onLoginSuccess(finalUser);
@@ -264,7 +264,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       if (data.status === 'success' && data.user) {
         setIsSubmitting(false);
         setSuccess(true);
-        login(data.user, 'customer', (finalUser) => {
+        login({ ...data.user, _isExplicitAuth: true }, 'customer', (finalUser) => {
           setTimeout(() => {
             setSuccess(false);
             if (onLoginSuccess) onLoginSuccess(finalUser);

@@ -117,7 +117,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       setIsSubmitting(false);
       setSuccess(true);
       const loggedUser = data.user || { email: email.trim(), role: 'customer' };
-      login(loggedUser, 'customer', (finalUser) => {
+      login({ ...loggedUser, _isExplicitAuth: true }, 'customer', (finalUser) => {
         setTimeout(() => {
           setSuccess(false);
           if (onAuthSuccess) onAuthSuccess(finalUser);
@@ -251,7 +251,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       if (data.status === 'success' && data.user) {
         setIsSubmitting(false);
         setSuccess(true);
-        login(data.user, 'customer', (finalUser) => {
+        login({ ...data.user, _isExplicitAuth: true }, 'customer', (finalUser) => {
           setTimeout(() => {
             setSuccess(false);
             if (onAuthSuccess) onAuthSuccess(finalUser);

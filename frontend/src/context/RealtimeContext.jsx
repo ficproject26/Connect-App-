@@ -26,6 +26,10 @@ export function RealtimeProvider({ children }) {
       if (!raw) {
         setIsConnected(false);
         setConnectionMode('disconnected');
+        lastConnectAttempt.current = null;
+        try {
+          socketService.disconnect();
+        } catch (e) {}
         return;
       }
       const user = JSON.parse(raw);

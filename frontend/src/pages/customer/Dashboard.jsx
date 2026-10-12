@@ -1445,7 +1445,7 @@ export default function CustomerDashboard({
     return getOrGenerateCustomerId(currentUser);
   }, [currentUser]);
 
-  const loadCustomerProfileFromDb = useCallback(async () => {
+  const loadCustomerProfileFromDb = useCallback(async (signal) => {
     if (!currentUser) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
@@ -1466,13 +1466,32 @@ export default function CustomerDashboard({
     if (authToken) authHeaders['Authorization'] = `Bearer ${authToken}`;
 
     for (const url of uniqueEndpoints) {
+      if (signal?.aborted) return;
       try {
         const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
           headers: authHeaders,
-          credentials: 'include'
+          credentials: 'include',
+          signal: signal
         });
+        if (signal?.aborted) return;
         if (res.ok) {
           const data = await res.json();
+          if (signal?.aborted) return;
+
+          // Verification Guard: Check whether user logged out or changed while request was in-flight
+          const savedUserRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('connect_current_user') : null;
+          if (!savedUserRaw) {
+            // User has logged out; strictly abort profile state sync and NEVER restore session
+            return;
+          }
+          let currentSavedUser = null;
+          try { currentSavedUser = JSON.parse(savedUserRaw); } catch (e) {}
+          const currentTarget = currentSavedUser?.id || currentSavedUser?.customerId || currentSavedUser?.phone || currentSavedUser?.email;
+          if (!currentTarget || (String(currentTarget).trim().toLowerCase() !== String(userTarget).trim().toLowerCase())) {
+            // Target user changed; ignore stale response
+            return;
+          }
+
           if (data && data.status === 'success' && data.user) {
             const dbUser = data.user;
             if (dbUser.name) setProfileName(dbUser.name);
@@ -1507,15 +1526,21 @@ export default function CustomerDashboard({
           }
         }
       } catch (err) {
+        if (signal?.aborted || err?.name === 'AbortError') return;
         if (typeof navigator !== 'undefined' && !navigator.onLine) break;
-        if (err?.message?.includes('NETWORK_IO_SUSPENDED') || err?.name === 'AbortError') break;
+        if (err?.message?.includes('NETWORK_IO_SUSPENDED')) break;
       }
     }
   }, [currentUser, activeCustomerId, login]);
 
   useEffect(() => {
-    loadCustomerProfileFromDb();
-  }, [loadCustomerProfileFromDb]);
+    if (!currentUser) return;
+    const controller = new AbortController();
+    loadCustomerProfileFromDb(controller.signal);
+    return () => {
+      controller.abort();
+    };
+  }, [currentUser, loadCustomerProfileFromDb]);
 
   // Synchronize profile and reset all states cleanly when user logs out
   useEffect(() => {

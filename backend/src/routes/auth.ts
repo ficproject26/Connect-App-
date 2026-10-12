@@ -690,12 +690,40 @@ router.get('/active-sessions', authenticateToken, (req: AuthenticatedRequest, re
 });
 
 // 6. POST: /api/auth/logout (Revoke Current Session)
-router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res: Response) => {
-  if (req.sessionId) {
-    securityManager.revokeSession(req.sessionId);
+router.post('/logout', optionalAuthenticateToken, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (req.sessionId) {
+      securityManager.revokeSession(req.sessionId);
+    } else if (req.body?.sessionId) {
+      securityManager.revokeSession(req.body.sessionId);
+    } else if (req.body?.refreshToken) {
+      const payload = securityManager.verifyRefreshToken(req.body.refreshToken);
+      if (payload?.sessionId) {
+        securityManager.revokeSession(payload.sessionId);
+      }
+    } else if (req.cookies?.connect_refresh_token) {
+      const payload = securityManager.verifyRefreshToken(req.cookies.connect_refresh_token);
+      if (payload?.sessionId) {
+        securityManager.revokeSession(payload.sessionId);
+      }
+    }
+  } catch (err) {
+    // Session revocation failure must not block cookie clearing or logout response
   }
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict' as const,
+    path: '/'
+  };
+
+  res.clearCookie('connect_access_token', cookieOptions);
+  res.clearCookie('connect_refresh_token', cookieOptions);
   res.clearCookie('connect_access_token');
   res.clearCookie('connect_refresh_token');
+
   return res.json({
     status: 'success',
     message: 'Logged out successfully.'

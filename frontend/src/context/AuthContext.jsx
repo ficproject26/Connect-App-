@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { authService } from '../services/authService';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import { authService, clearClientAuthState, clearAuthCookies } from '../services/authService';
+import { socketService } from '../services/socketService';
 
 export const AuthContext = createContext(null);
 
@@ -113,12 +114,20 @@ export function AuthProvider({ children }) {
     return null;
   });
 
+  const lastLogoutRef = useRef(0);
+
   const login = (userInfo, role = 'customer', callback) => {
     let inputUser = {};
     if (typeof userInfo === 'object' && userInfo !== null) {
       inputUser = { ...userInfo };
     } else if (typeof userInfo === 'string') {
       inputUser = { email: userInfo };
+    }
+
+    // If a logout occurred recently and this is not an explicit user login, block automatic resurrection
+    if (lastLogoutRef.current > 0 && (Date.now() - lastLogoutRef.current < 2500) && !inputUser?._isExplicitAuth) {
+      console.warn("Ignoring background session restore right after logout");
+      return;
     }
 
     const extractValidMobile = (val) => {
@@ -191,39 +200,33 @@ export function AuthProvider({ children }) {
   };
 
   const logout = useCallback(async () => {
-    // 1. Reset currentUser in memory immediately
+    lastLogoutRef.current = Date.now();
+
+    // 1. Capture current token before clearing for backend session revocation
+    const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token'))) || '';
+
+    // 2. Reset currentUser in memory immediately
     setCurrentUser(null);
 
-    // 2. Perform backend session revocation and cookie clearing
+    // 3. Synchronously wipe all customer auth & session storage keys IMMEDIATELY
+    clearClientAuthState();
+
+    // 4. Clear client-side auth cookies immediately
+    clearAuthCookies();
+
+    // 5. Disconnect websocket immediately
     try {
-      if (authService && typeof authService.logout === 'function') {
-        await authService.logout();
-      }
+      socketService.disconnect();
     } catch (e) {}
 
-    // 3. Wipe all customer auth/session storage keys
+    // 6. Perform backend session revocation and cookie clearing
     try {
-      const keysToRemove = [
-        'connect_current_user',
-        'connect_token',
-        'token',
-        'connect_customer_id',
-        'connect_user_id',
-        'connect_customer_tier',
-        'connect_customer_wallet',
-        'connect_customer_transactions',
-        'connect_active_profile_tab',
-        'connect_profile_modal_open',
-        'connect_user_orders',
-        'user_orders'
-      ];
-      keysToRemove.forEach(k => {
-        try { localStorage.removeItem(k); } catch (e) {}
-        try { sessionStorage.removeItem(k); } catch (e) {}
-      });
-      // Guarantee public landing page is the designated destination
-      localStorage.setItem('connect_current_page', 'home');
-    } catch (e) {}
+      if (authService && typeof authService.logout === 'function') {
+        await authService.logout(token);
+      }
+    } catch (err) {
+      console.warn("Backend session revocation error:", err);
+    }
   }, []);
 
   const register = (formData, role, callback) => {

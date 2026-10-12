@@ -38,19 +38,19 @@ export default function AppRoutes({
     isLoggingOutRef.current = true;
 
     try {
-      // 1. Immediately switch route to public landing page ('home')
-      setCurrentPage('home');
-      if (typeof handleHomeNavigate === 'function') {
-        handleHomeNavigate();
-      }
+      // 1. Immediately terminate auth session, clear tokens, user & cookies
+      await logout();
 
       // 2. Clear customer context state in memory and storage (wallet, tier, transactions)
       if (typeof resetCustomerState === 'function') {
         resetCustomerState();
       }
 
-      // 3. Clear auth session state, cookies, storage, and tokens
-      await logout();
+      // 3. Switch route to public landing page ('home')
+      setCurrentPage('home');
+      if (typeof handleHomeNavigate === 'function') {
+        handleHomeNavigate();
+      }
 
       // 4. Update browser URL to public landing ('/') and replace history state
       // so browser back navigation cannot expose authenticated dashboard
@@ -59,6 +59,9 @@ export default function AppRoutes({
           window.history.replaceState({ page: 'home', category: null, subService: null }, '', '/');
         }
       } catch (e) {}
+    } catch (err) {
+      console.warn("Logout error:", err);
+      setCurrentPage('home');
     } finally {
       isLoggingOutRef.current = false;
     }
