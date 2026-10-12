@@ -105,6 +105,30 @@ import phoneMockupDashboard from '../../assets/images/phone_mockup_dashboard.png
 
 const initialProducts = [];
 
+const RenderStarRating = React.memo(({ rating = 4.5, sizeClass = "w-4.5 h-4.5" }) => {
+  const numRating = Math.max(0, Math.min(5, parseFloat(rating) || 4.5));
+  return (
+    <div className="flex items-center text-amber-400" title={`${numRating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((starIndex) => {
+        if (numRating >= starIndex) {
+          return <Star key={starIndex} className={`${sizeClass} fill-amber-400 text-amber-400`} />;
+        } else if (numRating >= starIndex - 0.75 && numRating < starIndex) {
+          return (
+            <div key={starIndex} className={`relative ${sizeClass} inline-flex items-center justify-center shrink-0`}>
+              <Star className={`${sizeClass} text-amber-400`} />
+              <div className="absolute inset-0 overflow-hidden w-1/2">
+                <Star className={`${sizeClass} fill-amber-400 text-amber-400`} />
+              </div>
+            </div>
+          );
+        } else {
+          return <Star key={starIndex} className={`${sizeClass} text-amber-400/40`} />;
+        }
+      })}
+    </div>
+  );
+});
+
 export function getProductPrices(product) {
   if (!product) return { price: 0, originalPrice: null, discountPercent: 0, discountText: '' };
 
@@ -1101,6 +1125,13 @@ export default function CustomerDashboard({
   const [rotationAngle, setRotationAngle] = useState(0);
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [manualCompareIds, setManualCompareIds] = useState([]);
+  const [shareModalProduct, setShareModalProduct] = useState(null);
+
+  const handleShareProduct = useCallback((product) => {
+    if (!product) return;
+    setShareModalProduct(product);
+  }, []);
   const [selectedSubNavbarCategory, setSelectedSubNavbarCategory] = useState(() => {
     try {
       return localStorage.getItem('connect_selected_sub_category') || 'All';
@@ -2329,6 +2360,7 @@ export default function CustomerDashboard({
   // Sync active product image when a product is clicked
   useEffect(() => {
     if (selectedProduct) {
+      setManualCompareIds([]);
       setActiveProductImage(selectedProduct.image);
       setActiveThumbnailIndex(0);
       setTimeout(() => {
@@ -7301,12 +7333,12 @@ export default function CustomerDashboard({
               {/* Rating Filter for non-jobs */}
               {activeTab !== 'Jobs' && (
                 <select
-                  value={selectedRating === null ? "" : selectedRating}
+                  value={selectedRating === null ? "" : String(selectedRating)}
                   onChange={(e) => setSelectedRating(e.target.value ? parseFloat(e.target.value) : null)}
                   className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                 >
                   <option value="">All Ratings</option>
-                  <option value="4.0">4.0 ★ & Above</option>
+                  <option value="4">4.0 ★ & Above</option>
                   <option value="4.5">4.5 ★ & Above</option>
                   <option value="4.8">4.8 ★ & Above</option>
                 </select>
@@ -8299,7 +8331,7 @@ export default function CustomerDashboard({
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">Hotel {selectedProduct.name}</span>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => triggerNotification("Link copied!")} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
+            <button onClick={() => handleShareProduct(selectedProduct)} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
             <button onClick={() => toggleFavorite(selectedProduct.id)} className="flex items-center gap-1.5 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} /> Save for later</button>
           </div>
         </div>
@@ -8326,7 +8358,7 @@ export default function CustomerDashboard({
 
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-6 text-left">
               <div className="text-center shrink-0"><div className="flex items-center gap-1 text-amber-500 font-black text-lg"><Star className="w-5 h-5 fill-amber-500" /> {selectedProduct.rating || '4.5'}</div><span className="text-[10px] text-slate-400 font-bold">/5</span><span className="text-[9px] text-slate-400 font-bold block">({selectedProduct.reviews || 120} Reviews)</span></div>
-              <div className="border-l border-slate-200 dark:border-slate-800 pl-5 flex items-center gap-2"><span className="text-emerald-500 font-black text-lg"></span><div><span className="text-xs font-extrabold text-slate-800 dark:text-white block">Guests love</span><span className="text-[10px] text-slate-400 font-bold">cleanliness & service</span></div></div>
+              <div className="border-l border-slate-200 dark:border-slate-800 pl-5 flex items-center gap-2"><span className="text-emerald-500 font-black text-lg"></span><div><span className="text-xs font-extrabold text-slate-800 dark:white block">Guests love</span><span className="text-[10px] text-slate-400 font-bold">cleanliness & service</span></div></div>
             </div>
           </div>
 
@@ -8336,7 +8368,7 @@ export default function CustomerDashboard({
               <div className="flex items-center justify-between flex-wrap gap-2"><span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Property</span><span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/20 text-blue-600 border border-blue-100 dark:border-blue-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider">Best Price Guaranteed</span></div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white">{selectedProduct.name}</h1>
               <span className="text-xs font-bold text-slate-400">{selectedProduct.category || 'Luxury Hotels'}</span>
-              <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span></div>
+              <div className="flex items-center gap-2 flex-wrap"><RenderStarRating rating={selectedProduct.rating || 4.5} sizeClass="w-3.5 h-3.5" /><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)</span></div>
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
               <div className="grid grid-cols-3 gap-3">
@@ -8476,7 +8508,7 @@ export default function CustomerDashboard({
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => triggerNotification("Link copied!")} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
+            <button onClick={() => handleShareProduct(selectedProduct)} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
             <button onClick={() => toggleFavorite(selectedProduct.id)} className="flex items-center gap-1.5 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} /> Save for later</button>
           </div>
         </div>
@@ -8510,7 +8542,7 @@ export default function CustomerDashboard({
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 text-left">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ratings & Reviews</span>
               <div className="flex items-start gap-5">
-                <div className="text-center shrink-0"><span className="text-2xl font-black text-slate-900 dark:text-white block">{selectedProduct.rating || '4.5'}</span><span className="text-[10px] text-slate-400 font-bold">/5</span><div className="flex text-amber-400 mt-1 justify-center">{[1,2,3,4,5].map(s => <Star key={s} className="w-3 h-3 fill-amber-400" />)}</div><span className="text-[9px] text-slate-400 font-bold block mt-1">({selectedProduct.reviews || '2,450'} Reviews)</span></div>
+                <div className="text-center shrink-0"><span className="text-2xl font-black text-slate-900 dark:text-white block">{selectedProduct.rating || '4.5'}</span><span className="text-[10px] text-slate-400 font-bold">/5</span><div className="flex mt-1 justify-center"><RenderStarRating rating={selectedProduct.rating || 4.5} sizeClass="w-3 h-3" /></div><span className="text-[9px] text-slate-400 font-bold block mt-1">({selectedProduct.reviews || '2,450'} Reviews)</span></div>
                 <div className="flex-grow space-y-1">{[{s:5,p:70},{s:4,p:20},{s:3,p:6},{s:2,p:2},{s:1,p:2}].map(r => (<div key={r.s} className="flex items-center gap-2"><span className="text-[9px] font-bold text-slate-500 w-3">{r.s}</span><Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" /><div className="flex-grow h-1.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden"><div className={`h-full rounded-full ${r.s >= 4 ? 'bg-emerald-500' : r.s === 3 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${r.p}%` }}></div></div><span className="text-[8px] font-bold text-slate-400 w-6 text-right">{r.p}%</span></div>))}</div>
               </div>
             </div>
@@ -8523,7 +8555,7 @@ export default function CustomerDashboard({
               <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider"><ShieldCheck className="w-3.5 h-3.5" /> Verified Partner</span>
               <h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">{selectedProduct.name} <CheckCircle2 className="w-5 h-5 text-white dark:text-white fill-blue-500 shrink-0" /></h1>
               <span className="text-xs font-bold text-slate-400">{selectedProduct.category || 'Gym Membership'}</span>
-              <div className="flex items-center gap-2 flex-wrap"><div className="flex text-amber-400">{[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-amber-400" />)}</div><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || '2,450'} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Partner</span></div>
+              <div className="flex items-center gap-2 flex-wrap"><RenderStarRating rating={selectedProduct.rating || 4.5} sizeClass="w-3.5 h-3.5" /><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{selectedProduct.rating || '4.5'} ({selectedProduct.reviews || '2,450'} Reviews)</span><span className="text-slate-300">|</span><span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full">Verified Partner</span></div>
             </div>
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3">
               <h3 className="text-sm font-black text-slate-900 dark:text-white">Membership Plans</h3>
@@ -9740,13 +9772,7 @@ export default function CustomerDashboard({
               {/* Ratings and Verification Block */}
               <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <div className="flex items-center text-amber-400">
-                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
-                    <Star className="w-4.5 h-4.5 fill-amber-400 text-amber-400" />
-                  </div>
+                  <RenderStarRating rating={selectedProduct.rating || 4.5} sizeClass="w-4.5 h-4.5" />
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-extrabold">
                     {selectedProduct.rating || '4.5'} ({selectedProduct.reviews || 120} Reviews)
                   </span>
@@ -15441,98 +15467,228 @@ wishlistProducts.forEach(item => addToCart(item));
       )}
 
       {/* -------------------- COMPARE MODAL -------------------- */}
-      {isCompareModalOpen && selectedProduct && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200 select-none">
-          <div onClick={() => setIsCompareModalOpen(false)} className="absolute inset-0" />
-          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl w-full max-w-4xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10 animate-scale-up p-6 text-left space-y-5">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-3">
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">Compare Products & Options</h3>
-                <p className="text-xs text-slate-400 font-medium">Comparing {selectedProduct.name} with similar items in {selectedProduct.category || selectedProduct.subNavbarCategory || 'Category'}</p>
+      {isCompareModalOpen && selectedProduct && (() => {
+        const manualItems = products.filter(p => p.id !== selectedProduct.id && manualCompareIds.includes(p.id));
+        const comparedProducts = [selectedProduct, ...manualItems];
+        const availableForCompare = products.filter(p => 
+          p.id !== selectedProduct.id && 
+          !manualCompareIds.includes(p.id) &&
+          (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory || p.mainCategory === selectedProduct.mainCategory)
+        );
+
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200 select-none">
+            <div onClick={() => { setIsCompareModalOpen(false); setManualCompareIds([]); }} className="absolute inset-0" />
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl w-full max-w-4xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10 animate-scale-up p-6 text-left space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">Compare Products & Options</h3>
+                  <p className="text-xs text-slate-400 font-medium">Comparing {selectedProduct.name} with items in {selectedProduct.category || selectedProduct.subNavbarCategory || 'Category'}</p>
+                </div>
+                <button 
+                  onClick={() => { setIsCompareModalOpen(false); setManualCompareIds([]); }} 
+                  className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 cursor-pointer border-none bg-transparent"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
+
+              {/* Manual Selection Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Comparing ({comparedProducts.length}/4 items):
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Select products manually to compare
+                  </span>
+                </div>
+                {comparedProducts.length < 4 && availableForCompare.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setManualCompareIds(prev => [...prev, e.target.value]);
+                        }
+                      }}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 focus:border-amber-500 focus:outline-none cursor-pointer max-w-[260px] truncate"
+                    >
+                      <option value="">+ Add Product to Compare...</option>
+                      {availableForCompare.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (₹{(p.price || 0).toLocaleString()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
+                      <th className="py-3 px-4">Spec / Details</th>
+                      {comparedProducts.map((item, idx) => (
+                        <th key={idx} className="py-3 px-4 min-w-[170px] text-slate-900 dark:text-white">
+                          <div className="font-extrabold text-sm line-clamp-1">{item.name}</div>
+                          {idx === 0 ? (
+                            <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider block w-fit mt-1">Current Item</span>
+                          ) : (
+                            <button
+                              onClick={() => setManualCompareIds(prev => prev.filter(id => id !== item.id))}
+                              className="text-[9px] text-rose-500 hover:text-rose-600 font-extrabold uppercase mt-1 cursor-pointer bg-transparent border-none flex items-center gap-1"
+                            >
+                              ✕ Remove
+                            </button>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium text-slate-700 dark:text-slate-200">
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-500">Price</td>
+                      {comparedProducts.map((item, idx) => {
+                        const { price, originalPrice, discountText } = getProductPrices(item);
+                        return (
+                          <td key={idx} className="py-3 px-4">
+                            <span className="font-black text-amber-500 text-sm">₹{price.toLocaleString()}</span>
+                            {originalPrice && <span className="text-xs text-slate-400 line-through block">₹{originalPrice.toLocaleString()}</span>}
+                            {discountText && <span className="text-[9.5px] text-emerald-600 font-extrabold block">{discountText}</span>}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-500">Rating</td>
+                      {comparedProducts.map((item, idx) => (
+                        <td key={idx} className="py-3 px-4 font-bold">
+                          ⭐ {item.rating || '4.5'} ({item.reviews || 120})
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-500">Category</td>
+                      {comparedProducts.map((item, idx) => (
+                        <td key={idx} className="py-3 px-4">{item.category || item.subNavbarCategory || 'General'}</td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-500">Availability</td>
+                      {comparedProducts.map((item, idx) => (
+                        <td key={idx} className="py-3 px-4">
+                          {isVendorProductUnavailable(item) ? (
+                            <span className="text-red-500 font-extrabold">Out of Stock</span>
+                          ) : (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">In Stock</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-500">Action</td>
+                      {comparedProducts.map((item, idx) => (
+                        <td key={idx} className="py-3 px-4">
+                          <button 
+                            onClick={() => {
+                              addToCart(item);
+                              setIsCompareModalOpen(false);
+                              setManualCompareIds([]);
+                            }}
+                            className="px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs cursor-pointer border-none shadow-2xs uppercase tracking-wider"
+                          >
+                            Add to Cart
+                          </button>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* -------------------- SHARE OPTIONS MODAL -------------------- */}
+      {shareModalProduct && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200 select-none">
+          <div onClick={() => setShareModalProduct(null)} className="absolute inset-0" />
+          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden flex flex-col z-10 animate-scale-up p-6 text-left space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Share Product</h3>
               <button 
-                onClick={() => setIsCompareModalOpen(false)} 
-                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 cursor-pointer border-none bg-transparent"
+                onClick={() => setShareModalProduct(null)} 
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer border-none bg-transparent"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
-                    <th className="py-3 px-4">Spec / Details</th>
-                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
-                      <th key={idx} className="py-3 px-4 min-w-[170px] text-slate-900 dark:text-white">
-                        <div className="font-extrabold text-sm line-clamp-1">{item.name}</div>
-                        {idx === 0 ? (
-                          <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider block w-fit mt-1">Current Item</span>
-                        ) : (
-                          <span className="text-[9px] text-slate-400 font-bold block mt-1">Similar Option</span>
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium text-slate-700 dark:text-slate-200">
-                  <tr>
-                    <td className="py-3 px-4 font-bold text-slate-500">Price</td>
-                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => {
-                      const { price, originalPrice, discountText } = getProductPrices(item);
-                      return (
-                        <td key={idx} className="py-3 px-4">
-                          <span className="font-black text-amber-500 text-sm">₹{price.toLocaleString()}</span>
-                          {originalPrice && <span className="text-xs text-slate-400 line-through block">₹{originalPrice.toLocaleString()}</span>}
-                          {discountText && <span className="text-[9.5px] text-emerald-600 font-extrabold block">{discountText}</span>}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                  <tr>
-                    <td className="py-3 px-4 font-bold text-slate-500">Rating</td>
-                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
-                      <td key={idx} className="py-3 px-4 font-bold">
-                        ⭐ {item.rating || '4.5'} ({item.reviews || 120})
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="py-3 px-4 font-bold text-slate-500">Category</td>
-                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
-                      <td key={idx} className="py-3 px-4">{item.category || item.subNavbarCategory || 'General'}</td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="py-3 px-4 font-bold text-slate-500">Availability</td>
-                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
-                      <td key={idx} className="py-3 px-4">
-                        {isVendorProductUnavailable(item) ? (
-                          <span className="text-red-500 font-extrabold">Out of Stock</span>
-                        ) : (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">In Stock</span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="py-3 px-4 font-bold text-slate-500">Action</td>
-                    {[selectedProduct, ...products.filter(p => p.id !== selectedProduct.id && (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory)).slice(0, 3)].map((item, idx) => (
-                      <td key={idx} className="py-3 px-4">
-                        <button 
-                          onClick={() => {
-                            addToCart(item);
-                            setIsCompareModalOpen(false);
-                          }}
-                          className="px-3 py-1.5 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs cursor-pointer border-none shadow-2xs uppercase tracking-wider"
-                        >
-                          Add to Cart
-                        </button>
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
+            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+              {shareModalProduct.image && (
+                <img src={shareModalProduct.image} alt={shareModalProduct.name} className="w-12 h-12 object-cover rounded-xl shrink-0" />
+              )}
+              <div className="min-w-0">
+                <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{shareModalProduct.name}</h4>
+                <p className="text-[10px] text-amber-500 font-extrabold">₹{(shareModalProduct.price || 0).toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3 text-center pt-2">
+              {/* WhatsApp */}
+              <a 
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out ${shareModalProduct.name} on Connect: ${typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in'}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShareModalProduct(null)}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 hover:scale-105 transition-transform no-underline"
+              >
+                <span className="text-2xl">💬</span>
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">WhatsApp</span>
+              </a>
+
+              {/* Email */}
+              <a 
+                href={`mailto:?subject=${encodeURIComponent(shareModalProduct.name)}&body=${encodeURIComponent(`Check out ${shareModalProduct.name} on Connect: ${typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in'}`)}`}
+                onClick={() => setShareModalProduct(null)}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 hover:scale-105 transition-transform no-underline"
+              >
+                <span className="text-2xl">✉️</span>
+                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300">Email</span>
+              </a>
+
+              {/* Twitter / X */}
+              <a 
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${shareModalProduct.name} on Connect: ${typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in'}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShareModalProduct(null)}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 hover:scale-105 transition-transform no-underline"
+              >
+                <span className="text-2xl">🐦</span>
+                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Twitter</span>
+              </a>
+
+              {/* Copy Link */}
+              <button 
+                onClick={async () => {
+                  try {
+                    const url = typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in';
+                    await navigator.clipboard.writeText(url);
+                    triggerNotification('Link copied to clipboard!');
+                  } catch (e) {
+                    triggerNotification('Link copied!');
+                  }
+                  setShareModalProduct(null);
+                }}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 hover:scale-105 transition-transform cursor-pointer"
+              >
+                <Copy className="w-6 h-6 text-amber-500" />
+                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">Copy Link</span>
+              </button>
             </div>
           </div>
         </div>
