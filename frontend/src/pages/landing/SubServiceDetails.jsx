@@ -456,7 +456,7 @@ export default function SubServiceDetails({ title, onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 pt-10 pb-20 px-6 md:px-16 lg:px-24 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 pt-6 sm:pt-10 pb-20 px-3.5 sm:px-6 md:px-12 lg:px-20 relative overflow-hidden transition-colors duration-300">
       {/* Background glowing effects */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-gold/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-50/10 dark:bg-slate-900/10 rounded-full blur-[120px] pointer-events-none" />
@@ -640,7 +640,7 @@ export default function SubServiceDetails({ title, onBack }) {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in text-left">
+            <div className="grid grid-cols-1 min-[440px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 md:gap-6 animate-fade-in text-left">
               {matchedVendorProducts.map((product) => (
                 <div
                   key={product.id}

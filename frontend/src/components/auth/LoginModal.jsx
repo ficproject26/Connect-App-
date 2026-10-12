@@ -282,13 +282,13 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-xs animate-fade-in text-slate-800 dark:text-slate-200 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/65 backdrop-blur-xs animate-fade-in text-slate-800 dark:text-slate-200 select-none">
       
       {/* Backdrop click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Content Box */}
-      <div className="relative w-full max-w-md bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 z-10 animate-scale-up text-left">
+      <div className="relative w-full max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-8 z-10 animate-scale-up text-left">
         
         {/* Close Button */}
         <button 

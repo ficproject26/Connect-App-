@@ -267,11 +267,11 @@ export default function Wallet() {
       {/* Main Grid: Wallet Balance & Deposit Funds */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
         {/* Wallet Balance Card */}
-        <div className="lg:col-span-5 p-8 bg-gradient-to-br from-[#0b1e36] via-[#13284c] to-[#0b1329] border border-slate-800/80 rounded-3xl flex flex-col justify-between min-h-[260px] shadow-lg relative overflow-hidden group">
+        <div className="lg:col-span-5 p-6 sm:p-8 bg-gradient-to-br from-[#0b1e36] via-[#13284c] to-[#0b1329] border border-slate-800/80 rounded-3xl flex flex-col justify-between min-h-[260px] shadow-lg relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl group-hover:bg-amber-400/20 transition-all pointer-events-none" />
           <div>
             <span className="text-xs text-slate-400 uppercase font-black tracking-widest block">Total Balance</span>
-            <span className="text-4xl lg:text-5xl font-black text-white block mt-3 font-mono tracking-tight">
+            <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-white block mt-3 font-mono tracking-tight">
               ₹{Math.max(0, walletBalance || 0).toLocaleString()}
             </span>
           </div>
@@ -302,7 +302,7 @@ export default function Wallet() {
         </div>
 
         {/* Deposit Funds Card */}
-        <div className="lg:col-span-7 p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-3xl flex flex-col justify-between min-h-[260px] shadow-xs text-slate-800 dark:text-slate-200">
+        <div className="lg:col-span-7 p-6 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-3xl flex flex-col justify-between min-h-[260px] shadow-xs text-slate-800 dark:text-slate-200">
           <div>
             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-1">Deposit Funds</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Add money instantly to your Connect Wallet using secure UPI gateways, NetBanking or Credit Cards.</p>
@@ -344,9 +344,9 @@ export default function Wallet() {
       </div>
 
       {/* Recent Transactions Full Table/List */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 md:p-8 shadow-xs space-y-6">
-        <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-4">
-          <h3 className="text-xl font-black text-slate-900 dark:text-white">Recent Transactions</h3>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-5 sm:p-6 md:p-8 shadow-xs space-y-6">
+        <div className="flex flex-wrap gap-2 justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-4">
+          <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">Recent Transactions</h3>
           <span className="text-xs font-bold text-slate-400">Showing last {transactions.length} records</span>
         </div>
 
@@ -366,15 +366,15 @@ export default function Wallet() {
               return (
                 <div 
                   key={txn.id || index} 
-                  className="p-4.5 bg-slate-50/50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl flex items-center justify-between hover:border-amber-400/40 transition-all"
+                  className="p-3.5 sm:p-4.5 bg-slate-50/50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-400/40 transition-all"
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${isDeposit ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
+                  <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                    <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 ${isDeposit ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
                       {isDeposit ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                     </div>
-                    <div className="text-left">
-                      <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white block">{rawDesc}</span>
-                      <div className="flex items-center gap-2 mt-1">
+                    <div className="text-left min-w-0">
+                      <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white block truncate">{rawDesc}</span>
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                           {txn.category || (isDeposit ? 'Deposit' : 'Order Payment')} • {txn.date}
                         </span>
@@ -388,7 +388,7 @@ export default function Wallet() {
                       </div>
                     </div>
                   </div>
-                  <span className={`text-base sm:text-lg font-black font-mono ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                  <span className={`text-sm sm:text-lg font-black font-mono shrink-0 ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                     {isDeposit ? '+' : '-'}₹{Math.abs(txn.amount).toLocaleString()}
                   </span>
                 </div>
@@ -400,30 +400,30 @@ export default function Wallet() {
 
       {/* RAZORPAY PAYMENT GATEWAY MODAL */}
       {isRazorpayModalOpen && razorpayOrderData && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg max-h-[92dvh] rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col">
             
             {/* Top Bar with Razorpay Brand Header */}
-            <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center relative overflow-hidden">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center font-black text-white text-lg shadow-md shrink-0">
+            <div className="bg-[#0b1e36] text-white p-4 sm:p-5 flex justify-between items-center relative overflow-hidden shrink-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-blue-600 flex items-center justify-center font-black text-white text-base sm:text-lg shadow-md shrink-0">
                   R
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-sm tracking-tight text-white">Razorpay Payment</h3>
-                    <span className="bg-red-500/90 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <h3 className="font-extrabold text-xs sm:text-sm tracking-tight text-white truncate">Razorpay Payment</h3>
+                    <span className="bg-red-500/90 text-white text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded-md tracking-wider shrink-0">
                       Test Mode
                     </span>
                   </div>
-                  <p className="text-[10px] text-blue-200 mt-0.5">Secured by Razorpay 256-Bit SSL</p>
+                  <p className="text-[9px] sm:text-[10px] text-blue-200 mt-0.5">Secured by Razorpay 256-Bit SSL</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-blue-300 block">Total Amount</span>
-                  <span className="text-lg font-black text-amber-400">
+                  <span className="text-[9px] sm:text-[10px] uppercase font-bold text-blue-300 block">Total Amount</span>
+                  <span className="text-base sm:text-lg font-black text-amber-400">
                     ₹{razorpayOrderData.amountRupees.toLocaleString()}
                   </span>
                 </div>
@@ -438,7 +438,7 @@ export default function Wallet() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1 overflow-y-auto">
               {isVerifying ? (
                 <div className="py-12 text-center space-y-4">
                   <div className="w-14 h-14 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />

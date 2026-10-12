@@ -23,7 +23,7 @@ export default function FloatingDock() {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 md:right-8 z-40 flex flex-col gap-3.5 items-center">
+      <div className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 md:right-8 z-40 flex flex-col gap-2.5 sm:gap-3.5 items-center">
         
         {/* 1. AI Assistant Button (Top) */}
         <div className="relative flex items-center justify-center">
@@ -63,10 +63,10 @@ export default function FloatingDock() {
             onMouseLeave={() => setHoveredButton(null)}
             whileHover={{ y: -4, scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center cursor-pointer shadow-2xl relative border border-white/20 select-none focus:outline-none"
+            className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center cursor-pointer shadow-2xl relative border border-white/20 select-none focus:outline-none"
             aria-label="Chat with AI Assistant"
           >
-            <Sparkles className="w-6 h-6 fill-white/10" />
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 fill-white/10" />
           </motion.button>
         </div>
 
@@ -108,10 +108,10 @@ export default function FloatingDock() {
             onMouseLeave={() => setHoveredButton(null)}
             whileHover={{ y: -4, scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center cursor-pointer shadow-2xl relative border border-white/20 select-none focus:outline-none"
+            className="w-11 h-11 sm:w-14 sm:h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center cursor-pointer shadow-2xl relative border border-white/20 select-none focus:outline-none"
             aria-label="Chat on WhatsApp"
           >
-            <WhatsAppIcon className="w-7 h-7" />
+            <WhatsAppIcon className="w-5 h-5 sm:w-7 sm:h-7" />
           </motion.button>
         </div>
 
@@ -120,7 +120,7 @@ export default function FloatingDock() {
       {/* AI SUPPORT MODAL / OVERLAY */}
       <AnimatePresence>
         {activeModal === 'support' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
             {/* Modal Backdrop Click to Close */}
             <div className="absolute inset-0 cursor-pointer" onClick={() => setActiveModal(null)} />
 
@@ -129,7 +129,7 @@ export default function FloatingDock() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-[#0b132b] text-slate-800 dark:text-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl relative border border-slate-200/50 dark:border-slate-800/60 z-10"
+              className="bg-white dark:bg-[#0b132b] text-slate-800 dark:text-white rounded-2xl p-5 sm:p-6 md:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl relative border border-slate-200/50 dark:border-slate-800/60 z-10"
             >
               {/* Close Button */}
               <button
@@ -150,7 +150,7 @@ export default function FloatingDock() {
                   Have questions? Our team and AI support assistant are here to help you get started with the Connect App ecosystem.
                 </p>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <button
                     onClick={() => {
                       window.open('https://wa.me/916369406416', '_blank');

@@ -86,13 +86,13 @@ export default function Offers() {
     <div className="max-w-6xl mx-auto space-y-8 text-left animate-fade-in text-slate-800 dark:text-slate-100">
       
       {/* Header Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-violet-50/50 via-indigo-50/25 to-white dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-950 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 sm:p-8 flex items-center justify-between shadow-3xs">
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <Gift className="w-7 h-7 text-white" />
+      <div className="relative overflow-hidden bg-gradient-to-r from-violet-50/50 via-indigo-50/25 to-white dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-950 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-5 sm:p-8 flex items-center justify-between shadow-3xs">
+        <div className="flex items-center gap-3.5 sm:gap-4 relative z-10 min-w-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/25">
+            <Gift className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Privilege Offers</h2>
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Privilege Offers</h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-bold mt-1">Exclusive discounts pre-applied for active Connect members</p>
           </div>
         </div>
@@ -121,56 +121,56 @@ export default function Offers() {
 
       {/* Offers Grid */}
       {displayOffers.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl col-span-2">
+        <div className="p-8 sm:p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl col-span-2">
           <Gift className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-sm font-black text-slate-700 dark:text-slate-300">No Exclusive Offers Available</p>
           <p className="text-xs text-slate-400 mt-1 font-semibold">Check back later for new promotional deals and discounts.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {displayOffers.map((off, idx) => {
           const Icon = off.icon;
           const isCopied = copiedCode === off.code;
           return (
             <div 
               key={off.title} 
-              className={`relative overflow-hidden rounded-3xl border-2 ${off.borderColor} ${off.lightBg} p-6 flex flex-col justify-between gap-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 group`}
+              className={`relative overflow-hidden rounded-3xl border-2 ${off.borderColor} ${off.lightBg} p-5 sm:p-6 flex flex-col justify-between gap-5 sm:gap-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 group`}
               style={{ animationDelay: `${idx * 100}ms` }}
             >
               {/* Illustration Background Graphic */}
               {off.illustration}
               
               {/* Top Section */}
-              <div className="relative z-10 flex items-start gap-4">
+              <div className="relative z-10 flex items-start gap-3.5 sm:gap-4">
                 {off.imageUrl ? (
                   <img
                     src={off.imageUrl}
                     alt={off.title}
                     onError={(e) => { e.target.style.display = 'none'; }}
-                    className="w-14 h-14 object-cover rounded-2xl shrink-0 border border-slate-200 dark:border-slate-800 shadow-2xs"
+                    className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-2xl shrink-0 border border-slate-200 dark:border-slate-800 shadow-2xs"
                   />
                 ) : (
-                  <div className={`w-14 h-14 rounded-full ${off.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
-                    <Icon className="w-6.5 h-6.5" />
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full ${off.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
+                    <Icon className="w-6 h-6 sm:w-6.5 sm:h-6.5" />
                   </div>
                 )}
-                <div>
-                  <h4 className="text-base font-black text-slate-900 dark:text-white leading-tight">{off.title}</h4>
-                  <p className="text-xs text-slate-455 dark:text-slate-400 mt-1.5 leading-relaxed max-w-[280px] font-medium">{off.desc}</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base font-black text-slate-900 dark:text-white leading-tight break-words">{off.title}</h4>
+                  <p className="text-xs text-slate-455 dark:text-slate-400 mt-1.5 leading-relaxed max-w-full font-medium">{off.desc}</p>
                 </div>
               </div>
 
               {/* Bottom Section */}
-              <div className="relative z-10 flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800/40">
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/40">
                 {/* Discount Tag */}
-                <span className={`${off.tagBg} text-white text-xs font-extrabold px-4.5 py-2.5 rounded-full shadow-md shadow-slate-500/10 uppercase tracking-wide border-none`}>
+                <span className={`${off.tagBg} text-white text-xs font-extrabold px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-full shadow-md shadow-slate-500/10 uppercase tracking-wide border-none`}>
                   {off.discount}
                 </span>
 
                 {/* Coupon Code Block */}
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Use Code</span>
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-4 pr-2.5 py-1.5 flex items-center gap-3 shadow-3xs">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-3 sm:pl-4 pr-2 sm:pr-2.5 py-1.5 flex items-center gap-2.5 sm:gap-3 shadow-3xs">
                     <span className="font-mono text-xs font-black text-slate-700 dark:text-slate-200 tracking-wider">
                       {off.code}
                     </span>

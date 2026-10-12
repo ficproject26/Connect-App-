@@ -435,7 +435,7 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 pt-10 pb-20 px-6 md:px-16 lg:px-24 transition-colors duration-300">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 pt-6 sm:pt-10 pb-20 px-3.5 sm:px-6 md:px-12 lg:px-20 transition-colors duration-300">
       {/* Dynamic Background Light */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/5 dark:bg-brand-gold/2 rounded-full blur-[100px] pointer-events-none" />
 
@@ -569,7 +569,7 @@ export default function CategoryDetails({ category, onBack, onSubCategoryClick }
 
               {/* Product Grid Render */}
               {displayedProducts.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                   {displayedProducts.map((product) => (
                     <div
                       key={product.id}

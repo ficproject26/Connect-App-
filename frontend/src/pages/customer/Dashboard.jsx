@@ -4539,7 +4539,7 @@ export default function CustomerDashboard({
                   onClick={() => setIsLocationDropdownOpen(false)}
                   className="fixed inset-0 z-[99998] bg-black/60 backdrop-blur-xs" 
                 />
-                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[360px] sm:w-88 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl shadow-2xl p-5 z-[99999] text-slate-800 dark:text-slate-200 animate-fade-in space-y-4">
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[360px] sm:w-88 max-h-[90dvh] overflow-y-auto bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl shadow-2xl p-5 z-[99999] text-slate-800 dark:text-slate-200 animate-fade-in space-y-4">
                   
                   {/* Header Title & Close Button */}
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -4655,7 +4655,7 @@ export default function CustomerDashboard({
                   {/* Popular Cities Grid */}
                   <div className="text-left pt-1">
                     <h4 className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest mb-2">Popular Cities</h4>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 min-[360px]:grid-cols-3 gap-1.5">
                       {['Bangalore', 'Chennai', 'Hyderabad', 'Mumbai', 'Delhi', 'Coimbatore'].map((cityName) => (
                         <button
                           key={cityName}
@@ -5612,7 +5612,7 @@ export default function CustomerDashboard({
         }}
         onMouseLeave={handleMouseLeave}
       >
-        <nav className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-2 sm:px-8 py-2 sm:py-2.5 grid grid-cols-4 md:flex md:items-center md:justify-center gap-1 sm:gap-6 md:gap-10 transition-colors w-full">
+        <nav className="bg-white dark:bg-[#0b1329] border-b border-slate-200 dark:border-slate-800/60 px-1 sm:px-8 py-1.5 sm:py-2.5 grid grid-cols-4 md:flex md:items-center md:justify-center gap-1 sm:gap-6 md:gap-10 transition-colors w-full">
           {subNavbarCategories.map((cat) => {
             const isActive = activeTab === cat;
             const Icon = icons[cat] || ShoppingBag;
@@ -5649,14 +5649,14 @@ export default function CustomerDashboard({
                     setHoveredLink(null);
                   }
                 }}
-                className={`relative group text-[10px] sm:text-xs font-black uppercase tracking-tight sm:tracking-wider px-1.5 sm:px-2 py-2 sm:py-3 transition-all cursor-pointer flex flex-col md:flex-row items-center justify-center gap-1 sm:gap-2 rounded-xl md:rounded-none ${
+                className={`relative group text-[9px] min-[360px]:text-[10px] sm:text-xs font-black uppercase tracking-tighter min-[360px]:tracking-tight sm:tracking-wider px-1 sm:px-2 py-1.5 sm:py-3 transition-all cursor-pointer flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-2 rounded-xl md:rounded-none min-w-0 ${
                   isActive 
                     ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/15 md:bg-transparent md:dark:bg-transparent border border-amber-500/30 md:border-t-0 md:border-x-0 md:border-b-2 md:border-amber-500 dark:md:border-amber-400' 
                     : 'text-slate-600 dark:text-slate-400 border border-transparent hover:text-amber-500 dark:hover:text-amber-400'
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400 group-hover:text-amber-500'}`} />
-                <span className="truncate max-w-full">{cat}</span>
+                <span className="truncate max-w-full leading-tight text-center">{cat}</span>
               </button>
             );
           })}
@@ -5857,11 +5857,11 @@ export default function CustomerDashboard({
               {/* Card Frame Wrapper */}
               <div 
                 onClick={() => handleBannerAction(activeSlideObj)}
-                className="w-full max-w-[480px] aspect-[1.65/1] sm:aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
+                className="w-full max-w-[480px] min-h-[220px] sm:min-h-0 sm:aspect-[1.58/1] relative z-10 transition-transform duration-500 hover:scale-[1.02] rounded-2xl overflow-hidden bg-transparent cursor-pointer shadow-lg"
               >
                 {activeSlideObj && (
                   <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0e0717] text-white flex flex-row items-stretch animate-fade-in relative">
-                    <div className="w-[60%] sm:w-[58%] p-3 sm:p-5 flex flex-col justify-between z-10 text-left">
+                    <div className="w-[60%] sm:w-[58%] p-2.5 sm:p-5 flex flex-col justify-between z-10 text-left min-w-0">
                       <div className="space-y-1 sm:space-y-1.5">
                         <div className="flex items-center gap-1.5 font-bold text-white text-[11px] sm:text-xs">
                           <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[#FFC107] shrink-0 animate-pulse" />
@@ -5968,7 +5968,7 @@ export default function CustomerDashboard({
           <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight uppercase">Top Categories</h3>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 min-[480px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
@@ -6086,9 +6086,9 @@ export default function CustomerDashboard({
             <div 
               key={offer.id} 
               onClick={() => handleOfferClick(offer)}
-              className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-4 sm:p-4.5 min-h-[155px] sm:h-[165px] transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer ${offer.bg}`}
+              className={`border rounded-3xl overflow-hidden shadow-xs flex justify-between p-3.5 sm:p-4.5 min-h-[160px] transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer ${offer.bg}`}
             >
-              <div className="flex flex-col justify-between items-start text-left max-w-[62%] sm:max-w-[60%] h-full">
+              <div className="flex flex-col justify-between items-start text-left max-w-[62%] sm:max-w-[60%] h-full min-w-0">
                 <div className="space-y-1.5">
                   <span className={`text-[10px] sm:text-[11px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider ${offer.tagColor}`}>
                     {offer.discount}
@@ -9423,19 +9423,19 @@ export default function CustomerDashboard({
         </div>
 
         {/* Main Product Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6 shadow-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl p-4 sm:p-6 shadow-xs">
           
           {/* Left Column: Gallery */}
           <div className="lg:col-span-5 flex flex-col justify-between">
-            <div className="flex gap-4">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
               {/* Thumbnails list */}
               {!(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.category === 'Jobs' || selectedProduct.mainCategory === 'Jobs') && (
-                <div className="flex flex-col gap-2.5 shrink-0 select-none">
+                <div className="flex flex-row sm:flex-col gap-2 sm:gap-2.5 overflow-x-auto sm:overflow-visible shrink-0 select-none pb-1 sm:pb-0">
                   {thumbnails.slice(0, 5).map((thumb, idx) => (
                     <button
                       key={idx}
                       onClick={() => { setActiveProductImage(thumb); setActiveThumbnailIndex(idx); }}
-                      className={`w-14 h-14 rounded-xl border-2 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
+                      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 shrink-0 overflow-hidden bg-slate-50 dark:bg-slate-950 transition-all cursor-pointer ${
                         activeThumbnailIndex === idx 
                           ? 'border-amber-400 shadow-md scale-102' 
                           : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
@@ -9454,7 +9454,7 @@ export default function CustomerDashboard({
                     </button>
                   ))}
                   {thumbnails.length > 5 && (
-                    <div onClick={() => setIsGalleryModalOpen(true)} className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                    <div onClick={() => setIsGalleryModalOpen(true)} className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 shrink-0 flex flex-col items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
                       <span>+{thumbnails.length - 5}</span>
                       <span>More</span>
                     </div>
@@ -9463,7 +9463,7 @@ export default function CustomerDashboard({
               )}
 
               {/* Main Large Display */}
-              <div className="relative flex-grow min-h-[380px] sm:min-h-[450px] aspect-[4/3] sm:aspect-[1.1/1] w-full bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-900 overflow-hidden flex items-center justify-center p-0">
+              <div className="relative flex-grow min-h-[260px] sm:min-h-[450px] aspect-[4/3] sm:aspect-[1.1/1] w-full bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-150 dark:border-slate-900 overflow-hidden flex items-center justify-center p-0">
                 {(selectedProduct.tag === 'Jobs' || selectedProduct.subNavbarCategory === 'Jobs' || selectedProduct.category === 'Jobs' || selectedProduct.mainCategory === 'Jobs') ? (
                   <div className="w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center gap-2 rounded-xl">
                     <Briefcase className="w-12 h-12 text-amber-500" />
@@ -10107,8 +10107,8 @@ export default function CustomerDashboard({
           const isApparel = opts?.type === 'apparel';
           
           return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fade-in text-left">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-md w-full max-h-[90dvh] overflow-y-auto shadow-2xl animate-fade-in text-left">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Size Guide Chart</h3>
                   <button onClick={() => setIsSizeGuideOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 cursor-pointer">
@@ -10124,7 +10124,7 @@ export default function CustomerDashboard({
                 </p>
 
                 {/* Dynamic Table based on product category */}
-                <div className="overflow-hidden border border-slate-150 dark:border-slate-800 rounded-xl">
+                <div className="overflow-x-auto border border-slate-150 dark:border-slate-800 rounded-xl">
                   {isApparel ? (
                     <table className="w-full text-xs text-left border-collapse">
                       <thead>
