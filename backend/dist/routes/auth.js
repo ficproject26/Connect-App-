@@ -1283,4 +1283,139 @@ router.delete('/addresses/:id', middleware_1.optionalAuthenticateToken, handleDe
 router.post('/customer-address', middleware_1.optionalAuthenticateToken, handleSaveAddress);
 router.put('/customer-address/:addressId', middleware_1.optionalAuthenticateToken, handleUpdateAddress);
 router.delete('/customer-address/:addressId', middleware_1.optionalAuthenticateToken, handleDeleteAddress);
+// Customer Notifications Endpoints
+router.get('/customer-notifications', middleware_1.optionalAuthenticateToken, async (req, res) => {
+    const authUser = req.user;
+    const requestedId = (req.query.userId || req.query.customerId || req.query.phone || req.query.email || '').trim();
+    const target = requestedId || (authUser?.userId || authUser?.email || '');
+    if (!target) {
+        return res.status(200).json({ status: 'success', notifications: [], unreadCount: 0 });
+    }
+    try {
+        const mongoDb = db_1.db.getDb();
+        if (!mongoDb) {
+            return res.status(503).json({ status: 'error', message: 'Database not connected' });
+        }
+        const cleanTarget = target.trim();
+        const cleanDigits = target.replace(/\D/g, '');
+        // 1. Check explicit notifications collection
+        const notifFilter = {
+            $or: [
+                { customerId: cleanTarget },
+                { customer_id: cleanTarget },
+                { userId: cleanTarget },
+                { email: cleanTarget.toLowerCase() },
+                { customerEmail: cleanTarget.toLowerCase() },
+                ...(cleanDigits.length >= 10 ? [{ phone: cleanDigits }, { customerPhone: cleanDigits }] : [])
+            ]
+        };
+        const explicitNotifs = await mongoDb.collection('notifications').find(notifFilter).sort({ createdAt: -1, created_at: -1 }).limit(30).toArray().catch(() => []);
+        // 2. Query recent orders to generate accurate real-time order/booking activity notifications
+        const orderFilter = {
+            $or: [
+                { customer_id: cleanTarget },
+                { customerId: cleanTarget },
+                { customer_email: cleanTarget.toLowerCase() },
+                ...(cleanDigits.length >= 10 ? [{ customer_phone: { $regex: cleanDigits.slice(-10) } }] : [])
+            ]
+        };
+        const userOrders = await mongoDb.collection('orders').find(orderFilter).sort({ created_at: -1 }).limit(20).toArray().catch(() => []);
+        const orderNotifs = userOrders.map((ord) => {
+            const ordNum = ord.order_number || ord.id || 'N/A';
+            const status = ord.status || 'Order Received';
+            const prodName = (ord.product_details || 'Order').replace(/\s*\(Qty:\s*\d+\)/gi, '');
+            const isDelivered = ['Delivered', 'Completed'].includes(status);
+            const isCancelled = status === 'Cancelled';
+            const isRead = Boolean(ord.notification_read || ord.notificationRead || isDelivered);
+            let title = `Order #${ordNum}`;
+            let message = `${prodName} is currently ${status}`;
+            if (status === 'Order Received') {
+                title = `Order #${ordNum} Placed`;
+                message = `Your order for ${prodName} (₹${ord.amount || 0}) was received.`;
+            }
+            else if (isDelivered) {
+                title = `Order #${ordNum} Delivered`;
+                message = `Your order for ${prodName} was successfully delivered.`;
+            }
+            else if (isCancelled) {
+                title = `Order #${ordNum} Cancelled`;
+                message = `Your order for ${prodName} has been cancelled.`;
+            }
+            else if (status === 'Out For Delivery') {
+                title = `Order #${ordNum} Out for Delivery`;
+                message = `Your delivery partner is on the way with ${prodName}.`;
+            }
+            return {
+                id: `ord-notif-${ord._id || ord.id}`,
+                title,
+                message,
+                text: message,
+                time: ord.created_at ? new Date(ord.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently',
+                date: ord.created_at || new Date().toISOString(),
+                read: isRead,
+                type: 'order',
+                status
+            };
+        });
+        // Merge and deduplicate notifications
+        const allNotifsMap = new Map();
+        orderNotifs.forEach((n) => allNotifsMap.set(n.id, n));
+        explicitNotifs.forEach((n) => {
+            const id = String(n._id || n.id);
+            allNotifsMap.set(id, {
+                id,
+                title: n.title || 'Notification',
+                message: n.message || n.text || '',
+                text: n.message || n.text || '',
+                time: n.createdAt || n.created_at ? new Date(n.createdAt || n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently',
+                date: n.createdAt || n.created_at || new Date().toISOString(),
+                read: Boolean(n.read || n.isRead),
+                type: n.type || 'system'
+            });
+        });
+        const notifications = Array.from(allNotifsMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const unreadCount = notifications.filter((n) => !n.read).length;
+        return res.json({ status: 'success', notifications, unreadCount });
+    }
+    catch (err) {
+        return res.status(500).json({ status: 'error', message: err.message, notifications: [], unreadCount: 0 });
+    }
+});
+router.put('/customer-notifications/read', middleware_1.optionalAuthenticateToken, async (req, res) => {
+    const authUser = req.user;
+    const requestedId = (req.body?.customerId || req.body?.userId || req.body?.email || '').trim();
+    const target = requestedId || (authUser?.userId || authUser?.email || '');
+    try {
+        const mongoDb = db_1.db.getDb();
+        if (!mongoDb) {
+            return res.status(503).json({ status: 'error', message: 'Database not connected' });
+        }
+        if (target) {
+            const cleanTarget = target.trim();
+            const cleanDigits = target.replace(/\D/g, '');
+            // Mark explicit notifications as read
+            await mongoDb.collection('notifications').updateMany({
+                $or: [
+                    { customerId: cleanTarget },
+                    { userId: cleanTarget },
+                    { email: cleanTarget.toLowerCase() },
+                    ...(cleanDigits.length >= 10 ? [{ phone: cleanDigits }] : [])
+                ]
+            }, { $set: { read: true, isRead: true } }).catch(() => { });
+            // Mark order notifications as read
+            await mongoDb.collection('orders').updateMany({
+                $or: [
+                    { customer_id: cleanTarget },
+                    { customerId: cleanTarget },
+                    { customer_email: cleanTarget.toLowerCase() },
+                    ...(cleanDigits.length >= 10 ? [{ customer_phone: { $regex: cleanDigits.slice(-10) } }] : [])
+                ]
+            }, { $set: { notification_read: true, notificationRead: true } }).catch(() => { });
+        }
+        return res.json({ status: 'success', message: 'All notifications marked as read', unreadCount: 0 });
+    }
+    catch (err) {
+        return res.status(500).json({ status: 'error', message: err.message });
+    }
+});
 exports.default = router;

@@ -2396,6 +2396,19 @@ export default function CustomerDashboard({
     }
   }, [isProfileModalOpen]);
 
+  // Lock/unlock body scroll whenever any modal or drawer is open
+  useEffect(() => {
+    const anyModalOpen = isProfileModalOpen || isWishlistOpen || isCartOpen || isCompareModalOpen || isNotificationsOpen || !!shareModalProduct;
+    if (anyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, isNotificationsOpen, shareModalProduct]);
+
   // Clean network recovery after system wake or reconnection
   useEffect(() => {
     const handleOnline = () => {
@@ -2802,10 +2815,80 @@ export default function CustomerDashboard({
     }
   };
 
-  // Dynamic Notifications State
+  // Dynamic Notifications State & Backend Synchronization
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notificationsList, setNotificationsList] = useState([]);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
+
+  const loadCustomerNotifications = useCallback(async () => {
+    try {
+      const activeUser = currentUser || JSON.parse(localStorage.getItem('connect_current_user') || localStorage.getItem('user') || 'null');
+      const userId = activeUser?.id || activeUser?.userId || activeUser?._id || '';
+      const email = activeUser?.email || profileEmail || '';
+      const phone = activeUser?.phone || profilePhone || '';
+
+      if (!userId && !email && !phone) {
+        setNotificationsList([]);
+        setUnreadCount(0);
+        return;
+      }
+
+      setIsNotificationsLoading(true);
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const params = new URLSearchParams();
+      if (userId) params.append('userId', userId);
+      if (email) params.append('email', email);
+      if (phone) params.append('phone', phone);
+
+      const res = await fetch(`/api/auth/customer-notifications?${params.toString()}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.notifications)) {
+          setNotificationsList(data.notifications);
+          setUnreadCount(typeof data.unreadCount === 'number' ? data.unreadCount : data.notifications.filter(n => !n.read).length);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load customer notifications:", err);
+    } finally {
+      setIsNotificationsLoading(false);
+    }
+  }, [currentUser, profileEmail, profilePhone]);
+
+  useEffect(() => {
+    loadCustomerNotifications();
+  }, [loadCustomerNotifications]);
+
+  const markAllNotificationsAsRead = async () => {
+    try {
+      const activeUser = currentUser || JSON.parse(localStorage.getItem('connect_current_user') || localStorage.getItem('user') || 'null');
+      const userId = activeUser?.id || activeUser?.userId || activeUser?._id || '';
+      const email = activeUser?.email || profileEmail || '';
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+
+      setUnreadCount(0);
+      setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+      triggerNotification("All notifications marked as read");
+
+      await fetch('/api/auth/customer-notifications/read', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ userId, email })
+      });
+    } catch (err) {
+      console.warn("Failed marking notifications read:", err);
+    }
+  };
 
   // Hover Mega Menu State & Handlers
   const [hoveredLink, setHoveredLink] = useState(null);
@@ -4054,7 +4137,7 @@ export default function CustomerDashboard({
           <p className="text-[11px] text-slate-400 mt-0.5">Track your order transaction and payment statuses</p>
         </div>
 
-        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+        <div className="space-y-3 pr-1">
           {customerOrders.length === 0 ? (
             <div className="py-12 text-center text-slate-400 text-xs border border-slate-150 dark:border-slate-800/60 rounded-xl bg-slate-50/50 dark:bg-slate-950/20">
               No payment transactions found. Place an order to generate payments.
@@ -4881,7 +4964,10 @@ export default function CustomerDashboard({
         {!hideProfile && currentUser && (
           <div className="relative">
             <button 
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              onClick={() => {
+                setIsNotificationsOpen(true);
+                loadCustomerNotifications();
+              }}
               className="relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
               title="Notifications"
             >
@@ -4895,46 +4981,6 @@ export default function CustomerDashboard({
               </div>
               {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Notifications</span>}
             </button>
-
-            {isNotificationsOpen && (
-              <>
-                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
-                <div className={`${isMobile ? 'fixed top-16 left-4 right-4' : 'absolute right-0 mt-2 w-80'} bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left`}>
-                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
-                    <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
-                    {unreadCount > 0 && (
-                      <button 
-                        onClick={() => {
-                          setUnreadCount(0);
-                          triggerNotification("All notifications marked as read");
-                        }}
-                        className="text-[10px] text-amber-500 hover:text-amber-600 font-bold hover:underline cursor-pointer border-none bg-transparent"
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
-                    {unreadCount > 0 ? (
-                      notificationsList.map((notif, idx) => (
-                        <div key={idx} className="flex gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors text-left border-b border-slate-50 dark:border-slate-900 last:border-b-0">
-                          <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5" />
-                          <div className="leading-tight">
-                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{notif.text}</p>
-                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{notif.time}</span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
-                        No unread notifications
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         )}
       </div>
@@ -5330,6 +5376,7 @@ export default function CustomerDashboard({
                     onClick={() => {
                       setIsNotificationsOpen(true);
                       setIsMobileMenuOpen(false);
+                      loadCustomerNotifications();
                     }}
                     className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-amber-500/10 rounded-2xl border border-slate-100 dark:border-slate-800/80 transition-colors text-left cursor-pointer col-span-2"
                   >
@@ -6605,31 +6652,12 @@ export default function CustomerDashboard({
               <div 
                 key={item.id} 
                 onClick={() => {
-                  const navigableTabs = ['Services', 'Food', 'Stay', 'Travel', 'Jobs'];
-                  if (navigableTabs.includes(item.tag)) {
-                    setSelectedProduct(null);
-                    setActiveTab(item.tag);
-                    setSelectedSubNavbarCategory(item.tag);
-                    setSelectedCategories([]);
-                    setSearchQuery('');
-                    triggerNotification(`Switching to ${item.tag}...`);
-                  } else {
-                    const p = products.find(prod => prod.name === item.name) || {
-                      id: item.id,
-                      name: item.name,
-                      price: item.price,
-                      originalPrice: item.originalPrice,
-                      image: item.image,
-                      rating: item.rating,
-                      tag: item.tag,
-                      category: item.category,
-                      discount: item.discount,
-                      reviews: 148,
-                      subNavbarCategory: item.tag
-                    };
-                    setSelectedProduct(p);
-                    triggerNotification(`Loading details for ${item.name}...`);
-                  }
+                  // Always open exact product details – never just switch tabs
+                  const p = products.find(prod => prod.id === item.id) || products.find(prod => prod.name === item.name) || item;
+                  setSelectedProduct(p);
+                  setActiveProductImage(p.image || null);
+                  setActiveThumbnailIndex(0);
+                  triggerNotification(`Loading ${item.name}...`);
                 }}
                 className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
               >
@@ -11035,7 +11063,17 @@ export default function CustomerDashboard({
                   </p>
                 </div>
                 <button
-                  onClick={() => setIsWishlistOpen(false)}
+                  onClick={() => {
+                    setIsWishlistOpen(false);
+                    setSelectedProduct(null);
+                    setActiveTab('Home');
+                    setSelectedCategories([]);
+                    setSearchQuery('');
+                    setTimeout(() => {
+                      const catalogEl = document.getElementById('connect-catalog');
+                      if (catalogEl) catalogEl.scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                  }}
                   className="mt-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer border-none active:scale-95"
                 >
                   Explore Catalog
@@ -11126,6 +11164,100 @@ wishlistProducts.forEach(item => addToCart(item));
           )}
         </div>
       </div>
+
+      {/* -------------------- 9. GLOBAL NOTIFICATIONS MODAL / DRAWER -------------------- */}
+      {isNotificationsOpen && (
+        <div className="fixed inset-0 z-[110] flex items-start justify-end p-3 sm:p-6 sm:pt-20">
+          <div 
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs transition-opacity" 
+            onClick={() => setIsNotificationsOpen(false)} 
+          />
+          <div className="relative w-full max-w-sm sm:max-w-md bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden z-10 animate-scale-up flex flex-col max-h-[85vh]">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/40">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                  <Bell className="w-4.5 h-4.5" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white">Notifications</h3>
+                  <p className="text-[10px] font-semibold text-slate-400">
+                    {unreadCount > 0 ? `${unreadCount} unread alert${unreadCount > 1 ? 's' : ''}` : 'All caught up'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllNotificationsAsRead}
+                    className="text-[10px] font-extrabold text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 px-2.5 py-1 rounded-lg hover:bg-amber-500/10 transition-colors cursor-pointer border-none bg-transparent"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer border-none"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 no-scrollbar">
+              {isNotificationsLoading ? (
+                <div className="py-12 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
+                  <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                  <span>Loading notifications...</span>
+                </div>
+              ) : notificationsList.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-700 dark:text-slate-300">No notifications yet</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">We'll alert you about orders, deliveries, and deals</p>
+                  </div>
+                </div>
+              ) : (
+                notificationsList.map((notif, idx) => (
+                  <div 
+                    key={notif.id || idx}
+                    onClick={() => {
+                      if (!notif.read) {
+                        setNotificationsList(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                        setUnreadCount(prev => Math.max(0, prev - 1));
+                      }
+                    }}
+                    className={`p-3 rounded-2xl border transition-all text-left flex items-start gap-3 cursor-pointer ${
+                      notif.read 
+                        ? 'bg-transparent border-slate-150 dark:border-slate-800/60 opacity-75' 
+                        : 'bg-amber-50/40 dark:bg-amber-500/5 border-amber-200/60 dark:border-amber-500/20 shadow-2xs'
+                    }`}
+                  >
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1.5 ${notif.read ? 'bg-slate-300 dark:bg-slate-700' : 'bg-amber-500 animate-pulse'}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                          {notif.title || 'Notification'}
+                        </h4>
+                        <span className="text-[9px] font-semibold text-slate-400 shrink-0">
+                          {notif.time || 'Recently'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                        {notif.message || notif.text}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* -------------------- 7. PROFILE DETAILS MODAL POP-UP -------------------- */}
       {isProfileModalOpen && (
@@ -11718,7 +11850,10 @@ wishlistProducts.forEach(item => addToCart(item));
                             <div className="flex items-center gap-4 text-slate-700 dark:text-slate-300">
                               <div className="relative">
                                 <button 
-                                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} 
+                                  onClick={() => {
+                                    setIsNotificationsOpen(true);
+                                    loadCustomerNotifications();
+                                  }} 
                                   className="relative p-2 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer border-none bg-transparent"
                                   title="Notifications"
                                 >
@@ -11727,44 +11862,6 @@ wishlistProducts.forEach(item => addToCart(item));
                                     <span className="absolute top-0 right-0 w-4 h-4 bg-[#FFC107] text-slate-950 text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">{unreadCount}</span>
                                   )}
                                 </button>
-                                {isNotificationsOpen && (
-                                  <>
-                                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsNotificationsOpen(false)} />
-                                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-slate-800 dark:text-slate-200 text-left">
-                                      <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/60 pb-2 mb-3">
-                                        <span className="text-xs font-black text-slate-900 dark:text-white">Notifications</span>
-                                        {unreadCount > 0 && (
-                                          <button 
-                                            onClick={() => {
-                                              setUnreadCount(0);
-                                              triggerNotification("All notifications marked as read");
-                                            }}
-                                            className="text-[10px] text-amber-500 hover:text-amber-600 font-bold hover:underline cursor-pointer border-none bg-transparent"
-                                          >
-                                            Mark all as read
-                                          </button>
-                                        )}
-                                      </div>
-                                      <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
-                                        {unreadCount > 0 ? (
-                                          notificationsList.map((notif, idx) => (
-                                            <div key={idx} className="flex gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors text-left border-b border-slate-50 dark:border-slate-900 last:border-b-0">
-                                              <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1.5" />
-                                              <div className="leading-tight">
-                                                <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{notif.text}</p>
-                                                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block mt-1">{notif.time}</span>
-                                              </div>
-                                            </div>
-                                          ))
-                                        ) : (
-                                          <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
-                                            No unread notifications
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </>
-                                )}
                               </div>
                               <button 
                                 onClick={() => setIsHelpSupportOpen(true)}
@@ -16048,12 +16145,24 @@ wishlistProducts.forEach(item => addToCart(item));
 
       {/* -------------------- COMPARE MODAL -------------------- */}
       {isCompareModalOpen && selectedProduct && (() => {
+        // Strict same-category matching: mainCategory AND subcategory (category field) must both match
+        const refMain = (selectedProduct.mainCategory || '').toLowerCase().trim();
+        const refSub = (selectedProduct.category || selectedProduct.subcategory || '').toLowerCase().trim();
+        const isComparableProduct = (p) => {
+          const candMain = (p.mainCategory || '').toLowerCase().trim();
+          const candSub = (p.category || p.subcategory || '').toLowerCase().trim();
+          if (!refMain || !candMain) return false;
+          if (candMain !== refMain) return false;
+          // If both have subcategory, enforce subcategory match too
+          if (refSub && candSub && candSub !== refSub) return false;
+          return true;
+        };
         const manualItems = products.filter(p => p.id !== selectedProduct.id && manualCompareIds.includes(p.id));
         const comparedProducts = [selectedProduct, ...manualItems];
-        const availableForCompare = products.filter(p => 
-          p.id !== selectedProduct.id && 
+        const availableForCompare = products.filter(p =>
+          p.id !== selectedProduct.id &&
           !manualCompareIds.includes(p.id) &&
-          (p.category === selectedProduct.category || p.subNavbarCategory === selectedProduct.subNavbarCategory || p.mainCategory === selectedProduct.mainCategory)
+          isComparableProduct(p)
         );
 
         return (
@@ -16083,7 +16192,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     Select products manually to compare
                   </span>
                 </div>
-                {comparedProducts.length < 4 && availableForCompare.length > 0 && (
+                {comparedProducts.length < 4 && availableForCompare.length > 0 ? (
                   <div className="flex items-center gap-2">
                     <select
                       value=""
@@ -16102,7 +16211,11 @@ wishlistProducts.forEach(item => addToCart(item));
                       ))}
                     </select>
                   </div>
-                )}
+                ) : comparedProducts.length < 4 ? (
+                  <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-xl border border-amber-200 dark:border-amber-800">
+                    No similar products available to compare
+                  </span>
+                ) : null}
               </div>
 
               <div className="overflow-x-auto">

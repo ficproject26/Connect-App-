@@ -131,53 +131,49 @@ const isDeadImageUrl = (u) => {
 
 const extractRawImage = (p) => {
   if (!p) return '';
-  if (typeof p.image === 'string' && !isDeadImageUrl(p.image)) return p.image.trim();
-  if (typeof p.imageUrl === 'string' && !isDeadImageUrl(p.imageUrl)) return p.imageUrl.trim();
-  if (typeof p.imageURL === 'string' && !isDeadImageUrl(p.imageURL)) return p.imageURL.trim();
-  if (typeof p.imgUrl === 'string' && !isDeadImageUrl(p.imgUrl)) return p.imgUrl.trim();
-  if (typeof p.serviceImage === 'string' && !isDeadImageUrl(p.serviceImage)) return p.serviceImage.trim();
-  if (typeof p.catalogImage === 'string' && !isDeadImageUrl(p.catalogImage)) return p.catalogImage.trim();
-  if (typeof p.productImage === 'string' && !isDeadImageUrl(p.productImage)) return p.productImage.trim();
-  if (typeof p.thumbnailUrl === 'string' && !isDeadImageUrl(p.thumbnailUrl)) return p.thumbnailUrl.trim();
-  if (typeof p.thumbnailURL === 'string' && !isDeadImageUrl(p.thumbnailURL)) return p.thumbnailURL.trim();
-  if (typeof p.mediaUrl === 'string' && !isDeadImageUrl(p.mediaUrl)) return p.mediaUrl.trim();
-  if (typeof p.mediaURL === 'string' && !isDeadImageUrl(p.mediaURL)) return p.mediaURL.trim();
-  if (typeof p.media === 'string' && !isDeadImageUrl(p.media)) return p.media.trim();
-  
+
+  const allCandidates = [];
+  if (typeof p.image === 'string') allCandidates.push(p.image);
+  if (typeof p.imageUrl === 'string') allCandidates.push(p.imageUrl);
+  if (typeof p.imageURL === 'string') allCandidates.push(p.imageURL);
+  if (typeof p.imgUrl === 'string') allCandidates.push(p.imgUrl);
+  if (typeof p.secure_url === 'string') allCandidates.push(p.secure_url);
   if (Array.isArray(p.images) && p.images.length > 0) {
-    const first = p.images.find(img => {
-      const u = typeof img === 'string' ? img : (img?.secure_url || img?.url || img?.src || img?.path || img?.imageUrl || '');
-      return !isDeadImageUrl(u);
+    p.images.forEach(img => {
+      const u = typeof img === 'string' ? img : (img?.secure_url || img?.url || img?.src || img?.path || img?.imageUrl || img?.imageURL || '');
+      if (u) allCandidates.push(u);
     });
-    if (first) {
-      const u = typeof first === 'string' ? first : (first?.secure_url || first?.url || first?.src || first?.path || first?.imageUrl || '');
-      if (u) return u.trim();
-    }
   }
   if (Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
-    const first = p.imageUrls.find(u => !isDeadImageUrl(u));
-    if (first && typeof first === 'string') return first.trim();
+    p.imageUrls.forEach(u => { if (typeof u === 'string') allCandidates.push(u); });
   }
-
-  if (typeof p.photo === 'string' && !isDeadImageUrl(p.photo)) return p.photo.trim();
+  if (typeof p.photo === 'string') allCandidates.push(p.photo);
   if (Array.isArray(p.photos) && p.photos.length > 0) {
-    const first = p.photos.find(img => {
+    p.photos.forEach(img => {
       const u = typeof img === 'string' ? img : (img?.secure_url || img?.url || img?.src || '');
-      return !isDeadImageUrl(u);
+      if (u) allCandidates.push(u);
     });
-    if (first) {
-      const u = typeof first === 'string' ? first : (first?.secure_url || first?.url || first?.src || '');
-      if (u) return u.trim();
-    }
   }
+  if (typeof p.productImage === 'string') allCandidates.push(p.productImage);
+  if (typeof p.serviceImage === 'string') allCandidates.push(p.serviceImage);
+  if (typeof p.catalogImage === 'string') allCandidates.push(p.catalogImage);
+  if (typeof p.thumbnailUrl === 'string') allCandidates.push(p.thumbnailUrl);
+  if (typeof p.thumbnailURL === 'string') allCandidates.push(p.thumbnailURL);
+  if (typeof p.mediaUrl === 'string') allCandidates.push(p.mediaUrl);
+  if (typeof p.mediaURL === 'string') allCandidates.push(p.mediaURL);
+  if (typeof p.media === 'string') allCandidates.push(p.media);
+  if (typeof p.picture === 'string') allCandidates.push(p.picture);
+  if (typeof p.thumbnail === 'string') allCandidates.push(p.thumbnail);
+  if (typeof p.coverImage === 'string') allCandidates.push(p.coverImage);
+  if (typeof p.bannerImage === 'string') allCandidates.push(p.bannerImage);
 
-  if (typeof p.picture === 'string' && !isDeadImageUrl(p.picture)) return p.picture.trim();
-  if (typeof p.thumbnail === 'string' && !isDeadImageUrl(p.thumbnail)) return p.thumbnail.trim();
-  if (typeof p.img === 'string' && !isDeadImageUrl(p.img)) return p.img.trim();
-  if (typeof p.file === 'string' && !isDeadImageUrl(p.file)) return p.file.trim();
-  if (typeof p.coverImage === 'string' && !isDeadImageUrl(p.coverImage)) return p.coverImage.trim();
-  if (typeof p.bannerImage === 'string' && !isDeadImageUrl(p.bannerImage)) return p.bannerImage.trim();
-  if (typeof p.secure_url === 'string' && !isDeadImageUrl(p.secure_url)) return p.secure_url.trim();
+  // 1. Cloudinary CDN permanent URLs take absolute first priority
+  const cloudinaryCandidate = allCandidates.find(u => typeof u === 'string' && u.startsWith('https://res.cloudinary.com/'));
+  if (cloudinaryCandidate) return cloudinaryCandidate.trim();
+
+  // 2. Next: any valid non-dead URL
+  const validCandidate = allCandidates.find(u => typeof u === 'string' && !isDeadImageUrl(u));
+  if (validCandidate) return validCandidate.trim();
 
   return '';
 };
@@ -210,16 +206,13 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
     return getCategoryFallbackImage(pContext);
   }
 
-  // Rewrite vendor.ficapp.in/uploads/... or local 8002 uploads to backend upload URL
+  // Valid vendor uploads CDN on vendor.ficapp.in
   if (url.includes('vendor.ficapp.in/uploads/')) {
-    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
-    const cleanPath = url.substring(url.indexOf('/uploads/'));
-    return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
+    return url.startsWith('http://') ? url.replace('http://', 'https://') : url;
   }
   if (url.includes('localhost:8002/uploads/') || url.includes('127.0.0.1:8002/uploads/')) {
-    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const cleanPath = url.substring(url.indexOf('/uploads/'));
-    return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
+    return `https://vendor.ficapp.in${cleanPath}`;
   }
 
   if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
