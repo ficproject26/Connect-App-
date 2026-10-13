@@ -747,6 +747,26 @@ export function formatDateFromYYYYMMDD(dateStr) {
   return `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+export function formatDate(input) {
+  if (!input) return '';
+  if (input instanceof Date) {
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${weekdays[input.getDay()]}, ${input.getDate()} ${months[input.getMonth()]} ${input.getFullYear()}`;
+  }
+  const str = String(input).trim();
+  if (str.includes('-')) {
+    return formatDateFromYYYYMMDD(str);
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  return str;
+}
+
 export function generateUpcomingDates(startDateStr, count = 14, item = null) {
   const dates = [];
   let base = new Date();
