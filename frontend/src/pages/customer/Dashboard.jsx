@@ -2396,18 +2396,6 @@ export default function CustomerDashboard({
     }
   }, [isProfileModalOpen]);
 
-  // Lock/unlock body scroll whenever any modal or drawer is open
-  useEffect(() => {
-    const anyModalOpen = isProfileModalOpen || isWishlistOpen || isCartOpen || isCompareModalOpen || isNotificationsOpen || !!shareModalProduct;
-    if (anyModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, isNotificationsOpen, shareModalProduct]);
 
   // Clean network recovery after system wake or reconnection
   useEffect(() => {
@@ -2889,6 +2877,19 @@ export default function CustomerDashboard({
       console.warn("Failed marking notifications read:", err);
     }
   };
+
+  // Lock/unlock body scroll whenever any modal or drawer is open
+  useEffect(() => {
+    const anyModalOpen = isProfileModalOpen || isWishlistOpen || isCartOpen || isCompareModalOpen || isNotificationsOpen || !!shareModalProduct;
+    if (anyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, isNotificationsOpen, shareModalProduct]);
 
   // Hover Mega Menu State & Handlers
   const [hoveredLink, setHoveredLink] = useState(null);
