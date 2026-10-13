@@ -3937,12 +3937,15 @@ export default function CustomerDashboard({
         payStatus = 'Paid';
       }
 
+      let anyFailed = false;
+      let failureReason = '';
+
       for (const item of selectedCart) {
         const vendorId = item.vendorId || item.vendor_id || '3w8hhon38mqg7ni0u';
         const finalTxnId = txnId || (payStatus === 'Paid' ? ('TXN_' + Math.floor(100000 + Math.random() * 900000)) : undefined);
         const itemAmount = (item.price || 0) * (item.quantity || 1);
 
-        await apiFetch('/orders', {
+        const orderRes = await apiFetch('/orders', {
           method: 'POST',
           body: JSON.stringify({
             vendor_id: vendorId,
@@ -3978,7 +3981,25 @@ export default function CustomerDashboard({
             children: item.children,
             guestDetails: item.guestDetails
           })
-        }).catch(err => console.warn('Order creation note:', err));
+        }).catch(err => ({ status: 'error', message: err?.message }));
+
+        if (orderRes?.statusCode === 429 || orderRes?.status === 429 || orderRes?.code === 'RATE_LIMIT_EXCEEDED' || orderRes?.message?.includes('Too Many Requests') || orderRes?.message?.includes('Too many requests')) {
+          anyFailed = true;
+          failureReason = 'Server rate limit active. Please wait a few moments before placing order.';
+          break;
+        }
+
+        if (orderRes && orderRes.status === 'error') {
+          anyFailed = true;
+          failureReason = orderRes.message || 'Failed to place order';
+          break;
+        }
+      }
+
+      if (anyFailed) {
+        setRazorpayProcessing(false);
+        triggerNotification(failureReason || "Order placement could not be completed. Please try again.", "error");
+        return;
       }
 
       setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
@@ -3993,7 +4014,7 @@ export default function CustomerDashboard({
       } else {
         triggerNotification("Payment authorized & Order placed successfully!");
       }
-      loadCustomerOrders();
+      loadCustomerOrders(true);
     } catch (err) {
       console.error("Order processing error:", err);
       setRazorpayProcessing(false);
