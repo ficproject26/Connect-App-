@@ -2808,51 +2808,116 @@ export default function CustomerDashboard({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notificationsList, setNotificationsList] = useState([]);
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
+  const notificationsFetchedRef = useRef(false);
+  const isFetchingNotificationsRef = useRef(false);
 
-  const loadCustomerNotifications = useCallback(async () => {
+  // Derive order-based notifications from customer orders as a reliable baseline
+  const deriveOrderNotifications = useCallback(() => {
+    if (!Array.isArray(customerOrders) || customerOrders.length === 0) return [];
+    return customerOrders.slice(0, 15).map(ord => {
+      const ordNum = ord.order_number || ord.id || 'N/A';
+      const status = ord.status || 'Order Placed';
+      const prodName = (ord.product_details || ord.productName || 'Order').replace(/\s*\(Qty:\s*\d+\)/gi, '');
+      const isDelivered = ['Delivered', 'Completed'].includes(status);
+      const isCancelled = status === 'Cancelled';
+      const isRead = Boolean(ord.notification_read || ord.notificationRead || isDelivered);
+
+      let title = `Order #${ordNum}`;
+      let message = `${prodName} is currently ${status}`;
+      if (status === 'Order Received' || status === 'Order Placed') {
+        title = `Order #${ordNum} Placed`;
+        message = `Your order for ${prodName} (₹${ord.amount || ord.price || 0}) was received.`;
+      } else if (isDelivered) {
+        title = `Order #${ordNum} Delivered`;
+        message = `Your order for ${prodName} was successfully delivered.`;
+      } else if (isCancelled) {
+        title = `Order #${ordNum} Cancelled`;
+        message = `Your order for ${prodName} has been cancelled.`;
+      } else if (status === 'Out For Delivery') {
+        title = `Order #${ordNum} Out for Delivery`;
+        message = `Your delivery partner is on the way with ${prodName}.`;
+      }
+
+      return {
+        id: `ord-notif-${ord._id || ord.id || ordNum}`,
+        title,
+        message,
+        text: message,
+        time: ord.created_at ? new Date(ord.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently',
+        date: ord.created_at || new Date().toISOString(),
+        read: isRead,
+        type: 'order',
+        status
+      };
+    });
+  }, [customerOrders]);
+
+  const loadCustomerNotifications = useCallback(async (force = false) => {
+    if (isFetchingNotificationsRef.current) return;
+    if (!force && notificationsFetchedRef.current) return;
+
+    isFetchingNotificationsRef.current = true;
     try {
       const activeUser = currentUser || JSON.parse(localStorage.getItem('connect_current_user') || localStorage.getItem('user') || 'null');
       const userId = activeUser?.id || activeUser?.userId || activeUser?._id || '';
       const email = activeUser?.email || profileEmail || '';
       const phone = activeUser?.phone || profilePhone || '';
 
+      // Set fallback notifications from existing customerOrders immediately
+      const orderNotifs = deriveOrderNotifications();
+      if (orderNotifs.length > 0) {
+        setNotificationsList(prev => prev.length === 0 ? orderNotifs : prev);
+        setUnreadCount(prev => prev === 0 ? orderNotifs.filter(n => !n.read).length : prev);
+      }
+
       if (!userId && !email && !phone) {
-        setNotificationsList([]);
-        setUnreadCount(0);
+        notificationsFetchedRef.current = true;
         return;
       }
 
-      setIsNotificationsLoading(true);
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      if (!baseBackend) {
+        notificationsFetchedRef.current = true;
+        return;
+      }
+
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const params = new URLSearchParams();
       if (userId) params.append('userId', userId);
       if (email) params.append('email', email);
       if (phone) params.append('phone', phone);
 
-      const res = await fetch(`/api/auth/customer-notifications?${params.toString()}`, {
+      const targetUrl = `${baseBackend.replace(/\/+$/, '')}/api/auth/customer-notifications?${params.toString()}`;
+
+      const res = await fetch(targetUrl, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
-      });
+      }).catch(() => null);
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.notifications)) {
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && Array.isArray(data.notifications) && data.notifications.length > 0) {
           setNotificationsList(data.notifications);
           setUnreadCount(typeof data.unreadCount === 'number' ? data.unreadCount : data.notifications.filter(n => !n.read).length);
         }
       }
+      notificationsFetchedRef.current = true;
     } catch (err) {
-      console.warn("Failed to load customer notifications:", err);
+      // Graceful fallback
     } finally {
       setIsNotificationsLoading(false);
+      isFetchingNotificationsRef.current = false;
     }
-  }, [currentUser, profileEmail, profilePhone]);
+  }, [currentUser?.id, currentUser?._id, profileEmail, profilePhone, deriveOrderNotifications]);
 
   useEffect(() => {
-    loadCustomerNotifications();
-  }, [loadCustomerNotifications]);
+    const activeId = currentUser?.id || currentUser?._id || currentUser?.email;
+    if (activeId && !notificationsFetchedRef.current) {
+      loadCustomerNotifications(false);
+    }
+  }, [currentUser?.id, currentUser?._id, currentUser?.email, loadCustomerNotifications]);
 
   const markAllNotificationsAsRead = async () => {
     try {
@@ -2865,14 +2930,17 @@ export default function CustomerDashboard({
       setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
       triggerNotification("All notifications marked as read");
 
-      await fetch('/api/auth/customer-notifications/read', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ userId, email })
-      });
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      if (baseBackend) {
+        await fetch(`${baseBackend.replace(/\/+$/, '')}/api/auth/customer-notifications/read`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ userId, email })
+        }).catch(() => null);
+      }
     } catch (err) {
       console.warn("Failed marking notifications read:", err);
     }
