@@ -1624,11 +1624,16 @@ export default function CustomerDashboard({
     return getOrGenerateCustomerId(currentUser);
   }, [currentUser]);
 
+  const profileLoadedUserRef = useRef('');
+  const isFetchingProfileRef = useRef(false);
+
   const loadCustomerProfileFromDb = useCallback(async (signal) => {
     if (!currentUser) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (!userTarget) return;
+    if (isFetchingProfileRef.current) return;
+    isFetchingProfileRef.current = true;
 
     const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
@@ -1644,82 +1649,105 @@ export default function CustomerDashboard({
     const authHeaders = { 'Accept': 'application/json' };
     if (authToken) authHeaders['Authorization'] = `Bearer ${authToken}`;
 
-    for (const url of uniqueEndpoints) {
-      if (signal?.aborted) return;
-      try {
-        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-          headers: authHeaders,
-          credentials: 'include',
-          signal: signal
-        });
+    try {
+      for (const url of uniqueEndpoints) {
         if (signal?.aborted) return;
-        if (res.ok) {
-          const data = await res.json();
+        try {
+          const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+            headers: authHeaders,
+            credentials: 'include',
+            signal: signal
+          });
           if (signal?.aborted) return;
-
-          // Verification Guard: Check whether user logged out or changed while request was in-flight
-          const savedUserRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('connect_current_user') : null;
-          if (!savedUserRaw) {
-            // User has logged out; strictly abort profile state sync and NEVER restore session
+          if (res.status === 429) {
+            console.warn('Customer profile API rate-limited (429), cooling down.');
+            profileLoadedUserRef.current = String(userTarget).trim().toLowerCase();
             return;
           }
-          let currentSavedUser = null;
-          try { currentSavedUser = JSON.parse(savedUserRaw); } catch (e) {}
-          const currentTarget = currentSavedUser?.id || currentSavedUser?.customerId || currentSavedUser?.phone || currentSavedUser?.email;
-          if (!currentTarget || (String(currentTarget).trim().toLowerCase() !== String(userTarget).trim().toLowerCase())) {
-            // Target user changed; ignore stale response
-            return;
-          }
+          if (res.ok) {
+            const data = await res.json();
+            if (signal?.aborted) return;
 
-          if (data && data.status === 'success' && data.user) {
-            const dbUser = data.user;
-            if (dbUser.name) setProfileName(dbUser.name);
-            if (dbUser.email) setProfileEmail(dbUser.email);
-            if (dbUser.phone) setProfilePhone(dbUser.phone);
-            if (dbUser.avatar || dbUser.photo) setProfilePhoto(dbUser.avatar || dbUser.photo);
-            if (Array.isArray(dbUser.addresses)) setAddresses(deduplicateAddresses(dbUser.addresses));
-
-            if (dbUser.membershipTier !== undefined) {
-              updateTier(dbUser.membershipTier || 'None');
+            // Verification Guard: Check whether user logged out or changed while request was in-flight
+            const savedUserRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('connect_current_user') : null;
+            if (!savedUserRaw) {
+              // User has logged out; strictly abort profile state sync and NEVER restore session
+              return;
             }
-            if (dbUser.walletBalance !== undefined && typeof setWalletBalance === 'function') {
-              setWalletBalance(typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 0.00);
+            let currentSavedUser = null;
+            try { currentSavedUser = JSON.parse(savedUserRaw); } catch (e) {}
+            const currentTarget = currentSavedUser?.id || currentSavedUser?.customerId || currentSavedUser?.phone || currentSavedUser?.email;
+            if (!currentTarget || (String(currentTarget).trim().toLowerCase() !== String(userTarget).trim().toLowerCase())) {
+              // Target user changed; ignore stale response
+              return;
             }
 
-            login({
-              ...currentUser,
-              id: dbUser.id || currentUser?.id,
-              customerId: dbUser.customerId || currentUser?.customerId || activeCustomerId,
-              name: dbUser.name || currentUser?.name,
-              email: dbUser.email || currentUser?.email,
-              phone: dbUser.phone || currentUser?.phone,
-              avatar: dbUser.avatar || dbUser.photo || currentUser?.avatar,
-              photo: dbUser.avatar || dbUser.photo || currentUser?.photo,
-              membershipTier: dbUser.membershipTier || currentUser?.membershipTier || 'None',
-              membershipStatus: dbUser.membershipStatus || 'ACTIVE',
-              membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : (currentUser?.membershipHistory || []),
-              addresses: deduplicateAddresses(dbUser.addresses || currentUser?.addresses || []),
-              role: 'customer'
-            }, 'customer');
-            return;
+            if (data && data.status === 'success' && data.user) {
+              const dbUser = data.user;
+              profileLoadedUserRef.current = String(userTarget).trim().toLowerCase();
+              if (dbUser.name) setProfileName(dbUser.name);
+              if (dbUser.email) setProfileEmail(dbUser.email);
+              if (dbUser.phone) setProfilePhone(dbUser.phone);
+              if (dbUser.avatar || dbUser.photo) setProfilePhoto(dbUser.avatar || dbUser.photo);
+              if (Array.isArray(dbUser.addresses)) setAddresses(deduplicateAddresses(dbUser.addresses));
+
+              if (dbUser.membershipTier !== undefined) {
+                updateTier(dbUser.membershipTier || 'None');
+              }
+              if (dbUser.walletBalance !== undefined && typeof setWalletBalance === 'function') {
+                setWalletBalance(typeof dbUser.walletBalance === 'number' ? Math.max(0, dbUser.walletBalance) : 0.00);
+              }
+
+              // Only call login if key properties actually changed to prevent infinite render loops
+              const hasKeyChanges =
+                (dbUser.name && dbUser.name !== currentUser?.name) ||
+                (dbUser.email && dbUser.email !== currentUser?.email) ||
+                (dbUser.phone && dbUser.phone !== currentUser?.phone) ||
+                (dbUser.membershipTier && dbUser.membershipTier !== currentUser?.membershipTier) ||
+                ((dbUser.avatar || dbUser.photo) && (dbUser.avatar || dbUser.photo) !== (currentUser?.avatar || currentUser?.photo));
+
+              if (hasKeyChanges) {
+                login({
+                  ...currentUser,
+                  id: dbUser.id || currentUser?.id,
+                  customerId: dbUser.customerId || currentUser?.customerId || activeCustomerId,
+                  name: dbUser.name || currentUser?.name,
+                  email: dbUser.email || currentUser?.email,
+                  phone: dbUser.phone || currentUser?.phone,
+                  avatar: dbUser.avatar || dbUser.photo || currentUser?.avatar,
+                  photo: dbUser.avatar || dbUser.photo || currentUser?.photo,
+                  membershipTier: dbUser.membershipTier || currentUser?.membershipTier || 'None',
+                  membershipStatus: dbUser.membershipStatus || 'ACTIVE',
+                  membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : (currentUser?.membershipHistory || []),
+                  addresses: deduplicateAddresses(dbUser.addresses || currentUser?.addresses || []),
+                  role: 'customer'
+                }, 'customer');
+              }
+              return;
+            }
           }
+        } catch (err) {
+          if (signal?.aborted || err?.name === 'AbortError') return;
+          if (typeof navigator !== 'undefined' && !navigator.onLine) break;
+          if (err?.message?.includes('NETWORK_IO_SUSPENDED')) break;
         }
-      } catch (err) {
-        if (signal?.aborted || err?.name === 'AbortError') return;
-        if (typeof navigator !== 'undefined' && !navigator.onLine) break;
-        if (err?.message?.includes('NETWORK_IO_SUSPENDED')) break;
       }
+    } finally {
+      isFetchingProfileRef.current = false;
     }
-  }, [currentUser, activeCustomerId, login]);
+  }, [currentUser, activeCustomerId, login, updateTier, setWalletBalance]);
+
+  const currentUserIdKey = currentUser ? String(currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || '').trim().toLowerCase() : '';
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUserIdKey) return;
+    if (profileLoadedUserRef.current === currentUserIdKey) return;
     const controller = new AbortController();
     loadCustomerProfileFromDb(controller.signal);
     return () => {
       controller.abort();
     };
-  }, [currentUser, loadCustomerProfileFromDb]);
+  }, [currentUserIdKey, loadCustomerProfileFromDb]);
 
   // Synchronize profile and reset all states cleanly when user logs out
   useEffect(() => {
@@ -2210,11 +2238,22 @@ export default function CustomerDashboard({
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
-  const loadCustomerOrders = useCallback(async () => {
+  const isFetchingOrdersRef = useRef(false);
+  const lastOrdersFetchTimestampRef = useRef(0);
+
+  const loadCustomerOrders = useCallback(async (force = false) => {
     if (!currentUser) {
       setCustomerOrders([]);
       return;
     }
+    if (isFetchingOrdersRef.current) return;
+    const now = Date.now();
+    if (!force && (now - lastOrdersFetchTimestampRef.current < 4000)) {
+      return;
+    }
+    isFetchingOrdersRef.current = true;
+    lastOrdersFetchTimestampRef.current = now;
+
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || activeCustomerId || '').trim();
@@ -2229,11 +2268,22 @@ export default function CustomerDashboard({
       if (res?.status === 'network_suspended' || res?.status === 'offline') {
         return;
       }
+      if (res?.statusCode === 429 || res?.status === 429 || res?.code === 'RATE_LIMIT_EXCEEDED' || res?.message?.includes('Too many requests')) {
+        console.warn('Orders API rate-limited (429), cooling down.');
+        lastOrdersFetchTimestampRef.current = Date.now() + 15000;
+        return;
+      }
       if (!res || (Array.isArray(res) && res.length === 0) || (res.data && Array.isArray(res.data) && res.data.length === 0)) {
-        if (targetId && targetEmail && (typeof navigator === 'undefined' || navigator.onLine)) {
-          res = await apiFetch(`/orders?customerId=${encodeURIComponent(targetEmail)}`);
-          if (res?.status === 'network_suspended' || res?.status === 'offline') {
-            return;
+        if (targetId && targetEmail && targetEmail !== targetId && (typeof navigator === 'undefined' || navigator.onLine)) {
+          if (res?.status !== 'error' && res?.statusCode !== 429) {
+            res = await apiFetch(`/orders?customerId=${encodeURIComponent(targetEmail)}`);
+            if (res?.status === 'network_suspended' || res?.status === 'offline') {
+              return;
+            }
+            if (res?.statusCode === 429 || res?.status === 429 || res?.code === 'RATE_LIMIT_EXCEEDED') {
+              lastOrdersFetchTimestampRef.current = Date.now() + 15000;
+              return;
+            }
           }
         }
       }
@@ -2308,8 +2358,10 @@ export default function CustomerDashboard({
       setCustomerOrders(filtered);
     } catch (err) {
       console.warn('Failed to load customer orders:', err);
+    } finally {
+      isFetchingOrdersRef.current = false;
     }
-  }, [profileName, profileEmail, profilePhone, currentUser, activeCustomerId]);
+  }, [profileName, profileEmail, profilePhone, currentUser?.id, currentUser?.customerId, currentUser?.email, currentUser?.phone, activeCustomerId]);
 
   const refreshTrackingDetails = async (orderId) => {
     try {
@@ -2354,7 +2406,7 @@ export default function CustomerDashboard({
           setTrackingOrder(null);
           setRatingComment('');
           setRatingValue(5);
-          loadCustomerOrders();
+          loadCustomerOrders(true);
         }, 2500);
       }
     } catch (e) {
@@ -2371,7 +2423,7 @@ export default function CustomerDashboard({
     socketService.connect(customerId, 'customer');
 
     const handleOrderStatus = (data) => {
-      loadCustomerOrders();
+      loadCustomerOrders(true);
       if (trackingOrder && trackingOrder.id === data.orderId) {
         setTrackingOrder(prev => prev ? { ...prev, status: data.status } : null);
         refreshTrackingDetails(trackingOrder.id);
@@ -2383,12 +2435,15 @@ export default function CustomerDashboard({
     return () => {
       socketService.off('order_status_updated', handleOrderStatus);
     };
-  }, [currentUser?.id, loadCustomerOrders, trackingOrder]);
+  }, [currentUser?.id, trackingOrder]);
 
   // Listen for order history loads
   useEffect(() => {
-    loadCustomerOrders();
-  }, [profileName, currentUser]);
+    const activeUserId = currentUser?.id || currentUser?.customerId || currentUser?.email || '';
+    if (activeUserId) {
+      loadCustomerOrders();
+    }
+  }, [currentUser?.id, currentUser?.customerId, currentUser?.email]);
 
   useEffect(() => {
     if (isProfileModalOpen) {
@@ -2896,6 +2951,12 @@ export default function CustomerDashboard({
         }
       }).catch(() => null);
 
+      if (res && res.status === 429) {
+        console.warn('Customer notifications rate-limited (429)');
+        notificationsFetchedRef.current = true;
+        return;
+      }
+
       if (res && res.ok) {
         const data = await res.json().catch(() => null);
         if (data && Array.isArray(data.notifications) && data.notifications.length > 0) {
@@ -2917,7 +2978,7 @@ export default function CustomerDashboard({
     if (activeId && !notificationsFetchedRef.current) {
       loadCustomerNotifications(false);
     }
-  }, [currentUser?.id, currentUser?._id, currentUser?.email, loadCustomerNotifications]);
+  }, [currentUser?.id, currentUser?._id, currentUser?.email]);
 
   const markAllNotificationsAsRead = async () => {
     try {

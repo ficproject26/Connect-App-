@@ -174,7 +174,7 @@ exports.globalApiRateLimiter = (0, express_rate_limit_1.default)({
     statusCode: 429,
     keyGenerator: (req) => (0, exports.resolveClientIp)(req),
     skip: (req) => {
-        // Skip rate limiting for public read-only catalog, category, banner, ad, offer, and territory traffic
+        // Skip rate limiting for public read-only catalog, category, banner, ad, offer, territory, orders, and wallet traffic
         if (req.method === 'GET' || req.method === 'OPTIONS') {
             const url = req.originalUrl || req.url || req.path || '';
             if (url.includes('/public') ||
@@ -183,7 +183,12 @@ exports.globalApiRateLimiter = (0, express_rate_limit_1.default)({
                 url.includes('/banners') ||
                 url.includes('/products') ||
                 url.includes('/ads') ||
-                url.includes('/exclusive-offers')) {
+                url.includes('/exclusive-offers') ||
+                url.includes('/orders') ||
+                url.includes('/wallet/balance') ||
+                url.includes('/wallet/transactions') ||
+                url.includes('/auth/customer-notifications') ||
+                url.includes('/auth/customer-profile')) {
                 return true;
             }
         }

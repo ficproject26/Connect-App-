@@ -1,9 +1,12 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getBackendUrl } from '../services/apiSetup';
 
 export const CustomerContext = createContext(null);
 
 export function CustomerProvider({ children }) {
+  const isFetchingWalletRef = useRef(false);
+  const lastWalletFetchTimeRef = useRef(0);
+
   const getActiveCustomer = () => {
     try {
       const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('connect_current_user') : null;
@@ -88,7 +91,15 @@ export function CustomerProvider({ children }) {
     } catch (e) {}
   }, []);
 
-  const refreshWallet = useCallback(async (userIdentifier) => {
+  const refreshWallet = useCallback(async (userIdentifier, force = false) => {
+    if (isFetchingWalletRef.current) return;
+    const now = Date.now();
+    if (!force && (now - lastWalletFetchTimeRef.current < 5000)) {
+      return;
+    }
+    isFetchingWalletRef.current = true;
+    lastWalletFetchTimeRef.current = now;
+
     try {
       let activeUser = null;
       if (typeof userIdentifier === 'object' && userIdentifier !== null) {
@@ -125,23 +136,40 @@ export function CustomerProvider({ children }) {
 
       // 1. Fetch live balance from DB
       const balRes = await fetch(`${baseBackend}/api/wallet/balance${queryParam}`);
+      if (balRes.status === 429) {
+        console.warn('Wallet balance API rate-limited (429), cooling down.');
+        lastWalletFetchTimeRef.current = Date.now() + 15000;
+        return;
+      }
       if (balRes.ok) {
         const balData = await balRes.json();
         if (balData.success && typeof balData.walletBalance === 'number') {
-          setWalletBalance(balData.walletBalance);
+          setWalletBalance(prev => prev === balData.walletBalance ? prev : balData.walletBalance);
         }
       }
 
       // 2. Fetch live transactions from DB strictly for this customer
       const txnRes = await fetch(`${baseBackend}/api/wallet/transactions${queryParam}`);
+      if (txnRes.status === 429) {
+        console.warn('Wallet transactions API rate-limited (429), cooling down.');
+        lastWalletFetchTimeRef.current = Date.now() + 15000;
+        return;
+      }
       if (txnRes.ok) {
         const txnData = await txnRes.json();
         if (txnData.success && Array.isArray(txnData.transactions)) {
-          setTransactions(txnData.transactions);
+          setTransactions(prev => {
+            if (prev.length === txnData.transactions.length && JSON.stringify(prev) === JSON.stringify(txnData.transactions)) {
+              return prev;
+            }
+            return txnData.transactions;
+          });
         }
       }
     } catch (err) {
       console.warn("Could not sync wallet from backend:", err);
+    } finally {
+      isFetchingWalletRef.current = false;
     }
   }, []);
 

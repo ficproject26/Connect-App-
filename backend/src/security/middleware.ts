@@ -210,7 +210,7 @@ export const globalApiRateLimiter = rateLimit({
   statusCode: 429,
   keyGenerator: (req: Request) => resolveClientIp(req),
   skip: (req: Request) => {
-    // Skip rate limiting for public read-only catalog, category, banner, ad, offer, and territory traffic
+    // Skip rate limiting for public read-only catalog, category, banner, ad, offer, territory, orders, and wallet traffic
     if (req.method === 'GET' || req.method === 'OPTIONS') {
       const url = req.originalUrl || req.url || req.path || '';
       if (
@@ -220,7 +220,12 @@ export const globalApiRateLimiter = rateLimit({
         url.includes('/banners') ||
         url.includes('/products') ||
         url.includes('/ads') ||
-        url.includes('/exclusive-offers')
+        url.includes('/exclusive-offers') ||
+        url.includes('/orders') ||
+        url.includes('/wallet/balance') ||
+        url.includes('/wallet/transactions') ||
+        url.includes('/auth/customer-notifications') ||
+        url.includes('/auth/customer-profile')
       ) {
         return true;
       }

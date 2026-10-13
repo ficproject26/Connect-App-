@@ -526,6 +526,9 @@ export const apiFetch = async (endpoint, options = {}) => {
     });
     
     if (!res.ok) {
+      if (res.status === 429) {
+        return { status: 'error', statusCode: 429, code: 'RATE_LIMIT_EXCEEDED', message: 'Too Many Requests. Please slow down.' };
+      }
       const fallbackRes = await handleFallbackRequest(endpoint, options).catch(() => null);
       if (fallbackRes && fallbackRes.status === 'success') {
         return fallbackRes;
