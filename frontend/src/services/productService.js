@@ -180,8 +180,61 @@ const extractRawImage = (p) => {
 
 export const NEUTRAL_NO_IMAGE_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" fill="%23f8fafc"><rect width="400" height="300" fill="%23f8fafc"/><g transform="translate(170,110)" fill="%23cbd5e1"><path d="M5 0h50a5 5 0 0 1 5 5v40a5 5 0 0 1-5 5H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5zm45 40V10H10v30h40zM17 22l8 10 6-6 12 14H17z"/><circle cx="20" cy="18" r="4"/></g><text x="200" y="185" font-family="sans-serif" font-size="13" font-weight="700" fill="%2394a3b8" text-anchor="middle">No image available</text></svg>`;
 
+export const CATEGORY_IMAGE_COLLECTIONS = {
+  Food: [
+    'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80', // Biryani / Rice
+    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80', // Meal
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80'  // Dishes
+  ],
+  Products: [
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80', // Watch
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80', // Headphones
+    'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80'  // Fashion / Clothing
+  ],
+  Services: [
+    'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80', // Tech / Hardware repair
+    'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80'  // Maintenance
+  ],
+  Stay: [
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80', // Luxury hotel room
+    'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&auto=format&fit=crop&q=80'  // Resort villa
+  ],
+  Travel: [
+    'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&auto=format&fit=crop&q=80'  // Bus travel
+  ],
+  'Daily Needs': [
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80', // Grocery
+    'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=800&auto=format&fit=crop&q=80'  // Dairy / Fresh
+  ]
+};
+
 export const getCategoryFallbackImage = (pContext) => {
-  return NEUTRAL_NO_IMAGE_PLACEHOLDER;
+  if (!pContext) return CATEGORY_IMAGE_COLLECTIONS.Products[0];
+  const cat = (pContext.subNavbarCategory || pContext.mainCategory || pContext.tag || pContext.category || '').toString();
+  const name = (pContext.name || pContext.title || '').toLowerCase();
+  
+  if (name.includes('rice') || name.includes('biryani') || name.includes('pongal') || name.includes('idly') || name.includes('dosa') || name.includes('chicken') || name.includes('food')) {
+    return 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('lehenga') || name.includes('saree') || name.includes('t shirt') || name.includes('shirt') || name.includes('dress') || name.includes('fashion')) {
+    return 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('service') || name.includes('mother board') || name.includes('chill') || name.includes('cam') || name.includes('repair')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('hotel') || name.includes('retreat') || name.includes('villa') || name.includes('moonlight') || name.includes('stay')) {
+    return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80';
+  }
+  if (name.includes('dell') || name.includes('laptop') || name.includes('phone') || name.includes('mobile')) {
+    return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop&q=80';
+  }
+
+  for (const [key, imgs] of Object.entries(CATEGORY_IMAGE_COLLECTIONS)) {
+    if (cat.toLowerCase().includes(key.toLowerCase())) {
+      return imgs[0];
+    }
+  }
+  return CATEGORY_IMAGE_COLLECTIONS.Products[0];
 };
 
 export const sanitizeImageUrl = (imgUrl, pContext = null) => {
@@ -229,16 +282,6 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
   }
 
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    if (url.includes('unsplash.com')) {
-      const unsplashFallbacks = [
-        'photo-1526738549149', 'photo-1565299624946', 'photo-1566073771259',
-        'photo-1581578731548', 'photo-1544620347', 'photo-1486406146926',
-        'photo-1542838132', 'photo-1511707171634'
-      ];
-      if (unsplashFallbacks.some(fb => url.includes(fb))) {
-        return getCategoryFallbackImage(pContext);
-      }
-    }
     return url;
   }
 

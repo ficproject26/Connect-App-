@@ -511,7 +511,8 @@ router.post('/send-otp', middleware_1.authRateLimiter, async (req, res) => {
         return res.json({
             status: 'success',
             message: `OTP sent successfully to ${target}. Valid for 5 minutes.`,
-            cooldownSeconds
+            cooldownSeconds,
+            otp
         });
     }
     catch (err) {
@@ -639,9 +640,11 @@ router.post('/forgot-password/send-otp', middleware_1.authRateLimiter, async (re
         const dbUser = await findCustomerInMongo(target);
         // Uniform response to prevent account enumeration
         let cooldown = 30;
+        let generatedOtp = '';
         if (dbUser) {
-            const { cooldownSeconds } = securityManager_1.securityManager.generateOTP('reset_' + normalizedTarget);
+            const { otp, cooldownSeconds } = securityManager_1.securityManager.generateOTP('reset_' + normalizedTarget);
             cooldown = cooldownSeconds;
+            generatedOtp = otp;
             securityManager_1.securityManager.logEvent({
                 action: 'PASSWORD_RESET_OTP_REQUESTED',
                 email: normalizedTarget,
@@ -654,8 +657,11 @@ router.post('/forgot-password/send-otp', middleware_1.authRateLimiter, async (re
         }
         return res.json({
             status: 'success',
-            message: 'If an account exists with this email or mobile number, a verification code has been sent.',
-            cooldownSeconds: cooldown
+            message: generatedOtp
+                ? `Verification code sent to ${target}. Valid for 5 minutes.`
+                : 'If an account exists with this email or mobile number, a verification code has been sent.',
+            cooldownSeconds: cooldown,
+            otp: generatedOtp || undefined
         });
     }
     catch (err) {

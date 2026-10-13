@@ -419,6 +419,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       <CreditCard className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
+                        name="aadhaarNumber"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck="false"
                         required
                         maxLength={12}
                         value={aadhaarNumber}
@@ -458,6 +462,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
+                        name="panNumber"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck="false"
                         required
                         maxLength={10}
                         value={panNumber}

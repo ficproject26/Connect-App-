@@ -210,7 +210,10 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
       setIsOtpSent(true);
       setResendCooldown(data.cooldownSeconds || 30);
-      setOtpSuccessMsg(`OTP sent successfully to ${target}. Valid for 5 minutes.`);
+      if (data.otp) {
+        setOtpInput(data.otp);
+      }
+      setOtpSuccessMsg(data.message || `OTP sent successfully to ${target}. Valid for 5 minutes.`);
 
     } catch (err) {
       setIsSubmitting(false);
@@ -300,7 +303,10 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       }
 
       setForgotStep(2);
-      setForgotSuccess(t('otpSentSuccess', currentLang));
+      if (data.otp) {
+        setForgotOtp(data.otp);
+      }
+      setForgotSuccess(data.message || t('otpSentSuccess', currentLang));
       if (data.cooldownSeconds) setForgotCooldown(data.cooldownSeconds);
     } catch (err) {
       setForgotLoading(false);

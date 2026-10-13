@@ -117,15 +117,46 @@ export const validateConfirmPassword = (password, confirmPassword) => {
   return { isValid: true, error: '' };
 };
 
-// 9. Pincode (Strict 6-digit Indian PIN code, starts with 1-9, rejects 100000)
+// 9. Pincode (Strict 6-digit Indian PIN code, starts with valid Indian postal circles 1-8 / 9, rejects repetitive/dummy patterns like 282828, 123456, 111111)
 export const validatePincode = (pincode) => {
   if (!pincode || !String(pincode).trim()) {
     return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
   }
   const cleaned = String(pincode).trim();
-  if (!/^[1-9][0-9]{5}$/.test(cleaned) || cleaned === '100000' || cleaned.startsWith('10')) {
+  
+  // Must be 6 digits and start with 1-9
+  if (!/^[1-9][0-9]{5}$/.test(cleaned)) {
     return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
   }
+
+  // Reject all identical digits (111111, 222222, etc.)
+  if (/^(\d)\1{5}$/.test(cleaned)) {
+    return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
+  }
+
+  // Reject dummy sequences and repeating 2-digit/3-digit dummy patterns (e.g. 282828, 121212, 123123, 123456, 654321)
+  const dummyCodes = ['123456', '654321', '100000', '999999', '282828', '121212', '101010', '131313', '242424', '363636'];
+  if (dummyCodes.includes(cleaned) || /^(\d{2})\1{2}$/.test(cleaned) || /^(\d{3})\1$/.test(cleaned)) {
+    return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
+  }
+
+  // Valid Indian postal circle 2-digit prefixes
+  const validPostalPrefixes = [
+    '11', '12', '13', '14', '15', '16', '17', '18', '19', // Northern (Delhi, Haryana, Punjab, HP, J&K)
+    '20', '21', '22', '23', '24', '25', '26', '27', '28', // UP, Uttarakhand
+    '30', '31', '32', '33', '34', '36', '37', '38', '39', // Rajasthan, Gujarat
+    '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', // Maharashtra, MP, Chhattisgarh
+    '50', '51', '52', '53', '56', '57', '58', '59', // AP, Telangana, Karnataka
+    '60', '61', '62', '63', '64', '67', '68', '69', // Tamil Nadu, Kerala
+    '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', // West Bengal, Odisha, North East
+    '80', '81', '82', '83', '84', '85' // Bihar, Jharkhand
+  ];
+
+  const prefix = cleaned.substring(0, 2);
+  if (!validPostalPrefixes.includes(prefix)) {
+    return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
+  }
+
   return { isValid: true, error: '' };
 };
 

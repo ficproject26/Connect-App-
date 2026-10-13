@@ -529,7 +529,8 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
     return res.json({
       status: 'success',
       message: `OTP sent successfully to ${target}. Valid for 5 minutes.`,
-      cooldownSeconds
+      cooldownSeconds,
+      otp
     });
   } catch (err: any) {
     return res.status(429).json({ status: 'error', message: err.message });
@@ -673,9 +674,11 @@ router.post('/forgot-password/send-otp', authRateLimiter, async (req: Request, r
 
     // Uniform response to prevent account enumeration
     let cooldown = 30;
+    let generatedOtp = '';
     if (dbUser) {
-      const { cooldownSeconds } = securityManager.generateOTP('reset_' + normalizedTarget);
+      const { otp, cooldownSeconds } = securityManager.generateOTP('reset_' + normalizedTarget);
       cooldown = cooldownSeconds;
+      generatedOtp = otp;
       securityManager.logEvent({
         action: 'PASSWORD_RESET_OTP_REQUESTED',
         email: normalizedTarget,
@@ -689,8 +692,11 @@ router.post('/forgot-password/send-otp', authRateLimiter, async (req: Request, r
 
     return res.json({
       status: 'success',
-      message: 'If an account exists with this email or mobile number, a verification code has been sent.',
-      cooldownSeconds: cooldown
+      message: generatedOtp 
+        ? `Verification code sent to ${target}. Valid for 5 minutes.`
+        : 'If an account exists with this email or mobile number, a verification code has been sent.',
+      cooldownSeconds: cooldown,
+      otp: generatedOtp || undefined
     });
   } catch (err: any) {
     return res.status(429).json({ status: 'error', message: err.message || 'Please wait before requesting another OTP.' });

@@ -107,22 +107,30 @@ const initialProducts = [];
 
 const RenderStarRating = React.memo(({ rating = 4.5, sizeClass = "w-4.5 h-4.5" }) => {
   const numRating = Math.max(0, Math.min(5, parseFloat(rating) || 4.5));
+  const gradId = React.useId ? `star-grad-${React.useId().replace(/[:]/g, '')}` : 'star-grad-half';
   return (
-    <div className="flex items-center text-amber-400" title={`${numRating} out of 5 stars`}>
+    <div className="flex items-center text-amber-400 gap-0.5" title={`${numRating} out of 5 stars`}>
+      <svg width="0" height="0" className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="50%" stopColor="#fbbf24" />
+            <stop offset="50%" stopColor="transparent" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+      </svg>
       {[1, 2, 3, 4, 5].map((starIndex) => {
         if (numRating >= starIndex) {
           return <Star key={starIndex} className={`${sizeClass} fill-amber-400 text-amber-400`} />;
         } else if (numRating >= starIndex - 0.75 && numRating < starIndex) {
           return (
-            <div key={starIndex} className={`relative ${sizeClass} inline-flex items-center justify-center shrink-0`}>
-              <Star className={`${sizeClass} text-amber-400`} />
-              <div className="absolute inset-0 overflow-hidden w-1/2">
-                <Star className={`${sizeClass} fill-amber-400 text-amber-400`} />
-              </div>
-            </div>
+            <Star 
+              key={starIndex} 
+              className={`${sizeClass} text-amber-400`} 
+              style={{ fill: `url(#${gradId})` }} 
+            />
           );
         } else {
-          return <Star key={starIndex} className={`${sizeClass} text-amber-400/40`} />;
+          return <Star key={starIndex} className={`${sizeClass} text-amber-400/30 fill-transparent`} />;
         }
       })}
     </div>
@@ -1087,6 +1095,7 @@ export default function CustomerDashboard({
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [selectedColor, setSelectedColor] = useState('Red');
+  const [selectedVariant, setSelectedVariant] = useState('Original / Regular');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [selectedBusType, setSelectedBusType] = useState('');
@@ -1386,6 +1395,7 @@ export default function CustomerDashboard({
   const [favorites, setFavorites] = useState([]);
   const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
   const [dbCategories, setDbCategories] = useState([]);
+  const hasInitialUrlSynced = useRef(false);
   const [activeTab, setActiveTab] = useState(() => {
     try {
       const savedTab = localStorage.getItem('connect_active_tab');
@@ -1401,6 +1411,19 @@ export default function CustomerDashboard({
         localStorage.setItem('connect_active_tab', activeTab);
       }
       setSidebarActiveCat('ALL');
+      setSelectedRating(null);
+      setSelectedCuisines([]);
+      setSelectedDistances([]);
+      setSelectedFoodType('All');
+      setSelectedAccomTypes([]);
+      setSelectedPrices([]);
+      setSelectedTravelTypes([]);
+      setFromLocation('');
+      setToLocation('');
+      setSelectedDailyNeedsTypes([]);
+      setSelectedJobDepts([]);
+      setSelectedJobTypes([]);
+      setSelectedJobSalaries([]);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {}
   }, [activeTab]);
@@ -1424,10 +1447,11 @@ export default function CustomerDashboard({
     } catch (e) {}
   }, [activeTab, selectedSubNavbarCategory, sidebarActiveCat]);
 
-  // Initial and refresh URL parameters sync for direct link navigation
+  // Initial URL parameters sync for direct link navigation (runs only once on mount to avoid resetting activeTab on focus/refresh)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
+        if (hasInitialUrlSynced.current) return;
         const params = new URLSearchParams(window.location.search);
         const tabParam = params.get('tab');
         const childParam = params.get('child') || params.get('subCategory');
@@ -1436,6 +1460,7 @@ export default function CustomerDashboard({
 
         if (tabParam && ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].some(t => t.toLowerCase() === tabParam.toLowerCase())) {
           setActiveTab(tabParam);
+          hasInitialUrlSynced.current = true;
         }
         if (subParam) {
           setSidebarActiveCat(subParam);
@@ -1443,6 +1468,7 @@ export default function CustomerDashboard({
         if (childParam) {
           setSelectedSubNavbarCategory(childParam);
           setSelectedCategories([childParam]);
+          hasInitialUrlSynced.current = true;
         } else if (catIdParam && Array.isArray(dbCategories) && dbCategories.length > 0) {
           const match = dbCategories.find(c => c._id === catIdParam || c.id === catIdParam);
           if (match) {
@@ -1450,8 +1476,12 @@ export default function CustomerDashboard({
             if (resolvedName) {
               setSelectedSubNavbarCategory(resolvedName);
               setSelectedCategories([resolvedName]);
+              hasInitialUrlSynced.current = true;
             }
           }
+        }
+        if (tabParam || childParam || catIdParam) {
+          hasInitialUrlSynced.current = true;
         }
       } catch (e) {}
     }
@@ -1899,23 +1929,23 @@ export default function CustomerDashboard({
   const [selectedCheckoutAddressId, setSelectedCheckoutAddressId] = useState(null);
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
   const [razorpayPayMethod, setRazorpayPayMethod] = useState('upi');
-  const [selectedNetbank, setSelectedNetbank] = useState('HDFC Bank');
+  const [selectedNetbank, setSelectedNetbank] = useState('');
   const [razorpayProcessing, setRazorpayProcessing] = useState(false);
   const [membershipCheckoutModal, setMembershipCheckoutModal] = useState(null);
   const [membershipPayMethod, setMembershipPayMethod] = useState('upi');
-  const [membershipNetBank, setMembershipNetBank] = useState('HDFC Bank');
+  const [membershipNetBank, setMembershipNetBank] = useState('');
   const [membershipProcessing, setMembershipProcessing] = useState(false);
 
   // UPI / QR and Card Payment State Management
   const [paymentUpiSubTab, setPaymentUpiSubTab] = useState('upi_id'); // 'upi_id' | 'qr_code'
-  const [paymentUpiId, setPaymentUpiId] = useState('success@razorpay');
+  const [paymentUpiId, setPaymentUpiId] = useState('');
   const [paymentQrData, setPaymentQrData] = useState(null);
   const [paymentQrLoading, setPaymentQrLoading] = useState(false);
   const [paymentCardData, setPaymentCardData] = useState({
-    number: '4111 2222 3333 1111',
-    expiry: '12/28',
-    cvv: '123',
-    name: 'Customer Name'
+    number: '',
+    expiry: '',
+    cvv: '',
+    name: ''
   });
 
   const handleFetchRazorpayQr = useCallback(async (amountRupees) => {
@@ -1951,6 +1981,17 @@ export default function CustomerDashboard({
   const [isReportSubmitted, setIsReportSubmitted] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [isLastOrderBooking, setIsLastOrderBooking] = useState(false);
+
+  useEffect(() => {
+    if (orderSuccess) {
+      const timer = setTimeout(() => {
+        setOrderSuccess(false);
+        setIsCartOpen(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [orderSuccess]);
   const [guestList, setGuestList] = useState([{ name: '', aadhaar: '', phone: '' }]);
   const [stayMode, setStayMode] = useState('Day Option');
   const [deletedProductIds, setDeletedProductIds] = useState(() => {
@@ -3068,6 +3109,10 @@ export default function CustomerDashboard({
 
   const handleJobSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (!resumeFile) {
+      triggerNotification('Please upload your resume before submitting your job application.', 'error');
+      return;
+    }
     setIsJobSubmitting(true);
     try {
       const selectedJob = jobsList.find(j => j.id === appliedJobId || String(j.id) === String(appliedJobId) || j._id === appliedJobId || String(j._id) === String(appliedJobId)) ||
@@ -3950,6 +3995,7 @@ export default function CustomerDashboard({
         return;
       }
 
+      setIsLastOrderBooking(Boolean(isBookingOrder));
       setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
       setSelectedCartItems([]);
       setOrderSuccess(true);
@@ -4995,10 +5041,10 @@ export default function CustomerDashboard({
         {/* Theme Toggle Button */}
         <button 
           onClick={toggleTheme}
-          className="flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          className="group flex flex-col items-center gap-1 p-0.5 sm:p-1 text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 cursor-pointer transition-colors"
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {theme === 'dark' ? <Sun className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-amber-400" /> : <Moon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />}
+          {theme === 'dark' ? <Sun className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-amber-400 group-hover:scale-110 transition-transform" /> : <Moon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300 group-hover:text-amber-500 group-hover:scale-110 transition-all" />}
           {!isMobile && <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-75">Theme</span>}
         </button>
 
@@ -5011,11 +5057,11 @@ export default function CustomerDashboard({
             setSelectedCategories([]);
             setHoveredLink(null);
           }}
-          className="relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          className={`group relative flex flex-col items-center gap-1 p-0.5 sm:p-1 cursor-pointer transition-colors ${activeTab === 'Offers' ? 'text-amber-500 font-black' : 'text-slate-500 dark:text-slate-400 hover:text-amber-500'}`}
           title="Exclusive Offers"
         >
           <div className="relative">
-            <Tag className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
+            <Tag className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${activeTab === 'Offers' ? 'text-amber-500' : 'text-slate-700 dark:text-slate-300 group-hover:text-amber-500'}`} />
             {adminOffers.length > 0 && (
               <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
                 {adminOffers.length}
@@ -5028,11 +5074,11 @@ export default function CustomerDashboard({
         {/* Wishlist */}
         <button 
           onClick={() => setIsWishlistOpen(true)}
-          className="relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          className="group relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-red-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
           title="My Wishlist"
         >
           <div className="relative">
-            <Heart className={`w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+            <Heart className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : 'text-slate-700 dark:text-slate-300 group-hover:text-red-500'}`} />
             {favorites.length > 0 && (
               <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900">
                 {favorites.length}
@@ -5045,11 +5091,11 @@ export default function CustomerDashboard({
         {/* Cart */}
         <button 
           onClick={() => setIsCartOpen(true)}
-          className="relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+          className="group relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-blue-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
           title="My Cart"
         >
           <div className="relative">
-            <ShoppingCart className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
+            <ShoppingCart className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300 group-hover:text-blue-500 transition-transform group-hover:scale-110" />
             {cart.length > 0 && (
               <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
                 {cart.length}
@@ -5067,11 +5113,11 @@ export default function CustomerDashboard({
                 setIsNotificationsOpen(true);
                 loadCustomerNotifications();
               }}
-              className="relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
+              className="group relative flex flex-col items-center gap-1 p-0.5 sm:p-1 hover:text-amber-500 text-slate-500 dark:text-slate-400 cursor-pointer transition-colors"
               title="Notifications"
             >
               <div className="relative">
-                <Bell className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
+                <Bell className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300 group-hover:text-amber-500 transition-transform group-hover:scale-110" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7.5px] font-black rounded-full flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
                     {unreadCount}
@@ -5092,7 +5138,14 @@ export default function CustomerDashboard({
         {/* Row 1 for Mobile / Left Section for Desktop */}
         <div className="flex items-center justify-between gap-1.5 sm:gap-4 w-full md:w-auto overflow-visible">
           {/* Logo */}
-          <div className="flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer shrink-0" onClick={clearAllFilters}>
+          <div className="flex items-center gap-1.5 sm:gap-2 select-none cursor-pointer shrink-0" onClick={() => {
+            clearAllFilters();
+            setActiveTab('Home');
+            setSelectedProduct(null);
+            setSelectedSubNavbarCategory('All');
+            setSidebarActiveCat('ALL');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}>
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white flex items-center justify-center p-0.5 border border-slate-200 dark:border-slate-800/60 shrink-0 shadow-3xs">
               <img src={logoImg} alt="Connect App Logo" className="w-full h-full object-contain rounded-full" />
             </div>
@@ -6555,6 +6608,7 @@ export default function CustomerDashboard({
     const categories = defaultCategories.filter(cat => 
       subNavbarCategories.some(sub => normalizeMainCatName(sub) === normalizeMainCatName(cat.id))
     );
+    const displayCategories = categories.length > 0 ? categories : defaultCategories;
 
     return (
       <div className="space-y-4 text-left w-full">
@@ -6563,19 +6617,17 @@ export default function CustomerDashboard({
         </div>
 
         <div className="grid grid-cols-2 min-[480px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
-          {categories.map((cat) => {
+          {displayCategories.map((cat) => {
             const Icon = cat.icon;
             return (
               <div 
                 key={cat.id} 
                 onClick={() => {
-                  if (cat.id === 'More') {
-                    setActiveTab('Services');
-                    setSelectedSubNavbarCategory('Services');
-                  } else {
-                    setActiveTab(cat.id);
-                    setSelectedSubNavbarCategory(cat.id);
-                  }
+                  const targetTab = cat.id === 'More' ? 'Services' : cat.id;
+                  setActiveTab(targetTab);
+                  setSelectedSubNavbarCategory(targetTab);
+                  setSidebarActiveCat('ALL');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 rounded-3xl p-4 text-center flex flex-col items-center justify-center transition-all duration-300 shadow-3xs hover:shadow-md hover:-translate-y-1 cursor-pointer"
               >
@@ -6751,11 +6803,19 @@ export default function CustomerDashboard({
               <div 
                 key={item.id} 
                 onClick={() => {
-                  // Always open exact product details – never just switch tabs
+                  // Always open exact product details and highlight corresponding tab
                   const p = products.find(prod => prod.id === item.id) || products.find(prod => prod.name === item.name) || item;
                   setSelectedProduct(p);
                   setActiveProductImage(p.image || null);
                   setActiveThumbnailIndex(0);
+                  const itemCat = p.mainCategory || p.subNavbarCategory || item.tag;
+                  if (itemCat && ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].some(t => t.toLowerCase() === itemCat.toLowerCase())) {
+                    const matchedTab = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].find(t => t.toLowerCase() === itemCat.toLowerCase());
+                    if (matchedTab) {
+                      setActiveTab(matchedTab);
+                      setSelectedSubNavbarCategory(matchedTab);
+                    }
+                  }
                   triggerNotification(`Loading ${item.name}...`);
                 }}
                 className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
@@ -7566,9 +7626,25 @@ export default function CustomerDashboard({
                     className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">All Cuisines</option>
-                    {[...new Set(products.filter(p => p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.tag === 'Food').flatMap(p => [p.category, p.subcategory, p.name]).filter(Boolean))].map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
+                    {(() => {
+                      const seen = new Set();
+                      const cuisineList = [];
+                      products
+                        .filter(p => p.subNavbarCategory === 'Food' || p.mainCategory === 'Food' || p.tag === 'Food')
+                        .flatMap(p => [p.subcategory, p.category])
+                        .filter(Boolean)
+                        .forEach(raw => {
+                          const trimmed = String(raw).trim();
+                          const lower = trimmed.toLowerCase();
+                          if (!seen.has(lower) && lower !== 'food' && lower !== 'all') {
+                            seen.add(lower);
+                            cuisineList.push(trimmed);
+                          }
+                        });
+                      return cuisineList.sort((a, b) => a.localeCompare(b)).map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ));
+                    })()}
                   </select>
                   <select
                     value={selectedDistances[0] || ""}
@@ -8265,8 +8341,8 @@ export default function CustomerDashboard({
               ) : (
                 /* ================= JOBS LISTING BOARD ================= */
                 <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-4 py-3 shadow-xs text-slate-800 dark:text-slate-200">
-                    <h2 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-4 py-3 shadow-xs text-slate-800 dark:text-slate-200 w-full text-left">
+                    <h2 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight text-left">
                       Open Positions <span className="text-xs font-medium text-slate-400 dark:text-slate-500">({filteredJobs.length} items found)</span>
                     </h2>
                   </div>
@@ -8710,7 +8786,7 @@ export default function CustomerDashboard({
           </div>
           <div className="flex items-center gap-4">
             <button onClick={() => handleShareProduct(selectedProduct)} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
-            <button onClick={() => toggleFavorite(selectedProduct.id)} className="flex items-center gap-1.5 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} /> Save for later</button>
+            <button onClick={() => setIsCompareModalOpen(true)} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><SlidersHorizontal className="w-4 h-4 text-amber-500" /> Compare</button>
           </div>
         </div>
 
@@ -8729,8 +8805,12 @@ export default function CustomerDashboard({
               )}
               <button onClick={() => toggleFavorite(selectedProduct.id)} className="absolute right-3 top-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center shadow-md cursor-pointer border-none"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} /></button>
               <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
-              <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
-              <button onClick={() => { const n = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1; setActiveProductImage(thumbnails[n]); setActiveThumbnailIndex(n); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronRight className="w-4 h-4 text-slate-700" /></button>
+              {thumbnails.length > 1 && (
+                <>
+                  <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
+                  <button onClick={() => { const n = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1; setActiveProductImage(thumbnails[n]); setActiveThumbnailIndex(n); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronRight className="w-4 h-4 text-slate-700" /></button>
+                </>
+              )}
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar">{thumbnails.slice(0, 8).map((t, i) => (<button key={i} onClick={() => { setActiveProductImage(t); setActiveThumbnailIndex(i); }} className={`w-14 h-10 rounded-lg border-2 overflow-hidden shrink-0 cursor-pointer ${activeThumbnailIndex === i ? 'border-amber-400 shadow-md' : 'border-slate-200 dark:border-slate-800'}`}><img src={t} alt="" className="w-full h-full object-cover" /></button>))}</div>
 
@@ -10356,6 +10436,49 @@ export default function CustomerDashboard({
                 }
                 return null;
               })()}
+
+              {/* Daily Needs / Grocery Flavour & Customization Selector (BUG-03) */}
+              {(() => {
+                const isDailyItem = selectedProduct.subNavbarCategory === 'Daily Needs' ||
+                  selectedProduct.mainCategory === 'Daily Needs' ||
+                  selectedProduct.tag === 'Daily Needs' ||
+                  (selectedProduct.category || '').toLowerCase().includes('daily') ||
+                  (selectedProduct.category || '').toLowerCase().includes('milk') ||
+                  (selectedProduct.category || '').toLowerCase().includes('dairy') ||
+                  (selectedProduct.category || '').toLowerCase().includes('grocery');
+                if (!isDailyItem) return null;
+
+                const flavours = Array.isArray(selectedProduct.flavors) && selectedProduct.flavors.length > 0
+                  ? selectedProduct.flavors
+                  : ['Original / Regular', 'Elaichi / Cardamom', 'Chocolate', 'Strawberry', 'Sugar-Free'];
+
+                return (
+                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-xl p-3 mb-3 text-left space-y-2">
+                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
+                      Select Flavour / Variant & Customization
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {flavours.map(f => (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => {
+                            setSelectedVariant(f);
+                            triggerNotification(`Selected flavour: ${f}`);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-extrabold border transition-all cursor-pointer ${
+                            selectedVariant === f
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                          }`}
+                        >
+                          {f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Description & Action buttons */}
@@ -10376,7 +10499,7 @@ export default function CustomerDashboard({
                   </div>
                 ) : getActionButtons(selectedProduct).showBooking ? (
                   <div className="flex items-center gap-2 w-full sm:flex-1">
-                    {!( ['Services', 'Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Services', 'Stay', 'Travel'].includes(selectedProduct.tag) || isMedicalService(selectedProduct) || selectedProduct.category === 'Hospital' || selectedProduct.category === 'Hospitals' ) && (() => {
+                    {!( ['Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Stay', 'Travel'].includes(selectedProduct.tag) || isMedicalService(selectedProduct) || selectedProduct.category === 'Hospital' || selectedProduct.category === 'Hospitals' ) && (() => {
                       const cartItem = cart.find(i => String(i.id) === String(selectedProduct.id) || String(i.id) === String(selectedProduct._id));
                       const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
                       return inCartQty > 0 ? (
@@ -10954,9 +11077,13 @@ export default function CustomerDashboard({
                   <Check className="w-8 h-8 animate-bounce" />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-lg font-bold text-slate-800 dark:text-white">Order Placed Successfully!</h4>
+                  <h4 className="text-lg font-bold text-slate-800 dark:text-white">
+                    {isLastOrderBooking ? 'Booking Successful!' : 'Order Placed Successfully!'}
+                  </h4>
                   <p className="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">
-                    Your payment has been authorized, and items are now routing to shipping.
+                    {isLastOrderBooking 
+                      ? 'Your booking has been confirmed! Confirmation and reservation details have been generated.'
+                      : 'Your payment has been authorized, and items are now routing to shipping.'}
                   </p>
                 </div>
                 <button
@@ -10967,7 +11094,7 @@ export default function CustomerDashboard({
                   }}
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95"
                 >
-                  Continue Shopping
+                  {isLastOrderBooking ? 'View Bookings / Continue' : 'Continue Shopping'}
                 </button>
               </div>
             ) : cart.length === 0 ? (
@@ -11367,7 +11494,7 @@ wishlistProducts.forEach(item => addToCart(item));
 
       {/* -------------------- 7. PROFILE DETAILS MODAL POP-UP -------------------- */}
       {isProfileModalOpen && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-[#0b1329] w-screen h-screen flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-800 dark:text-slate-200">
+        <div className="fixed inset-0 z-50 bg-white dark:bg-[#0b1329] w-screen h-screen flex flex-col md:flex-row overflow-hidden animate-fade-in text-slate-800 dark:text-slate-200 overscroll-contain">
             {/* Modal Navigation Sidebar (Responsive: Header Bar on Mobile, Vertical Panel on Desktop) */}
             <div className="w-full md:w-72 bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 p-4 md:p-6 flex flex-col justify-between shrink-0 text-slate-800 dark:text-slate-200">
               <div className="space-y-4 md:space-y-6 text-left w-full">
@@ -11500,7 +11627,7 @@ wishlistProducts.forEach(item => addToCart(item));
             </div>
 
             {/* Modal Right Content Panel */}
-            <div className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full">
+            <div className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full overscroll-contain">
 
               <div className="flex-grow max-w-full">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
@@ -11746,7 +11873,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           <div className="bg-white dark:bg-slate-900 p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-5 text-left font-sans">Booking Timeline</h4>
                             <div className="flex justify-between items-center relative w-full px-2">
-                              <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 -z-10" />
+                              <div className="absolute top-3 left-4 right-4 h-0.5 bg-slate-200 dark:bg-slate-700 pointer-events-none" />
                               
                               {['Booking Placed', 'Confirmed', 'Checked In / Active', 'Completed'].map((step, idx) => {
                                 const statusMap = {
@@ -11841,7 +11968,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 text-left">Delivery Progress Timeline</h4>
                             <div className="flex justify-between items-center relative w-full px-2">
-                              <div className="absolute top-3 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 -z-10" />
+                              <div className="absolute top-3 left-4 right-4 h-0.5 bg-slate-200 dark:bg-slate-700 pointer-events-none" />
                               
                               {['Order Placed', 'Preparing', 'Ready For Pickup', 'Delivery Partner Accepted', 'Out For Delivery', 'Delivered'].map((step, idx) => {
                                 const statusMap = {
@@ -11971,9 +12098,9 @@ wishlistProducts.forEach(item => addToCart(item));
                               </div>
                               <button 
                                 onClick={() => setIsHelpSupportOpen(true)}
-                                className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                                className="px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
                               >
-                                <Phone className="w-4 h-4" />
+                                <Phone className="w-3.5 h-3.5 text-amber-500" />
                                 <span>Help & Support</span>
                               </button>
                             </div>
@@ -15187,24 +15314,37 @@ wishlistProducts.forEach(item => addToCart(item));
               )}
 
               {/* Order Items Preview Card */}
-              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl p-4 space-y-2">
-                <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
-                  <span>Selected Items ({cart.filter(item => selectedCartItems.includes(item.id)).length}):</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white">
-                    ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
-                  <span>Delivery Charge:</span>
-                  <span className="text-emerald-500 font-extrabold uppercase">FREE Express</span>
-                </div>
-                <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex justify-between items-baseline">
-                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase">Amount Payable:</span>
-                  <span className="text-lg font-black text-[#f43397]">
-                    ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+                const totalAmt = selectedCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+                const isBookingOrService = isTravelOrStayCart(selectedCart) || selectedCart.some(i => {
+                  const c = (i.subNavbarCategory || i.mainCategory || i.tag || i.category || '').toLowerCase();
+                  return c.includes('service') || c.includes('stay') || c.includes('hotel') || c.includes('travel') || c.includes('job');
+                });
+
+                return (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl p-4 space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                      <span>{isBookingOrService ? 'Selected Booking / Service' : 'Selected Items'} ({selectedCart.length}):</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white">
+                        ₹{totalAmt.toLocaleString()}
+                      </span>
+                    </div>
+                    {!isBookingOrService && (
+                      <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                        <span>Delivery Charge:</span>
+                        <span className="text-emerald-500 font-extrabold uppercase">FREE Express</span>
+                      </div>
+                    )}
+                    <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex justify-between items-baseline">
+                      <span className="text-xs font-black text-slate-900 dark:text-white uppercase">Amount Payable:</span>
+                      <span className="text-lg font-black text-[#f43397]">
+                        ₹{totalAmt.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Footer Actions */}
@@ -15329,29 +15469,41 @@ wishlistProducts.forEach(item => addToCart(item));
                   <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">Select Payment Method</span>
 
                   {/* Payment Method Selector */}
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
+                  {(() => {
+                    const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+                    const isBookingOrService = isTravelOrStayCart(selectedCart) || selectedCart.some(i => {
+                      const c = (i.subNavbarCategory || i.mainCategory || i.tag || i.category || '').toLowerCase();
+                      return c.includes('service') || c.includes('stay') || c.includes('hotel') || c.includes('travel') || c.includes('job');
+                    });
+
+                    const availableMethods = [
                       { id: 'upi', label: 'UPI / QR', icon: '📱' },
                       { id: 'card', label: 'Cards', icon: '💳' },
                       { id: 'netbanking', label: 'Banking', icon: '🏦' },
                       { id: 'wallet', label: 'Wallet', icon: '👛' },
-                      { id: 'cod', label: 'Cash on Delivery', icon: '💵' }
-                    ].map(m => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setRazorpayPayMethod(m.id)}
-                        className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
-                          razorpayPayMethod === m.id
-                            ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
-                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                        }`}
-                      >
-                        <span className="text-lg">{m.icon}</span>
-                        <span className="text-[10px] font-extrabold">{m.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                      ...(!isBookingOrService ? [{ id: 'cod', label: 'Cash on Delivery', icon: '💵' }] : [])
+                    ];
+
+                    return (
+                      <div className={`grid ${availableMethods.length > 4 ? 'grid-cols-5' : 'grid-cols-4'} gap-2`}>
+                        {availableMethods.map(m => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setRazorpayPayMethod(m.id)}
+                            className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                              razorpayPayMethod === m.id
+                                ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
+                                : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                            }`}
+                          >
+                            <span className="text-lg">{m.icon}</span>
+                            <span className="text-[10px] font-extrabold">{m.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {/* Payment Detail Section */}
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-4 rounded-2xl space-y-3">
@@ -15440,17 +15592,16 @@ wishlistProducts.forEach(item => addToCart(item));
                                 </p>
                               </div>
                             ) : (
-                              <div className="py-4">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const totalPayable = cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-                                    handleFetchRazorpayQr(totalPayable);
-                                  }}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-blue-700 cursor-pointer border-none"
-                                >
-                                  Generate Dynamic QR Code
-                                </button>
+                              <div className="space-y-2">
+                                <div className="p-2 bg-white rounded-2xl inline-block border border-slate-200 shadow-md">
+                                  <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`upi://pay?pa=connectapp@razorpay&pn=ConnectApp&am=${cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)}&cu=INR`)}`}
+                                    alt="Scan & Pay UPI QR"
+                                    className="w-40 h-40 object-contain mx-auto"
+                                  />
+                                </div>
+                                <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Scan with GPay, PhonePe, Paytm, or BHIM</p>
+                                <p className="text-[10px] text-slate-400 font-mono">Dynamic UPI Instant Authorization Active</p>
                               </div>
                             )}
                           </div>
@@ -15499,10 +15650,10 @@ wishlistProducts.forEach(item => addToCart(item));
                             <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">CVV</label>
                             <input
                               type="password"
-                              maxLength={4}
+                              maxLength={3}
                               value={paymentCardData.cvv}
                               onChange={(e) => {
-                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 3);
                                 setPaymentCardData(prev => ({ ...prev, cvv: raw }));
                               }}
                               placeholder="123"
@@ -15664,8 +15815,21 @@ wishlistProducts.forEach(item => addToCart(item));
                             triggerNotification('Please enter card expiry in MM/YY format', 'error');
                             return;
                           }
-                          if (!paymentCardData.cvv || paymentCardData.cvv.length < 3) {
+                          if (!paymentCardData.cvv || paymentCardData.cvv.length !== 3) {
                             triggerNotification('Please enter a valid 3-digit CVV', 'error');
+                            return;
+                          }
+                          if (!paymentCardData.name || !paymentCardData.name.trim()) {
+                            triggerNotification('Please enter the cardholder name', 'error');
+                            return;
+                          }
+                          if (!/^[a-zA-Z\s]+$/.test(paymentCardData.name.trim())) {
+                            triggerNotification('Cardholder name can contain letters and spaces only', 'error');
+                            return;
+                          }
+                        } else if (razorpayPayMethod === 'netbanking') {
+                          if (!selectedNetbank) {
+                            triggerNotification('Please select a bank to proceed with Net Banking payment', 'error');
                             return;
                           }
                         }
@@ -15675,7 +15839,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           : razorpayPayMethod === 'card' 
                             ? 'Card' 
                             : razorpayPayMethod === 'netbanking' 
-                              ? 'Net Banking' 
+                              ? `Net Banking (${selectedNetbank})` 
                               : 'Online (Razorpay)';
                         setTimeout(() => {
                           processFinalOrderPlacement(method);
@@ -16092,25 +16256,47 @@ wishlistProducts.forEach(item => addToCart(item));
                   <div className="space-y-1.5">
                     <label className="text-xs font-black uppercase tracking-wider text-slate-500 block">Select Issue / Reason</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {[
-                        'Order Defect / Damage',
-                        'Missing Item / Wrong Product',
-                        'Refund Request',
-                        'Delayed Delivery / Service'
-                      ].map(reason => (
-                        <button
-                          key={reason}
-                          type="button"
-                          onClick={() => setReportReason(reason)}
-                          className={`p-2.5 rounded-xl border text-left font-bold transition-all cursor-pointer ${
-                            reportReason === reason
-                              ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-600 dark:text-blue-400'
-                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {reason}
-                        </button>
-                      ))}
+                      {(() => {
+                        const isBooking = ['Booking', 'Stay', 'Travel', 'Services', 'Appointment'].includes(supportOrderModal.type) || 
+                          ['stay', 'travel', 'services'].includes((supportOrderModal.subNavbarCategory || '').toLowerCase());
+                        const isJob = supportOrderModal.type === 'Job' || (supportOrderModal.subNavbarCategory || '').toLowerCase() === 'jobs';
+                        
+                        let reasons = [
+                          'Order Defect / Damage',
+                          'Missing Item / Wrong Product',
+                          'Refund Request',
+                          'Delayed Delivery'
+                        ];
+                        if (isJob) {
+                          reasons = [
+                            'Application Status Inquiry',
+                            'Interview Reschedule Request',
+                            'Recruiter Unresponsive',
+                            'Withdraw Application'
+                          ];
+                        } else if (isBooking) {
+                          reasons = [
+                            'Booking Reschedule Request',
+                            'Cancellation & Full Refund',
+                            'Host / Vendor Unreachable',
+                            'Service Quality Issue'
+                          ];
+                        }
+                        return reasons.map(reason => (
+                          <button
+                            key={reason}
+                            type="button"
+                            onClick={() => setReportReason(reason)}
+                            className={`p-2.5 rounded-xl border text-left font-bold transition-all cursor-pointer ${
+                              reportReason === reason
+                                ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {reason}
+                          </button>
+                        ));
+                      })()}
                     </div>
                   </div>
 
@@ -16121,7 +16307,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       rows={3}
                       value={reportNotes}
                       onChange={(e) => setReportNotes(e.target.value)}
-                      placeholder={`Explain the issue or refund details for this ₹${supportOrderModal.amount} order...`}
+                      placeholder={`Explain the issue or refund details for this order...`}
                       className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
@@ -16157,7 +16343,7 @@ wishlistProducts.forEach(item => addToCart(item));
                   }}
                   className="px-5 py-2.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none shadow-sm"
                 >
-                  Submit Report (₹{supportOrderModal.amount})
+                  Submit Report
                 </button>
               </div>
             )}
