@@ -2866,16 +2866,27 @@ export default function CustomerDashboard({
   const notificationsFetchedRef = useRef(false);
   const isFetchingNotificationsRef = useRef(false);
 
-  // Derive order-based notifications from customer orders as a reliable baseline
+  const getReadNotificationIds = () => {
+    try {
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('connect_read_notifications') : null;
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  };
+
+  // Derive order-based notifications from customer orders as a reliable real-time baseline
   const deriveOrderNotifications = useCallback(() => {
     if (!Array.isArray(customerOrders) || customerOrders.length === 0) return [];
-    return customerOrders.slice(0, 15).map(ord => {
+    const readIds = getReadNotificationIds();
+    return customerOrders.slice(0, 20).map(ord => {
       const ordNum = ord.order_number || ord.id || 'N/A';
       const status = ord.status || 'Order Placed';
       const prodName = (ord.product_details || ord.productName || 'Order').replace(/\s*\(Qty:\s*\d+\)/gi, '');
       const isDelivered = ['Delivered', 'Completed'].includes(status);
       const isCancelled = status === 'Cancelled';
-      const isRead = Boolean(ord.notification_read || ord.notificationRead || isDelivered);
+      const notifId = `ord-notif-${ord._id || ord.id || ordNum}`;
+      const isRead = Boolean(ord.notification_read || ord.notificationRead || isDelivered || readIds.has(notifId));
 
       let title = `Order #${ordNum}`;
       let message = `${prodName} is currently ${status}`;
@@ -2894,7 +2905,7 @@ export default function CustomerDashboard({
       }
 
       return {
-        id: `ord-notif-${ord._id || ord.id || ordNum}`,
+        id: notifId,
         title,
         message,
         text: message,
@@ -2907,101 +2918,38 @@ export default function CustomerDashboard({
     });
   }, [customerOrders]);
 
-  const loadCustomerNotifications = useCallback(async (force = false) => {
-    if (isFetchingNotificationsRef.current) return;
-    if (!force && notificationsFetchedRef.current) return;
-
-    isFetchingNotificationsRef.current = true;
+  const loadCustomerNotifications = useCallback(() => {
     try {
-      const activeUser = currentUser || JSON.parse(localStorage.getItem('connect_current_user') || localStorage.getItem('user') || 'null');
-      const userId = activeUser?.id || activeUser?.userId || activeUser?._id || '';
-      const email = activeUser?.email || profileEmail || '';
-      const phone = activeUser?.phone || profilePhone || '';
-
-      // Set fallback notifications from existing customerOrders immediately
       const orderNotifs = deriveOrderNotifications();
       if (orderNotifs.length > 0) {
-        setNotificationsList(prev => prev.length === 0 ? orderNotifs : prev);
-        setUnreadCount(prev => prev === 0 ? orderNotifs.filter(n => !n.read).length : prev);
+        setNotificationsList(orderNotifs);
+        setUnreadCount(orderNotifs.filter(n => !n.read).length);
+      } else {
+        setNotificationsList([]);
+        setUnreadCount(0);
       }
-
-      if (!userId && !email && !phone) {
-        notificationsFetchedRef.current = true;
-        return;
-      }
-
-      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
-      if (!baseBackend) {
-        notificationsFetchedRef.current = true;
-        return;
-      }
-
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      const params = new URLSearchParams();
-      if (userId) params.append('userId', userId);
-      if (email) params.append('email', email);
-      if (phone) params.append('phone', phone);
-
-      const targetUrl = `${baseBackend.replace(/\/+$/, '')}/api/auth/customer-notifications?${params.toString()}`;
-
-      const res = await fetch(targetUrl, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      }).catch(() => null);
-
-      if (res && res.status === 429) {
-        console.warn('Customer notifications rate-limited (429)');
-        notificationsFetchedRef.current = true;
-        return;
-      }
-
-      if (res && res.ok) {
-        const data = await res.json().catch(() => null);
-        if (data && Array.isArray(data.notifications) && data.notifications.length > 0) {
-          setNotificationsList(data.notifications);
-          setUnreadCount(typeof data.unreadCount === 'number' ? data.unreadCount : data.notifications.filter(n => !n.read).length);
-        }
-      }
-      notificationsFetchedRef.current = true;
     } catch (err) {
       // Graceful fallback
     } finally {
       setIsNotificationsLoading(false);
-      isFetchingNotificationsRef.current = false;
     }
-  }, [currentUser?.id, currentUser?._id, profileEmail, profilePhone, deriveOrderNotifications]);
+  }, [deriveOrderNotifications]);
 
   useEffect(() => {
-    const activeId = currentUser?.id || currentUser?._id || currentUser?.email;
-    if (activeId && !notificationsFetchedRef.current) {
-      loadCustomerNotifications(false);
-    }
-  }, [currentUser?.id, currentUser?._id, currentUser?.email]);
+    loadCustomerNotifications();
+  }, [customerOrders, loadCustomerNotifications]);
 
-  const markAllNotificationsAsRead = async () => {
+  const markAllNotificationsAsRead = () => {
     try {
-      const activeUser = currentUser || JSON.parse(localStorage.getItem('connect_current_user') || localStorage.getItem('user') || 'null');
-      const userId = activeUser?.id || activeUser?.userId || activeUser?._id || '';
-      const email = activeUser?.email || profileEmail || '';
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-
+      const allIds = notificationsList.map(n => n.id);
+      const existing = getReadNotificationIds();
+      allIds.forEach(id => existing.add(id));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('connect_read_notifications', JSON.stringify([...existing]));
+      }
       setUnreadCount(0);
       setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
       triggerNotification("All notifications marked as read");
-
-      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
-      if (baseBackend) {
-        await fetch(`${baseBackend.replace(/\/+$/, '')}/api/auth/customer-notifications/read`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({ userId, email })
-        }).catch(() => null);
-      }
     } catch (err) {
       console.warn("Failed marking notifications read:", err);
     }
@@ -11378,6 +11326,13 @@ wishlistProducts.forEach(item => addToCart(item));
                     key={notif.id || idx}
                     onClick={() => {
                       if (!notif.read) {
+                        try {
+                          const existing = getReadNotificationIds();
+                          if (notif.id) existing.add(notif.id);
+                          if (typeof localStorage !== 'undefined') {
+                            localStorage.setItem('connect_read_notifications', JSON.stringify([...existing]));
+                          }
+                        } catch (e) {}
                         setNotificationsList(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
                         setUnreadCount(prev => Math.max(0, prev - 1));
                       }
