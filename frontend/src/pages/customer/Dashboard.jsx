@@ -89,7 +89,7 @@ import {
   LifeBuoy, LogOut, MapPin, Phone, PhoneCall, Package, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
   Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar,
-  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe, Mail, FileText, Upload
+  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe, Mail, FileText, Upload, QrCode
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -747,7 +747,7 @@ export function formatDateFromYYYYMMDD(dateStr) {
   return `${weekdays[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-export function generateUpcomingDates(startDateStr, count = 14) {
+export function generateUpcomingDates(startDateStr, count = 14, item = null) {
   const dates = [];
   let base = new Date();
   if (startDateStr && !isNaN(new Date(startDateStr + 'T00:00:00').getTime())) {
@@ -760,7 +760,16 @@ export function generateUpcomingDates(startDateStr, count = 14) {
     const d = new Date(base);
     d.setDate(base.getDate() + i);
     const dateStr = formatDateYYYYMMDD(d);
-    const isAvailable = (i % 5 !== 3);
+    
+    // Check property-specific blocked dates if configured
+    let isAvailable = true;
+    if (Array.isArray(item?.unavailableDates) && item.unavailableDates.includes(dateStr)) {
+      isAvailable = false;
+    }
+    if (Array.isArray(item?.blockedDates) && item.blockedDates.includes(dateStr)) {
+      isAvailable = false;
+    }
+
     dates.push({
       dateStr,
       dayNumber: d.getDate(),
@@ -914,6 +923,102 @@ export function isPastTimeForSelectedDate(timeStr, dateStr) {
   if (hours < currentHours) return true;
   if (hours === currentHours && minutes <= currentMinutes) return true;
   return false;
+}
+
+export function isTravelOrStayItem(item) {
+  if (!item) return false;
+  const subNav = (item.subNavbarCategory || '').toLowerCase();
+  const mainCat = (item.mainCategory || '').toLowerCase();
+  const tag = (item.tag || '').toLowerCase();
+  const cat = (item.category || '').toLowerCase();
+  return (
+    subNav === 'travel' || subNav === 'stay' ||
+    mainCat === 'travel' || mainCat === 'stay' ||
+    tag === 'travel' || tag === 'stay' ||
+    cat === 'travel' || cat === 'stay' ||
+    cat.includes('hotel') || cat.includes('resort') ||
+    cat.includes('bus') || cat.includes('tour') || cat.includes('flight')
+  );
+}
+
+export function isTravelOrStayCart(items) {
+  if (!items || !Array.isArray(items) || items.length === 0) return false;
+  return items.every(isTravelOrStayItem);
+}
+
+export function getAuthoritativeSlotAvailability(timeStr, dateStr, item = null) {
+  if (!timeStr || !dateStr) {
+    return { isAvailable: false, status: 'Not Available', reason: 'Invalid date or time' };
+  }
+
+  const now = new Date();
+  const todayStr = formatDateYYYYMMDD(now);
+  let normalizedDate = dateStr;
+  if (dateStr.includes(',')) {
+    const pd = new Date(dateStr);
+    if (!isNaN(pd.getTime())) normalizedDate = formatDateYYYYMMDD(pd);
+  }
+  if (normalizedDate < todayStr) {
+    return { isAvailable: false, status: 'Not Available', reason: 'Selected date is in the past' };
+  }
+
+  let hours = 0;
+  let minutes = 0;
+  const match12 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (match12) {
+    hours = parseInt(match12[1], 10);
+    minutes = parseInt(match12[2], 10);
+    const ampm = match12[3] ? match12[3].toUpperCase() : '';
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+  } else {
+    const match24 = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (match24) {
+      hours = parseInt(match24[1], 10);
+      minutes = parseInt(match24[2], 10);
+    } else {
+      return { isAvailable: false, status: 'Not Available', reason: 'Invalid time format' };
+    }
+  }
+
+  // Operating window for check-in: 07:00 AM to 11:00 PM
+  if (hours < 7 || hours >= 23) {
+    return { isAvailable: false, status: 'Not Available', reason: 'Outside operating check-in hours (07:00 AM - 11:00 PM)' };
+  }
+
+  // Past time check for today
+  if (normalizedDate === todayStr) {
+    const currentH = now.getHours();
+    const currentM = now.getMinutes();
+    if (hours < currentH || (hours === currentH && minutes <= currentM)) {
+      return { isAvailable: false, status: 'Not Available', reason: 'Time slot has already passed for today' };
+    }
+  }
+
+  // Check vendor product specific availableTimeSlots configuration
+  if (Array.isArray(item?.availableTimeSlots) && item.availableTimeSlots.length > 0) {
+    const matchedConfig = item.availableTimeSlots.find(s => {
+      const sTime = typeof s === 'string' ? s : s.time;
+      return sTime && sTime.toLowerCase().trim() === timeStr.toLowerCase().trim();
+    });
+    if (matchedConfig) {
+      const statusStr = typeof matchedConfig === 'string' ? 'Available' : (matchedConfig.status || 'Available');
+      const isConfigAvail = statusStr === 'Available';
+      return {
+        isAvailable: isConfigAvail,
+        status: isConfigAvail ? 'Available' : 'Not Available',
+        reason: isConfigAvail ? '' : (matchedConfig.reason || 'Slot blocked by hotel property')
+      };
+    }
+  }
+
+  // Daily room changeover / housekeeping inspection period (1:00 PM - 2:00 PM)
+  if (hours === 13) {
+    return { isAvailable: false, status: 'Not Available', reason: 'Housekeeping changeover & room inspection period' };
+  }
+
+  // 05:00 PM and other standard check-in hours are fully available!
+  return { isAvailable: true, status: 'Available', reason: '' };
 }
 
 export function isMainCategoryName(name) {
@@ -1204,20 +1309,43 @@ export default function CustomerDashboard({
   const [stayCheckOutDate, setStayCheckOutDate] = useState(() => formatDateYYYYMMDD(tomorrowObj));
   const [activeDateTab, setActiveDateTab] = useState('checkIn'); // 'checkIn' | 'checkOut'
 
+  useEffect(() => {
+    if (stayCheckInDate && (!stayCheckOutDate || stayCheckOutDate <= stayCheckInDate)) {
+      const inD = new Date(stayCheckInDate + 'T00:00:00');
+      if (!isNaN(inD.getTime())) {
+        inD.setDate(inD.getDate() + 1);
+        setStayCheckOutDate(formatDateYYYYMMDD(inD));
+      }
+    }
+  }, [stayCheckInDate]);
 
 
-  const checkInTimeSlots = [
-    { time: '09:00 AM', status: 'Available' },
-    { time: '10:00 AM', status: 'Available' },
-    { time: '11:00 AM', status: 'Available' },
-    { time: '12:00 PM', status: 'Available' },
-    { time: '01:00 PM', status: 'Not Available' },
-    { time: '02:00 PM', status: 'Available' },
-    { time: '03:00 PM', status: 'Available' },
-    { time: '04:00 PM', status: 'Available' },
-    { time: '05:00 PM', status: 'Not Available' },
-    { time: '06:00 PM', status: 'Available' }
+
+  const BASE_CHECK_IN_TIMES = [
+    '09:00 AM',
+    '10:00 AM',
+    '11:00 AM',
+    '12:00 PM',
+    '01:00 PM',
+    '02:00 PM',
+    '03:00 PM',
+    '04:00 PM',
+    '05:00 PM',
+    '06:00 PM'
   ];
+
+  const checkInTimeSlots = useMemo(() => {
+    const activeItem = activeScheduleModalItem || activeBookNowModalItem;
+    return BASE_CHECK_IN_TIMES.map(time => {
+      const avail = getAuthoritativeSlotAvailability(time, stayCheckInDate, activeItem);
+      return {
+        time,
+        status: avail.status,
+        isAvailable: avail.isAvailable,
+        reason: avail.reason
+      };
+    });
+  }, [stayCheckInDate, activeScheduleModalItem, activeBookNowModalItem]);
 
   const checkOutTimeSlots = [
     { time: '09:00 AM', status: 'Available' },
@@ -1729,6 +1857,45 @@ export default function CustomerDashboard({
   const [membershipPayMethod, setMembershipPayMethod] = useState('upi');
   const [membershipNetBank, setMembershipNetBank] = useState('HDFC Bank');
   const [membershipProcessing, setMembershipProcessing] = useState(false);
+
+  // UPI / QR and Card Payment State Management
+  const [paymentUpiSubTab, setPaymentUpiSubTab] = useState('upi_id'); // 'upi_id' | 'qr_code'
+  const [paymentUpiId, setPaymentUpiId] = useState('success@razorpay');
+  const [paymentQrData, setPaymentQrData] = useState(null);
+  const [paymentQrLoading, setPaymentQrLoading] = useState(false);
+  const [paymentCardData, setPaymentCardData] = useState({
+    number: '4111 2222 3333 1111',
+    expiry: '12/28',
+    cvv: '123',
+    name: 'Customer Name'
+  });
+
+  const handleFetchRazorpayQr = useCallback(async (amountRupees) => {
+    setPaymentQrLoading(true);
+    try {
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const res = await fetch(`${baseBackend}/api/orders/create-razorpay-qr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amountRupees,
+          name: 'Connect App Order',
+          description: 'Payment for Connect App Order'
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setPaymentQrData(data);
+      } else {
+        triggerNotification(data?.error || 'Unable to generate Razorpay QR code', 'error');
+      }
+    } catch (err) {
+      console.error('Fetch Razorpay QR Error:', err);
+      triggerNotification('Failed to generate dynamic QR code', 'error');
+    } finally {
+      setPaymentQrLoading(false);
+    }
+  }, []);
   const [supportOrderModal, setSupportOrderModal] = useState(null);
   const [isHelpSupportOpen, setIsHelpSupportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('Order Defect / Damage');
@@ -3121,62 +3288,108 @@ export default function CustomerDashboard({
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
-      triggerNotification("Geolocation is not supported by your browser");
+      triggerNotification("Geolocation is not supported by your browser.", "error");
       return;
     }
     
-    triggerNotification("Fetching your location...");
+    triggerNotification("Fetching your live GPS location...");
     
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-            {
-              headers: {
-                'Accept-Language': 'en-US,en;q=0.9',
-                'User-Agent': 'ConnectAppGeolocation/1.0'
+          let addr = null;
+
+          // Attempt 1: OpenStreetMap Nominatim reverse geocoding (no forbidden User-Agent header)
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+              {
+                headers: {
+                  'Accept-Language': 'en-IN,en;q=0.9'
+                }
+              }
+            );
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.address) {
+                addr = data.address;
               }
             }
-          );
-          const data = await response.json();
-          if (data && data.address) {
-            const addr = data.address;
-            const pincode = addr.postcode || '';
-            const locality = addr.suburb || addr.neighbourhood || addr.village || addr.subdistrict || '';
+          } catch (osmErr) {
+            console.warn("OSM Nominatim fetch failed, trying fallback:", osmErr);
+          }
+
+          // Attempt 2: BigDataCloud client reverse geocoding fallback
+          if (!addr) {
+            try {
+              const bdcRes = await fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+              );
+              if (bdcRes.ok) {
+                const bdcData = await bdcRes.json();
+                if (bdcData) {
+                  addr = {
+                    postcode: bdcData.postcode || '',
+                    suburb: bdcData.locality || bdcData.subLocality || '',
+                    city: bdcData.city || bdcData.principalSubdivisionDistrict || '',
+                    state: bdcData.principalSubdivision || '',
+                    road: bdcData.locality || ''
+                  };
+                }
+              }
+            } catch (bdcErr) {
+              console.warn("BigDataCloud fallback failed:", bdcErr);
+            }
+          }
+
+          if (addr) {
+            const pincode = (addr.postcode || addr.postalCode || '').replace(/\D/g, '').slice(0, 6);
+            const locality = addr.suburb || addr.neighbourhood || addr.subdistrict || addr.locality || addr.village || '';
             const city = addr.city || addr.town || addr.city_district || addr.county || '';
             const state = addr.state || '';
+            const road = addr.road || addr.pedestrian || addr.street || locality || '';
 
             // Find closest matching state in IndianStates list
             let matchedState = '';
             if (state) {
-              const lowerState = state.toLowerCase();
-              matchedState = IndianStates.find(s => s.toLowerCase() === lowerState || lowerState.includes(s.toLowerCase()) || s.toLowerCase().includes(lowerState)) || '';
+              const lowerState = state.toLowerCase().trim();
+              matchedState = IndianStates.find(s => {
+                const ls = s.toLowerCase().trim();
+                return ls === lowerState || lowerState.includes(ls) || ls.includes(lowerState);
+              }) || '';
             }
 
             setAddressForm(prev => ({
               ...prev,
-              pincode,
-              locality,
-              city,
-              state: matchedState,
-              address: addr.road || addr.pedestrian || prev.address
+              pincode: pincode || prev.pincode,
+              locality: locality || prev.locality,
+              city: city || prev.city,
+              state: matchedState || prev.state,
+              address: road ? (prev.address ? `${road}, ${prev.address}` : road) : prev.address
             }));
-            triggerNotification("Location fetched successfully!");
+            triggerNotification("GPS location and address details resolved successfully!", "success");
           } else {
-            triggerNotification("Could not resolve location address.");
+            triggerNotification(`GPS coordinates acquired (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Please enter street & pincode.`, "info");
           }
         } catch (error) {
-          console.error("OSM Geocoding Error:", error);
-          triggerNotification("Failed to fetch address details.");
+          console.error("Geocoding Error:", error);
+          triggerNotification("Could not resolve address details from GPS. Please enter manually.", "error");
         }
       },
       (error) => {
         console.error("Geolocation Error:", error);
-        triggerNotification("Location access denied or timed out.");
+        let msg = "Could not fetch GPS location.";
+        if (error.code === 1) {
+          msg = "Location permission denied. Please allow location access or enter your address manually.";
+        } else if (error.code === 2) {
+          msg = "GPS location is currently unavailable. Please enter your address manually.";
+        } else if (error.code === 3) {
+          msg = "Location request timed out. Please try again or enter your address manually.";
+        }
+        triggerNotification(msg, "error");
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
   };
 
@@ -3195,8 +3408,8 @@ export default function CustomerDashboard({
     }
 
     const pincode = (addressForm.pincode || '').replace(/\D/g, '').slice(0, 6);
-    if (pincode.length < 6) {
-      triggerNotification("Please enter a valid 6-digit Pincode.", "error");
+    if (!/^[1-9][0-9]{5}$/.test(pincode) || pincode === '100000' || pincode.startsWith('10')) {
+      triggerNotification("Please enter a valid 6-digit Indian PIN code.", "error");
       return null;
     }
 
@@ -3351,7 +3564,12 @@ export default function CustomerDashboard({
       setSelectedCheckoutAddressId(addresses[0].id);
     }
     setIsCartOpen(false);
-    setIsAddressModalOpen(true);
+    if (isTravelOrStayCart(selected)) {
+      setIsAddressModalOpen(false);
+      setIsRazorpayModalOpen(true);
+    } else {
+      setIsAddressModalOpen(true);
+    }
   };
 
   const handleProceedFromAddressToPayment = () => {
@@ -3442,17 +3660,30 @@ export default function CustomerDashboard({
       const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
       if (selectedCart.length === 0) return;
 
-      const chosenAddr = addresses.find(a => a.id === selectedCheckoutAddressId) || addresses[0] || {
-        name: profileName || currentUser?.name || 'Customer',
-        phone: profilePhone || currentUser?.phone || '',
-        address: 'Koramangala',
-        locality: 'Koramangala',
-        city: 'Bangalore',
-        state: '',
-        pincode: '560034'
-      };
+      const isBookingOrder = isTravelOrStayCart(selectedCart);
+      const chosenAddr = isBookingOrder
+        ? (addresses[0] || {
+            name: profileName || currentUser?.name || 'Customer',
+            phone: profilePhone || currentUser?.phone || '',
+            address: 'N/A (Booking Service)',
+            locality: '',
+            city: 'Bangalore',
+            state: '',
+            pincode: '560034'
+          })
+        : (addresses.find(a => a.id === selectedCheckoutAddressId) || addresses[0] || {
+            name: profileName || currentUser?.name || 'Customer',
+            phone: profilePhone || currentUser?.phone || '',
+            address: 'Koramangala',
+            locality: 'Koramangala',
+            city: 'Bangalore',
+            state: '',
+            pincode: '560034'
+          });
 
-      const fullAddressString = `${chosenAddr.address || chosenAddr.locality || ''}, ${chosenAddr.locality || ''}, ${chosenAddr.city || ''}, ${chosenAddr.state || ''} - ${chosenAddr.pincode || ''}`.replace(/^,\s*/, '').replace(/,\s*,/g, ',');
+      const fullAddressString = isBookingOrder
+        ? (chosenAddr.address || 'N/A (Booking Service)')
+        : `${chosenAddr.address || chosenAddr.locality || ''}, ${chosenAddr.locality || ''}, ${chosenAddr.city || ''}, ${chosenAddr.state || ''} - ${chosenAddr.pincode || ''}`.replace(/^,\s*/, '').replace(/,\s*,/g, ',');
 
       let methodName = 'Online (Razorpay)';
       let payStatus = 'Paid';
@@ -12685,8 +12916,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                   let hour12 = hour % 12 || 12;
                                   const formatted = `${String(hour12).padStart(2, '0')}:${String(min).padStart(2, '0')} ${ampm}`;
 
-                                  if (stayCheckInDate === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(formatted, stayCheckInDate)) {
-                                    triggerNotification("Past departure times cannot be selected for today. Please select a current or future time.", "error");
+                                  const activeItem = activeScheduleModalItem || activeBookNowModalItem;
+                                  const slotCheck = getAuthoritativeSlotAvailability(formatted, stayCheckInDate, activeItem);
+                                  if (!slotCheck.isAvailable) {
+                                    triggerNotification(slotCheck.reason || "This time slot is not available for the selected date.", "error");
                                     return;
                                   }
                                   setCustomTimeInput(raw);
@@ -12796,7 +13029,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               </button>
                             </div>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14).map((d) => {
+                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14, activeScheduleModalItem).map((d) => {
                                 const isSelected = stayCheckOutDate === d.dateStr;
                                 const isAfterIn = d.dateStr > stayCheckInDate;
                                 return (
@@ -12819,11 +13052,13 @@ wishlistProducts.forEach(item => addToCart(item));
                                     <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
                                       isSelected 
                                         ? 'bg-emerald-700 text-white' 
-                                        : (!d.isAvailable || !isAfterIn)
+                                        : !isAfterIn
                                           ? 'text-red-500' 
-                                          : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                                          : !d.isAvailable
+                                            ? 'text-amber-500'
+                                            : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
                                     }`}>
-                                      {isSelected ? 'SELECTED' : (!d.isAvailable || !isAfterIn) ? 'INVALID' : 'AVAILABLE'}
+                                      {isSelected ? 'SELECTED' : !isAfterIn ? 'INVALID' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
                                     </span>
                                   </button>
                                 );
@@ -13547,8 +13782,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                   let hour12 = hour % 12 || 12;
                                   const formatted = `${String(hour12).padStart(2, '0')}:${String(min).padStart(2, '0')} ${ampm}`;
 
-                                  if (stayCheckInDate === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(formatted, stayCheckInDate)) {
-                                    triggerNotification("Past departure times cannot be selected for today. Please select a current or future time.", "error");
+                                  const activeItem = activeScheduleModalItem || activeBookNowModalItem;
+                                  const slotCheck = getAuthoritativeSlotAvailability(formatted, stayCheckInDate, activeItem);
+                                  if (!slotCheck.isAvailable) {
+                                    triggerNotification(slotCheck.reason || "This time slot is not available for the selected date.", "error");
                                     return;
                                   }
                                   setCustomTimeInput(raw);
@@ -13658,7 +13895,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               </button>
                             </div>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14).map((d) => {
+                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14, activeBookNowModalItem).map((d) => {
                                 const isSelected = stayCheckOutDate === d.dateStr;
                                 const isAfterIn = d.dateStr > stayCheckInDate;
                                 return (
@@ -13681,11 +13918,13 @@ wishlistProducts.forEach(item => addToCart(item));
                                     <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
                                       isSelected 
                                         ? 'bg-emerald-700 text-white' 
-                                        : (!d.isAvailable || !isAfterIn)
+                                        : !isAfterIn
                                           ? 'text-red-500' 
-                                          : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                                          : !d.isAvailable
+                                            ? 'text-amber-500'
+                                            : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
                                     }`}>
-                                      {isSelected ? 'SELECTED' : (!d.isAvailable || !isAfterIn) ? 'INVALID' : 'AVAILABLE'}
+                                      {isSelected ? 'SELECTED' : !isAfterIn ? 'INVALID' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
                                     </span>
                                   </button>
                                 );
@@ -14441,29 +14680,29 @@ wishlistProducts.forEach(item => addToCart(item));
 
           <div className="relative bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
             {/* Header with Step indicator */}
-            <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center relative">
-              <div className="flex items-center gap-3">
+            <div className="bg-[#0b1e36] text-white px-5 py-4 flex justify-between items-center gap-3 relative border-b border-blue-900/40">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-amber-400 text-[#0b1e36] flex items-center justify-center font-black text-lg shadow-md shrink-0">
                   <MapPin className="w-5 h-5 text-[#0b1e36]" />
                 </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-sm tracking-tight text-white">Select Delivery & Service Address</h3>
-                    <span className="bg-amber-400/20 text-amber-300 text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-amber-400/30">
-                      Step 1 of 2
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-blue-200 mt-0.5">Choose where your order or service booking should be delivered</p>
+                <div className="text-left min-w-0">
+                  <h3 className="font-extrabold text-sm tracking-tight text-white truncate">Select Delivery & Service Address</h3>
+                  <p className="text-[10px] text-blue-200 mt-0.5 truncate">Choose where your order or service booking should be delivered</p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsAddressModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border-none"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2.5 shrink-0">
+                <span className="bg-amber-400/20 text-amber-300 text-[9px] font-black uppercase px-2.5 py-1 rounded-md border border-amber-400/30 whitespace-nowrap shadow-xs">
+                  Step 1 of 2
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsAddressModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border-none shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Address Selection Body */}
@@ -14800,8 +15039,34 @@ wishlistProducts.forEach(item => addToCart(item));
               </div>
             </div>
 
-            {/* Selected Address Preview Banner */}
+            {/* Selected Address / Booking Details Preview Banner */}
             {(() => {
+              const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+              const isBookingCheckout = isTravelOrStayCart(selectedCart);
+
+              if (isBookingCheckout) {
+                const firstItem = selectedCart[0];
+                const isStay = (firstItem?.subNavbarCategory || firstItem?.mainCategory || firstItem?.tag || firstItem?.category || '').toLowerCase().includes('stay') || (firstItem?.category || '').toLowerCase().includes('hotel');
+                return (
+                  <div className="bg-emerald-50/80 dark:bg-emerald-950/40 px-5 py-2.5 border-b border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-left text-xs">
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 overflow-hidden">
+                      {isStay ? (
+                        <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      ) : (
+                        <Plane className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                      )}
+                      <span className="truncate font-semibold">
+                        {isStay ? 'Hotel Stay Booking' : 'Travel Booking'}: <strong className="text-slate-900 dark:text-white">{firstItem?.name || 'Booking Service'}</strong>
+                        {firstItem?.bookingDate || firstItem?.checkInDate ? ` • ${formatDate(firstItem?.bookingDate || firstItem?.checkInDate)}` : ''}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider bg-emerald-100/80 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full shrink-0">
+                      Confirmed Details
+                    </span>
+                  </div>
+                );
+              }
+
               const activeAddr = addresses.find(a => a.id === selectedCheckoutAddressId) || addresses[0];
               if (!activeAddr) return null;
               return (
@@ -14869,31 +15134,178 @@ wishlistProducts.forEach(item => addToCart(item));
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-4 rounded-2xl space-y-3">
                     {razorpayPayMethod === 'upi' && (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs font-extrabold">
-                          <span>Google Pay / PhonePe / Paytm</span>
-                          <span className="text-emerald-500 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200">Instant</span>
+                        {/* Sub-tabs: Enter UPI ID vs Scan Dynamic QR */}
+                        <div className="flex bg-slate-200/70 dark:bg-slate-900 p-1 rounded-xl gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentUpiSubTab('upi_id')}
+                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                              paymentUpiSubTab === 'upi_id'
+                                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 bg-transparent'
+                            }`}
+                          >
+                            <span>UPI ID / VPA</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentUpiSubTab('qr_code');
+                              const totalPayable = cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+                              if (!paymentQrData) handleFetchRazorpayQr(totalPayable);
+                            }}
+                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                              paymentUpiSubTab === 'qr_code'
+                                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 bg-transparent'
+                            }`}
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Scan QR Code</span>
+                          </button>
                         </div>
-                        <input
-                          type="text"
-                          readOnly
-                          value="success@razorpay"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300"
-                        />
-                        <p className="text-[10px] text-slate-400">Test VPA pre-filled. Click Pay below to complete transaction.</p>
+
+                        {paymentUpiSubTab === 'upi_id' ? (
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between text-xs font-extrabold">
+                              <span>Google Pay / PhonePe / Paytm</span>
+                              <span className="text-emerald-500 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200">Instant</span>
+                            </div>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={paymentUpiId}
+                                onChange={(e) => setPaymentUpiId(e.target.value)}
+                                placeholder="Enter UPI ID (e.g. yourname@oksbi)"
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] text-slate-400 font-bold">Quick test:</span>
+                              {['success@razorpay', 'test@upi'].map((vpa) => (
+                                <button
+                                  key={vpa}
+                                  type="button"
+                                  onClick={() => setPaymentUpiId(vpa)}
+                                  className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-900 cursor-pointer"
+                                >
+                                  {vpa}
+                                </button>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-slate-400">Enter your UPI ID and click Pay below to authenticate via your UPI app.</p>
+                          </div>
+                        ) : (
+                          <div className="py-2 text-center space-y-3">
+                            {paymentQrLoading ? (
+                              <div className="py-6 flex flex-col items-center justify-center gap-2">
+                                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-xs text-slate-500 font-semibold">Generating dynamic Razorpay QR...</span>
+                              </div>
+                            ) : paymentQrData ? (
+                              <div className="space-y-2">
+                                <div className="p-2 bg-white rounded-2xl inline-block border border-slate-200 shadow-md">
+                                  <img
+                                    src={paymentQrData.image_url || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(paymentQrData.qr_string || 'upi://pay?pa=connectapp@razorpay&pn=ConnectApp')}`}
+                                    alt="Razorpay Dynamic UPI QR"
+                                    className="w-40 h-40 object-contain mx-auto"
+                                  />
+                                </div>
+                                <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Scan with GPay, PhonePe, Paytm, or BHIM</p>
+                                <p className="text-[10px] text-slate-400 font-mono">
+                                  {paymentQrData.isTestMode ? 'Test Gateway QR Active' : `QR Ref: ${paymentQrData.qr_id}`}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="py-4">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const totalPayable = cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+                                    handleFetchRazorpayQr(totalPayable);
+                                  }}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-blue-700 cursor-pointer border-none"
+                                >
+                                  Generate Dynamic QR Code
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {razorpayPayMethod === 'card' && (
-                      <div className="space-y-2 text-xs">
-                        <input
-                          type="text"
-                          readOnly
-                          value="4111 •••• •••• 1111 (Razorpay Test Card)"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300"
-                        />
-                        <div className="flex gap-2">
-                          <input type="text" readOnly value="12/28" className="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono" />
-                          <input type="text" readOnly value="123" className="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono" />
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between text-xs font-extrabold">
+                          <span>Card Information</span>
+                          <span className="text-blue-500 text-[10px] font-black uppercase bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200">256-Bit SSL</span>
+                        </div>
+                        <div>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Card Number</label>
+                          <input
+                            type="text"
+                            maxLength={19}
+                            value={paymentCardData.number}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
+                              const formatted = raw.replace(/(.{4})/g, '$1 ').trim();
+                              setPaymentCardData(prev => ({ ...prev, number: formatted }));
+                            }}
+                            placeholder="4111 2222 3333 1111"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Expiry (MM/YY)</label>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              value={paymentCardData.expiry}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                const formatted = raw.length >= 3 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw;
+                                setPaymentCardData(prev => ({ ...prev, expiry: formatted }));
+                              }}
+                              placeholder="12/28"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">CVV</label>
+                            <input
+                              type="password"
+                              maxLength={4}
+                              value={paymentCardData.cvv}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                setPaymentCardData(prev => ({ ...prev, cvv: raw }));
+                              }}
+                              placeholder="123"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cardholder Name</label>
+                          <input
+                            type="text"
+                            value={paymentCardData.name}
+                            onChange={(e) => setPaymentCardData(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Full Name as on Card"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentCardData({ number: '4111 2222 3333 1111', expiry: '12/28', cvv: '123', name: 'Test Customer' })}
+                            className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline bg-transparent border-none cursor-pointer"
+                          >
+                            Fill Razorpay Test Card
+                          </button>
+                          <span className="text-[9.5px] text-slate-400">Tokens encrypted end-to-end</span>
                         </div>
                       </div>
                     )}
@@ -15011,8 +15423,37 @@ wishlistProducts.forEach(item => addToCart(item));
                       type="button"
                       disabled={razorpayProcessing}
                       onClick={() => {
+                        if (razorpayPayMethod === 'upi') {
+                          if (paymentUpiSubTab === 'upi_id') {
+                            const trimmedUpi = (paymentUpiId || '').trim();
+                            if (!trimmedUpi || !trimmedUpi.includes('@')) {
+                              triggerNotification('Please enter a valid UPI ID (e.g. name@upi or success@razorpay)', 'error');
+                              return;
+                            }
+                          }
+                        } else if (razorpayPayMethod === 'card') {
+                          const cleanCard = (paymentCardData.number || '').replace(/\s/g, '');
+                          if (cleanCard.length < 15) {
+                            triggerNotification('Please enter a valid 16-digit card number', 'error');
+                            return;
+                          }
+                          if (!paymentCardData.expiry || !paymentCardData.expiry.includes('/')) {
+                            triggerNotification('Please enter card expiry in MM/YY format', 'error');
+                            return;
+                          }
+                          if (!paymentCardData.cvv || paymentCardData.cvv.length < 3) {
+                            triggerNotification('Please enter a valid 3-digit CVV', 'error');
+                            return;
+                          }
+                        }
                         setRazorpayProcessing(true);
-                        const method = razorpayPayMethod === 'upi' ? 'UPI' : razorpayPayMethod === 'card' ? 'Card' : razorpayPayMethod === 'netbanking' ? 'Net Banking' : 'Online (Razorpay)';
+                        const method = razorpayPayMethod === 'upi' 
+                          ? (paymentUpiSubTab === 'qr_code' ? 'UPI QR' : 'UPI') 
+                          : razorpayPayMethod === 'card' 
+                            ? 'Card' 
+                            : razorpayPayMethod === 'netbanking' 
+                              ? 'Net Banking' 
+                              : 'Online (Razorpay)';
                         setTimeout(() => {
                           processFinalOrderPlacement(method);
                         }, 800);
@@ -15022,7 +15463,11 @@ wishlistProducts.forEach(item => addToCart(item));
                       {razorpayProcessing ? (
                         <span>Authorizing Payment...</span>
                       ) : (
-                        <span>Pay ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()} via {razorpayPayMethod === 'upi' ? 'UPI' : razorpayPayMethod === 'card' ? 'Card' : razorpayPayMethod === 'netbanking' ? 'Net Banking' : 'Razorpay'}</span>
+                        <span>
+                          {razorpayPayMethod === 'upi' && paymentUpiSubTab === 'qr_code'
+                            ? `I Have Completed QR Payment (₹${cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()})`
+                            : `Pay ₹${cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()} via ${razorpayPayMethod === 'upi' ? 'UPI' : razorpayPayMethod === 'card' ? 'Card' : razorpayPayMethod === 'netbanking' ? 'Net Banking' : 'Razorpay'}`}
+                        </span>
                       )}
                     </button>
                   )}
@@ -15130,31 +15575,146 @@ wishlistProducts.forEach(item => addToCart(item));
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-4 rounded-2xl space-y-3 text-left">
                     {membershipPayMethod === 'upi' && (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs font-extrabold">
-                          <span>Google Pay / PhonePe / Paytm / BHIM</span>
-                          <span className="text-emerald-500 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200">Instant</span>
+                        <div className="flex bg-slate-200/70 dark:bg-slate-900 p-1 rounded-xl gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentUpiSubTab('upi_id')}
+                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                              paymentUpiSubTab === 'upi_id'
+                                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 bg-transparent'
+                            }`}
+                          >
+                            <span>UPI ID / VPA</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentUpiSubTab('qr_code');
+                              const totalPayable = membershipCheckoutModal.priceRupees || 8000;
+                              if (!paymentQrData) handleFetchRazorpayQr(totalPayable);
+                            }}
+                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                              paymentUpiSubTab === 'qr_code'
+                                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 bg-transparent'
+                            }`}
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Scan QR Code</span>
+                          </button>
                         </div>
-                        <input
-                          type="text"
-                          readOnly
-                          value="success@razorpay"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300"
-                        />
-                        <p className="text-[10px] text-slate-400">Razorpay instant verification VPA pre-filled. Click Pay below to complete transaction.</p>
+
+                        {paymentUpiSubTab === 'upi_id' ? (
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between text-xs font-extrabold">
+                              <span>Google Pay / PhonePe / Paytm / BHIM</span>
+                              <span className="text-emerald-500 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200">Instant</span>
+                            </div>
+                            <input
+                              type="text"
+                              value={paymentUpiId}
+                              onChange={(e) => setPaymentUpiId(e.target.value)}
+                              placeholder="Enter UPI ID (e.g. success@razorpay)"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <p className="text-[10px] text-slate-400">Razorpay instant verification VPA. Click Pay below to complete transaction.</p>
+                          </div>
+                        ) : (
+                          <div className="py-2 text-center space-y-3">
+                            {paymentQrLoading ? (
+                              <div className="py-6 flex flex-col items-center justify-center gap-2">
+                                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-xs text-slate-500 font-semibold">Generating dynamic Razorpay QR...</span>
+                              </div>
+                            ) : paymentQrData ? (
+                              <div className="space-y-2">
+                                <div className="p-2 bg-white rounded-2xl inline-block border border-slate-200 shadow-md">
+                                  <img
+                                    src={paymentQrData.image_url || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(paymentQrData.qr_string || 'upi://pay?pa=connectapp@razorpay&pn=ConnectApp')}`}
+                                    alt="Razorpay Dynamic UPI QR"
+                                    className="w-40 h-40 object-contain mx-auto"
+                                  />
+                                </div>
+                                <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Scan with any UPI App to Pay</p>
+                              </div>
+                            ) : (
+                              <div className="py-4">
+                                <button
+                                  type="button"
+                                  onClick={() => handleFetchRazorpayQr(membershipCheckoutModal.priceRupees || 8000)}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-blue-700 cursor-pointer border-none"
+                                >
+                                  Generate Dynamic QR Code
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {membershipPayMethod === 'card' && (
-                      <div className="space-y-2 text-xs">
-                        <input
-                          type="text"
-                          readOnly
-                          value="4111 •••• •••• 1111 (Razorpay Test Card)"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300"
-                        />
-                        <div className="flex gap-2">
-                          <input type="text" readOnly value="12/28" className="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono" />
-                          <input type="text" readOnly value="123" className="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono" />
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between text-xs font-extrabold">
+                          <span>Card Information</span>
+                          <span className="text-blue-500 text-[10px] font-black uppercase bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200">256-Bit SSL</span>
+                        </div>
+                        <div>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Card Number</label>
+                          <input
+                            type="text"
+                            maxLength={19}
+                            value={paymentCardData.number}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
+                              const formatted = raw.replace(/(.{4})/g, '$1 ').trim();
+                              setPaymentCardData(prev => ({ ...prev, number: formatted }));
+                            }}
+                            placeholder="4111 2222 3333 1111"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Expiry (MM/YY)</label>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              value={paymentCardData.expiry}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                const formatted = raw.length >= 3 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw;
+                                setPaymentCardData(prev => ({ ...prev, expiry: formatted }));
+                              }}
+                              placeholder="12/28"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">CVV</label>
+                            <input
+                              type="password"
+                              maxLength={4}
+                              value={paymentCardData.cvv}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                setPaymentCardData(prev => ({ ...prev, cvv: raw }));
+                              }}
+                              placeholder="123"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cardholder Name</label>
+                          <input
+                            type="text"
+                            value={paymentCardData.name}
+                            onChange={(e) => setPaymentCardData(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Full Name as on Card"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </div>
                       </div>
                     )}

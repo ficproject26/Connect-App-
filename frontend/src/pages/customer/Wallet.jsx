@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import useCustomer from '../../hooks/useCustomer';
 import useAuth from '../../hooks/useAuth';
 import { getBackendUrl } from '../../services/apiSetup';
-import { Wallet as WalletIcon, PlusCircle, ArrowUpRight, ArrowDownRight, ShieldCheck, Zap, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Wallet as WalletIcon, PlusCircle, ArrowUpRight, ArrowDownRight, ShieldCheck, Zap, Loader2, CheckCircle, AlertCircle, X, QrCode } from 'lucide-react';
 
 export default function Wallet() {
   const { walletBalance, transactions, refreshWallet } = useCustomer();
@@ -18,6 +18,45 @@ export default function Wallet() {
   const [razorpayMethod, setRazorpayMethod] = useState('upi');
   const [selectedBank, setSelectedBank] = useState('HDFC Bank');
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // UPI / QR and Card Payment State Management
+  const [upiSubTab, setUpiSubTab] = useState('upi_id'); // 'upi_id' | 'qr_code'
+  const [paymentUpiId, setPaymentUpiId] = useState('success@razorpay');
+  const [paymentQrData, setPaymentQrData] = useState(null);
+  const [paymentQrLoading, setPaymentQrLoading] = useState(false);
+  const [paymentCardData, setPaymentCardData] = useState({
+    number: '4111 2222 3333 1111',
+    expiry: '12/28',
+    cvv: '123',
+    name: 'Customer Name'
+  });
+
+  const handleFetchRazorpayQr = useCallback(async (amountRupees) => {
+    setPaymentQrLoading(true);
+    try {
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const res = await fetch(`${baseBackend}/api/orders/create-razorpay-qr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amountRupees,
+          name: 'Wallet Deposit',
+          description: 'Deposit funds to Connect Wallet'
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setPaymentQrData(data);
+      } else {
+        setErrorMessage(data?.error || 'Unable to generate Razorpay QR code');
+      }
+    } catch (err) {
+      console.error('Fetch Razorpay QR Error:', err);
+      setErrorMessage('Failed to generate dynamic QR code');
+    } finally {
+      setPaymentQrLoading(false);
+    }
+  }, []);
 
   // Customer-isolated totals
   const totalCredited = transactions
@@ -187,6 +226,29 @@ export default function Wallet() {
 
   const handleConfirmRazorpayPayment = async () => {
     if (!razorpayOrderData || isVerifying) return;
+    if (razorpayMethod === 'upi') {
+      if (upiSubTab === 'upi_id') {
+        const trimmedUpi = (paymentUpiId || '').trim();
+        if (!trimmedUpi || !trimmedUpi.includes('@')) {
+          setErrorMessage('Please enter a valid UPI ID (e.g. name@upi or success@razorpay)');
+          return;
+        }
+      }
+    } else if (razorpayMethod === 'card') {
+      const cleanCard = (paymentCardData.number || '').replace(/\s/g, '');
+      if (cleanCard.length < 15) {
+        setErrorMessage('Please enter a valid 16-digit card number');
+        return;
+      }
+      if (!paymentCardData.expiry || !paymentCardData.expiry.includes('/')) {
+        setErrorMessage('Please enter card expiry in MM/YY format');
+        return;
+      }
+      if (!paymentCardData.cvv || paymentCardData.cvv.length < 3) {
+        setErrorMessage('Please enter a valid 3-digit CVV');
+        return;
+      }
+    }
     setIsVerifying(true);
     setErrorMessage('');
 
@@ -480,31 +542,145 @@ export default function Wallet() {
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-4 rounded-2xl space-y-3">
                     {razorpayMethod === 'upi' && (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs font-extrabold">
-                          <span>Google Pay / PhonePe / Paytm</span>
-                          <span className="text-emerald-500 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200">Instant</span>
+                        <div className="flex bg-slate-200/70 dark:bg-slate-900 p-1 rounded-xl gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setUpiSubTab('upi_id')}
+                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                              upiSubTab === 'upi_id'
+                                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 bg-transparent'
+                            }`}
+                          >
+                            <span>UPI ID / VPA</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUpiSubTab('qr_code');
+                              if (!paymentQrData) handleFetchRazorpayQr(razorpayOrderData?.amountRupees || 100);
+                            }}
+                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                              upiSubTab === 'qr_code'
+                                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-2xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 bg-transparent'
+                            }`}
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Scan QR Code</span>
+                          </button>
                         </div>
-                        <input
-                          type="text"
-                          readOnly
-                          value="success@razorpay"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300"
-                        />
-                        <p className="text-[10px] text-slate-400">Test VPA pre-filled. Click Pay below to complete transaction.</p>
+
+                        {upiSubTab === 'upi_id' ? (
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between text-xs font-extrabold">
+                              <span>Google Pay / PhonePe / Paytm</span>
+                              <span className="text-emerald-500 text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200">Instant</span>
+                            </div>
+                            <input
+                              type="text"
+                              value={paymentUpiId}
+                              onChange={(e) => setPaymentUpiId(e.target.value)}
+                              placeholder="Enter UPI ID (e.g. success@razorpay)"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <p className="text-[10px] text-slate-400">Test VPA pre-filled. Enter your UPI ID and click Pay below to complete deposit.</p>
+                          </div>
+                        ) : (
+                          <div className="py-2 text-center space-y-3">
+                            {paymentQrLoading ? (
+                              <div className="py-6 flex flex-col items-center justify-center gap-2">
+                                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-xs text-slate-500 font-semibold">Generating dynamic Razorpay QR...</span>
+                              </div>
+                            ) : paymentQrData ? (
+                              <div className="space-y-2">
+                                <div className="p-2 bg-white rounded-2xl inline-block border border-slate-200 shadow-md">
+                                  <img
+                                    src={paymentQrData.image_url || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(paymentQrData.qr_string || 'upi://pay?pa=connectapp@razorpay&pn=ConnectApp')}`}
+                                    alt="Razorpay Dynamic UPI QR"
+                                    className="w-40 h-40 object-contain mx-auto"
+                                  />
+                                </div>
+                                <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Scan with any UPI App to Pay</p>
+                              </div>
+                            ) : (
+                              <div className="py-4">
+                                <button
+                                  type="button"
+                                  onClick={() => handleFetchRazorpayQr(razorpayOrderData?.amountRupees || 100)}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-blue-700 cursor-pointer border-none"
+                                >
+                                  Generate Dynamic QR Code
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {razorpayMethod === 'card' && (
-                      <div className="space-y-2 text-xs">
-                        <input
-                          type="text"
-                          readOnly
-                          value="4111 •••• •••• 1111 (Razorpay Test Card)"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300"
-                        />
-                        <div className="flex gap-2">
-                          <input type="text" readOnly value="12/28" className="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono" />
-                          <input type="text" readOnly value="123" className="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono" />
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between text-xs font-extrabold">
+                          <span>Card Information</span>
+                          <span className="text-blue-500 text-[10px] font-black uppercase bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200">256-Bit SSL</span>
+                        </div>
+                        <div>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Card Number</label>
+                          <input
+                            type="text"
+                            maxLength={19}
+                            value={paymentCardData.number}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
+                              const formatted = raw.replace(/(.{4})/g, '$1 ').trim();
+                              setPaymentCardData(prev => ({ ...prev, number: formatted }));
+                            }}
+                            placeholder="4111 2222 3333 1111"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Expiry (MM/YY)</label>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              value={paymentCardData.expiry}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                const formatted = raw.length >= 3 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw;
+                                setPaymentCardData(prev => ({ ...prev, expiry: formatted }));
+                              }}
+                              placeholder="12/28"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">CVV</label>
+                            <input
+                              type="password"
+                              maxLength={4}
+                              value={paymentCardData.cvv}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                setPaymentCardData(prev => ({ ...prev, cvv: raw }));
+                              }}
+                              placeholder="123"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cardholder Name</label>
+                          <input
+                            type="text"
+                            value={paymentCardData.name}
+                            onChange={(e) => setPaymentCardData(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Full Name as on Card"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </div>
                       </div>
                     )}

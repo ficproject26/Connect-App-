@@ -117,14 +117,14 @@ export const validateConfirmPassword = (password, confirmPassword) => {
   return { isValid: true, error: '' };
 };
 
-// 9. Pincode (Exactly 6 digits)
+// 9. Pincode (Strict 6-digit Indian PIN code, starts with 1-9, rejects 100000)
 export const validatePincode = (pincode) => {
-  if (!pincode || !pincode.trim()) {
-    return { isValid: false, error: 'Pincode is required.' };
+  if (!pincode || !String(pincode).trim()) {
+    return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
   }
-  const cleaned = pincode.trim();
-  if (!/^\d{6}$/.test(cleaned)) {
-    return { isValid: false, error: 'Enter a valid 6-digit Pincode.' };
+  const cleaned = String(pincode).trim();
+  if (!/^[1-9][0-9]{5}$/.test(cleaned) || cleaned === '100000' || cleaned.startsWith('10')) {
+    return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
   }
   return { isValid: true, error: '' };
 };

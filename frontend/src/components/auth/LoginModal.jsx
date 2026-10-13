@@ -113,13 +113,12 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
 
       if (!res.ok) {
         setIsSubmitting(false);
-        if (res.status === 404 || data.notRegistered || data.code === 'ACCOUNT_NOT_FOUND' || (data.message && data.message.toLowerCase().includes('not found'))) {
-          setIsNotRegistered(true);
-          setErrorMsg('Account not found. Please register to continue.');
-        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
+        if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
           setErrorMsg(data.message || 'Your account is inactive or suspended. Please contact support.');
+        } else if (res.status === 429 || data.code === 'RATE_LIMIT_EXCEEDED') {
+          setErrorMsg(data.message || 'Too many attempts. Please try again later.');
         } else {
-          setErrorMsg(data.message || 'Invalid password. Please try again.');
+          setErrorMsg('Invalid email/mobile number or password. Please check your credentials and try again.');
         }
         return;
       }
@@ -396,7 +395,11 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
                       required
                       autoComplete="off"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (errorMsg) setErrorMsg('');
+                        if (isNotRegistered) setIsNotRegistered(false);
+                      }}
                       placeholder="Enter email or 10-digit mobile"
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFC107] focus:ring-2 focus:ring-[#FFC107]/20 transition-all"
                     />
@@ -414,7 +417,11 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
                       required
                       autoComplete="new-password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errorMsg) setErrorMsg('');
+                        if (isNotRegistered) setIsNotRegistered(false);
+                      }}
                       placeholder="Enter password"
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-10 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFC107] focus:ring-2 focus:ring-[#FFC107]/20 transition-all"
                     />

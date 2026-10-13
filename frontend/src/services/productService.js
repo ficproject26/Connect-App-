@@ -146,11 +146,11 @@ const extractRawImage = (p) => {
   
   if (Array.isArray(p.images) && p.images.length > 0) {
     const first = p.images.find(img => {
-      const u = typeof img === 'string' ? img : (img?.url || img?.src || img?.path || img?.imageUrl || '');
+      const u = typeof img === 'string' ? img : (img?.secure_url || img?.url || img?.src || img?.path || img?.imageUrl || '');
       return !isDeadImageUrl(u);
     });
     if (first) {
-      const u = typeof first === 'string' ? first : (first?.url || first?.src || first?.path || first?.imageUrl || '');
+      const u = typeof first === 'string' ? first : (first?.secure_url || first?.url || first?.src || first?.path || first?.imageUrl || '');
       if (u) return u.trim();
     }
   }
@@ -162,11 +162,11 @@ const extractRawImage = (p) => {
   if (typeof p.photo === 'string' && !isDeadImageUrl(p.photo)) return p.photo.trim();
   if (Array.isArray(p.photos) && p.photos.length > 0) {
     const first = p.photos.find(img => {
-      const u = typeof img === 'string' ? img : (img?.url || img?.src || '');
+      const u = typeof img === 'string' ? img : (img?.secure_url || img?.url || img?.src || '');
       return !isDeadImageUrl(u);
     });
     if (first) {
-      const u = typeof first === 'string' ? first : (first?.url || first?.src || '');
+      const u = typeof first === 'string' ? first : (first?.secure_url || first?.url || first?.src || '');
       if (u) return u.trim();
     }
   }
@@ -177,6 +177,7 @@ const extractRawImage = (p) => {
   if (typeof p.file === 'string' && !isDeadImageUrl(p.file)) return p.file.trim();
   if (typeof p.coverImage === 'string' && !isDeadImageUrl(p.coverImage)) return p.coverImage.trim();
   if (typeof p.bannerImage === 'string' && !isDeadImageUrl(p.bannerImage)) return p.bannerImage.trim();
+  if (typeof p.secure_url === 'string' && !isDeadImageUrl(p.secure_url)) return p.secure_url.trim();
 
   return '';
 };
@@ -207,6 +208,18 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
   // Prevent loading assets from suspended or dead ephemeral Render instances
   if (url.includes('connect-vendor.onrender.com') || url.includes('.onrender.com')) {
     return getCategoryFallbackImage(pContext);
+  }
+
+  // Rewrite vendor.ficapp.in/uploads/... or local 8002 uploads to backend upload URL
+  if (url.includes('vendor.ficapp.in/uploads/')) {
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    const cleanPath = url.substring(url.indexOf('/uploads/'));
+    return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
+  }
+  if (url.includes('localhost:8002/uploads/') || url.includes('127.0.0.1:8002/uploads/')) {
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    const cleanPath = url.substring(url.indexOf('/uploads/'));
+    return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
   }
 
   if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
@@ -281,7 +294,7 @@ const sanitizeProduct = (p) => {
     if (!item) return '';
     if (typeof item === 'string') return item.trim();
     if (typeof item === 'object') {
-      return (item.url || item.src || item.path || item.imageUrl || item.imageURL || item.location || '').toString().trim();
+      return (item.secure_url || item.url || item.src || item.path || item.imageUrl || item.imageURL || item.location || '').toString().trim();
     }
     return '';
   };

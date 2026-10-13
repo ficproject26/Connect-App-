@@ -331,6 +331,14 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
       const dbUser = await findCustomerInMongo(identifier);
 
       if (!dbUser) {
+        if (password) {
+          return res.status(401).json({
+            status: 'error',
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid email/mobile number or password. Please check your credentials and try again.',
+            msg: 'Invalid email/mobile number or password. Please check your credentials and try again.'
+          });
+        }
         return res.status(404).json({
           status: 'error',
           notRegistered: true,
@@ -357,8 +365,8 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
           return res.status(401).json({
             status: 'error',
             code: 'INVALID_CREDENTIALS',
-            message: 'Invalid password. Please try again.',
-            msg: 'Invalid password. Please try again.'
+            message: 'Invalid email/mobile number or password. Please check your credentials and try again.',
+            msg: 'Invalid email/mobile number or password. Please check your credentials and try again.'
           });
         }
       }
@@ -627,6 +635,127 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
   });
 });
 
+// 3.5. POST: /api/auth/forgot-password/send-otp
+router.post('/forgot-password/send-otp', authRateLimiter, async (req: Request, res: Response) => {
+  const { identifier, mobileOrEmail, email, phone } = req.body;
+  const target = (identifier || mobileOrEmail || email || phone || '').toString().trim();
+  const ip = req.ip || '127.0.0.1';
+
+  if (!target) {
+    return res.status(400).json({ status: 'error', message: 'Email or mobile number is required.' });
+  }
+
+  // Validate format (either valid Indian mobile or valid email)
+  const isNumeric = /^\d+$/.test(target);
+  if (isNumeric) {
+    const mobileCheck = validateIndianMobile(target);
+    if (!mobileCheck.valid) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'INVALID_MOBILE',
+        message: mobileCheck.message
+      });
+    }
+  } else {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(target)) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'INVALID_EMAIL',
+        message: 'Enter a valid email address.'
+      });
+    }
+  }
+
+  try {
+    const normalizedTarget = target.toLowerCase();
+    const dbUser = await findCustomerInMongo(target);
+
+    // Uniform response to prevent account enumeration
+    let cooldown = 30;
+    if (dbUser) {
+      const { cooldownSeconds } = securityManager.generateOTP('reset_' + normalizedTarget);
+      cooldown = cooldownSeconds;
+      securityManager.logEvent({
+        action: 'PASSWORD_RESET_OTP_REQUESTED',
+        email: normalizedTarget,
+        ip,
+        device: req.headers['user-agent'] || 'Unknown',
+        country: 'India',
+        status: 'SUCCESS',
+        details: 'Password reset OTP generated (expires in 5 minutes).'
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      message: 'If an account exists with this email or mobile number, a verification code has been sent.',
+      cooldownSeconds: cooldown
+    });
+  } catch (err: any) {
+    return res.status(429).json({ status: 'error', message: err.message || 'Please wait before requesting another OTP.' });
+  }
+});
+
+// 3.6. POST: /api/auth/forgot-password/verify-and-reset
+router.post('/forgot-password/verify-and-reset', authRateLimiter, async (req: Request, res: Response) => {
+  const { identifier, mobileOrEmail, email, phone, otp, newPassword, confirmPassword } = req.body;
+  const target = (identifier || mobileOrEmail || email || phone || '').toString().trim();
+  const passwordToSet = newPassword || confirmPassword || '';
+  const ip = req.ip || '127.0.0.1';
+
+  if (!target || !otp || !passwordToSet) {
+    return res.status(400).json({ status: 'error', message: 'Email/mobile number, OTP, and new password are required.' });
+  }
+
+  if (passwordToSet.length < 8) {
+    return res.status(400).json({ status: 'error', message: 'Password must be at least 8 characters long.' });
+  }
+
+  const normalizedTarget = target.toLowerCase();
+  const verifyRes = securityManager.verifyOTP('reset_' + normalizedTarget, otp);
+  if (!verifyRes.valid) {
+    return res.status(400).json({ status: 'error', message: verifyRes.message });
+  }
+
+  try {
+    const dbUser = await findCustomerInMongo(target);
+    if (!dbUser) {
+      return res.status(400).json({ status: 'error', message: 'Password reset failed. Account not found.' });
+    }
+
+    const mongoDb = db.getDb();
+    if (!mongoDb) {
+      return res.status(500).json({ status: 'error', message: 'Database connection unavailable.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(passwordToSet, 10);
+    await mongoDb.collection('users').updateOne(
+      { _id: dbUser._id },
+      { $set: { password: hashedPassword, updatedAt: new Date() } }
+    );
+
+    securityManager.resetFailedLogins(normalizedTarget);
+
+    securityManager.logEvent({
+      action: 'PASSWORD_RESET_SUCCESS',
+      email: normalizedTarget,
+      ip,
+      device: req.headers['user-agent'] || 'Unknown',
+      country: 'India',
+      status: 'SUCCESS',
+      details: 'Password updated successfully'
+    });
+
+    return res.json({
+      status: 'success',
+      message: 'Password has been reset successfully. Please log in with your new password.'
+    });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: 'Failed to reset password. Please try again.' });
+  }
+});
+
 // 4. POST: /api/auth/refresh-token (Token Rotation)
 router.post('/refresh-token', async (req: Request, res: Response) => {
   const refreshToken = req.body.refreshToken || req.cookies?.connect_refresh_token;
@@ -755,6 +884,18 @@ router.post('/register-customer', async (req: Request, res: Response) => {
         status: 'error',
         code: 'INVALID_MOBILE',
         message: mobileCheck.message
+      });
+    }
+  }
+
+  // Server-side Indian PIN Code Validation
+  if (pincode !== undefined && pincode !== null && String(pincode).trim() !== '') {
+    const cleanPin = String(pincode).trim();
+    if (!/^[1-9][0-9]{5}$/.test(cleanPin) || cleanPin === '100000' || cleanPin.startsWith('10')) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'INVALID_PINCODE',
+        message: 'Please enter a valid 6-digit Indian PIN code.'
       });
     }
   }

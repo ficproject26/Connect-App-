@@ -44,13 +44,69 @@ app.use(middleware_1.corsSecurityMiddleware);
 // OWASP Security Headers (Helmet v8) & Input Sanitization
 app.use(middleware_1.helmetSecurityMiddleware);
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
 app.use(middleware_1.sanitizeInputsMiddleware);
-// Serve static uploaded files
-app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), 'uploads')));
+// Serve static uploaded files (with cross-origin resource sharing & fallback resolution)
+app.use('/uploads', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+}, express_1.default.static(path_1.default.join(process.cwd(), 'uploads')));
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
+// Resilient fallback for uploaded files: check sibling vendor uploads and upstream vendor backend
+app.get('/uploads/:filename(*)', async (req, res, next) => {
+    try {
+        const rawFilename = req.params.filename;
+        let filename = rawFilename;
+        try {
+            filename = decodeURIComponent(rawFilename);
+        }
+        catch (e) {
+            filename = rawFilename;
+        }
+        const safeFilename = path_1.default.basename(filename);
+        // 1. Check local uploads dir
+        const local1 = path_1.default.join(process.cwd(), 'uploads', safeFilename);
+        if (fs_1.default.existsSync(local1))
+            return res.sendFile(local1);
+        const local2 = path_1.default.join(__dirname, '../uploads', safeFilename);
+        if (fs_1.default.existsSync(local2))
+            return res.sendFile(local2);
+        // 2. Check sibling vendor backend uploads paths on server / local disk
+        const siblingDirs = [
+            path_1.default.join(process.cwd(), '../vendor/backend/uploads', safeFilename),
+            path_1.default.join(process.cwd(), '../../vendor/backend/uploads', safeFilename),
+            path_1.default.join('/var/www/vendor/backend/uploads', safeFilename),
+            path_1.default.join('/home/ubuntu/vendor/backend/uploads', safeFilename),
+            path_1.default.join('/var/www/vendor-backend/uploads', safeFilename),
+            path_1.default.join('D:/vendor/backend/uploads', safeFilename)
+        ];
+        for (const sPath of siblingDirs) {
+            if (fs_1.default.existsSync(sPath)) {
+                return res.sendFile(sPath);
+            }
+        }
+        // 3. Fallback: proxy request to VENDOR_BACKEND_URL (e.g. http://127.0.0.1:8002/uploads/...)
+        const vendorUrlRaw = process.env.VENDOR_BACKEND_URL || 'http://127.0.0.1:8002';
+        const upstreamUrl = `${vendorUrlRaw.replace(/\/+$/, '')}/uploads/${encodeURIComponent(safeFilename)}`;
+        const upstreamRes = await fetch(upstreamUrl);
+        if (upstreamRes.ok) {
+            const contentType = upstreamRes.headers.get('content-type') || 'image/jpeg';
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+            const arrayBuf = await upstreamRes.arrayBuffer();
+            return res.send(Buffer.from(arrayBuf));
+        }
+    }
+    catch (err) {
+        // Continue to next
+    }
+    next();
+});
 // Base Health Check Route
 app.get('/', (req, res) => {
     res.json({
@@ -316,27 +372,59 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
                 const lower = url.trim().toLowerCase();
                 return !lower || lower === 'null' || lower === 'undefined' || lower.includes('connect-vendor.onrender.com') || lower.includes('.onrender.com');
             };
+            const normalizeVendorImageUrl = (rawUrl) => {
+                if (!rawUrl || typeof rawUrl !== 'string')
+                    return '';
+                let u = rawUrl.trim();
+                if (isDeadUrl(u))
+                    return '';
+                // If the URL was stored pointing to vendor.ficapp.in/uploads/, rewrite to api.ficapp.in/uploads/ so it is served by the backend upload handler
+                if (u.includes('vendor.ficapp.in/uploads/')) {
+                    u = u.replace(/https?:\/\/vendor\.ficapp\.in\/uploads\//i, `${process.env.BACKEND_URL || 'https://api.ficapp.in'}/uploads/`);
+                }
+                if (u.includes('localhost:8002/uploads/') || u.includes('127.0.0.1:8002/uploads/')) {
+                    u = u.replace(/https?:\/\/(localhost|127\.0\.0\.1):8002\/uploads\//i, `${process.env.BACKEND_URL || 'https://api.ficapp.in'}/uploads/`);
+                }
+                return u;
+            };
             const mappedActiveProducts = activeProducts.map((p) => {
-                let primaryImg = !isDeadUrl(p.imageUrl) ? p.imageUrl : (!isDeadUrl(p.image) ? p.image : '');
+                let primaryImg = normalizeVendorImageUrl(!isDeadUrl(p.imageUrl) ? p.imageUrl : (!isDeadUrl(p.image) ? p.image : ''));
                 if (!primaryImg && Array.isArray(p.images) && p.images.length > 0) {
                     const first = p.images.find((img) => {
-                        const u = typeof img === 'string' ? img : (img?.url || '');
+                        const u = typeof img === 'string' ? img : (img?.url || img?.secure_url || img?.path || img?.src || '');
                         return !isDeadUrl(u);
                     });
-                    primaryImg = first ? (typeof first === 'string' ? first : (first?.url || '')) : '';
+                    const raw = first ? (typeof first === 'string' ? first : (first?.url || first?.secure_url || first?.path || first?.src || '')) : '';
+                    primaryImg = normalizeVendorImageUrl(raw);
                 }
                 if (!primaryImg && Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
                     const first = p.imageUrls.find((u) => !isDeadUrl(u));
-                    primaryImg = first || '';
+                    primaryImg = normalizeVendorImageUrl(first || '');
                 }
+                if (!primaryImg && p.photo && !isDeadUrl(p.photo))
+                    primaryImg = normalizeVendorImageUrl(p.photo);
+                if (!primaryImg && Array.isArray(p.photos) && p.photos.length > 0) {
+                    const first = p.photos.find((u) => !isDeadUrl(typeof u === 'string' ? u : (u?.url || u?.secure_url)));
+                    const raw = first ? (typeof first === 'string' ? first : (first?.url || first?.secure_url || '')) : '';
+                    primaryImg = normalizeVendorImageUrl(raw);
+                }
+                if (!primaryImg && p.thumbnail && !isDeadUrl(p.thumbnail))
+                    primaryImg = normalizeVendorImageUrl(p.thumbnail);
+                if (!primaryImg && p.img && !isDeadUrl(p.img))
+                    primaryImg = normalizeVendorImageUrl(p.img);
+                if (!primaryImg && p.file && !isDeadUrl(p.file))
+                    primaryImg = normalizeVendorImageUrl(p.file);
+                if (!primaryImg && p.secure_url && !isDeadUrl(p.secure_url))
+                    primaryImg = normalizeVendorImageUrl(p.secure_url);
                 const normalizedImages = Array.isArray(p.images) && p.images.length > 0
                     ? p.images.map((img) => {
-                        const u = typeof img === 'string' ? img : (img?.url || '');
-                        return !isDeadUrl(u) ? { url: u } : null;
+                        const u = typeof img === 'string' ? img : (img?.url || img?.secure_url || '');
+                        const clean = normalizeVendorImageUrl(u);
+                        return clean && !isDeadUrl(clean) ? { url: clean } : null;
                     }).filter(Boolean)
                     : (primaryImg ? [{ url: primaryImg }] : []);
                 const normalizedImageUrls = Array.isArray(p.imageUrls) && p.imageUrls.length > 0
-                    ? p.imageUrls.filter((u) => !isDeadUrl(u))
+                    ? p.imageUrls.map((u) => normalizeVendorImageUrl(u)).filter((u) => !isDeadUrl(u))
                     : (primaryImg ? [primaryImg] : []);
                 return {
                     ...p,

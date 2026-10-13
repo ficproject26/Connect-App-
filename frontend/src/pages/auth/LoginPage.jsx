@@ -2,14 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { 
   Mail, Lock, Eye, EyeOff, LogIn, ShieldCheck, Check, Phone, AlertCircle, CheckCircle2,
   User, Store, Wrench, UtensilsCrossed, Bed, Plane, ShoppingCart, 
-  Briefcase, Tag, LayoutGrid, Headphones, Award, ShoppingBag, Globe 
+  Briefcase, Tag, LayoutGrid, Headphones, Award, ShoppingBag, Globe, X, KeyRound, ArrowLeft 
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import logoImg from '../../assets/images/forge india logo.jpg';
+import { SUPPORTED_LANGUAGES, getStoredLanguage, setStoredLanguage, t } from '../../utils/i18n';
 
 export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoinNow }) {
   const { login } = useAuth();
   const [loginMethod, setLoginMethod] = useState('password'); // 'password' | 'otp'
+
+  // Language State
+  const [currentLang, setCurrentLang] = useState(() => getStoredLanguage());
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
 
   // Password Mode States
   const [email, setEmail] = useState('');
@@ -30,6 +35,20 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
   const [isNotRegistered, setIsNotRegistered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Forgot Password Modal States
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1: input identifier, 2: input otp and new password
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const [forgotCooldown, setForgotCooldown] = useState(0);
 
   // Dynamic API Base URL
   const getApiBase = () => {
@@ -58,7 +77,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
     return 'https://api.ficapp.in/api';
   };
 
-  // Cooldown timer for OTP
+  // Cooldown timer for Login OTP
   useEffect(() => {
     let timer;
     if (resendCooldown > 0) {
@@ -67,6 +86,22 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
+  // Cooldown timer for Forgot Password OTP
+  useEffect(() => {
+    let timer;
+    if (forgotCooldown > 0) {
+      timer = setInterval(() => setForgotCooldown(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [forgotCooldown]);
+
+  // Handler for Language Change
+  const handleLanguageSelect = (langCode) => {
+    setCurrentLang(langCode);
+    setStoredLanguage(langCode);
+    setIsLangDropdownOpen(false);
+  };
+
   // Handler for Password Login
   const handlePasswordSubmit = async (e) => {
     e?.preventDefault();
@@ -74,7 +109,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
     setIsNotRegistered(false);
 
     if (!email.trim() || !password) {
-      setErrorMsg('Please enter both email/phone and password.');
+      setErrorMsg(t('enterBothFields', currentLang));
       return;
     }
 
@@ -94,7 +129,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
       if (!res) {
         setIsSubmitting(false);
-        setErrorMsg('Unable to connect to server. Please check your internet connection.');
+        setErrorMsg(t('networkError', currentLang));
         return;
       }
 
@@ -102,13 +137,14 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
       if (!res.ok) {
         setIsSubmitting(false);
-        if (res.status === 404 || data.notRegistered || data.code === 'ACCOUNT_NOT_FOUND' || (data.message && data.message.toLowerCase().includes('not found'))) {
-          setIsNotRegistered(true);
-          setErrorMsg('Account not found. Please register to continue.');
-        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
-          setErrorMsg(data.message || 'Your account is inactive or suspended. Please contact support.');
+        if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
+          setErrorMsg(t('accountInactive', currentLang));
+        } else if (res.status === 429 || data.code === 'RATE_LIMIT_EXCEEDED') {
+          setErrorMsg(data.message || 'Too many attempts. Please try again later.');
+        } else if (res.status === 401 || res.status === 404 || data.code === 'INVALID_CREDENTIALS' || data.code === 'ACCOUNT_NOT_FOUND') {
+          setErrorMsg(t('invalidCredentials', currentLang));
         } else {
-          setErrorMsg(data.message || 'Invalid password. Please try again.');
+          setErrorMsg(t('invalidCredentials', currentLang));
         }
         return;
       }
@@ -126,15 +162,15 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
     } catch (err) {
       setIsSubmitting(false);
-      setErrorMsg('Authentication error. Please try again.');
+      setErrorMsg(t('authError', currentLang));
     }
   };
 
-  // Handler for OTP Send
+  // Handler for Login OTP Send
   const handleSendOtp = async () => {
     const target = otpTarget.trim();
     if (!target) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
+      setErrorMsg(t('validMobile', currentLang));
       return;
     }
 
@@ -152,67 +188,40 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
           mobileNumber: target,
           mobileOrEmail: target
         })
-      }).catch(() => null);
-
-      if (!res || !res.ok) {
-        const data = res ? await res.json().catch(() => ({})) : {};
-        const errMsg = data.message || data.msg || data.error || data.details || '';
-
-        if (res && res.status === 404) {
-          setIsSubmitting(false);
-          setIsNotRegistered(true);
-          setErrorMsg('Please register first to access the Customer website.');
-          return;
-        }
-
-        if (res && res.status === 403) {
-          setIsSubmitting(false);
-          setErrorMsg(errMsg || 'Your account is inactive or suspended. Please contact support.');
-          return;
-        }
-
-        if (res && res.status === 429) {
-          setIsSubmitting(false);
-          setErrorMsg(errMsg || 'Please wait before requesting another OTP.');
-          return;
-        }
-
-        setIsSubmitting(false);
-        setErrorMsg(errMsg || 'Failed to send OTP. Please try again.');
-        return;
-      }
+      });
 
       const data = await res.json().catch(() => ({}));
+      setIsSubmitting(false);
 
-      if (data.status === 'success' || data.success) {
-        setIsSubmitting(false);
-        const issuedCode = data.devOtpPreview || data.otp || '';
-        setGeneratedOtpCode(issuedCode);
-        setIsOtpSent(true);
-        setResendCooldown(data.cooldownSeconds || 30);
-        setOtpSuccessMsg(issuedCode ? `OTP Sent Successfully! Security Code: ${issuedCode}` : 'OTP Sent Successfully!');
-        return;
-      } else {
-        setIsSubmitting(false);
+      if (!res.ok) {
         const errMsg = data.message || data.msg || data.error || '';
         if (res.status === 404 || data.notRegistered || data.code === 'MOBILE_NOT_REGISTERED') {
           setIsNotRegistered(true);
-          setErrorMsg('Please register first to access the Customer website.');
+          setErrorMsg(t('accountNotFound', currentLang));
+        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
+          setErrorMsg(t('accountInactive', currentLang));
+        } else if (res.status === 429) {
+          setErrorMsg(errMsg || 'Please wait before requesting another OTP.');
         } else {
           setErrorMsg(errMsg || 'Failed to send OTP. Please try again.');
         }
         return;
       }
+
+      setIsOtpSent(true);
+      setResendCooldown(data.cooldownSeconds || 30);
+      setOtpSuccessMsg(`OTP sent successfully to ${target}. Valid for 5 minutes.`);
+
     } catch (err) {
       setIsSubmitting(false);
-      setErrorMsg('Network error. Please try again.');
+      setErrorMsg(t('networkError', currentLang));
     }
   };
 
-  // Handler for OTP Verification
+  // Handler for Login OTP Verification
   const handleVerifyOtp = async (e) => {
     e?.preventDefault();
-    if (!otpInput || otpInput.length < 6) {
+    if (!otpInput || otpInput.trim().length !== 6) {
       setErrorMsg('Please enter the full 6-digit OTP code.');
       return;
     }
@@ -221,83 +230,213 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
     setOtpSuccessMsg('');
     setIsSubmitting(true);
 
-    const inputClean = otpInput.trim();
-
     try {
       const res = await fetch(`${getApiBase()}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: otpTarget,
-          mobileNumber: otpTarget,
-          mobileOrEmail: otpTarget,
-          otp: inputClean
+          phone: otpTarget.trim(),
+          mobileNumber: otpTarget.trim(),
+          otp: otpInput.trim()
         })
-      }).catch(() => null);
+      });
 
-      if (!res || !res.ok) {
-        const data = res ? await res.json().catch(() => ({})) : {};
-        setIsSubmitting(false);
-        if (res && res.status === 404 || data.notRegistered) {
+      const data = await res.json().catch(() => ({}));
+      setIsSubmitting(false);
+
+      if (!res.ok) {
+        if (res.status === 404 || data.notRegistered || data.code === 'MOBILE_NOT_REGISTERED') {
           setIsNotRegistered(true);
-          setErrorMsg('Please register first to access the Customer website.');
+          setErrorMsg(t('accountNotFound', currentLang));
+        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
+          setErrorMsg(t('accountInactive', currentLang));
         } else {
           setErrorMsg(data.message || 'Invalid or expired OTP code. Please try again.');
         }
         return;
       }
 
-      const data = await res.json().catch(() => ({}));
-      if (data.status === 'success' && data.user) {
-        setIsSubmitting(false);
-        setSuccess(true);
-        login({ ...data.user, _isExplicitAuth: true }, 'customer', (finalUser) => {
-          setTimeout(() => {
-            setSuccess(false);
-            if (onAuthSuccess) onAuthSuccess(finalUser);
-          }, 600);
-        });
-      } else {
-        setIsSubmitting(false);
-        setErrorMsg(data.message || 'Verification failed. Please register to continue.');
-      }
+      // Successful OTP Verification
+      setSuccess(true);
+      const verifiedUser = data.user || { phone: otpTarget.trim(), role: 'customer' };
+      login({ ...verifiedUser, _isExplicitAuth: true }, 'customer', (finalUser) => {
+        setTimeout(() => {
+          setSuccess(false);
+          if (onAuthSuccess) onAuthSuccess(finalUser);
+        }, 600);
+      });
+
     } catch (err) {
       setIsSubmitting(false);
-      setErrorMsg('Network error verifying OTP. Please try again.');
+      setErrorMsg(t('networkError', currentLang));
+    }
+  };
+
+  // Handler for Forgot Password Send OTP
+  const handleForgotSendOtp = async (e) => {
+    e?.preventDefault();
+    const idClean = forgotIdentifier.trim();
+    if (!idClean) {
+      setForgotError(t('enterBothFields', currentLang));
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError('');
+    setForgotSuccess('');
+
+    try {
+      const res = await fetch(`${getApiBase()}/auth/forgot-password/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: idClean })
+      });
+      const data = await res.json().catch(() => ({}));
+      setForgotLoading(false);
+
+      if (!res.ok) {
+        setForgotError(data.message || 'Failed to send verification code. Please try again.');
+        return;
+      }
+
+      setForgotStep(2);
+      setForgotSuccess(t('otpSentSuccess', currentLang));
+      if (data.cooldownSeconds) setForgotCooldown(data.cooldownSeconds);
+    } catch (err) {
+      setForgotLoading(false);
+      setForgotError(t('networkError', currentLang));
+    }
+  };
+
+  // Handler for Forgot Password Verify & Reset
+  const handleForgotResetPassword = async (e) => {
+    e?.preventDefault();
+    const idClean = forgotIdentifier.trim();
+    const otpClean = forgotOtp.trim();
+    const passClean = forgotNewPassword;
+    const confirmClean = forgotConfirmPassword;
+
+    if (!otpClean || !passClean || !confirmClean) {
+      setForgotError('Please fill in all fields.');
+      return;
+    }
+
+    if (passClean.length < 8) {
+      setForgotError(t('passwordMinLength', currentLang));
+      return;
+    }
+
+    if (passClean !== confirmClean) {
+      setForgotError(t('passwordsDoNotMatch', currentLang));
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError('');
+    setForgotSuccess('');
+
+    try {
+      const res = await fetch(`${getApiBase()}/auth/forgot-password/verify-and-reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: idClean,
+          otp: otpClean,
+          newPassword: passClean,
+          confirmPassword: confirmClean
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      setForgotLoading(false);
+
+      if (!res.ok) {
+        setForgotError(data.message || 'Failed to reset password. Please check your verification code.');
+        return;
+      }
+
+      setForgotSuccess(t('passwordResetSuccess', currentLang));
+      setEmail(idClean);
+      setTimeout(() => {
+        setIsForgotPasswordOpen(false);
+        setForgotStep(1);
+        setForgotOtp('');
+        setForgotNewPassword('');
+        setForgotConfirmPassword('');
+        setForgotSuccess('');
+        setErrorMsg('');
+      }, 2000);
+
+    } catch (err) {
+      setForgotLoading(false);
+      setForgotError(t('networkError', currentLang));
     }
   };
 
   return (
-    <div className="w-full h-screen max-h-screen overflow-hidden flex bg-white dark:bg-[#030712] text-slate-900 dark:text-slate-100 font-sans select-none">
+    <div className="min-h-screen w-full flex bg-slate-50 dark:bg-[#070b14] overflow-hidden select-none font-sans relative">
       
-      {/* ==================== LEFT PANEL: FORM SECTION ==================== */}
-      <div className="w-full lg:w-1/2 h-full flex flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12 bg-white dark:bg-[#030712] overflow-y-auto">
+      {/* ==================== LEFT PANEL: LOGIN FORM ==================== */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-8 md:p-10 lg:p-12 z-10 overflow-y-auto">
         
-        {/* Top Header Logo */}
-        <div className="flex items-center justify-between shrink-0">
-          <div 
-            onClick={onBackToHome}
-            className="flex items-center gap-2.5 cursor-pointer group"
-          >
-            <img 
-              src={logoImg} 
-              alt="Forge India Connect Logo" 
-              className="w-10 h-10 object-cover rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs group-hover:scale-105 transition-transform" 
-            />
-            <div>
-              <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none uppercase">
-                Connect <span className="text-[#FFB800]">App</span>
+        {/* Top Navbar Header */}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
+              <img src={logoImg} alt="Connect Logo" className="w-full h-full object-cover" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider leading-none">
+                CONNECT APP
               </h1>
               <p className="text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5">All Services, One Platform</p>
             </div>
           </div>
 
-          <button
-            onClick={onBackToHome}
-            className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer border-none bg-transparent"
-          >
-            ← Home
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Mobile Language Selector Toggle */}
+            <div className="relative lg:hidden">
+              <button 
+                type="button"
+                onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-200"
+              >
+                <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>{SUPPORTED_LANGUAGES.find(l => l.code === currentLang)?.nativeName || 'English'}</span>
+                <span className="text-[9px] opacity-70">▼</span>
+              </button>
+
+              {isLangDropdownOpen && (
+                <div className="absolute top-9 right-0 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden py-1.5 z-50 text-left animate-fade-in">
+                  {SUPPORTED_LANGUAGES.map((lang) => {
+                    const isSelected = currentLang === lang.code;
+                    return (
+                      <button
+                        key={`m-${lang.code}`}
+                        type="button"
+                        onClick={() => handleLanguageSelect(lang.code)}
+                        className={`w-full px-4 py-2 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer border-none text-left ${
+                          isSelected
+                            ? 'bg-[#FFB800]/20 text-[#003B95] dark:text-[#FFB800] font-black'
+                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{lang.nativeName} <span className="text-[10px] opacity-60">({lang.label})</span></span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={onBackToHome}
+              className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer border-none bg-transparent"
+            >
+              ← {t('home', currentLang)}
+            </button>
+          </div>
         </div>
 
         {/* Form Container */}
@@ -308,7 +447,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
               <div className="w-14 h-14 bg-amber-100 dark:bg-amber-950/50 text-[#FFB800] rounded-full flex items-center justify-center mx-auto mb-3 border border-amber-300 dark:border-amber-700 shadow-lg animate-bounce">
                 <Check className="w-7 h-7 stroke-[3]" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white">Welcome Back!</h2>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white">{t('welcomeBack', currentLang)}</h2>
               <p className="text-xs font-semibold text-slate-500 mt-1">
                 Authentication successful. Accessing your dashboard...
               </p>
@@ -321,7 +460,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                   Welcome <span className="text-[#FFB800]">Back!</span>
                 </h2>
                 <p className="text-xs sm:text-sm font-semibold text-slate-400 mt-1">
-                  Login to access your Customer Dashboard
+                  {t('loginSubtitle', currentLang)}
                 </p>
               </div>
 
@@ -336,7 +475,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white bg-transparent'
                   }`}
                 >
-                  Password Login
+                  {t('passwordLogin', currentLang)}
                 </button>
                 <button
                   type="button"
@@ -347,35 +486,26 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white bg-transparent'
                   }`}
                 >
-                  Mobile OTP Login
+                  {t('mobileOtpLogin', currentLang)}
                 </button>
               </div>
 
-              {/* Error Alert Box with Register Now Button */}
+              {/* Error Banner */}
               {errorMsg && (
-                <div className="mb-3.5 p-3.5 bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold rounded-2xl flex flex-col gap-2.5">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-                    <span className="flex-1">{errorMsg}</span>
+                <div className="mb-3.5 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-start gap-2.5 animate-shake text-left">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                  <div className="flex-1">
+                    <p>{errorMsg}</p>
+                    {isNotRegistered && (
+                      <button
+                        type="button"
+                        onClick={onNavigateToJoinNow}
+                        className="mt-1.5 text-xs font-black underline hover:text-rose-700 dark:hover:text-rose-300 block cursor-pointer border-none bg-transparent p-0 text-left"
+                      >
+                        Click here to Register an Account →
+                      </button>
+                    )}
                   </div>
-                  {isNotRegistered && (
-                    <button
-                      type="button"
-                      onClick={onNavigateToJoinNow}
-                      className="w-full py-2.5 px-4 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 border-none active:scale-[0.98]"
-                    >
-                      <span>Register Now</span>
-                      <span className="text-sm">→</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* OTP Success Info Box */}
-              {otpSuccessMsg && (
-                <div className="mb-3.5 p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-xl flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
-                  <span>{otpSuccessMsg}</span>
                 </div>
               )}
 
@@ -386,7 +516,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                   {/* Email / Phone Field */}
                   <div className="text-left">
                     <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                      Email or Phone Number
+                      {t('emailOrPhone', currentLang)}
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -394,8 +524,12 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                         type="text"
                         required
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email or phone number"
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (errorMsg) setErrorMsg('');
+                          if (isNotRegistered) setIsNotRegistered(false);
+                        }}
+                        placeholder={t('emailOrPhonePlaceholder', currentLang)}
                         className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                       />
                     </div>
@@ -404,7 +538,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                   {/* Password Field */}
                   <div className="text-left">
                     <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                      Password
+                      {t('password', currentLang)}
                     </label>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -412,8 +546,12 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                         type={showPassword ? "text" : "password"}
                         required
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (errorMsg) setErrorMsg('');
+                          if (isNotRegistered) setIsNotRegistered(false);
+                        }}
+                        placeholder={t('passwordPlaceholder', currentLang)}
                         className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-3 pl-10 pr-10 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                       />
                       <button
@@ -435,16 +573,22 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                         onChange={(e) => setRememberMe(e.target.checked)}
                         className="w-4 h-4 rounded border-slate-300 text-[#FFB800] focus:ring-[#FFB800] accent-[#FFB800] cursor-pointer"
                       />
-                      <span>Remember me</span>
+                      <span>{t('rememberMe', currentLang)}</span>
                     </label>
 
-                    <a
-                      href="#"
-                      onClick={(e) => e.preventDefault()}
-                      className="text-xs font-extrabold text-[#003B95] dark:text-[#FFB800] hover:underline transition-all"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotIdentifier(email || '');
+                        setForgotError('');
+                        setForgotSuccess('');
+                        setForgotStep(1);
+                        setIsForgotPasswordOpen(true);
+                      }}
+                      className="text-xs font-extrabold text-[#003B95] dark:text-[#FFB800] hover:underline transition-all bg-transparent border-none cursor-pointer p-0"
                     >
-                      Forgot Password?
-                    </a>
+                      {t('forgotPassword', currentLang)}
+                    </button>
                   </div>
 
                   {/* Login Button */}
@@ -454,119 +598,126 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                     className="w-full py-3 px-6 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4 text-slate-950" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        <span>Authenticating...</span>
-                      </div>
+                      <>
+                        <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>{t('loggingIn', currentLang)}</span>
+                      </>
                     ) : (
                       <>
                         <LogIn className="w-4 h-4" />
-                        <span>Login to Dashboard</span>
+                        <span>{t('loginToDashboard', currentLang)}</span>
                       </>
                     )}
                   </button>
                 </form>
               ) : (
                 /* 2. MOBILE OTP LOGIN FORM */
-                <div className="space-y-3.5 text-left">
-                  {!isOtpSent ? (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                          Registered Mobile Number
-                        </label>
-                        <div className="relative">
-                          <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="tel"
-                            maxLength={10}
-                            value={otpTarget}
-                            onChange={(e) => setOtpTarget(e.target.value.replace(/\D/g, ''))}
-                            placeholder="Enter 10-digit mobile number"
-                            className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
-                          />
-                        </div>
+                <div className="space-y-3.5">
+                  <div className="text-left">
+                    <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                      {t('mobileNumber', currentLang)}
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="tel"
+                          maxLength={10}
+                          value={otpTarget}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setOtpTarget(val);
+                            if (errorMsg) setErrorMsg('');
+                            if (isNotRegistered) setIsNotRegistered(false);
+                          }}
+                          placeholder={t('mobilePlaceholder', currentLang)}
+                          className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all tracking-wider"
+                        />
                       </div>
-
                       <button
                         type="button"
                         onClick={handleSendOtp}
-                        disabled={isSubmitting || !otpTarget}
-                        className="w-full py-3 px-6 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isSubmitting || resendCooldown > 0 || otpTarget.length < 10}
+                        className="px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs rounded-2xl transition-all cursor-pointer whitespace-nowrap shadow-sm border-none shrink-0"
                       >
-                        {isSubmitting ? (
-                          <span>Verifying Registration & Sending OTP...</span>
-                        ) : (
-                          <span>Send Login OTP</span>
-                        )}
+                        {isSubmitting ? t('sendingOtp', currentLang) : isOtpSent ? (resendCooldown > 0 ? `${t('resendIn', currentLang)} ${resendCooldown}${t('seconds', currentLang)}` : t('resendOtp', currentLang)) : t('sendOtp', currentLang)}
                       </button>
                     </div>
-                  ) : (
-                    <form onSubmit={handleVerifyOtp} className="space-y-3">
-                      <div>
+                  </div>
+
+                  {otpSuccessMsg && (
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2 text-left">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+                      <span>{otpSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  {isOtpSent && (
+                    <form onSubmit={handleVerifyOtp} className="space-y-3.5 pt-1 animate-fade-in">
+                      <div className="text-left">
                         <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                          Enter 6-Digit OTP Code
+                          {t('enterOtp', currentLang)}
                         </label>
                         <input
                           type="text"
                           maxLength={6}
                           value={otpInput}
-                          onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                          placeholder="Enter 6-digit OTP code"
-                          className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-3 px-4 text-center text-lg font-black tracking-widest text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
+                          onChange={(e) => {
+                            setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                            if (errorMsg) setErrorMsg('');
+                          }}
+                          placeholder={t('otpPlaceholder', currentLang)}
+                          className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-3 px-4 text-center text-sm font-black tracking-widest text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                         />
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs">
-                        <button
-                          type="button"
-                          onClick={() => { setIsOtpSent(false); setOtpInput(''); }}
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold bg-transparent border-none cursor-pointer"
-                        >
-                          ← Change Number
-                        </button>
-                        <button
-                          type="button"
-                          disabled={resendCooldown > 0}
-                          onClick={handleSendOtp}
-                          className="text-[#FFB800] font-extrabold bg-transparent border-none cursor-pointer disabled:opacity-50"
-                        >
-                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
-                        </button>
                       </div>
 
                       <button
                         type="submit"
                         disabled={isSubmitting || otpInput.length < 6}
-                        className="w-full py-3 px-6 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 px-6 bg-[#FFB800] hover:bg-[#E5A700] text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 border-none active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed"
                       >
-                        {isSubmitting ? <span>Verifying OTP...</span> : <span>Verify OTP & Login</span>}
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                            <span>{t('verifying', currentLang)}</span>
+                          </>
+                        ) : (
+                          <>
+                            <LogIn className="w-4 h-4" />
+                            <span>{t('verifyAndLogin', currentLang)}</span>
+                          </>
+                        )}
                       </button>
                     </form>
                   )}
                 </div>
               )}
+
+              {/* Bottom Sign Up Redirect */}
+              <div className="mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/80 text-center">
+                <p className="text-xs font-bold text-slate-500">
+                  {t('dontHaveAccount', currentLang)}{' '}
+                  <button
+                    type="button"
+                    onClick={onNavigateToJoinNow}
+                    className="font-black text-[#003B95] dark:text-[#FFB800] hover:underline cursor-pointer border-none bg-transparent p-0 ml-1"
+                  >
+                    {t('signUp', currentLang)}
+                  </button>
+                </p>
+              </div>
             </>
           )}
 
         </div>
 
-        {/* Footer Signup Prompt */}
-        <div className="text-center text-xs font-semibold text-slate-500 dark:text-slate-400 pt-2 shrink-0">
-          Don't have an account?{' '}
-          <button
-            onClick={onNavigateToJoinNow}
-            className="font-extrabold text-[#003B95] dark:text-[#FFB800] hover:underline bg-transparent border-none p-0 inline cursor-pointer"
-          >
-            Sign Up
-          </button>
+        {/* Footer Security Badges */}
+        <div className="flex items-center justify-center gap-2 text-slate-400 text-[10px] font-bold tracking-wide uppercase pt-4 shrink-0">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Connect App Bank-Grade Security • UIDAI & Tax Verification Standards</span>
         </div>
 
       </div>
-
 
       {/* ==================== RIGHT PANEL: ECOSYSTEM & GRAPHIC SIDE ==================== */}
       <div className="hidden lg:flex w-1/2 h-full bg-gradient-to-br from-[#3b19b7] via-[#5b3af0] to-[#7c3aed] relative overflow-hidden flex-col justify-between p-8 lg:p-10 xl:p-12 text-white select-none">
@@ -576,12 +727,39 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/40 rounded-full blur-[140px] pointer-events-none" />
 
         {/* Top Header: Language Selector */}
-        <div className="flex justify-end z-10 shrink-0">
-          <button className="bg-white/15 hover:bg-white/25 border border-white/20 px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer text-white">
+        <div className="flex justify-end z-20 shrink-0 relative">
+          <button 
+            type="button"
+            onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+            className="bg-white/15 hover:bg-white/25 border border-white/20 px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer text-white"
+          >
             <Globe className="w-3.5 h-3.5 text-white/90" />
-            <span>English</span>
-            <span className="text-[10px] opacity-70">▼</span>
+            <span>{SUPPORTED_LANGUAGES.find(l => l.code === currentLang)?.nativeName || 'English'}</span>
+            <span className={`text-[10px] opacity-70 transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
           </button>
+
+          {isLangDropdownOpen && (
+            <div className="absolute top-10 right-0 w-44 bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden py-1.5 z-30 animate-fade-in text-left">
+              {SUPPORTED_LANGUAGES.map((lang) => {
+                const isSelected = currentLang === lang.code;
+                return (
+                  <button
+                    key={`d-${lang.code}`}
+                    type="button"
+                    onClick={() => handleLanguageSelect(lang.code)}
+                    className={`w-full px-4 py-2 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer border-none text-left ${
+                      isSelected
+                        ? 'bg-[#FFB800]/20 text-[#FFB800] font-black'
+                        : 'text-white/90 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>{lang.nativeName} <span className="text-[10px] opacity-60">({lang.label})</span></span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-[#FFB800]" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Center Graphic Section */}
@@ -590,11 +768,11 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
           {/* Main Title & Tagline */}
           <div className="max-w-md mx-auto text-center mb-6">
             <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black tracking-tight leading-tight">
-              Everything You Need,<br />All in One Place
+              {t('everythingYouNeed', currentLang)}<br />{t('allInOnePlace', currentLang)}
             </h2>
             <div className="w-10 h-1 bg-white/40 rounded-full mx-auto my-2.5" />
             <p className="text-xs font-medium text-white/80 leading-relaxed max-w-sm mx-auto">
-              Connect App brings all services together to make your life easier and better.
+              {t('heroTagline', currentLang)}
             </p>
           </div>
 
@@ -619,70 +797,71 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
               <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#a855f7] text-white flex items-center justify-center shadow-lg shadow-purple-900/40 group-hover:scale-110 transition-transform">
                 <ShoppingBag className="w-4.5 h-4.5 text-white" />
               </div>
-              <span className="text-[9px] font-extrabold text-white/90">Products</span>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md opacity-90">Products</span>
             </div>
 
-            {/* 2. Services (Top Left) */}
-            <div className="absolute top-8 left-2 flex flex-col items-center gap-0.5 group">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-lg shadow-blue-900/40 group-hover:scale-110 transition-transform">
-                <Wrench className="w-4.5 h-4.5 text-white" />
-              </div>
-              <span className="text-[9px] font-extrabold text-white/90">Services</span>
-            </div>
-
-            {/* 3. Daily Needs (Bottom Left) */}
-            <div className="absolute bottom-8 left-2 flex flex-col items-center gap-0.5 group">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#22c55e] text-white flex items-center justify-center shadow-lg shadow-emerald-900/40 group-hover:scale-110 transition-transform">
-                <ShoppingCart className="w-4.5 h-4.5 text-white" />
-              </div>
-              <span className="text-[9px] font-extrabold text-white/90">Daily Needs</span>
-            </div>
-
-            {/* 4. Jobs (Bottom) */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-3 flex flex-col items-center gap-0.5 group">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#ec4899] text-white flex items-center justify-center shadow-lg shadow-pink-900/40 group-hover:scale-110 transition-transform">
-                <Briefcase className="w-4.5 h-4.5 text-white" />
-              </div>
-              <span className="text-[9px] font-extrabold text-white/90">Jobs</span>
-            </div>
-
-            {/* 5. Travel (Bottom Right) */}
-            <div className="absolute bottom-8 right-2 flex flex-col items-center gap-0.5 group">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#0ea5e9] text-white flex items-center justify-center shadow-lg shadow-sky-900/40 group-hover:scale-110 transition-transform">
-                <Plane className="w-4.5 h-4.5 text-white" />
-              </div>
-              <span className="text-[9px] font-extrabold text-white/90">Travel</span>
-            </div>
-
-            {/* 6. Stay (Right) */}
-            <div className="absolute top-1/2 right-[-12px] -translate-y-1/2 flex flex-col items-center gap-0.5 group">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#2dd4bf] text-white flex items-center justify-center shadow-lg shadow-teal-900/40 group-hover:scale-110 transition-transform">
-                <Bed className="w-4.5 h-4.5 text-white" />
-              </div>
-              <span className="text-[9px] font-extrabold text-white/90">Stay</span>
-            </div>
-
-            {/* 7. Food (Top Right) */}
-            <div className="absolute top-8 right-2 flex flex-col items-center gap-0.5 group">
+            {/* 2. Food (Top Right) */}
+            <div className="absolute top-12 right-2 flex flex-col items-center gap-0.5 group">
               <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#f59e0b] text-white flex items-center justify-center shadow-lg shadow-amber-900/40 group-hover:scale-110 transition-transform">
                 <UtensilsCrossed className="w-4.5 h-4.5 text-white" />
               </div>
-              <span className="text-[9px] font-extrabold text-white/90">Food</span>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md opacity-90">Food</span>
+            </div>
+
+            {/* 3. Stay (Middle Right) */}
+            <div className="absolute top-1/2 -translate-y-1/2 right-[-14px] flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#10b981] text-white flex items-center justify-center shadow-lg shadow-emerald-900/40 group-hover:scale-110 transition-transform">
+                <Bed className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md opacity-90">Stay</span>
+            </div>
+
+            {/* 4. Travel (Bottom Right) */}
+            <div className="absolute bottom-10 right-3 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#06b6d4] text-white flex items-center justify-center shadow-lg shadow-cyan-900/40 group-hover:scale-110 transition-transform">
+                <Plane className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md opacity-90">Travel</span>
+            </div>
+
+            {/* 5. Jobs (Bottom Left) */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#f43f5e] text-white flex items-center justify-center shadow-lg shadow-rose-900/40 group-hover:scale-110 transition-transform">
+                <Briefcase className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md opacity-90">Jobs</span>
+            </div>
+
+            {/* 6. Daily Needs (Bottom Left 2) */}
+            <div className="absolute bottom-10 left-3 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#22c55e] text-white flex items-center justify-center shadow-lg shadow-green-900/40 group-hover:scale-110 transition-transform">
+                <ShoppingCart className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md opacity-90">Daily Needs</span>
+            </div>
+
+            {/* 7. Services (Top Left) */}
+            <div className="absolute top-12 left-2 flex flex-col items-center gap-0.5 group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-lg shadow-blue-900/40 group-hover:scale-110 transition-transform">
+                <Wrench className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md opacity-90">Services</span>
             </div>
 
           </div>
+
         </div>
 
-        {/* Bottom Glassmorphic Security Banner */}
-        <div className="z-10 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-3.5 flex items-center justify-between shadow-2xl max-w-lg mx-auto w-full shrink-0">
-          <div className="flex items-center gap-3 text-left">
-            <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+        {/* Bottom Security Trust Box */}
+        <div className="bg-white/10 border border-white/20 backdrop-blur-md rounded-2xl p-4 flex items-center justify-between text-left shrink-0 z-10 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-400/30 border border-purple-300/40 flex items-center justify-center shrink-0">
               <ShieldCheck className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
-              <h3 className="text-xs font-black text-white">Secure & Trusted Platform</h3>
+              <h3 className="text-xs font-black text-white">{t('securePlatform', currentLang)}</h3>
               <p className="text-[10px] text-white/80 font-medium leading-tight mt-0.5">
-                Your data is safe with us. We never share your information with anyone.
+                {t('securePlatformDesc', currentLang)}
               </p>
             </div>
           </div>
@@ -693,6 +872,223 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
         </div>
 
       </div>
+
+      {/* ==================== FORGOT PASSWORD MODAL ==================== */}
+      {isForgotPasswordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in text-slate-800 dark:text-slate-200">
+          <div onClick={() => setIsForgotPasswordOpen(false)} className="absolute inset-0" />
+
+          <div className="relative bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 z-10 text-left">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <KeyRound className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">
+                    {t('resetPasswordTitle', currentLang)}
+                  </h3>
+                  <p className="text-[11px] font-semibold text-slate-400">
+                    {forgotStep === 1 ? t('resetPasswordSubtitle', currentLang) : 'Enter OTP code & create your new password'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordOpen(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center border-none cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Error & Success Messages */}
+            {forgotError && (
+              <div className="mb-3.5 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                <p className="flex-1">{forgotError}</p>
+              </div>
+            )}
+
+            {forgotSuccess && (
+              <div className="mb-3.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
+                <p className="flex-1">{forgotSuccess}</p>
+              </div>
+            )}
+
+            {/* Step 1: Input Identifier (Email / Phone) */}
+            {forgotStep === 1 && (
+              <form onSubmit={handleForgotSendOtp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                    {t('emailOrPhone', currentLang)}
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={forgotIdentifier}
+                      onChange={(e) => {
+                        setForgotIdentifier(e.target.value);
+                        setForgotError('');
+                      }}
+                      placeholder={t('emailOrPhonePlaceholder', currentLang)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPasswordOpen(false)}
+                    className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs rounded-xl transition-all cursor-pointer border-none"
+                  >
+                    {t('backToLogin', currentLang)}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading || !forgotIdentifier.trim()}
+                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                  >
+                    {forgotLoading ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>{t('sendingOtp', currentLang)}</span>
+                      </>
+                    ) : (
+                      <span>{t('sendOtp', currentLang)}</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Step 2: Input OTP & New Password */}
+            {forgotStep === 2 && (
+              <form onSubmit={handleForgotResetPassword} className="space-y-3.5">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                      {t('enterOtp', currentLang)}
+                    </label>
+                    {forgotCooldown > 0 ? (
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {t('resendIn', currentLang)} {forgotCooldown}{t('seconds', currentLang)}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleForgotSendOtp}
+                        className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline bg-transparent border-none cursor-pointer p-0"
+                      >
+                        {t('resendOtp', currentLang)}
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={forgotOtp}
+                    onChange={(e) => {
+                      setForgotOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      setForgotError('');
+                    }}
+                    placeholder={t('otpPlaceholder', currentLang)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-2.5 px-4 text-center text-sm font-black tracking-widest text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                    {t('newPassword', currentLang)}
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showForgotNewPassword ? "text" : "password"}
+                      required
+                      value={forgotNewPassword}
+                      onChange={(e) => {
+                        setForgotNewPassword(e.target.value);
+                        setForgotError('');
+                      }}
+                      placeholder={t('newPasswordPlaceholder', currentLang)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-10 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 border-none bg-transparent cursor-pointer"
+                    >
+                      {showForgotNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                    {t('confirmNewPassword', currentLang)}
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showForgotConfirmPassword ? "text" : "password"}
+                      required
+                      value={forgotConfirmPassword}
+                      onChange={(e) => {
+                        setForgotConfirmPassword(e.target.value);
+                        setForgotError('');
+                      }}
+                      placeholder={t('confirmNewPasswordPlaceholder', currentLang)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-2.5 pl-10 pr-10 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotConfirmPassword(!showForgotConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 border-none bg-transparent cursor-pointer"
+                    >
+                      {showForgotConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setForgotStep(1); setForgotError(''); setForgotSuccess(''); }}
+                    className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs rounded-xl transition-all cursor-pointer border-none flex items-center justify-center gap-1"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading || forgotOtp.length < 6 || !forgotNewPassword || !forgotConfirmPassword}
+                    className="flex-[2] py-2.5 bg-[#FFB800] hover:bg-[#E5A700] disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                  >
+                    {forgotLoading ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>{t('resetting', currentLang)}</span>
+                      </>
+                    ) : (
+                      <span>{t('resetPasswordBtn', currentLang)}</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
