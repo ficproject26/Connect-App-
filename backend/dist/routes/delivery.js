@@ -3,9 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const db_1 = require("../db");
 const socket_1 = require("../socket");
+const middleware_1 = require("../security/middleware");
 const router = (0, express_1.Router)();
+const deliveryAuth = [middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('delivery', 'admin')];
 // GET: /api/delivery-partners/:id/dashboard
-router.get('/:id/dashboard', async (req, res) => {
+router.get('/:id/dashboard', ...deliveryAuth, async (req, res) => {
     const { id } = req.params;
     try {
         const partner = await db_1.db.getDeliveryPartner(id);
@@ -52,7 +54,7 @@ router.get('/:id/dashboard', async (req, res) => {
     }
 });
 // GET: /api/delivery-partners/:id/earnings
-router.get('/:id/earnings', async (req, res) => {
+router.get('/:id/earnings', ...deliveryAuth, async (req, res) => {
     const { id } = req.params;
     try {
         const earnings = await db_1.db.getEarnings(id);
@@ -69,7 +71,7 @@ router.get('/:id/earnings', async (req, res) => {
     }
 });
 // PUT: /api/delivery-partners/:id/status
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', ...deliveryAuth, async (req, res) => {
     const { id } = req.params;
     const { status, availability } = req.body;
     try {
@@ -102,7 +104,7 @@ router.put('/:id/status', async (req, res) => {
     }
 });
 // POST: /api/delivery-partners/tracking
-router.post('/tracking', async (req, res) => {
+router.post('/tracking', ...deliveryAuth, async (req, res) => {
     const { partnerId, orderId, latitude, longitude, speed, batteryLevel, address } = req.body;
     if (!partnerId || latitude === undefined || longitude === undefined) {
         return res.status(400).json({
@@ -166,7 +168,7 @@ router.post('/tracking', async (req, res) => {
     }
 });
 // POST: /api/delivery-partners/assignments/:id/respond
-router.post('/assignments/:id/respond', async (req, res) => {
+router.post('/assignments/:id/respond', ...deliveryAuth, async (req, res) => {
     const { id } = req.params; // Assignment ID
     const { action } = req.body; // 'accept' or 'reject'
     if (action !== 'accept' && action !== 'reject') {
@@ -241,7 +243,7 @@ router.post('/assignments/:id/respond', async (req, res) => {
     }
 });
 // POST: /api/delivery-partners/claim-order
-router.post('/claim-order', async (req, res) => {
+router.post('/claim-order', ...deliveryAuth, async (req, res) => {
     const { partnerId, orderId } = req.body;
     if (!partnerId || !orderId) {
         return res.status(400).json({
@@ -313,7 +315,7 @@ router.post('/claim-order', async (req, res) => {
     }
 });
 // POST: /api/delivery-partners/deliveries/:orderId/step
-router.post('/deliveries/:orderId/step', async (req, res) => {
+router.post('/deliveries/:orderId/step', ...deliveryAuth, async (req, res) => {
     const { orderId } = req.params;
     const { step, partnerId, otp, photoProof } = req.body;
     try {

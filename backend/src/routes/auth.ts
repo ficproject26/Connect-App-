@@ -5,6 +5,7 @@ import { db } from '../db';
 import { securityManager } from '../security/securityManager';
 import { authRateLimiter, authenticateToken, optionalAuthenticateToken, AuthenticatedRequest } from '../security/middleware';
 import { generateCustomerId, isValidCustomerId, ensureCustomerIdIndexes } from '../services/customerIdService';
+import { checkAccountApproval, verifyRoleAuthorizedForApp, getAppRoleConfig } from '../security/roleAuthorization';
 
 const router = Router();
 
@@ -225,52 +226,7 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
     // Authenticate User
     let userDetails: any = null;
 
-    if (role === 'vendor') {
-      let vendor = await db.getVendor('v1');
-      if (!vendor) {
-        vendor = await db.createVendor({
-          id: 'v1',
-          name: 'ABC Electronics',
-          email: identifier,
-          phone: '+91 98765 43210',
-          address: 'Karol Bagh, New Delhi',
-          rating: 4.8,
-          active: true
-        });
-      }
-      userDetails = { id: vendor.id, name: vendor.name, email: vendor.email, role: 'vendor' };
-
-    } else if (role === 'delivery') {
-      const partners = await db.getDeliveryPartners();
-      let displayName = identifier.split('@')[0];
-      displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-      let partner = partners.find(p => p.mobile === identifier || p.name.toLowerCase().includes(displayName.toLowerCase()));
-      if (!partner) {
-        partner = await db.createDeliveryPartner({
-          id: 'dp_' + Math.floor(1000 + Math.random() * 9000),
-          name: displayName || 'Connect Rider',
-          photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          mobile: identifier,
-          emergency_contact: '+91 91111 22222',
-          address: 'Koramangala, Bangalore',
-          vehicle_type: 'Electric Bike',
-          vehicle_number: 'KA-03-XY-9999',
-          driving_license: 'DL99999999',
-          aadhaar: '1111 2222 3333',
-          status: 'Available',
-          availability: true,
-          current_latitude: 12.9348,
-          current_longitude: 77.6189,
-          speed: 0,
-          battery_level: 95,
-          last_updated_time: new Date().toISOString(),
-          vendor_id: 'v1',
-          joining_date: new Date().toISOString().split('T')[0]
-        });
-      }
-      userDetails = { id: partner.id, name: partner.name, email: identifier, role: 'delivery' };
-
-    } else if (role === 'admin') {
+    if (role === 'admin') {
       // SECURITY FIX: Admin must authenticate against the admins collection in DB.
       // No bypass — wrong/missing password → 401.
       const mongoDb = db.getDb();
@@ -304,26 +260,37 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
           requireCaptcha: failedInfo.requireCaptcha
         });
       }
-      const adminStatus = (adminRecord.status || '').toLowerCase();
-      if (adminRecord.isActive === false || adminStatus === 'suspended' || adminStatus === 'inactive') {
-        return res.status(403).json({ status: 'error', code: 'ACCOUNT_INACTIVE', message: 'Admin account is inactive or suspended.' });
+
+      // Check admin account active/approval status
+      const adminApproval = checkAccountApproval(adminRecord);
+      if (!adminApproval.isApproved) {
+        return res.status(adminApproval.statusCode).json({
+          status: 'error',
+          code: adminApproval.isPending ? 'ACCOUNT_PENDING_APPROVAL' : 'ACCOUNT_SUSPENDED',
+          message: adminApproval.message
+        });
       }
+
       userDetails = {
         id: adminRecord._id?.toString() || adminRecord.id || 'admin_' + Date.now(),
         name: adminRecord.name || 'System Admin',
         email: adminRecord.email || identifier,
-        role: 'admin'
+        role: 'admin',
+        status: adminRecord.status || 'Active'
       };
     } else {
+      // Authoritative database authentication for customer & standard logins
       const dbUser = await findCustomerInMongo(identifier);
 
       if (!dbUser) {
         if (password) {
+          const failedInfo = securityManager.recordFailedLogin(identifier, ip, device.deviceName);
           return res.status(401).json({
             status: 'error',
             code: 'INVALID_CREDENTIALS',
             message: 'Invalid email/mobile number or password. Please check your credentials and try again.',
-            msg: 'Invalid email/mobile number or password. Please check your credentials and try again.'
+            attempts: failedInfo.attempts,
+            requireCaptcha: failedInfo.requireCaptcha
           });
         }
         return res.status(404).json({
@@ -335,27 +302,47 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
         });
       }
 
-      const uStatus = (dbUser.status || '').toLowerCase().trim();
-      const isUserActive = dbUser.isActive !== false && uStatus !== 'suspended' && uStatus !== 'inactive' && uStatus !== 'rejected';
-      if (!isUserActive) {
-        return res.status(403).json({
+      // Password is required for password-based login
+      if (!password) {
+        return res.status(400).json({
           status: 'error',
-          code: 'ACCOUNT_INACTIVE',
-          message: 'Your account is inactive or suspended. Please contact support.',
-          msg: 'Your account is inactive or suspended. Please contact support.'
+          code: 'PASSWORD_REQUIRED',
+          message: 'Password is required to log in.'
         });
       }
 
-      if (password) {
-        const isMatch = await bcrypt.compare(password, dbUser.password).catch(() => false);
-        if (!isMatch) {
-          return res.status(401).json({
-            status: 'error',
-            code: 'INVALID_CREDENTIALS',
-            message: 'Invalid email/mobile number or password. Please check your credentials and try again.',
-            msg: 'Invalid email/mobile number or password. Please check your credentials and try again.'
-          });
-        }
+      // Authoritative Password Verification
+      const isMatch = await bcrypt.compare(password, dbUser.password).catch(() => false);
+      if (!isMatch) {
+        const failedInfo = securityManager.recordFailedLogin(identifier, ip, device.deviceName);
+        return res.status(401).json({
+          status: 'error',
+          code: 'INVALID_CREDENTIALS',
+          message: 'Invalid email/mobile number or password. Please check your credentials and try again.',
+          attempts: failedInfo.attempts,
+          requireCaptcha: failedInfo.requireCaptcha
+        });
+      }
+
+      // Strict Role Isolation: Verify that the authoritative DB role is authorized for this application
+      const userRole = (dbUser.role || 'customer').toString().toLowerCase().trim();
+      const roleCheck = verifyRoleAuthorizedForApp(userRole);
+      if (!roleCheck.authorized) {
+        return res.status(403).json({
+          status: 'error',
+          code: 'FORBIDDEN_CROSS_ROLE',
+          message: roleCheck.reason || 'Access denied: Your account role is not authorized for this application.'
+        });
+      }
+
+      // Enforce Administrative Approval & Active Status (Fails closed on Pending, Suspended, or Rejected)
+      const approval = checkAccountApproval(dbUser);
+      if (!approval.isApproved) {
+        return res.status(approval.statusCode).json({
+          status: 'error',
+          code: approval.isPending ? 'ACCOUNT_PENDING_APPROVAL' : 'ACCOUNT_SUSPENDED',
+          message: approval.message
+        });
       }
 
       const mongoDb = db.getDb();
@@ -374,6 +361,7 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
         avatar: dbUser.avatar || dbUser.photo || '',
         photo: dbUser.avatar || dbUser.photo || '',
         role: dbUser.role || 'customer',
+        status: dbUser.status || 'Active',
         address: dbUser.address || dbUser.registeredAddress || '',
         city: dbUser.city || '',
         pincode: dbUser.pincode || '',
@@ -391,8 +379,18 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
 
     // Create Session
     const sessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-    const accessToken = securityManager.generateAccessToken({ userId: userDetails.id, email: userDetails.email, role: userDetails.role, sessionId });
-    const refreshToken = securityManager.generateRefreshToken({ userId: userDetails.id, email: userDetails.email, role: userDetails.role, sessionId });
+    const tokenPayload = {
+      userId: userDetails.id,
+      email: userDetails.email,
+      role: userDetails.role,
+      status: userDetails.status || 'Active',
+      customerId: userDetails.customerId,
+      registrationId: userDetails.registrationId,
+      phone: userDetails.phone,
+      sessionId
+    };
+    const accessToken = securityManager.generateAccessToken(tokenPayload);
+    const refreshToken = securityManager.generateRefreshToken(tokenPayload);
 
     securityManager.createSession({
       sessionId,
@@ -496,14 +494,24 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
       });
     }
 
-    const uStatus = (dbUser.status || '').toLowerCase().trim();
-    const isUserActive = dbUser.isActive !== false && uStatus !== 'suspended' && uStatus !== 'inactive' && uStatus !== 'rejected';
-    if (!isUserActive) {
+    // Strict Role Isolation: Verify that the authoritative DB role is authorized for this application
+    const userRole = (dbUser.role || 'customer').toString().toLowerCase().trim();
+    const roleCheck = verifyRoleAuthorizedForApp(userRole);
+    if (!roleCheck.authorized) {
       return res.status(403).json({
         status: 'error',
-        code: 'ACCOUNT_INACTIVE',
-        message: 'Your account is inactive or suspended. Please contact support.',
-        msg: 'Your account is inactive or suspended. Please contact support.'
+        code: 'FORBIDDEN_CROSS_ROLE',
+        message: roleCheck.reason || 'Access denied: Your account role is not authorized for this application.'
+      });
+    }
+
+    // Enforce Administrative Approval & Active Status (Fails closed on Pending, Suspended, or Rejected)
+    const approval = checkAccountApproval(dbUser);
+    if (!approval.isApproved) {
+      return res.status(approval.statusCode).json({
+        status: 'error',
+        code: approval.isPending ? 'ACCOUNT_PENDING_APPROVAL' : 'ACCOUNT_SUSPENDED',
+        message: approval.message
       });
     }
 
@@ -553,14 +561,24 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     });
   }
 
-  const uStatus = (dbUser.status || '').toLowerCase().trim();
-  const isUserActive = dbUser.isActive !== false && uStatus !== 'suspended' && uStatus !== 'inactive' && uStatus !== 'rejected';
-  if (!isUserActive) {
+  // Strict Role Isolation: Verify that the authoritative DB role is authorized for this application
+  const userRole = (dbUser.role || 'customer').toString().toLowerCase().trim();
+  const roleCheck = verifyRoleAuthorizedForApp(userRole);
+  if (!roleCheck.authorized) {
     return res.status(403).json({
       status: 'error',
-      code: 'ACCOUNT_INACTIVE',
-      message: 'Your account is inactive or suspended. Please contact support.',
-      msg: 'Your account is inactive or suspended. Please contact support.'
+      code: 'FORBIDDEN_CROSS_ROLE',
+      message: roleCheck.reason || 'Access denied: Your account role is not authorized for this application.'
+    });
+  }
+
+  // Enforce Administrative Approval & Active Status (Fails closed on Pending, Suspended, or Rejected)
+  const approval = checkAccountApproval(dbUser);
+  if (!approval.isApproved) {
+    return res.status(approval.statusCode).json({
+      status: 'error',
+      code: approval.isPending ? 'ACCOUNT_PENDING_APPROVAL' : 'ACCOUNT_SUSPENDED',
+      message: approval.message
     });
   }
 
@@ -584,7 +602,22 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
   const cleanPhone = target.replace(/\D/g, '');
   const userId = dbUser._id ? dbUser._id.toString() : (dbUser.id || 'cust_' + cleanPhone);
 
-  const userPayload = { userId, email: dbUser.email || target, role: dbUser.role || 'customer', sessionId };
+  const mongoDb = db.getDb();
+  let custId = dbUser.customerId || dbUser.registrationId || '';
+  if (!isValidCustomerId(custId) && mongoDb && (dbUser.role === 'customer' || !dbUser.role)) {
+    custId = await resolveCanonicalCustomerId(mongoDb, dbUser);
+  }
+
+  const userPayload = {
+    userId,
+    email: dbUser.email || target,
+    role: dbUser.role || 'customer',
+    status: dbUser.status || 'Active',
+    customerId: custId,
+    registrationId: custId,
+    phone: cleanPhone,
+    sessionId
+  };
 
   const accessToken = securityManager.generateAccessToken(userPayload);
   const refreshToken = securityManager.generateRefreshToken(userPayload);
@@ -602,12 +635,6 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     country: 'India',
     city: 'Bangalore'
   });
-
-  const mongoDb = db.getDb();
-  let custId = dbUser.customerId || dbUser.registrationId || '';
-  if (!isValidCustomerId(custId) && mongoDb && (dbUser.role === 'customer' || !dbUser.role)) {
-    custId = await resolveCanonicalCustomerId(mongoDb, dbUser);
-  }
 
   const responseUser = {
     id: userId,
@@ -1001,20 +1028,67 @@ router.post('/register-customer', async (req: Request, res: Response) => {
     }
 
     const { password: _, ...safeUser } = createdUser;
-    return res.json({ status: 'success', message: 'Customer registration successful', user: safeUser, data: safeUser });
+
+    const sessionId = 'sess_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    const tokenPayload = {
+      userId: createdUser.id,
+      email: createdUser.email,
+      role: 'customer',
+      status: 'Active',
+      customerId: createdUser.customerId,
+      registrationId: createdUser.registrationId,
+      phone: createdUser.phone,
+      sessionId
+    };
+    const accessToken = securityManager.generateAccessToken(tokenPayload);
+    const refreshToken = securityManager.generateRefreshToken(tokenPayload);
+
+    const clientIp = ((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || '127.0.0.1').replace('::ffff:', '');
+    securityManager.createSession({
+      sessionId,
+      userId: createdUser.id,
+      email: createdUser.email,
+      role: 'customer',
+      tokenHash: refreshToken.slice(-10),
+      deviceName: 'Customer Registration Device',
+      os: 'Unknown',
+      browser: 'Web',
+      ip: clientIp,
+      country: 'India',
+      city: createdUser.city || 'Bangalore'
+    });
+
+    const userWithToken = {
+      ...safeUser,
+      token: accessToken,
+      accessToken
+    };
+
+    return res.json({
+      status: 'success',
+      message: 'Customer registration successful',
+      token: accessToken,
+      accessToken,
+      user: userWithToken,
+      data: userWithToken
+    });
   } catch (error: any) {
     return res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
 // GET: /api/auth/customer-profile (Fetch customer profile & saved addresses from MongoDB)
-router.get('/customer-profile', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/customer-profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const authUser = req.user;
+  if (!authUser) {
+    return res.status(401).json({ status: 'error', code: 'UNAUTHORIZED', message: 'Authentication required.' });
+  }
+
   const requestedId = ((req.query.userId || req.query.customerId || req.query.phone || req.query.email || '') as string).trim();
-  const isAdmin = authUser?.role === 'admin';
+  const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
 
   // IDOR Protection: Non-admins can only view their own profile
-  if (authUser && !isAdmin && requestedId) {
+  if (!isAdmin && requestedId) {
     const selfId = (authUser.userId || authUser.customerId || authUser.registrationId || '').toLowerCase().trim();
     const selfEmail = (authUser.email || '').toLowerCase().trim();
     const selfPhone = (authUser.phone || '').replace(/\D/g, '');
@@ -1028,13 +1102,14 @@ router.get('/customer-profile', optionalAuthenticateToken, async (req: Authentic
     if (!isMatch) {
       return res.status(403).json({
         status: 'error',
+        code: 'FORBIDDEN_IDOR',
         message: 'Access denied: You cannot view profile details of another account.'
       });
     }
   }
 
-  // Resolve the effective target: admins or flexible clients can pass query id; fallback to authenticated user
-  const target = requestedId || (authUser?.userId || authUser?.email || '');
+  // Resolve the effective target: non-admins strictly use authenticated user identity
+  const target = isAdmin && requestedId ? requestedId : (authUser.userId || authUser.email || authUser.customerId || '');
 
   if (!target) {
     return res.status(400).json({ status: 'error', message: 'User ID, Customer ID, Email or Phone is required.' });
@@ -1151,12 +1226,42 @@ router.get('/customer-profile', optionalAuthenticateToken, async (req: Authentic
 });
 
 // PUT: /api/auth/customer-profile (Update customer profile & photo in MongoDB)
-router.put('/customer-profile', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const authUser = req.user;
+  if (!authUser) {
+    return res.status(401).json({ status: 'error', code: 'UNAUTHORIZED', message: 'Authentication required.' });
+  }
+
   const { userId, customerId, phone, email, name, avatar, photo, password } = req.body;
-  const isAdmin = authUser?.role === 'admin';
-  // If authenticated as non-admin, tie updates to the user's verified identity
-  if (authUser && !isAdmin) {
+  const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
+
+  // IDOR & Privilege Escalation Protection:
+  // Non-admins cannot modify another user's profile, nor escalate privileges
+  if (!isAdmin) {
+    const selfId = (authUser.userId || authUser.customerId || authUser.registrationId || '').toLowerCase().trim();
+    const selfEmail = (authUser.email || '').toLowerCase().trim();
+
+    if (userId && String(userId).toLowerCase().trim() !== selfId) {
+      return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot update another user account.' });
+    }
+    if (email && email.toLowerCase().trim() !== selfEmail) {
+      return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot change email to another account identity.' });
+    }
+
+    // Strip protected fields to prevent privilege escalation
+    delete req.body.role;
+    delete req.body.status;
+    delete req.body.approvalStatus;
+    delete req.body.isActive;
+    delete req.body.active;
+    delete req.body.walletBalance;
+    delete req.body.membershipTier;
+    delete req.body.membershipStatus;
+    delete req.body.id;
+    delete req.body._id;
+    delete req.body.customerId;
+    delete req.body.registrationId;
+
     req.body.userId = authUser.userId;
     req.body.email = authUser.email;
   }
@@ -1249,19 +1354,21 @@ router.put('/customer-profile', optionalAuthenticateToken, async (req: Authentic
 
 const resolveCustomerTarget = (req: Request): string => {
   const authReq = req as AuthenticatedRequest;
-  if (authReq.user) {
-    if (authReq.user.userId) return String(authReq.user.userId).trim();
-    if (authReq.user.email) return String(authReq.user.email).trim();
+  const authUser = authReq.user;
+  if (!authUser) return '';
+  const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
+  if (!isAdmin) {
+    return (authUser.userId || authUser.customerId || authUser.registrationId || authUser.email || '').toString().trim();
   }
   const target = req.body?.userId || req.body?.customerId || req.body?.phone || req.body?.email || req.query?.userId || req.query?.customerId || req.query?.phone || req.query?.email;
-  return target ? String(target).trim() : '';
+  return target ? String(target).trim() : (authUser.userId || authUser.email || '');
 };
 
 // GET: /customer/addresses & /api/auth/customer-addresses (Fetch saved addresses)
 const handleGetAddresses = async (req: Request, res: Response) => {
   const target = resolveCustomerTarget(req);
   if (!target) {
-    return res.status(400).json({ status: 'error', message: 'Authenticated customer identifier required.' });
+    return res.status(401).json({ status: 'error', code: 'UNAUTHORIZED', message: 'Authenticated customer identifier required.' });
   }
 
   try {
@@ -1415,20 +1522,45 @@ const handleDeleteAddress = async (req: Request, res: Response) => {
 };
 
 // Register Address Endpoints (Supports both /customer/addresses and /customer-address)
-router.get('/addresses', optionalAuthenticateToken, handleGetAddresses);
-router.post('/addresses', optionalAuthenticateToken, handleSaveAddress);
-router.put('/addresses/:id', optionalAuthenticateToken, handleUpdateAddress);
-router.delete('/addresses/:id', optionalAuthenticateToken, handleDeleteAddress);
+router.get('/addresses', authenticateToken, handleGetAddresses);
+router.post('/addresses', authenticateToken, handleSaveAddress);
+router.put('/addresses/:id', authenticateToken, handleUpdateAddress);
+router.delete('/addresses/:id', authenticateToken, handleDeleteAddress);
 
-router.post('/customer-address', optionalAuthenticateToken, handleSaveAddress);
-router.put('/customer-address/:addressId', optionalAuthenticateToken, handleUpdateAddress);
-router.delete('/customer-address/:addressId', optionalAuthenticateToken, handleDeleteAddress);
+router.post('/customer-address', authenticateToken, handleSaveAddress);
+router.put('/customer-address/:addressId', authenticateToken, handleUpdateAddress);
+router.delete('/customer-address/:addressId', authenticateToken, handleDeleteAddress);
 
 // Customer Notifications Endpoints
-router.get('/customer-notifications', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/customer-notifications', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const authUser = req.user;
+  if (!authUser) {
+    return res.status(401).json({ status: 'error', code: 'UNAUTHORIZED', message: 'Authentication required.' });
+  }
   const requestedId = ((req.query.userId || req.query.customerId || req.query.phone || req.query.email || '') as string).trim();
-  const target = requestedId || (authUser?.userId || authUser?.email || '');
+  const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
+
+  if (!isAdmin && requestedId) {
+    const selfId = (authUser.userId || authUser.customerId || authUser.registrationId || '').toLowerCase().trim();
+    const selfEmail = (authUser.email || '').toLowerCase().trim();
+    const selfPhone = (authUser.phone || '').replace(/\D/g, '');
+    const reqClean = requestedId.toLowerCase().trim();
+    const reqCleanDigits = requestedId.replace(/\D/g, '');
+
+    const isMatch = (selfId && reqClean === selfId) ||
+                    (selfEmail && reqClean === selfEmail) ||
+                    (selfPhone && reqCleanDigits && selfPhone === reqCleanDigits);
+
+    if (!isMatch) {
+      return res.status(403).json({
+        status: 'error',
+        code: 'FORBIDDEN_IDOR',
+        message: 'Access denied: You cannot view notifications of another account.'
+      });
+    }
+  }
+
+  const target = isAdmin && requestedId ? requestedId : (authUser.userId || authUser.email || '');
 
   if (!target) {
     return res.status(200).json({ status: 'success', notifications: [], unreadCount: 0 });

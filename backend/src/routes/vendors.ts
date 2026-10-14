@@ -2,11 +2,13 @@ import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { socketManager } from '../socket';
 import { eventPublisher, RealtimeEntities, RealtimeActions } from '../realtime';
+import { authenticateToken, enforceRoleAndApproval, AuthenticatedRequest } from '../security/middleware';
 
 const router = Router();
+const vendorAuth = [authenticateToken, enforceRoleAndApproval('vendor', 'admin')];
 
 // GET: /api/vendors/delivery-partners
-router.get('/delivery-partners', async (req: Request, res: Response) => {
+router.get('/delivery-partners', ...vendorAuth, async (req: Request, res: Response) => {
   const vendorId = (req.query.vendorId as string) || 'v1';
   try {
     const partners = await db.getDeliveryPartners(vendorId);
@@ -23,7 +25,7 @@ router.get('/delivery-partners', async (req: Request, res: Response) => {
 });
 
 // POST: /api/vendors/delivery-partners
-router.post('/delivery-partners', async (req: Request, res: Response) => {
+router.post('/delivery-partners', ...vendorAuth, async (req: Request, res: Response) => {
   const {
     name, mobile, emergency_contact, address, vehicle_type, vehicle_number,
     driving_license, aadhaar, vendor_id, photo
@@ -85,7 +87,7 @@ router.post('/delivery-partners', async (req: Request, res: Response) => {
 });
 
 // PUT: /api/vendors/delivery-partners/:id
-router.put('/delivery-partners/:id', async (req: Request, res: Response) => {
+router.put('/delivery-partners/:id', ...vendorAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   const updates = req.body;
 
@@ -130,7 +132,7 @@ router.put('/delivery-partners/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE: /api/vendors/delivery-partners/:id
-router.delete('/delivery-partners/:id', async (req: Request, res: Response) => {
+router.delete('/delivery-partners/:id', ...vendorAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const deleted = await db.deleteDeliveryPartner(id);
@@ -165,7 +167,7 @@ router.delete('/delivery-partners/:id', async (req: Request, res: Response) => {
 });
 
 // GET: /api/vendors/performance
-router.get('/performance', async (req: Request, res: Response) => {
+router.get('/performance', ...vendorAuth, async (req: Request, res: Response) => {
   const vendorId = (req.query.vendorId as string) || 'v1';
   try {
     const partners = await db.getDeliveryPartners(vendorId);

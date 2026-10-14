@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authorizeRoles = exports.optionalAuthenticateToken = exports.authenticateToken = exports.sanitizeInputsMiddleware = exports.sanitizeValue = exports.corsSecurityMiddleware = exports.isAllowedOrigin = exports.TRUSTED_ORIGINS = exports.uploadRateLimiter = exports.paymentRateLimiter = exports.authRateLimiter = exports.globalApiRateLimiter = exports.resolveClientIp = exports.helmetSecurityMiddleware = void 0;
+exports.requireOwnershipOrAdmin = exports.enforceRoleAndApproval = exports.authorizeRoles = exports.optionalAuthenticateToken = exports.authenticateToken = exports.sanitizeInputsMiddleware = exports.sanitizeValue = exports.corsSecurityMiddleware = exports.isAllowedOrigin = exports.TRUSTED_ORIGINS = exports.uploadRateLimiter = exports.paymentRateLimiter = exports.authRateLimiter = exports.globalApiRateLimiter = exports.resolveClientIp = exports.helmetSecurityMiddleware = void 0;
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const securityManager_1 = require("./securityManager");
+const roleAuthorization_1 = require("./roleAuthorization");
 // ─────────────────────────────────────────────────────────────────────────────
 // HELMET v8 SECURITY HEADERS MIDDLEWARE
 // Docs: https://helmetjs.github.io/
@@ -336,7 +337,7 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({
             status: 'error',
             code: 'UNAUTHORIZED',
-            message: 'Access denied. Valid JWT authentication token required.'
+            message: 'Access denied. Valid authentication token required.'
         });
     }
     const payload = securityManager_1.securityManager.verifyAccessToken(accessToken);
@@ -347,7 +348,7 @@ const authenticateToken = (req, res, next) => {
             message: 'Authentication token has expired or is invalid.'
         });
     }
-    // Verify session is active
+    // Verify session is active in session manager
     if (payload.sessionId) {
         const session = securityManager_1.securityManager.getSession(payload.sessionId);
         if (!session) {
@@ -357,6 +358,15 @@ const authenticateToken = (req, res, next) => {
                 message: 'Your session has been logged out or revoked.'
             });
         }
+    }
+    // Live account approval status check
+    const approval = (0, roleAuthorization_1.checkAccountApproval)(payload);
+    if (!approval.isApproved) {
+        return res.status(approval.statusCode).json({
+            status: 'error',
+            code: approval.isPending ? 'ACCOUNT_PENDING_APPROVAL' : 'ACCOUNT_SUSPENDED',
+            message: approval.message
+        });
     }
     req.user = payload;
     req.sessionId = payload.sessionId;
@@ -378,12 +388,18 @@ const optionalAuthenticateToken = (req, res, next) => {
             if (payload.sessionId) {
                 const session = securityManager_1.securityManager.getSession(payload.sessionId);
                 if (session) {
-                    req.user = payload;
-                    req.sessionId = payload.sessionId;
+                    const approval = (0, roleAuthorization_1.checkAccountApproval)(payload);
+                    if (approval.isApproved) {
+                        req.user = payload;
+                        req.sessionId = payload.sessionId;
+                    }
                 }
             }
             else {
-                req.user = payload;
+                const approval = (0, roleAuthorization_1.checkAccountApproval)(payload);
+                if (approval.isApproved) {
+                    req.user = payload;
+                }
             }
         }
     }
@@ -399,10 +415,13 @@ const authorizeRoles = (...allowedRoles) => {
         if (!req.user) {
             return res.status(401).json({
                 status: 'error',
+                code: 'UNAUTHORIZED',
                 message: 'Authentication required.'
             });
         }
-        if (!allowedRoles.includes(req.user.role.toLowerCase())) {
+        const userRole = (req.user.role || '').toLowerCase().trim();
+        const normalizedAllowed = allowedRoles.map(r => r.toLowerCase().trim());
+        if (!normalizedAllowed.includes(userRole)) {
             return res.status(403).json({
                 status: 'error',
                 code: 'FORBIDDEN',
@@ -413,3 +432,82 @@ const authorizeRoles = (...allowedRoles) => {
     };
 };
 exports.authorizeRoles = authorizeRoles;
+// 5b. Centralized Strict Role & Approval Enforcement Middleware
+const enforceRoleAndApproval = (...allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                status: 'error',
+                code: 'UNAUTHORIZED',
+                message: 'Authentication required.'
+            });
+        }
+        const userRole = (req.user.role || '').toLowerCase().trim();
+        // 1. If explicit roles are specified on this route, verify user has one of them
+        if (allowedRoles.length > 0) {
+            const normalizedAllowed = allowedRoles.map(r => r.toLowerCase().trim());
+            if (!normalizedAllowed.includes(userRole)) {
+                return res.status(403).json({
+                    status: 'error',
+                    code: 'FORBIDDEN_ROLE',
+                    message: `Access denied. Requires one of the following roles: ${allowedRoles.join(', ')}.`
+                });
+            }
+        }
+        else {
+            // 2. Otherwise verify role matches the current application context
+            const roleCheck = (0, roleAuthorization_1.verifyRoleAuthorizedForApp)(userRole);
+            if (!roleCheck.authorized) {
+                return res.status(403).json({
+                    status: 'error',
+                    code: 'FORBIDDEN_CROSS_ROLE',
+                    message: roleCheck.reason || 'Access denied: Your account role is not authorized for this application.'
+                });
+            }
+        }
+        // 3. Verify Account Approval Status (fails closed on Pending, Suspended, or Rejected)
+        const approvalCheck = (0, roleAuthorization_1.checkAccountApproval)(req.user);
+        if (!approvalCheck.isApproved) {
+            return res.status(approvalCheck.statusCode).json({
+                status: 'error',
+                code: approvalCheck.isPending ? 'ACCOUNT_PENDING_APPROVAL' : 'ACCOUNT_SUSPENDED',
+                message: approvalCheck.message
+            });
+        }
+        next();
+    };
+};
+exports.enforceRoleAndApproval = enforceRoleAndApproval;
+// 6. IDOR / Resource Ownership Guard Middleware
+const requireOwnershipOrAdmin = (extractOwnerFn) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ status: 'error', code: 'UNAUTHORIZED', message: 'Authentication required.' });
+        }
+        const userRole = (req.user.role || '').toLowerCase().trim();
+        if (userRole === 'admin' || userRole === 'superadmin') {
+            return next();
+        }
+        const expectedOwners = extractOwnerFn(req);
+        const ownerList = Array.isArray(expectedOwners) ? expectedOwners : [expectedOwners];
+        const cleanOwners = ownerList.map(o => (o || '').toString().toLowerCase().trim()).filter(Boolean);
+        const userIdentifiers = [
+            req.user.userId,
+            req.user.id,
+            req.user.customerId,
+            req.user.registrationId,
+            req.user.email,
+            req.user.phone ? req.user.phone.replace(/\D/g, '') : ''
+        ].map(id => (id || '').toString().toLowerCase().trim()).filter(Boolean);
+        const isOwner = cleanOwners.some(owner => userIdentifiers.includes(owner));
+        if (!isOwner) {
+            return res.status(403).json({
+                status: 'error',
+                code: 'FORBIDDEN_IDOR',
+                message: 'Access denied: You do not have permission to access or modify this resource.'
+            });
+        }
+        next();
+    };
+};
+exports.requireOwnershipOrAdmin = requireOwnershipOrAdmin;

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { db } from '../db';
 import { ObjectId } from 'mongodb';
+import { authenticateToken, authorizeRoles, optionalAuthenticateToken, AuthenticatedRequest } from '../security/middleware';
 
 const router = Router();
 
@@ -132,11 +133,46 @@ const generateMembershipId = (planName: string): string => {
 // GET /api/membership/status
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.get('/status', async (req: Request, res: Response) => {
+router.get('/status', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { userId, customerId, email, phone } = req.query;
+    const authUser = req.user;
+    const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
+    const { userId: qUserId, customerId: qCustId, email: qEmail, phone: qPhone } = req.query;
+
+    if (authUser && !isAdmin && (qUserId || qCustId || qEmail || qPhone)) {
+      const selfCustId = (authUser.customerId || authUser.userId || authUser.registrationId || '').toLowerCase().trim();
+      const selfEmail = (authUser.email || '').toLowerCase().trim();
+      const reqCust = String(qCustId || qUserId || '').toLowerCase().trim();
+      const reqEmail = String(qEmail || '').toLowerCase().trim();
+
+      const isMatch = (reqCust && (reqCust === selfCustId || reqCust === authUser.userId)) ||
+                      (reqEmail && reqEmail === selfEmail);
+
+      if (!isMatch) {
+        return res.status(403).json({ success: false, error: 'Access denied: Cannot view membership of another account.' });
+      }
+    }
+
+    const userId = !isAdmin && authUser ? authUser.userId : (qUserId || authUser?.userId);
+    const customerId = !isAdmin && authUser ? (authUser.customerId || authUser.registrationId) : (qCustId || authUser?.customerId);
+    const email = !isAdmin && authUser ? authUser.email : (qEmail || authUser?.email);
+    const phone = !isAdmin && authUser ? authUser.phone : qPhone;
+
     const mongoDb = db.getDb();
     if (!mongoDb) return res.status(503).json({ success: false, error: 'Database unavailable' });
+
+    if (!userId && !customerId && !email && !phone) {
+      return res.json({
+        success: true,
+        membershipTier: 'None',
+        membershipLevel: 0,
+        membershipStatus: 'INACTIVE',
+        membershipHistory: [],
+        membershipId: null,
+        startDate: null,
+        expiryDate: null
+      });
+    }
 
     const filter = buildUserLookupFilter({ userId, customerId, email, phone });
     let dbUser = await mongoDb.collection('users').findOne(filter);
@@ -177,9 +213,19 @@ router.get('/status', async (req: Request, res: Response) => {
 // POST /api/membership/create-order
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/create-order', async (req: Request, res: Response) => {
+router.post('/create-order', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { planKey, userId, customerId, email, phone } = req.body;
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json({ success: false, error: 'Authentication required.' });
+    }
+    const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
+    const { planKey } = req.body;
+    const userId = !isAdmin ? authUser.userId : (req.body.userId || authUser.userId);
+    const customerId = !isAdmin ? (authUser.customerId || authUser.registrationId) : (req.body.customerId || authUser.customerId);
+    const email = !isAdmin ? authUser.email : (req.body.email || authUser.email);
+    const phone = !isAdmin ? (authUser.phone || req.body.phone) : (req.body.phone || authUser.phone);
+
     if (!planKey) {
       return res.status(400).json({ success: false, error: 'Target membership plan is required.' });
     }
@@ -311,20 +357,27 @@ router.post('/create-order', async (req: Request, res: Response) => {
 // POST /api/membership/verify-payment
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/verify-payment', async (req: Request, res: Response) => {
+router.post('/verify-payment', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const authUser = req.user;
+    if (!authUser) {
+      return res.status(401).json({ success: false, error: 'Authentication required.' });
+    }
+    const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
+
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
       planKey,
-      userId,
-      customerId,
-      email,
-      phone,
       isTestMode,
       paymentMethod
     } = req.body;
+
+    const userId = !isAdmin ? authUser.userId : (req.body.userId || authUser.userId);
+    const customerId = !isAdmin ? (authUser.customerId || authUser.registrationId) : (req.body.customerId || authUser.customerId);
+    const email = !isAdmin ? authUser.email : (req.body.email || authUser.email);
+    const phone = !isAdmin ? (authUser.phone || req.body.phone) : (req.body.phone || authUser.phone);
 
     if (!razorpay_order_id || !razorpay_payment_id || !planKey) {
       return res.status(400).json({
@@ -639,7 +692,7 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
 // GET /api/membership/holders  ← used by Admin to show Membership Card Holders
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.get('/holders', async (req: Request, res: Response) => {
+router.get('/holders', authenticateToken, authorizeRoles('admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const mongoDb = db.getDb();
     if (!mongoDb) return res.status(503).json({ success: false, error: 'Database unavailable' });

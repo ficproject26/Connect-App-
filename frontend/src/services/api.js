@@ -61,53 +61,13 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
 
   // Silent fallback — no console spam when backend is offline
 
-  // 1. Auth routes
-  if (urlPath.startsWith('/auth/login')) {
-    const { email, role } = body;
-    let displayName = email.split('@')[0];
-    displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-
-    if (role === 'vendor') {
-      return {
-        status: 'success',
-        data: { id: 'v1', name: 'ABC Electronics', email, role: 'vendor' }
-      };
-    } else if (role === 'delivery') {
-      const partners = JSON.parse(localStorage.getItem('connect_fallback_partners'));
-      let partner = partners.find((p) => p.id === email || p.name.includes(displayName));
-      if (!partner) {
-        partner = {
-          id: 'dp_temp',
-          name: displayName || 'Connect Rider',
-          photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
-          mobile: '+91 99999 88888',
-          vehicle_type: 'Electric Bike',
-          status: 'Available',
-          availability: true,
-          current_latitude: 12.9348,
-          current_longitude: 77.6189,
-          vendor_id: 'v1'
-        };
-        partners.push(partner);
-        localStorage.setItem('connect_fallback_partners', JSON.stringify(partners));
-      }
-      return {
-        status: 'success',
-        data: {
-          id: partner.id,
-          name: partner.name,
-          email,
-          role: 'delivery',
-          status: partner.status,
-          availability: partner.availability
-        }
-      };
-    } else {
-      return {
-        status: 'success',
-        data: { id: `cust_${displayName.toLowerCase()}`, name: displayName, email, role: 'customer' }
-      };
-    }
+  // 1. Auth routes - Strict Security: Never fake or synthesize logins/auth when backend responds or is offline
+  if (urlPath.startsWith('/auth')) {
+    return {
+      status: 'error',
+      code: 'AUTH_OFFLINE',
+      message: 'Authentication server is currently unreachable. Please verify your connection and try again.'
+    };
   }
 
   // 2. Delivery partners CRUD
@@ -529,14 +489,17 @@ export const apiFetch = async (endpoint, options = {}) => {
       if (res.status === 429) {
         return { status: 'error', statusCode: 429, code: 'RATE_LIMIT_EXCEEDED', message: 'Too Many Requests. Please slow down.' };
       }
-      const fallbackRes = await handleFallbackRequest(endpoint, options).catch(() => null);
-      if (fallbackRes && fallbackRes.status === 'success') {
-        return fallbackRes;
+      // Never attempt fallback for auth endpoints or security rejections (401, 403)
+      if (!endpoint.startsWith('/auth') && res.status !== 401 && res.status !== 403) {
+        const fallbackRes = await handleFallbackRequest(endpoint, options).catch(() => null);
+        if (fallbackRes && fallbackRes.status === 'success') {
+          return fallbackRes;
+        }
       }
       const errText = await res.text().catch(() => '');
       let errData = {};
       try { errData = JSON.parse(errText); } catch (e) {}
-      return errData.status ? errData : { status: 'error', message: errData.message || `HTTP ${res.status}` };
+      return errData.status ? errData : { status: 'error', code: errData.code, message: errData.message || `HTTP ${res.status}` };
     }
     
     return await res.json();
@@ -549,6 +512,9 @@ export const apiFetch = async (endpoint, options = {}) => {
 
     if (isNetworkSuspended) {
       return { status: 'network_suspended', message: error?.message || 'Network suspended' };
+    }
+    if (endpoint.startsWith('/auth')) {
+      return { status: 'error', code: 'NETWORK_ERROR', message: error?.message || 'Authentication request failed.' };
     }
     return await handleFallbackRequest(endpoint, options).catch(() => ({ status: 'error', message: error.message }));
   }

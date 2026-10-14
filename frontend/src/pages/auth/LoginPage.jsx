@@ -126,14 +126,14 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
       if (!res.ok) {
         setIsSubmitting(false);
-        if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
-          setErrorMsg(t('accountInactive', currentLang));
+        if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE' || data.code === 'FORBIDDEN_CROSS_ROLE' || data.code === 'ACCOUNT_PENDING_APPROVAL' || data.code === 'ACCOUNT_SUSPENDED') {
+          setErrorMsg(data.message || t('accountInactive', currentLang));
         } else if (res.status === 429 || data.code === 'RATE_LIMIT_EXCEEDED') {
           setErrorMsg(data.message || 'Too many attempts. Please try again later.');
         } else if (res.status === 401 || res.status === 404 || data.code === 'INVALID_CREDENTIALS' || data.code === 'ACCOUNT_NOT_FOUND') {
-          setErrorMsg(t('invalidCredentials', currentLang));
+          setErrorMsg(data.message || t('invalidCredentials', currentLang));
         } else {
-          setErrorMsg(t('invalidCredentials', currentLang));
+          setErrorMsg(data.message || t('invalidCredentials', currentLang));
         }
         return;
       }
@@ -141,6 +141,9 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       // Successful DB authentication
       setIsSubmitting(false);
       setSuccess(true);
+      if (data.token || data.accessToken) {
+        localStorage.setItem('connect_token', data.token || data.accessToken);
+      }
       const loggedUser = data.user || { email: email.trim(), role: 'customer' };
       login({ ...loggedUser, _isExplicitAuth: true }, 'customer', (finalUser) => {
         setTimeout(() => {
@@ -240,9 +243,9 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       if (!res.ok) {
         if (res.status === 404 || data.notRegistered || data.code === 'MOBILE_NOT_REGISTERED') {
           setIsNotRegistered(true);
-          setErrorMsg(t('accountNotFound', currentLang));
-        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE') {
-          setErrorMsg(t('accountInactive', currentLang));
+          setErrorMsg(data.message || t('accountNotFound', currentLang));
+        } else if (res.status === 403 || data.code === 'ACCOUNT_INACTIVE' || data.code === 'FORBIDDEN_CROSS_ROLE' || data.code === 'ACCOUNT_PENDING_APPROVAL' || data.code === 'ACCOUNT_SUSPENDED') {
+          setErrorMsg(data.message || t('accountInactive', currentLang));
         } else {
           setErrorMsg(data.message || 'Invalid or expired OTP code. Please try again.');
         }
@@ -251,6 +254,9 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
       // Successful OTP Verification
       setSuccess(true);
+      if (data.token || data.accessToken) {
+        localStorage.setItem('connect_token', data.token || data.accessToken);
+      }
       const verifiedUser = data.user || { phone: otpTarget.trim(), role: 'customer' };
       login({ ...verifiedUser, _isExplicitAuth: true }, 'customer', (finalUser) => {
         setTimeout(() => {

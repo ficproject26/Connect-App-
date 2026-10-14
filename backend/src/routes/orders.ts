@@ -4,7 +4,7 @@ import { socketManager } from '../socket';
 import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
 import { eventPublisher, RealtimeEntities, RealtimeActions } from '../realtime';
-import { optionalAuthenticateToken, AuthenticatedRequest, paymentRateLimiter } from '../security/middleware';
+import { authenticateToken, optionalAuthenticateToken, AuthenticatedRequest, paymentRateLimiter, enforceRoleAndApproval } from '../security/middleware';
 const router = Router();
 
 export function extractVendorTravelPoints(item: any): { boardingPoints: { id?: string; name: string; departureTime?: string; time: string; landmark?: string }[]; droppingPoints: { id?: string; name: string; arrivalTime?: string; time: string; landmark?: string }[] } {
@@ -212,13 +212,21 @@ export async function runAutoAssignment(orderId: string): Promise<DeliveryPartne
 }
 
 // GET: /api/orders (Authoritative IDOR protection: Customers may only view their own orders)
-router.get('/', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const vendorId = req.query.vendorId as string;
   let customerId = (req.query.customerId as string || '').trim();
   const authUser = req.user;
 
+  if (!authUser) {
+    return res.status(401).json({
+      status: 'error',
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required to access orders.'
+    });
+  }
+
   // IDOR Protection: If requester is a customer, verify ownership
-  if (authUser && authUser.role === 'customer') {
+  if (authUser.role === 'customer') {
     const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
     if (customerId && customerId !== selfCustId && customerId !== authUser.userId) {
       return res.status(403).json({
@@ -226,9 +234,19 @@ router.get('/', optionalAuthenticateToken, async (req: AuthenticatedRequest, res
         message: 'Access denied: You cannot view orders belonging to another customer account.'
       });
     }
-    if (!customerId && !vendorId) {
-      customerId = selfCustId || '';
+    customerId = selfCustId || authUser.userId || '';
+  } else if (authUser.role === 'vendor') {
+    if (vendorId && vendorId !== authUser.vendorId && authUser.vendorId) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied: You cannot view orders belonging to another vendor.'
+      });
     }
+  } else if (!['admin', 'superadmin', 'delivery'].includes(authUser.role)) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Access denied: Unauthorized role for orders access.'
+    });
   }
 
   try {
@@ -246,9 +264,17 @@ router.get('/', optionalAuthenticateToken, async (req: AuthenticatedRequest, res
 });
 
 // GET: /api/orders/:id (Authoritative IDOR protection: Non-admins can only view their own order)
-router.get('/:id', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const authUser = req.user;
+
+  if (!authUser) {
+    return res.status(401).json({
+      status: 'error',
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required to view order details.'
+    });
+  }
 
   try {
     const order = await db.getOrder(id);
@@ -260,7 +286,7 @@ router.get('/:id', optionalAuthenticateToken, async (req: AuthenticatedRequest, 
     }
 
     // IDOR Protection: Customers may only view their own order
-    if (authUser && authUser.role === 'customer') {
+    if (authUser.role === 'customer') {
       const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
       const orderCustId = order.customer_id || order.customerId;
       const orderEmail = (order.customer_email || '').toLowerCase().trim();
@@ -275,6 +301,18 @@ router.get('/:id', optionalAuthenticateToken, async (req: AuthenticatedRequest, 
           message: 'Access denied: You do not have permission to view this order.'
         });
       }
+    } else if (authUser.role === 'vendor') {
+      if (order.vendor_id && authUser.vendorId && order.vendor_id !== authUser.vendorId) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Access denied: You do not have permission to view this order.'
+        });
+      }
+    } else if (!['admin', 'superadmin', 'delivery'].includes(authUser.role)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied: Unauthorized role for order details.'
+      });
     }
 
     const timeline = await db.getStatusHistory(id);
@@ -917,7 +955,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // POST: /api/orders/:id/prepare
-router.post('/:id/prepare', async (req: Request, res: Response) => {
+router.post('/:id/prepare', authenticateToken, enforceRoleAndApproval('vendor', 'admin', 'superadmin'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
     const updated = await db.updateOrderStatus(id, 'Preparing');
@@ -952,7 +990,7 @@ router.post('/:id/prepare', async (req: Request, res: Response) => {
 });
 
 // POST: /api/orders/:id/ready
-router.post('/:id/ready', async (req: Request, res: Response) => {
+router.post('/:id/ready', authenticateToken, enforceRoleAndApproval('vendor', 'admin', 'superadmin'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
     const updated = await db.updateOrderStatus(id, 'Ready For Pickup');
@@ -995,7 +1033,7 @@ router.post('/:id/ready', async (req: Request, res: Response) => {
 });
 
 // POST: /api/orders/:id/rate
-router.post('/:id/rate', async (req: Request, res: Response) => {
+router.post('/:id/rate', authenticateToken, enforceRoleAndApproval('customer', 'vendor', 'admin', 'superadmin'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { rating, comment, role, partnerId } = req.body;
 
@@ -1039,7 +1077,7 @@ router.post('/:id/rate', async (req: Request, res: Response) => {
 });
 
 // PUT: /api/orders/:id/status (Workflow & Business Logic State Transition Security)
-router.put('/:id/status', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/:id/status', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -1058,11 +1096,53 @@ router.put('/:id/status', optionalAuthenticateToken, async (req: AuthenticatedRe
   const cleanStatus = status.trim();
   const authUser = req.user;
 
-  // Authorization Boundary: Customers can only cancel orders, cannot mark Delivered or Ready
-  if (authUser && authUser.role === 'customer' && cleanStatus !== 'Cancelled') {
+  if (!authUser) {
+    return res.status(401).json({
+      status: 'error',
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required to update order status.'
+    });
+  }
+
+  // Find the target order
+  const existingOrder = await db.getOrder(id);
+  if (!existingOrder) {
+    return res.status(404).json({ status: 'error', message: 'Order not found' });
+  }
+
+  // Authorization Boundary: Customers can only cancel their OWN orders
+  if (authUser.role === 'customer') {
+    if (cleanStatus !== 'Cancelled') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Customer accounts are only permitted to cancel pending orders.'
+      });
+    }
+    const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
+    const orderCustId = existingOrder.customer_id || existingOrder.customerId;
+    const orderEmail = (existingOrder.customer_email || '').toLowerCase().trim();
+    const authEmail = (authUser.email || '').toLowerCase().trim();
+
+    const isMatch = (orderCustId && (orderCustId === selfCustId || orderCustId === authUser.userId)) ||
+                    (orderEmail && authEmail && orderEmail === authEmail);
+
+    if (!isMatch) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied: You can only cancel your own orders.'
+      });
+    }
+  } else if (authUser.role === 'vendor') {
+    if (existingOrder.vendor_id && authUser.vendorId && existingOrder.vendor_id !== authUser.vendorId) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied: You do not have permission to update status for another vendor\'s order.'
+      });
+    }
+  } else if (!['delivery', 'admin', 'superadmin'].includes(authUser.role)) {
     return res.status(403).json({
       status: 'error',
-      message: 'Customer accounts are only permitted to cancel pending orders.'
+      message: 'Access denied: Unauthorized role to update order status.'
     });
   }
 

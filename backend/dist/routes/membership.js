@@ -10,6 +10,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const razorpay_1 = __importDefault(require("razorpay"));
 const db_1 = require("../db");
 const mongodb_1 = require("mongodb");
+const middleware_1 = require("../security/middleware");
 const router = (0, express_1.Router)();
 exports.MEMBERSHIP_PLANS = {
     silver: {
@@ -119,12 +120,41 @@ const generateMembershipId = (planName) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/membership/status
 // ─────────────────────────────────────────────────────────────────────────────
-router.get('/status', async (req, res) => {
+router.get('/status', middleware_1.optionalAuthenticateToken, async (req, res) => {
     try {
-        const { userId, customerId, email, phone } = req.query;
+        const authUser = req.user;
+        const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
+        const { userId: qUserId, customerId: qCustId, email: qEmail, phone: qPhone } = req.query;
+        if (authUser && !isAdmin && (qUserId || qCustId || qEmail || qPhone)) {
+            const selfCustId = (authUser.customerId || authUser.userId || authUser.registrationId || '').toLowerCase().trim();
+            const selfEmail = (authUser.email || '').toLowerCase().trim();
+            const reqCust = String(qCustId || qUserId || '').toLowerCase().trim();
+            const reqEmail = String(qEmail || '').toLowerCase().trim();
+            const isMatch = (reqCust && (reqCust === selfCustId || reqCust === authUser.userId)) ||
+                (reqEmail && reqEmail === selfEmail);
+            if (!isMatch) {
+                return res.status(403).json({ success: false, error: 'Access denied: Cannot view membership of another account.' });
+            }
+        }
+        const userId = !isAdmin && authUser ? authUser.userId : (qUserId || authUser?.userId);
+        const customerId = !isAdmin && authUser ? (authUser.customerId || authUser.registrationId) : (qCustId || authUser?.customerId);
+        const email = !isAdmin && authUser ? authUser.email : (qEmail || authUser?.email);
+        const phone = !isAdmin && authUser ? authUser.phone : qPhone;
         const mongoDb = db_1.db.getDb();
         if (!mongoDb)
             return res.status(503).json({ success: false, error: 'Database unavailable' });
+        if (!userId && !customerId && !email && !phone) {
+            return res.json({
+                success: true,
+                membershipTier: 'None',
+                membershipLevel: 0,
+                membershipStatus: 'INACTIVE',
+                membershipHistory: [],
+                membershipId: null,
+                startDate: null,
+                expiryDate: null
+            });
+        }
         const filter = buildUserLookupFilter({ userId, customerId, email, phone });
         let dbUser = await mongoDb.collection('users').findOne(filter);
         if (!dbUser)
@@ -158,9 +188,18 @@ router.get('/status', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/membership/create-order
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/create-order', async (req, res) => {
+router.post('/create-order', middleware_1.authenticateToken, async (req, res) => {
     try {
-        const { planKey, userId, customerId, email, phone } = req.body;
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ success: false, error: 'Authentication required.' });
+        }
+        const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
+        const { planKey } = req.body;
+        const userId = !isAdmin ? authUser.userId : (req.body.userId || authUser.userId);
+        const customerId = !isAdmin ? (authUser.customerId || authUser.registrationId) : (req.body.customerId || authUser.customerId);
+        const email = !isAdmin ? authUser.email : (req.body.email || authUser.email);
+        const phone = !isAdmin ? (authUser.phone || req.body.phone) : (req.body.phone || authUser.phone);
         if (!planKey) {
             return res.status(400).json({ success: false, error: 'Target membership plan is required.' });
         }
@@ -284,9 +323,18 @@ router.post('/create-order', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/membership/verify-payment
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/verify-payment', async (req, res) => {
+router.post('/verify-payment', middleware_1.authenticateToken, async (req, res) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planKey, userId, customerId, email, phone, isTestMode, paymentMethod } = req.body;
+        const authUser = req.user;
+        if (!authUser) {
+            return res.status(401).json({ success: false, error: 'Authentication required.' });
+        }
+        const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planKey, isTestMode, paymentMethod } = req.body;
+        const userId = !isAdmin ? authUser.userId : (req.body.userId || authUser.userId);
+        const customerId = !isAdmin ? (authUser.customerId || authUser.registrationId) : (req.body.customerId || authUser.customerId);
+        const email = !isAdmin ? authUser.email : (req.body.email || authUser.email);
+        const phone = !isAdmin ? (authUser.phone || req.body.phone) : (req.body.phone || authUser.phone);
         if (!razorpay_order_id || !razorpay_payment_id || !planKey) {
             return res.status(400).json({
                 success: false,
@@ -554,7 +602,7 @@ router.post('/verify-payment', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/membership/holders  ← used by Admin to show Membership Card Holders
 // ─────────────────────────────────────────────────────────────────────────────
-router.get('/holders', async (req, res) => {
+router.get('/holders', middleware_1.authenticateToken, (0, middleware_1.authorizeRoles)('admin', 'superadmin'), async (req, res) => {
     try {
         const mongoDb = db_1.db.getDb();
         if (!mongoDb)

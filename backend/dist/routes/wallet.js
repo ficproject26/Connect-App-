@@ -10,6 +10,44 @@ const db_1 = require("../db");
 const mongodb_1 = require("mongodb");
 const middleware_1 = require("../security/middleware");
 const router = (0, express_1.Router)();
+function resolveWalletTarget(req, requested) {
+    const authUser = req.user;
+    if (!authUser) {
+        return { target: null, isOwner: false };
+    }
+    const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
+    const selfCustId = (authUser.customerId || authUser.userId || authUser.registrationId || '').toLowerCase().trim();
+    const selfEmail = (authUser.email || '').toLowerCase().trim();
+    const selfPhone = (authUser.phone || '').replace(/\D/g, '');
+    if (isAdmin) {
+        return { target: requested || { userId: authUser.userId, email: authUser.email }, isOwner: true };
+    }
+    // IDOR Protection: If non-admin attempts to target another customer's wallet
+    if (requested) {
+        const reqCust = String(requested.customerId || requested.userId || requested.id || '').toLowerCase().trim();
+        const reqEmail = String(requested.email || '').toLowerCase().trim();
+        const reqPhone = String(requested.phone || '').replace(/\D/g, '');
+        if (reqCust && reqCust !== selfCustId && reqCust !== (authUser.userId || '').toLowerCase().trim()) {
+            return { target: null, isOwner: false };
+        }
+        if (reqEmail && reqEmail !== selfEmail) {
+            return { target: null, isOwner: false };
+        }
+        if (reqPhone && selfPhone && reqPhone !== selfPhone) {
+            return { target: null, isOwner: false };
+        }
+    }
+    // Non-admins strictly resolve to their authenticated identity
+    return {
+        target: {
+            userId: authUser.userId,
+            customerId: authUser.customerId || authUser.registrationId,
+            email: authUser.email,
+            phone: authUser.phone
+        },
+        isOwner: true
+    };
+}
 const buildUserLookupFilter = (target) => {
     if (!target)
         return { _id: null };
@@ -51,21 +89,17 @@ const buildUserLookupFilter = (target) => {
     return orClauses.length > 0 ? { $or: orClauses } : { _id: null };
 };
 // 1. GET: /api/wallet/balance (Authoritative real-time wallet balance from DB)
-router.get('/balance', async (req, res) => {
+router.get('/balance', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'admin'), async (req, res) => {
     try {
         const { userId, customerId, email, phone } = req.query;
+        const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+        if (!isOwner || !target) {
+            return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot view another customer\'s wallet.' });
+        }
         const mongoDb = db_1.db.getDb();
         if (!mongoDb)
             return res.status(503).json({ success: false, error: 'Database unavailable' });
-        if (!userId && !customerId && !email && !phone) {
-            return res.json({
-                success: true,
-                walletBalance: 0.00,
-                userId: null,
-                customerId: null
-            });
-        }
-        const filter = buildUserLookupFilter({ userId, customerId, email, phone });
+        const filter = buildUserLookupFilter(target);
         let dbUser = await mongoDb.collection('users').findOne(filter);
         if (!dbUser) {
             dbUser = await mongoDb.collection('customers').findOne(filter);
@@ -75,8 +109,8 @@ router.get('/balance', async (req, res) => {
         return res.json({
             success: true,
             walletBalance: currentBalance,
-            userId: dbUser?.id || dbUser?._id?.toString() || userId,
-            customerId: dbUser?.customerId || customerId
+            userId: dbUser?.id || dbUser?._id?.toString() || target.userId,
+            customerId: dbUser?.customerId || target.customerId
         });
     }
     catch (err) {
@@ -85,29 +119,25 @@ router.get('/balance', async (req, res) => {
     }
 });
 // 2. GET: /api/wallet/transactions (Audit ledger history from DB - STRICTLY CUSTOMER SPECIFIC)
-router.get('/transactions', async (req, res) => {
+router.get('/transactions', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'admin'), async (req, res) => {
     try {
         const { userId, customerId, email, phone, limit = 50 } = req.query;
+        const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+        if (!isOwner || !target) {
+            return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot view another customer\'s wallet transactions.' });
+        }
         const mongoDb = db_1.db.getDb();
         if (!mongoDb)
             return res.status(503).json({ success: false, error: 'Database unavailable' });
-        // Guard: Unauthenticated or missing user identifiers MUST return empty list, NEVER leak all records
-        if (!userId && !customerId && !email && !phone) {
-            return res.json({
-                success: true,
-                count: 0,
-                transactions: []
-            });
-        }
-        const filter = buildUserLookupFilter({ userId, customerId, email, phone });
+        const filter = buildUserLookupFilter(target);
         let dbUser = await mongoDb.collection('users').findOne(filter);
         if (!dbUser) {
             dbUser = await mongoDb.collection('customers').findOne(filter);
         }
-        const targetCustId = (customerId || dbUser?.customerId || '').toString().trim();
-        const targetUserId = (userId || dbUser?.id || dbUser?._id?.toString() || '').toString().trim();
-        const userEmail = (email || dbUser?.email || '').toString().toLowerCase().trim();
-        const userPhone = (phone || dbUser?.phone || '').toString().replace(/\D/g, '');
+        const targetCustId = (target.customerId || dbUser?.customerId || '').toString().trim();
+        const targetUserId = (target.userId || dbUser?.id || dbUser?._id?.toString() || '').toString().trim();
+        const userEmail = (target.email || dbUser?.email || '').toString().toLowerCase().trim();
+        const userPhone = (target.phone || dbUser?.phone || '').toString().replace(/\D/g, '');
         const queryOr = [];
         if (targetCustId) {
             queryOr.push({ customerId: targetCustId });
@@ -161,9 +191,13 @@ router.get('/transactions', async (req, res) => {
     }
 });
 // 3. POST: /api/wallet/recharge/create-order (Create Razorpay order with paymentRateLimiter)
-router.post('/recharge/create-order', middleware_1.paymentRateLimiter, async (req, res) => {
+router.post('/recharge/create-order', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'admin'), middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { amount, userId, customerId, email, phone } = req.body;
+        const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+        if (!isOwner || !target) {
+            return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot recharge another customer\'s wallet.' });
+        }
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount <= 0) {
             return res.status(400).json({
@@ -260,9 +294,13 @@ router.post('/recharge/create-order', middleware_1.paymentRateLimiter, async (re
     }
 });
 // 4. POST: /api/wallet/recharge/verify (Verify signature & credit wallet atomically with paymentRateLimiter)
-router.post('/recharge/verify', middleware_1.paymentRateLimiter, async (req, res) => {
+router.post('/recharge/verify', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'admin'), middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId, customerId, email, phone } = req.body;
+        const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+        if (!isOwner || !target) {
+            return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot verify payment for another customer\'s wallet.' });
+        }
         if (!razorpay_order_id || !razorpay_payment_id) {
             return res.status(400).json({
                 success: false,
@@ -394,9 +432,13 @@ router.post('/recharge/verify', middleware_1.paymentRateLimiter, async (req, res
     }
 });
 // 5. POST: /api/wallet/pay (Customer Product Payment using Wallet with paymentRateLimiter)
-router.post('/pay', middleware_1.paymentRateLimiter, async (req, res) => {
+router.post('/pay', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'admin'), middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { amount, orderId, orderDetails, userId, customerId, email, phone } = req.body;
+        const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+        if (!isOwner || !target) {
+            return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot make payments from another customer\'s wallet.' });
+        }
         const payableAmount = parseFloat(amount);
         if (isNaN(payableAmount) || payableAmount <= 0) {
             return res.status(400).json({

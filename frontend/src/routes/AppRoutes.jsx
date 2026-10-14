@@ -12,6 +12,7 @@ import JoinNowPage from '../pages/auth/JoinNowPage';
 import CustomerDashboard from '../pages/customer/Dashboard';
 import CategoryDetails from '../pages/landing/CategoryDetails';
 import SubServiceDetails from '../pages/landing/SubServiceDetails';
+import AccountStatusNotice from '../pages/auth/AccountStatusNotice';
 
 import ErrorBoundary from '../components/common/ErrorBoundary';
 
@@ -83,6 +84,35 @@ export default function AppRoutes({
     'dashboard', 'profile', 'orders', 'bookings', 'jobs', 'myjobs',
     'wallet', 'membership', 'membership-card', 'card', 'payments', 'settings'
   ];
+
+  // Account Approval & Role Isolation Guard
+  const userRole = (currentUser?.role || '').toLowerCase();
+  const userStatus = (currentUser?.status || '').toLowerCase();
+  const userApproval = (currentUser?.approvalStatus || '').toLowerCase();
+
+  const isPendingAccount = ['pending', 'pending_approval', 'pending approval', 'under_verification', 'under verification', 'in_review', 'in review'].includes(userStatus) ||
+                           ['pending', 'pending_approval', 'pending approval', 'under_verification', 'under verification', 'in_review', 'in review'].includes(userApproval);
+  const isSuspendedAccount = ['suspended', 'rejected', 'inactive'].includes(userStatus) ||
+                             ['suspended', 'rejected'].includes(userApproval);
+  const isUnauthorizedRole = currentUser && userRole && userRole !== 'customer';
+
+  // If authenticated user is pending, suspended, or unauthorized for the Customer application context:
+  if (currentUser && (isPendingAccount || isSuspendedAccount || isUnauthorizedRole)) {
+    let statusType = 'pending';
+    if (isUnauthorizedRole) statusType = 'unauthorized_role';
+    else if (isSuspendedAccount) statusType = 'suspended';
+
+    return (
+      <AuthLayout>
+        <AccountStatusNotice
+          statusType={statusType}
+          user={currentUser}
+          onLogout={handleLogout}
+          onBackHome={handleHomeNavigate}
+        />
+      </AuthLayout>
+    );
+  }
 
   // Protected route auth guard: unauthenticated access to protected routes strictly redirects to Public Landing Page
   if (protectedPages.includes(currentPage) && !currentUser) {

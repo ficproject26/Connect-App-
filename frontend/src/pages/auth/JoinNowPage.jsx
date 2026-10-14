@@ -173,43 +173,33 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
         return;
       }
 
+      const registeredUser = (data.user || data.data) ? {
+        ...(data.user || data.data),
+        _isExplicitAuth: true
+      } : {
+        name: cleanName,
+        email: email.trim(),
+        phone: phoneNumber,
+        role: 'customer',
+        _isExplicitAuth: true
+      };
+
+      if (data.token || data.accessToken) {
+        localStorage.setItem('connect_token', data.token || data.accessToken);
+      }
+
       setIsSubmitting(false);
       setSuccess(true);
 
       setTimeout(() => {
-        onAuthSuccess({
-          name: cleanName,
-          email: email.trim(),
-          phone: phoneNumber,
-          role: 'customer',
-          aadhaar: aadhaarNumber,
-          pan: panNumber,
-          address: cleanAddress,
-          city: cleanCity,
-          pincode: pincode
-        });
+        onAuthSuccess(registeredUser);
         setSuccess(false);
       }, 800);
 
     } catch (err) {
-      console.warn('Registration network notice:', err);
-
+      console.warn('Registration network error:', err);
       setIsSubmitting(false);
-      setSuccess(true);
-      setTimeout(() => {
-        onAuthSuccess({
-          name: cleanName,
-          email: email.trim(),
-          phone: phoneNumber,
-          role: 'customer',
-          aadhaar: aadhaarNumber,
-          pan: panNumber,
-          address: cleanAddress,
-          city: cleanCity,
-          pincode: pincode
-        });
-        setSuccess(false);
-      }, 800);
+      setErrorMsg('Unable to reach registration service. Please check your connection and try again.');
     }
   };
 

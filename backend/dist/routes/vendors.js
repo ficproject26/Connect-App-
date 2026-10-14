@@ -4,9 +4,11 @@ const express_1 = require("express");
 const db_1 = require("../db");
 const socket_1 = require("../socket");
 const realtime_1 = require("../realtime");
+const middleware_1 = require("../security/middleware");
 const router = (0, express_1.Router)();
+const vendorAuth = [middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('vendor', 'admin')];
 // GET: /api/vendors/delivery-partners
-router.get('/delivery-partners', async (req, res) => {
+router.get('/delivery-partners', ...vendorAuth, async (req, res) => {
     const vendorId = req.query.vendorId || 'v1';
     try {
         const partners = await db_1.db.getDeliveryPartners(vendorId);
@@ -23,7 +25,7 @@ router.get('/delivery-partners', async (req, res) => {
     }
 });
 // POST: /api/vendors/delivery-partners
-router.post('/delivery-partners', async (req, res) => {
+router.post('/delivery-partners', ...vendorAuth, async (req, res) => {
     const { name, mobile, emergency_contact, address, vehicle_type, vehicle_number, driving_license, aadhaar, vendor_id, photo } = req.body;
     if (!name || !mobile) {
         return res.status(400).json({
@@ -71,7 +73,7 @@ router.post('/delivery-partners', async (req, res) => {
     }
 });
 // PUT: /api/vendors/delivery-partners/:id
-router.put('/delivery-partners/:id', async (req, res) => {
+router.put('/delivery-partners/:id', ...vendorAuth, async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
     try {
@@ -106,7 +108,7 @@ router.put('/delivery-partners/:id', async (req, res) => {
     }
 });
 // DELETE: /api/vendors/delivery-partners/:id
-router.delete('/delivery-partners/:id', async (req, res) => {
+router.delete('/delivery-partners/:id', ...vendorAuth, async (req, res) => {
     const { id } = req.params;
     try {
         const deleted = await db_1.db.deleteDeliveryPartner(id);
@@ -132,7 +134,7 @@ router.delete('/delivery-partners/:id', async (req, res) => {
     }
 });
 // GET: /api/vendors/performance
-router.get('/performance', async (req, res) => {
+router.get('/performance', ...vendorAuth, async (req, res) => {
     const vendorId = req.query.vendorId || 'v1';
     try {
         const partners = await db_1.db.getDeliveryPartners(vendorId);

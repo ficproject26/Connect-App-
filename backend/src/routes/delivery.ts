@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { db, Order, DeliveryAssignment } from '../db';
 import { socketManager } from '../socket';
+import { authenticateToken, enforceRoleAndApproval, AuthenticatedRequest } from '../security/middleware';
 
 const router = Router();
+const deliveryAuth = [authenticateToken, enforceRoleAndApproval('delivery', 'admin')];
 
 // GET: /api/delivery-partners/:id/dashboard
-router.get('/:id/dashboard', async (req: Request, res: Response) => {
+router.get('/:id/dashboard', ...deliveryAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const partner = await db.getDeliveryPartner(id);
@@ -56,7 +58,7 @@ router.get('/:id/dashboard', async (req: Request, res: Response) => {
 });
 
 // GET: /api/delivery-partners/:id/earnings
-router.get('/:id/earnings', async (req: Request, res: Response) => {
+router.get('/:id/earnings', ...deliveryAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const earnings = await db.getEarnings(id);
@@ -73,7 +75,7 @@ router.get('/:id/earnings', async (req: Request, res: Response) => {
 });
 
 // PUT: /api/delivery-partners/:id/status
-router.put('/:id/status', async (req: Request, res: Response) => {
+router.put('/:id/status', ...deliveryAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status, availability } = req.body;
 
@@ -110,7 +112,7 @@ router.put('/:id/status', async (req: Request, res: Response) => {
 });
 
 // POST: /api/delivery-partners/tracking
-router.post('/tracking', async (req: Request, res: Response) => {
+router.post('/tracking', ...deliveryAuth, async (req: Request, res: Response) => {
   const { partnerId, orderId, latitude, longitude, speed, batteryLevel, address } = req.body;
 
   if (!partnerId || latitude === undefined || longitude === undefined) {
@@ -180,7 +182,7 @@ router.post('/tracking', async (req: Request, res: Response) => {
 });
 
 // POST: /api/delivery-partners/assignments/:id/respond
-router.post('/assignments/:id/respond', async (req: Request, res: Response) => {
+router.post('/assignments/:id/respond', ...deliveryAuth, async (req: Request, res: Response) => {
   const { id } = req.params; // Assignment ID
   const { action } = req.body; // 'accept' or 'reject'
 
@@ -265,7 +267,7 @@ router.post('/assignments/:id/respond', async (req: Request, res: Response) => {
 });
 
 // POST: /api/delivery-partners/claim-order
-router.post('/claim-order', async (req: Request, res: Response) => {
+router.post('/claim-order', ...deliveryAuth, async (req: Request, res: Response) => {
   const { partnerId, orderId } = req.body;
 
   if (!partnerId || !orderId) {
@@ -346,7 +348,7 @@ router.post('/claim-order', async (req: Request, res: Response) => {
 });
 
 // POST: /api/delivery-partners/deliveries/:orderId/step
-router.post('/deliveries/:orderId/step', async (req: Request, res: Response) => {
+router.post('/deliveries/:orderId/step', ...deliveryAuth, async (req: Request, res: Response) => {
   const { orderId } = req.params;
   const { step, partnerId, otp, photoProof } = req.body;
 
