@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import { db } from '../db';
 import { securityManager } from '../security/securityManager';
 import { authRateLimiter, authenticateToken, optionalAuthenticateToken, AuthenticatedRequest } from '../security/middleware';
+import { generateCustomerId, isValidCustomerId, ensureCustomerIdIndexes } from '../services/customerIdService';
 
 const router = Router();
 
@@ -39,35 +40,21 @@ const deduplicateAddresses = (addrList: any[]): any[] => {
   return result;
 };
 
-const getOrGenerateCustomerId = (userOrId: any): string => {
-  if (!userOrId) {
-    return `FIC-CUST-100000`;
+const resolveCanonicalCustomerId = async (mongoDb: any, userOrDoc: any): Promise<string> => {
+  if (!userOrDoc) return '';
+  const existingId = userOrDoc.customerId || userOrDoc.registrationId;
+  if (isValidCustomerId(existingId)) {
+    return existingId;
   }
-  let target = '';
-  if (typeof userOrId === 'object' && userOrId !== null) {
-    if (userOrId.customerId && userOrId.customerId !== 'FIC-CUST-750684' && userOrId.customerId !== 'FIC-CUST-849201' && userOrId.customerId !== 'FIC-CUST-100000') {
-      return userOrId.customerId;
-    }
-    if (userOrId.registrationId && userOrId.registrationId !== 'FIC-CUST-750684' && userOrId.registrationId !== 'FIC-CUST-849201' && userOrId.registrationId !== 'FIC-CUST-100000') {
-      return userOrId.registrationId;
-    }
-    target = userOrId.email || userOrId.phone || userOrId.name || userOrId.id || '';
-  } else {
-    target = String(userOrId).trim();
+  if (!mongoDb) return existingId || '';
+  const regDate = userOrDoc.createdAt || userOrDoc.created_at ? new Date(userOrDoc.createdAt || userOrDoc.created_at) : new Date();
+  const newId = await generateCustomerId(mongoDb, regDate);
+  const uId = userOrDoc._id || userOrDoc.id;
+  if (uId) {
+    await mongoDb.collection('users').updateOne({ _id: uId }, { $set: { customerId: newId, registrationId: newId } }).catch(() => {});
+    await mongoDb.collection('customers').updateOne({ _id: uId }, { $set: { customerId: newId, registrationId: newId } }).catch(() => {});
   }
-
-  const clean = target.trim().toLowerCase();
-  if (!clean) {
-    return `FIC-CUST-100000`;
-  }
-
-  let hash = 0;
-  for (let i = 0; i < clean.length; i++) {
-    hash = ((hash << 5) - hash) + clean.charCodeAt(i);
-    hash |= 0;
-  }
-  const num = Math.abs(hash % 900000) + 100000;
-  return `FIC-CUST-${num}`;
+  return newId;
 };
 
 const buildCustomerMongoFilter = (input: any): any => {
@@ -371,9 +358,16 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
         }
       }
 
+      const mongoDb = db.getDb();
+      let custId = dbUser.customerId || dbUser.registrationId || '';
+      if (!isValidCustomerId(custId) && mongoDb && (dbUser.role === 'customer' || !dbUser.role)) {
+        custId = await resolveCanonicalCustomerId(mongoDb, dbUser);
+      }
+
       userDetails = {
         id: dbUser._id ? dbUser._id.toString() : (dbUser.id || 'cust_' + Date.now()),
-        customerId: dbUser.customerId || dbUser.registrationId || dbUser.id || '',
+        customerId: custId,
+        registrationId: custId,
         name: dbUser.name || 'Connect Member',
         email: dbUser.email || identifier,
         phone: dbUser.phone || '',
@@ -385,7 +379,6 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
         pincode: dbUser.pincode || '',
         state: dbUser.state || '',
         addresses: Array.isArray(dbUser.addresses) ? dbUser.addresses : [],
-        registrationId: dbUser.registrationId || '',
         membershipTier: dbUser.membershipTier || 'None',
         membershipStatus: dbUser.membershipStatus || (dbUser.membershipTier && dbUser.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
         membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : [],
@@ -610,6 +603,12 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     city: 'Bangalore'
   });
 
+  const mongoDb = db.getDb();
+  let custId = dbUser.customerId || dbUser.registrationId || '';
+  if (!isValidCustomerId(custId) && mongoDb && (dbUser.role === 'customer' || !dbUser.role)) {
+    custId = await resolveCanonicalCustomerId(mongoDb, dbUser);
+  }
+
   const responseUser = {
     id: userId,
     name: dbUser.name || 'Connect Member',
@@ -619,7 +618,8 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
     city: dbUser.city || '',
     pincode: dbUser.pincode || '',
     role: dbUser.role || 'customer',
-    customerId: dbUser.registrationId || dbUser.customerId || `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`,
+    customerId: custId,
+    registrationId: custId,
     membershipTier: dbUser.membershipTier || 'None',
     membershipStatus: dbUser.membershipStatus || (dbUser.membershipTier && dbUser.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
     membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : [],
@@ -908,10 +908,14 @@ router.post('/register-customer', async (req: Request, res: Response) => {
 
   try {
     const mongoDb = db.getDb();
+    if (!mongoDb) {
+      return res.status(503).json({ status: 'error', message: 'Database connection unavailable' });
+    }
     const cleanEmail = (email || '').toLowerCase().trim();
 
     const hashedPassword = password ? await bcrypt.hash(password, 10) : '';
-    const uniqueCustId = `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
+    const now = new Date();
+    const uniqueCustId = await generateCustomerId(mongoDb, now);
     const userId = 'cust_' + Date.now();
 
     const initialAddresses = address ? [{
@@ -1065,7 +1069,10 @@ router.get('/customer-profile', optionalAuthenticateToken, async (req: Authentic
     }
 
     const profileAddresses = deduplicateAddresses(rawAddresses);
-    const resolvedCustId = safeProfile.registrationId || safeProfile.customerId || getOrGenerateCustomerId(safeProfile);
+    let resolvedCustId = safeProfile.customerId || safeProfile.registrationId || '';
+    if (!isValidCustomerId(resolvedCustId) && mongoDb) {
+      resolvedCustId = await resolveCanonicalCustomerId(mongoDb, safeProfile);
+    }
 
     // Decrypt or safely mask sensitive identity documents
     let displayAadhaar = '';
@@ -1166,7 +1173,7 @@ router.put('/customer-profile', optionalAuthenticateToken, async (req: Authentic
     if (!updatedUser) {
       // Upsert: Create user record in MongoDB if not existing yet
       const newUserId = userId || customerId || 'cust_' + Date.now();
-      const newCustId = customerId || (newUserId.startsWith('FIC-') ? newUserId : `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`);
+      const newCustId = isValidCustomerId(customerId) ? customerId : await generateCustomerId(mongoDb, new Date());
       const createdUserObj: any = {
         id: newUserId,
         _id: newUserId,
@@ -1192,7 +1199,10 @@ router.put('/customer-profile', optionalAuthenticateToken, async (req: Authentic
     }
 
     const { password: _, ...safeUser } = (updatedUser || {}) as any;
-    const resolvedCustId = safeUser.registrationId || safeUser.customerId || getOrGenerateCustomerId(safeUser);
+    let resolvedCustId = safeUser.customerId || safeUser.registrationId || '';
+    if (!isValidCustomerId(resolvedCustId) && mongoDb) {
+      resolvedCustId = await resolveCanonicalCustomerId(mongoDb, safeUser);
+    }
     const finalProfile = {
       id: safeUser.id || safeUser._id?.toString(),
       name: safeUser.name || 'Connect Member',

@@ -19,7 +19,7 @@ import AdminDashboardView from '../dashboards/AdminDashboardView';
 import OrdersBookingsView from '../dashboards/OrdersBookingsView';
 import ProfileView from '../dashboards/ProfileView';
 import { sanitizeMobileInput } from '../../utils/validation';
-import { AuthContext, getOrGenerateCustomerId, deduplicateAddresses } from '../../context/AuthContext';
+import { AuthContext, getOrGenerateCustomerId, isValidCustomerId, deduplicateAddresses } from '../../context/AuthContext';
 
 const getUserStorageKey = (user) => {
   if (!user) return 'default';
@@ -1648,8 +1648,11 @@ export default function CustomerDashboard({
 
   const activeCustomerId = useMemo(() => {
     if (!currentUser) return '';
-    if (currentUser?.customerId && currentUser.customerId !== 'FIC-CUST-750684' && currentUser.customerId !== 'FIC-CUST-849201') {
+    if (currentUser?.customerId && isValidCustomerId(currentUser.customerId)) {
       return currentUser.customerId;
+    }
+    if (currentUser?.registrationId && isValidCustomerId(currentUser.registrationId)) {
+      return currentUser.registrationId;
     }
     return getOrGenerateCustomerId(currentUser);
   }, [currentUser]);
@@ -6073,7 +6076,7 @@ export default function CustomerDashboard({
                         {/* Card Number, Name & Member Since */}
                         <div className="z-20 relative text-left space-y-1">
                           <div className="text-xs md:text-sm font-bold font-mono tracking-widest text-amber-300 drop-shadow-sm">
-                            FIC 2025 5687 4321 0001
+                            {activeCustomerId || 'FIC-CUS-OCT-2026-000001'}
                           </div>
                           <div className="flex justify-between items-end">
                             <div className="flex flex-col leading-none">

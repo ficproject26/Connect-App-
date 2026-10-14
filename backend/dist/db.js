@@ -8,6 +8,7 @@ const mongodb_1 = require("mongodb");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const customerIdService_1 = require("./services/customerIdService");
 dotenv_1.default.config();
 // Config file path for mock database
 const MOCK_DB_PATH = path_1.default.join(__dirname, 'mock_db.json');
@@ -139,6 +140,7 @@ class DatabaseManager {
             await this.safeCreateIndex('delivery_ratings', { target_partner_id: 1 });
             await this.safeCreateIndex('banners', { isActive: 1, displayOrder: 1, createdAt: -1 });
             await this.safeCreateIndex('ads', { isActive: 1, createdAt: -1 });
+            await (0, customerIdService_1.ensureCustomerIdIndexes)(this.mongoDb);
             console.log(`[DB]: MongoDB indexes verified/created successfully.`);
         }
         catch (err) {
@@ -568,6 +570,16 @@ class DatabaseManager {
     }
     // 10. Customer User registration persistence
     async createCustomerUser(userData) {
+        const now = userData.createdAt ? new Date(userData.createdAt) : new Date();
+        let customerId = userData.customerId || userData.registrationId;
+        if (!customerId && this.mongoDb) {
+            try {
+                customerId = await (0, customerIdService_1.generateCustomerId)(this.mongoDb, now);
+            }
+            catch (err) {
+                console.error(`[DB]: Failed to generate customerId in createCustomerUser: ${err.message}`);
+            }
+        }
         const custData = {
             name: userData.name || 'Connect Customer',
             email: userData.email || '',
@@ -580,9 +592,11 @@ class DatabaseManager {
             role: 'Member',
             status: 'Active',
             isActive: true,
+            customerId: customerId || '',
+            registrationId: customerId || '',
             customerType: 'Standard',
             district: userData.city || 'Direct',
-            createdAt: new Date()
+            createdAt: now
         };
         if (this.mongoDb) {
             await this.mongoDb.collection('users').insertOne(custData).catch(() => { });

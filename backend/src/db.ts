@@ -2,6 +2,7 @@ import { MongoClient, Db, ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import { generateCustomerId, ensureCustomerIdIndexes } from './services/customerIdService';
 
 dotenv.config();
 
@@ -326,6 +327,7 @@ class DatabaseManager {
 
       await this.safeCreateIndex('banners', { isActive: 1, displayOrder: 1, createdAt: -1 });
       await this.safeCreateIndex('ads', { isActive: 1, createdAt: -1 });
+      await ensureCustomerIdIndexes(this.mongoDb);
       console.log(`[DB]: MongoDB indexes verified/created successfully.`);
     } catch (err: any) {
       console.error(`[DB]: Failed to create indexes: ${err.message}`);
@@ -802,6 +804,16 @@ class DatabaseManager {
 
   // 10. Customer User registration persistence
   public async createCustomerUser(userData: any): Promise<any> {
+    const now = userData.createdAt ? new Date(userData.createdAt) : new Date();
+    let customerId = userData.customerId || userData.registrationId;
+    if (!customerId && this.mongoDb) {
+      try {
+        customerId = await generateCustomerId(this.mongoDb, now);
+      } catch (err: any) {
+        console.error(`[DB]: Failed to generate customerId in createCustomerUser: ${err.message}`);
+      }
+    }
+
     const custData = {
       name: userData.name || 'Connect Customer',
       email: userData.email || '',
@@ -814,9 +826,11 @@ class DatabaseManager {
       role: 'Member',
       status: 'Active',
       isActive: true,
+      customerId: customerId || '',
+      registrationId: customerId || '',
       customerType: 'Standard',
       district: userData.city || 'Direct',
-      createdAt: new Date()
+      createdAt: now
     };
     if (this.mongoDb) {
       await this.mongoDb.collection('users').insertOne(custData).catch(() => {});

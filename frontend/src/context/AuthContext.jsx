@@ -4,36 +4,46 @@ import { socketService } from '../services/socketService';
 
 export const AuthContext = createContext(null);
 
-export const getOrGenerateCustomerId = (userOrId) => {
-  if (!userOrId) {
-    return `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
-  }
-  let target = '';
+const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+export const isValidCustomerId = (id) => {
+  if (!id || typeof id !== 'string') return false;
+  return /^FIC-CUS-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-[0-9]{4}-[0-9]{6}$/.test(id.trim());
+};
+
+export const getOrGenerateCustomerId = (userOrId, regDate = new Date()) => {
   if (typeof userOrId === 'object' && userOrId !== null) {
-    if (userOrId.customerId && userOrId.customerId !== 'FIC-CUST-750684' && userOrId.customerId !== 'FIC-CUST-849201' && userOrId.customerId !== 'FIC-CUST-100000') {
+    if (userOrId.customerId && isValidCustomerId(userOrId.customerId)) {
       return userOrId.customerId;
     }
-    if (userOrId.registrationId && userOrId.registrationId !== 'FIC-CUST-750684' && userOrId.registrationId !== 'FIC-CUST-849201' && userOrId.registrationId !== 'FIC-CUST-100000') {
+    if (userOrId.registrationId && isValidCustomerId(userOrId.registrationId)) {
       return userOrId.registrationId;
     }
+    if (userOrId.customerId && !userOrId.customerId.startsWith('FIC-CUST-')) {
+      return userOrId.customerId;
+    }
+  } else if (typeof userOrId === 'string' && isValidCustomerId(userOrId)) {
+    return userOrId;
+  }
+
+  const d = regDate instanceof Date && !isNaN(regDate.getTime()) ? regDate : new Date();
+  const mmm = MONTH_NAMES[d.getMonth()];
+  const yyyy = d.getFullYear();
+
+  let target = '';
+  if (typeof userOrId === 'object' && userOrId !== null) {
     target = userOrId.email || userOrId.phone || userOrId.name || userOrId.id || '';
   } else {
-    target = String(userOrId).trim();
+    target = String(userOrId || '').trim();
   }
 
-  const clean = target.trim().toLowerCase();
-  if (!clean) {
-    return `FIC-CUST-${Math.floor(100000 + Math.random() * 900000)}`;
-  }
-
-  // Hash clean target deterministically to a unique 6-digit number per customer
   let hash = 0;
-  for (let i = 0; i < clean.length; i++) {
-    hash = ((hash << 5) - hash) + clean.charCodeAt(i);
+  for (let i = 0; i < target.length; i++) {
+    hash = ((hash << 5) - hash) + target.charCodeAt(i);
     hash |= 0;
   }
-  const num = Math.abs(hash % 900000) + 100000;
-  return `FIC-CUST-${num}`;
+  const seq = String((Math.abs(hash) % 900000) + 1).padStart(6, '0');
+  return `FIC-CUS-${mmm}-${yyyy}-${seq}`;
 };
 
 export const normalizeAddressStr = (addr) => {
@@ -74,8 +84,15 @@ export function AuthProvider({ children }) {
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        if (!u.customerId || u.customerId === 'FIC-CUST-750684' || u.customerId === 'FIC-CUST-849201' || u.customerId === 'FIC-CUST-100000') {
-          u.customerId = getOrGenerateCustomerId(u);
+        if (!u.customerId || !isValidCustomerId(u.customerId)) {
+          if (u.registrationId && isValidCustomerId(u.registrationId)) {
+            u.customerId = u.registrationId;
+          } else {
+            u.customerId = getOrGenerateCustomerId(u);
+          }
+        }
+        if (!u.registrationId) {
+          u.registrationId = u.customerId;
         }
         const regAddressStr = u.address || u.registeredAddress || '';
         if ((!u.addresses || !Array.isArray(u.addresses) || u.addresses.length === 0) && regAddressStr.trim()) {
@@ -166,9 +183,11 @@ export function AuthProvider({ children }) {
           isRegistrationAddress: true
         }] : []);
 
-    const custId = (inputUser.customerId && inputUser.customerId !== 'FIC-CUST-750684' && inputUser.customerId !== 'FIC-CUST-849201')
+    const custId = (inputUser.customerId && isValidCustomerId(inputUser.customerId))
       ? inputUser.customerId 
-      : getOrGenerateCustomerId(inputUser.email || validMobile || finalName);
+      : (inputUser.registrationId && isValidCustomerId(inputUser.registrationId)
+          ? inputUser.registrationId
+          : getOrGenerateCustomerId(inputUser));
 
     const userToken = inputUser.token || `token_${custId}`;
 
@@ -251,7 +270,11 @@ export function AuthProvider({ children }) {
       isRegistrationAddress: true
     }] : [];
 
-    const custId = getOrGenerateCustomerId(formData.email || formData.phone || displayName);
+    const custId = (formData.customerId && isValidCustomerId(formData.customerId))
+      ? formData.customerId
+      : (formData.registrationId && isValidCustomerId(formData.registrationId)
+          ? formData.registrationId
+          : getOrGenerateCustomerId(formData.email || formData.phone || displayName));
     const userToken = formData.token || `token_${custId}`;
 
     const user = {
