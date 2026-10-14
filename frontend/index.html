@@ -4,26 +4,48 @@
     <meta charset="UTF-8" />
     <script>
       (function () {
-        const isIgnorableNoise = (msg) => {
-          if (!msg) return false;
-          let str = '';
-          if (typeof msg === 'string') {
-            str = msg;
-          } else if (msg instanceof Error) {
-            str = `${msg.name} ${msg.message} ${msg.stack}`;
-          } else if (typeof msg === 'object') {
+        const extractText = (item) => {
+          if (!item) return '';
+          if (typeof item === 'string') return item;
+          let text = '';
+          try {
+            text += ' ' + String(item);
+          } catch (e) {}
+          if (typeof item === 'object') {
             try {
-              str = `${msg.message || ''} ${msg.stack || ''} ${msg.name || ''} ${JSON.stringify(msg) || ''}`;
-            } catch (e) {
-              str = String(msg);
-            }
-          } else {
-            str = String(msg);
+              if (item.message) text += ' ' + String(item.message);
+              if (item.name) text += ' ' + String(item.name);
+              if (item.stack) text += ' ' + String(item.stack);
+              if (item.reason) text += ' ' + extractText(item.reason);
+              if (item.error) text += ' ' + extractText(item.error);
+              if (item.filename) text += ' ' + String(item.filename);
+              if (item.sourceFile) text += ' ' + String(item.sourceFile);
+              if (item.blockedURI) text += ' ' + String(item.blockedURI);
+              if (item.violatedDirective) text += ' ' + String(item.violatedDirective);
+              if (item.originalPolicy) text += ' ' + String(item.originalPolicy);
+              if (item.directive) text += ' ' + String(item.directive);
+              if (item.sample) text += ' ' + String(item.sample);
+            } catch (e) {}
           }
+          return text;
+        };
+
+        const isIgnorableNoise = (item) => {
+          if (!item) return false;
+          const str = extractText(item);
           return (
             str.includes('A listener indicated an asynchronous response') ||
             str.includes('message channel closed') ||
             str.includes('runtime.lastError') ||
+            str.includes('unsafe-eval') ||
+            str.includes('Evaluating a string as JavaScript') ||
+            str.includes('violates the following Content Security Policy directive') ||
+            str.includes('chrome-extension://') ||
+            str.includes('chrome-extension:') ||
+            str.includes('content.js') ||
+            str.includes('wasm-unsafe-eval') ||
+            str.includes('inline-speculation-rules') ||
+            str.includes('The action has been blocked') ||
             str.includes('feature_collector') ||
             str.includes('using deprecated parameters') ||
             str.includes('initialization function') ||
@@ -42,13 +64,19 @@
 
         const filterMethod = (origFn) => {
           return function (...args) {
-            const stack = (new Error().stack || '') + '';
-            if (stack.includes('feature_collector') || stack.includes('runtime.lastError')) return;
-            const combined = args.map(a => {
-              if (typeof a === 'string') return a;
-              try { return JSON.stringify(a); } catch { return String(a); }
-            }).join(' ');
-            if (isIgnorableNoise(combined) || args.some(isIgnorableNoise)) return;
+            try {
+              const stack = (new Error().stack || '') + '';
+              if (
+                stack.includes('feature_collector') ||
+                stack.includes('runtime.lastError') ||
+                stack.includes('chrome-extension://') ||
+                stack.includes('content.js')
+              ) {
+                return;
+              }
+              const combined = args.map(extractText).join(' ');
+              if (isIgnorableNoise(combined) || args.some(a => isIgnorableNoise(a))) return;
+            } catch (e) {}
             origFn.apply(console, args);
           };
         };
@@ -58,8 +86,38 @@
         console.info = filterMethod(console.info);
         console.log = filterMethod(console.log);
 
+        // Global onerror handler to suppress console noise at native level
+        const origOnError = window.onerror;
+        window.onerror = function (message, source, lineno, colno, error) {
+          const text = `${message || ''} ${source || ''} ${extractText(error)}`;
+          if (
+            isIgnorableNoise(text) ||
+            (source && (source.includes('chrome-extension://') || source.includes('content.js')))
+          ) {
+            return true;
+          }
+          if (typeof origOnError === 'function') {
+            return origOnError.apply(this, arguments);
+          }
+          return false;
+        };
+
+        // Global unhandled rejection handler
+        const origOnUnhandledRejection = window.onunhandledrejection;
+        window.onunhandledrejection = function (e) {
+          const text = extractText(e) + ' ' + extractText(e?.reason);
+          if (isIgnorableNoise(text)) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            return true;
+          }
+          if (typeof origOnUnhandledRejection === 'function') {
+            return origOnUnhandledRejection.apply(this, arguments);
+          }
+        };
+
         window.addEventListener('unhandledrejection', function (e) {
-          if (isIgnorableNoise(e?.reason) || isIgnorableNoise(e?.reason?.message) || isIgnorableNoise(e?.reason?.stack)) {
+          const text = extractText(e) + ' ' + extractText(e?.reason);
+          if (isIgnorableNoise(text)) {
             e.preventDefault();
             e.stopPropagation();
             if (e.stopImmediatePropagation) e.stopImmediatePropagation();
@@ -67,12 +125,48 @@
         }, true);
 
         window.addEventListener('error', function (e) {
-          if (isIgnorableNoise(e?.error) || isIgnorableNoise(e?.message) || isIgnorableNoise(e?.error?.stack)) {
+          const text = extractText(e) + ' ' + (e?.message || '') + ' ' + (e?.filename || '');
+          if (
+            isIgnorableNoise(text) ||
+            (e?.filename && (e.filename.includes('chrome-extension://') || e.filename.includes('content.js')))
+          ) {
             e.preventDefault();
             e.stopPropagation();
             if (e.stopImmediatePropagation) e.stopImmediatePropagation();
           }
         }, true);
+
+        // Intercept Content Security Policy violation events dispatched by browser extensions
+        const handleCSPViolation = function (e) {
+          const text = `${e.blockedURI || ''} ${e.violatedDirective || ''} ${e.originalPolicy || ''} ${e.sample || ''} ${e.sourceFile || ''} ${e.documentURI || ''}`;
+          if (
+            isIgnorableNoise(text) ||
+            (e.blockedURI && e.blockedURI.includes('chrome-extension')) ||
+            (e.sourceFile && (e.sourceFile.includes('chrome-extension') || e.sourceFile.includes('content.js'))) ||
+            (e.originalPolicy && e.originalPolicy.includes('chrome-extension'))
+          ) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          }
+        };
+        window.addEventListener('securitypolicyviolation', handleCSPViolation, true);
+        if (typeof document !== 'undefined') {
+          document.addEventListener('securitypolicyviolation', handleCSPViolation, true);
+        }
+
+        // Proactively clear Chromium unchecked runtime.lastError flag if extension runtime exists in tab
+        try {
+          const markLastErrorChecked = () => {
+            try {
+              if (typeof window !== 'undefined' && window.chrome && window.chrome.runtime) {
+                const _ = window.chrome.runtime.lastError;
+              }
+            } catch (e) {}
+          };
+          markLastErrorChecked();
+          setInterval(markLastErrorChecked, 250);
+        } catch (e) {}
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

@@ -45,20 +45,51 @@ window.addEventListener('error', (e) => {
 }, true);
 
 // Suppress third-party Chrome Extension and network suspension noise in console
+const isThirdPartyNoise = (val) => {
+  if (!val) return false;
+  let str = '';
+  try { str += ' ' + String(val); } catch (e) {}
+  if (typeof val === 'object') {
+    try {
+      if (val.message) str += ' ' + String(val.message);
+      if (val.name) str += ' ' + String(val.name);
+      if (val.stack) str += ' ' + String(val.stack);
+      if (val.reason) str += ' ' + isThirdPartyNoise(val.reason);
+      if (val.filename) str += ' ' + String(val.filename);
+    } catch (e) {}
+  }
+  return (
+    str.includes('A listener indicated an asynchronous response') ||
+    str.includes('message channel closed') ||
+    str.includes('runtime.lastError') ||
+    str.includes('unsafe-eval') ||
+    str.includes('Evaluating a string as JavaScript') ||
+    str.includes('violates the following Content Security Policy directive') ||
+    str.includes('chrome-extension://') ||
+    str.includes('chrome-extension:') ||
+    str.includes('content.js') ||
+    str.includes('wasm-unsafe-eval') ||
+    str.includes('inline-speculation-rules') ||
+    str.includes('The action has been blocked') ||
+    str.includes('feature_collector') ||
+    str.includes('using deprecated parameters') ||
+    str.includes('initialization function') ||
+    str.includes('pass a single object instead') ||
+    str.includes('ERR_NETWORK_IO_SUSPENDED') ||
+    str.includes('NETWORK_IO_SUSPENDED') ||
+    str.includes('WebSocket')
+  );
+};
+
 window.addEventListener('unhandledrejection', (event) => {
-  const reason = event.reason?.message || event.reason?.stack || (typeof event.reason === 'string' ? event.reason : '');
-  if (
-    reason.includes('A listener indicated an asynchronous response') ||
-    reason.includes('message channel closed') ||
-    reason.includes('runtime.lastError') ||
-    reason.includes('feature_collector') ||
-    reason.includes('using deprecated parameters') ||
-    reason.includes('initialization function') ||
-    reason.includes('pass a single object instead') ||
-    reason.includes('ERR_NETWORK_IO_SUSPENDED') ||
-    reason.includes('NETWORK_IO_SUSPENDED') ||
-    reason.includes('WebSocket')
-  ) {
+  if (isThirdPartyNoise(event) || isThirdPartyNoise(event.reason)) {
+    event.preventDefault();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  }
+}, true);
+
+window.addEventListener('error', (event) => {
+  if (isThirdPartyNoise(event) || isThirdPartyNoise(event.error) || (event.filename && (event.filename.includes('chrome-extension://') || event.filename.includes('content.js')))) {
     event.preventDefault();
     if (event.stopImmediatePropagation) event.stopImmediatePropagation();
   }
