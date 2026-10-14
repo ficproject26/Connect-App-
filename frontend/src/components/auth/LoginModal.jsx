@@ -462,7 +462,15 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
                     <span>Remember this device</span>
                   </label>
 
-                  <a href="#" onClick={(e) => e.preventDefault()} className="text-xs font-extrabold text-[#003B95] dark:text-[#FFC107] hover:underline">
+                  <a 
+                    href="/login?mode=forgot" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onClose) onClose();
+                      window.location.href = '/login?mode=forgot';
+                    }} 
+                    className="text-xs font-extrabold text-[#003B95] dark:text-[#FFC107] hover:underline cursor-pointer"
+                  >
                     Forgot Password?
                   </a>
                 </div>

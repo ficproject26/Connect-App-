@@ -7,6 +7,7 @@ import {
 import useAuth from '../../hooks/useAuth';
 import logoImg from '../../assets/images/forge india logo.jpg';
 import { SUPPORTED_LANGUAGES, getStoredLanguage, setStoredLanguage, t } from '../../utils/i18n';
+import { getBackendUrl } from '../../services/apiSetup';
 
 export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoinNow }) {
   const { login } = useAuth();
@@ -50,31 +51,19 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
   const [forgotSuccess, setForgotSuccess] = useState('');
   const [forgotCooldown, setForgotCooldown] = useState(0);
 
-  // Dynamic API Base URL
-  const getApiBase = () => {
-    const formatApiUrl = (raw) => {
-      if (!raw) return '';
-      let clean = raw.trim().replace(/\/+$/, '');
-      if (!clean.startsWith('http://') && !clean.startsWith('https://')) clean = `http://${clean}`;
-      return `${clean}/api`;
-    };
-
-    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-    if (isHttps) {
-      if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
-        return formatApiUrl(import.meta.env.VITE_API_URL);
+  // Check for URL query parameter to auto-open Forgot Password
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('mode') === 'forgot') {
+        setIsForgotPasswordOpen(true);
       }
-      return '/api';
     }
+  }, []);
 
-    if (import.meta.env.VITE_API_URL) return formatApiUrl(import.meta.env.VITE_API_URL);
-    if (typeof window === 'undefined') return 'http://localhost:8001/api';
-    const hostname = window.location.hostname;
-    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' ||
-        hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
-      return `http://${hostname || 'localhost'}:8001/api`;
-    }
-    return 'https://api.ficapp.in/api';
+  // Standardized API Base URL (avoids /api/api duplication)
+  const getApiBase = () => {
+    return `${getBackendUrl()}/api`;
   };
 
   // Cooldown timer for Login OTP
@@ -211,6 +200,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       setIsOtpSent(true);
       setResendCooldown(data.cooldownSeconds || 30);
       if (data.otp) {
+        setGeneratedOtpCode(data.otp);
         setOtpInput(data.otp);
       }
       setOtpSuccessMsg(data.message || `OTP sent successfully to ${target}. Valid for 5 minutes.`);
@@ -658,6 +648,25 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                     </div>
                   )}
 
+                  {generatedOtpCode && isOtpSent && (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-2xl text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center justify-between text-left">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-black block">Demo / Verification Code</span>
+                        <span className="font-mono text-sm font-black tracking-widest">{generatedOtpCode}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpInput(generatedOtpCode);
+                          if (errorMsg) setErrorMsg('');
+                        }}
+                        className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 text-[10px] font-black uppercase rounded-lg transition-all cursor-pointer border-none"
+                      >
+                        Auto-Fill
+                      </button>
+                    </div>
+                  )}
+
                   {isOtpSent && (
                     <form onSubmit={handleVerifyOtp} className="space-y-3.5 pt-1 animate-fade-in">
                       <div className="text-left">
@@ -675,6 +684,18 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                           placeholder={t('otpPlaceholder', currentLang)}
                           className="w-full bg-slate-50/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl py-3 px-4 text-center text-sm font-black tracking-widest text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
                         />
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs pt-0.5">
+                        <span className="text-slate-400 font-semibold">Didn't receive code?</span>
+                        <button
+                          type="button"
+                          disabled={isSubmitting || resendCooldown > 0}
+                          onClick={handleSendOtp}
+                          className="font-bold text-blue-600 dark:text-amber-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border-none cursor-pointer"
+                        >
+                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                        </button>
                       </div>
 
                       <button

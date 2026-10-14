@@ -145,8 +145,28 @@ router.get('/lookup/:code', async (req: Request, res: Response) => {
     if (!mongoDb) return res.status(503).json({ success: false, message: 'Database connecting' });
 
     const code = req.params.code.trim();
-    const pin = await mongoDb.collection('pincodes').findOne({ code, status: 'Active' });
+    let pin = await mongoDb.collection('pincodes').findOne({ code, status: 'Active' });
     if (!pin) {
+      try {
+        const resp = await fetch(`https://api.postalpincode.in/pincode/${encodeURIComponent(code)}`, { signal: AbortSignal.timeout(3000) });
+        const json: any = await resp.json();
+        if (Array.isArray(json) && json[0]?.Status === 'Success' && Array.isArray(json[0]?.PostOffice) && json[0].PostOffice.length > 0) {
+          const po = json[0].PostOffice[0];
+          return res.json({
+            success: true,
+            data: {
+              pincode: code,
+              name: po.Name,
+              area: po.Name,
+              division: po.Division || po.District,
+              district: po.District,
+              state: po.State,
+              status: 'Active',
+              isPostalDirectory: true
+            }
+          });
+        }
+      } catch (postErr) {}
       return res.status(404).json({ success: false, message: `Pincode '${code}' is not active or registered in Admin Territory Management.` });
     }
 

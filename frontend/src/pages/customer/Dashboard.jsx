@@ -899,6 +899,22 @@ export function resolveCustomerName(uName, currentUserName, emailStr) {
   return uName || currentUserName || '';
 }
 
+export function getCanonicalTabName(item) {
+  if (!item) return 'Products';
+  const raw = item.subNavbarCategory || item.mainCategory || item.tag || item.category || '';
+  const norm = normalizeMainCatName(raw);
+  const map = {
+    'services': 'Services',
+    'products': 'Products',
+    'daily needs': 'Daily Needs',
+    'food': 'Food',
+    'stay': 'Stay',
+    'travel': 'Travel',
+    'jobs': 'Jobs'
+  };
+  return map[norm] || 'Products';
+}
+
 export function sanitizePhoneInput(val, pincodeVal = '') {
   if (!val) return '';
   const digits = String(val).replace(/\D/g, '');
@@ -959,19 +975,86 @@ export function isTravelOrStayItem(item) {
   const mainCat = (item.mainCategory || '').toLowerCase();
   const tag = (item.tag || '').toLowerCase();
   const cat = (item.category || '').toLowerCase();
-  return (
-    subNav === 'travel' || subNav === 'stay' ||
-    mainCat === 'travel' || mainCat === 'stay' ||
-    tag === 'travel' || tag === 'stay' ||
-    cat === 'travel' || cat === 'stay' ||
-    cat.includes('hotel') || cat.includes('resort') ||
-    cat.includes('bus') || cat.includes('tour') || cat.includes('flight')
+  const sub = (item.subcategory || item.subCategory || '').toLowerCase();
+  const type = (item.bookingType || item.type || '').toLowerCase();
+
+  if (Boolean(item.checkInDate || item.bookingDate || item.roomType || item.stayMode || item.boardingPoint || item.droppingPoint)) {
+    return true;
+  }
+
+  const travelOrStayKeywords = [
+    'travel', 'stay', 'hotel', 'resort', 'resorts', 'villa', 'villas', 'homestay',
+    'room', 'rooms', 'lodge', 'lodging', 'pg', 'hostel', 'bus', 'buses', 'tour', 'tours',
+    'flight', 'flights', 'train', 'cab', 'cabs', 'taxi', 'transport'
+  ];
+
+  return travelOrStayKeywords.some(k => 
+    subNav.includes(k) || mainCat.includes(k) || tag.includes(k) || cat.includes(k) || sub.includes(k) || type.includes(k)
   );
 }
 
 export function isTravelOrStayCart(items) {
   if (!items || !Array.isArray(items) || items.length === 0) return false;
   return items.every(isTravelOrStayItem);
+}
+
+export function getOrderSupportReasons(ord) {
+  if (!ord) return ['Order Defect / Damage', 'Missing Item / Wrong Product', 'Refund Request', 'Delayed Delivery'];
+  const typeLower = (ord.type || '').toLowerCase();
+  const subNav = (ord.subNavbarCategory || '').toLowerCase();
+  const cat = (ord.category || '').toLowerCase();
+
+  if (typeLower === 'job' || subNav === 'jobs') {
+    return [
+      'Application Status Inquiry',
+      'Interview Reschedule Request',
+      'Recruiter Unresponsive',
+      'Withdraw Application'
+    ];
+  }
+  if (typeLower === 'stay' || subNav === 'stay' || cat.includes('hotel') || cat.includes('stay') || cat.includes('resort') || Boolean(ord.checkInDate || ord.roomType)) {
+    return [
+      'Room Not Clean / Substandard',
+      'Check-In Refused by Host',
+      'Host / Front Desk Unreachable',
+      'Cancellation & Refund Request',
+      'Amenities / AC Not Working'
+    ];
+  }
+  if (typeLower === 'travel' || subNav === 'travel' || cat.includes('travel') || cat.includes('bus') || Boolean(ord.boardingPoint || ord.droppingPoint)) {
+    return [
+      'Bus / Driver Delayed',
+      'Boarding Point Issue',
+      'Trip Cancellation & Refund',
+      'Driver / Operator Unreachable',
+      'Vehicle Breakdown / Poor Condition'
+    ];
+  }
+  if (typeLower.includes('service') || subNav.includes('service')) {
+    return [
+      'Service Partner Delayed / No-Show',
+      'Unsatisfactory Service Quality',
+      'Overcharged / Extra Fee Demanded',
+      'Service Partner Unreachable',
+      'Cancellation & Refund Request'
+    ];
+  }
+  if (subNav.includes('food') || cat.includes('food') || subNav.includes('daily') || cat.includes('daily') || cat.includes('grocery')) {
+    return [
+      'Food Stale / Bad Quality',
+      'Spilled / Tampered Package',
+      'Missing Food Item',
+      'Delayed Food Delivery',
+      'Wrong Food Delivered'
+    ];
+  }
+  return [
+    'Order Defect / Damage',
+    'Missing Item / Wrong Product',
+    'Refund Request',
+    'Delayed Delivery',
+    'Package Tampered'
+  ];
 }
 
 export function getAuthoritativeSlotAvailability(timeStr, dateStr, item = null) {
@@ -1950,6 +2033,15 @@ export default function CustomerDashboard({
     cvv: '',
     name: ''
   });
+  const [saveCardForFuture, setSaveCardForFuture] = useState(false);
+  const [savedCards, setSavedCards] = useState(() => {
+    try {
+      const stored = localStorage.getItem('connect_saved_cards');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
 
   const handleFetchRazorpayQr = useCallback(async (amountRupees) => {
     setPaymentQrLoading(true);
@@ -1997,6 +2089,20 @@ export default function CustomerDashboard({
   }, [orderSuccess]);
   const [guestList, setGuestList] = useState([{ name: '', aadhaar: '', phone: '' }]);
   const [stayMode, setStayMode] = useState('Day Option');
+
+  useEffect(() => {
+    if (activeScheduleModalItem || activeBookNowModalItem) {
+      setGuestList(prev => {
+        const copy = Array.isArray(prev) && prev.length > 0 ? [...prev] : [{ name: '', aadhaar: '', phone: '' }];
+        copy[0] = {
+          name: copy[0]?.name || profileName || currentUser?.name || '',
+          aadhaar: copy[0]?.aadhaar || currentUser?.aadhaarNumber || currentUser?.aadhaar || '',
+          phone: copy[0]?.phone || (profilePhone || currentUser?.phone || '').replace(/\D/g, '').slice(-10)
+        };
+        return copy;
+      });
+    }
+  }, [activeScheduleModalItem, activeBookNowModalItem, profileName, profilePhone, currentUser]);
   const [deletedProductIds, setDeletedProductIds] = useState(() => {
     try {
       const saved = localStorage.getItem('connect_deleted_product_ids');
@@ -3999,6 +4105,22 @@ export default function CustomerDashboard({
       }
 
       setIsLastOrderBooking(Boolean(isBookingOrder));
+      if (saveCardForFuture && paymentCardData.number && razorpayPayMethod === 'card') {
+        const cardNum = paymentCardData.number.replace(/\s/g, '');
+        if (cardNum.length >= 12) {
+          const newCard = {
+            rawNumber: paymentCardData.number,
+            number: '•••• •••• •••• ' + cardNum.slice(-4),
+            expiry: paymentCardData.expiry,
+            name: paymentCardData.name || profileName || currentUser?.name || 'Customer'
+          };
+          setSavedCards(prev => {
+            const updated = [newCard, ...prev.filter(c => (c.rawNumber || c.number).slice(-4) !== cardNum.slice(-4))];
+            try { localStorage.setItem('connect_saved_cards', JSON.stringify(updated)); } catch(e) {}
+            return updated;
+          });
+        }
+      }
       setCart(prev => prev.filter(item => !selectedCartItems.includes(item.id)));
       setSelectedCartItems([]);
       setOrderSuccess(true);
@@ -4393,6 +4515,7 @@ export default function CustomerDashboard({
 
   const addToCart = (product) => {
     if (!product) return;
+    setOrderSuccess(false);
     const live = products.find(p => String(p.id) === String(product.id) || String(p._id) === String(product._id || product.id) || (p.name && product.name && p.name.trim().toLowerCase() === product.name.trim().toLowerCase()));
     if (isVendorProductUnavailable(live || product)) {
       triggerNotification("Vendor is currently unavailable for this item (Out of Stock).", "error");
@@ -6806,19 +6929,14 @@ export default function CustomerDashboard({
               <div 
                 key={item.id} 
                 onClick={() => {
-                  // Always open exact product details and highlight corresponding tab
+                  // Always open exact product details and highlight corresponding category tab
                   const p = products.find(prod => prod.id === item.id) || products.find(prod => prod.name === item.name) || item;
                   setSelectedProduct(p);
                   setActiveProductImage(p.image || null);
                   setActiveThumbnailIndex(0);
-                  const itemCat = p.mainCategory || p.subNavbarCategory || item.tag;
-                  if (itemCat && ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].some(t => t.toLowerCase() === itemCat.toLowerCase())) {
-                    const matchedTab = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].find(t => t.toLowerCase() === itemCat.toLowerCase());
-                    if (matchedTab) {
-                      setActiveTab(matchedTab);
-                      setSelectedSubNavbarCategory(matchedTab);
-                    }
-                  }
+                  const canonicalTab = getCanonicalTabName(p);
+                  setActiveTab(canonicalTab);
+                  setSelectedSubNavbarCategory(canonicalTab);
                   triggerNotification(`Loading ${item.name}...`);
                 }}
                 className="group bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between text-slate-800 dark:text-slate-200 relative cursor-pointer hover:-translate-y-1 animate-fade-in"
@@ -8781,8 +8899,10 @@ export default function CustomerDashboard({
       <div className="space-y-6 pb-16 text-slate-800 dark:text-slate-200 animate-fade-in">
         {/* Breadcrumbs */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1"><ChevronLeft className="w-3.5 h-3.5" /> Home</button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => { setSelectedProduct(null); const t = (activeTab && activeTab !== 'Home') ? activeTab : getCanonicalTabName(selectedProduct); setActiveTab(t); setSelectedSubNavbarCategory(t); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span><button onClick={() => { setSelectedProduct(null); setActiveTab('Stay'); setSelectedSubNavbarCategory('Stay'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Stays</button>
             <span>&gt;</span><span>{selectedProduct.category || 'Luxury Hotels'}</span><span>&gt;</span>
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">Hotel {selectedProduct.name}</span>
@@ -8962,8 +9082,10 @@ export default function CustomerDashboard({
       <div className="space-y-6 pb-16 text-slate-800 dark:text-slate-200 animate-fade-in">
         {/* Breadcrumbs */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1"><ChevronLeft className="w-3.5 h-3.5" /> Home</button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => { setSelectedProduct(null); const t = (activeTab && activeTab !== 'Home') ? activeTab : getCanonicalTabName(selectedProduct); setActiveTab(t); setSelectedSubNavbarCategory(t); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span><button onClick={() => { setSelectedProduct(null); setActiveTab('Services'); setSelectedSubNavbarCategory('Services'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Services</button>
             <span>&gt;</span><span>{selectedProduct.category || 'Fitness & Wellness'}</span><span>&gt;</span>
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
@@ -9125,7 +9247,9 @@ export default function CustomerDashboard({
       <div className="space-y-8 pb-16 text-slate-800 dark:text-slate-200">
         {/* Breadcrumbs */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => { setSelectedProduct(null); const t = (activeTab && activeTab !== 'Home') ? activeTab : getCanonicalTabName(selectedProduct); setActiveTab(t); setSelectedSubNavbarCategory(t); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span>
             <button onClick={() => { 
@@ -10062,7 +10186,9 @@ export default function CustomerDashboard({
       <div className="space-y-8 pb-16 text-slate-800 dark:text-slate-200">
         {/* Breadcrumbs */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => { setSelectedProduct(null); const t = (activeTab && activeTab !== 'Home') ? activeTab : getCanonicalTabName(selectedProduct); setActiveTab(t); setSelectedSubNavbarCategory(t); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span>
             <button onClick={() => { 
@@ -10440,25 +10566,20 @@ export default function CustomerDashboard({
                 return null;
               })()}
 
-              {/* Daily Needs / Grocery Flavour & Customization Selector (BUG-03) */}
+              {/* Daily Needs / Grocery Flavour & Customization Selector */}
               {(() => {
-                const isDailyItem = selectedProduct.subNavbarCategory === 'Daily Needs' ||
-                  selectedProduct.mainCategory === 'Daily Needs' ||
-                  selectedProduct.tag === 'Daily Needs' ||
-                  (selectedProduct.category || '').toLowerCase().includes('daily') ||
-                  (selectedProduct.category || '').toLowerCase().includes('milk') ||
-                  (selectedProduct.category || '').toLowerCase().includes('dairy') ||
-                  (selectedProduct.category || '').toLowerCase().includes('grocery');
-                if (!isDailyItem) return null;
-
                 const flavours = Array.isArray(selectedProduct.flavors) && selectedProduct.flavors.length > 0
                   ? selectedProduct.flavors
-                  : ['Original / Regular', 'Elaichi / Cardamom', 'Chocolate', 'Strawberry', 'Sugar-Free'];
+                  : Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0
+                    ? selectedProduct.variants
+                    : null;
+
+                if (!flavours || flavours.length === 0) return null;
 
                 return (
                   <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-xl p-3 mb-3 text-left space-y-2">
                     <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
-                      Select Flavour / Variant & Customization
+                      Select Flavour / Variant
                     </span>
                     <div className="flex flex-wrap gap-2">
                       {flavours.map(f => (
@@ -11074,7 +11195,7 @@ export default function CustomerDashboard({
           </div>
 
           <div className="flex-grow overflow-y-auto py-5 space-y-4 no-scrollbar">
-            {orderSuccess ? (
+            {orderSuccess && cart.length === 0 ? (
               <div className="text-center py-12 animate-scale-up space-y-6 flex flex-col items-center justify-center">
                 <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-800 shadow-sm">
                   <Check className="w-8 h-8 animate-bounce" />
@@ -11630,7 +11751,7 @@ wishlistProducts.forEach(item => addToCart(item));
             </div>
 
             {/* Modal Right Content Panel */}
-            <div className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full overscroll-contain">
+            <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full overscroll-contain">
 
               <div className="flex-grow max-w-full">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
@@ -11672,7 +11793,7 @@ wishlistProducts.forEach(item => addToCart(item));
                   });
 
                   return (
-                    <div className="space-y-6 animate-fade-in text-left flex flex-col h-full justify-between max-w-full">
+                    <div className="space-y-4 animate-fade-in text-left flex flex-col min-h-full justify-between max-w-full">
                     {trackingOrder ? (
                       trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs' ? (
                         /* Beautiful Job Application Status Tracking UI */
@@ -11874,48 +11995,88 @@ wishlistProducts.forEach(item => addToCart(item));
 
                           {/* Booking Progress Timeline */}
                           <div className="bg-white dark:bg-slate-900 p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-5 text-left font-sans">Booking Timeline</h4>
-                            <div className="flex justify-between items-center relative w-full px-2">
-                              <div className="absolute top-3 left-4 right-4 h-0.5 bg-slate-200 dark:bg-slate-700 pointer-events-none" />
-                              
-                              {['Booking Placed', 'Confirmed', 'Checked In / Active', 'Completed'].map((step, idx) => {
-                                const statusMap = {
-                                  'Order Received': 0,
-                                  'Preparing': 1,
-                                  'Ready For Pickup': 1,
-                                  'Assigned To Delivery Partner': 1,
-                                  'Delivery Partner Accepted': 1,
-                                  'Picked Up': 2,
-                                  'Out For Delivery': 2,
-                                  'Near Customer': 2,
-                                  'Delivered': 3,
-                                  'Completed': 3
-                                };
-                                const isCancelled = trackingOrder.status === 'Cancelled';
-                                const currentIdx = statusMap[trackingOrder.status] || 0;
-                                const isCompleted = !isCancelled && idx <= currentIdx;
-                                const isActive = !isCancelled && idx === currentIdx;
-                                
-                                return (
-                                  <div key={idx} className="flex flex-col items-center gap-1.5 z-10">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
-                                      isCancelled && idx === currentIdx
-                                        ? 'bg-rose-500 border-rose-400 text-white shadow-[0_0_8px_#F43F5E]'
-                                        : isCompleted 
-                                          ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
-                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
-                                    }`}>
-                                      {isCancelled && idx === currentIdx ? '✗' : isCompleted ? '✓' : idx + 1}
-                                    </div>
-                                    <span className={`text-[8px] font-bold uppercase transition-colors whitespace-nowrap ${
-                                      isCancelled && idx === currentIdx ? 'text-rose-500' : isActive ? 'text-blue-500' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
-                                    }`}>
-                                      {step}
-                                    </span>
-                                  </div>
-                                );
-                              })}
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 text-left font-sans">Booking Timeline</h4>
+                              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                trackingOrder.status === 'Cancelled'
+                                  ? 'bg-rose-500/10 text-rose-500 border-rose-500/25'
+                                  : ['Delivered', 'Completed'].includes(trackingOrder.status)
+                                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25'
+                                  : 'bg-blue-500/10 text-blue-500 border-blue-500/25'
+                              }`}>
+                                {trackingOrder.status || 'Active'}
+                              </span>
                             </div>
+                            {(() => {
+                              const steps = ['Booking Placed', 'Confirmed', 'Checked In / Active', 'Completed'];
+                              const statusMap = {
+                                'Order Received': 0,
+                                'Preparing': 1,
+                                'Ready For Pickup': 1,
+                                'Assigned To Delivery Partner': 1,
+                                'Delivery Partner Accepted': 1,
+                                'Picked Up': 2,
+                                'Out For Delivery': 2,
+                                'Near Customer': 2,
+                                'Delivered': 3,
+                                'Completed': 3
+                              };
+                              const isCancelled = trackingOrder.status === 'Cancelled';
+                              const currentIdx = statusMap[trackingOrder.status] || 0;
+                              const progressPercent = steps.length > 1 ? (Math.min(currentIdx, steps.length - 1) / (steps.length - 1)) * 100 : 0;
+
+                              return (
+                                <div className="relative w-full py-2">
+                                  <div 
+                                    className="absolute top-[22px] pointer-events-none"
+                                    style={{
+                                      left: `${(100 / (steps.length * 2))}%`,
+                                      right: `${(100 / (steps.length * 2))}%`
+                                    }}
+                                  >
+                                    <div className="h-1 bg-slate-200 dark:bg-slate-700/80 rounded-full w-full relative overflow-hidden">
+                                      <div 
+                                        className={`h-full rounded-full transition-all duration-500 ease-out ${isCancelled ? 'bg-rose-500' : 'bg-emerald-500'}`} 
+                                        style={{ width: `${progressPercent}%` }} 
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-between items-start relative w-full">
+                                    {steps.map((step, idx) => {
+                                      const isCompleted = !isCancelled && idx <= currentIdx;
+                                      const isActive = !isCancelled && idx === currentIdx;
+                                      return (
+                                        <div key={idx} className="flex-1 flex flex-col items-center text-center min-w-0 px-1 z-10">
+                                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-2 font-black text-[10px] sm:text-xs shrink-0 transition-all duration-300 ${
+                                            isCancelled && idx === currentIdx
+                                              ? 'bg-rose-500 border-rose-400 text-white shadow-[0_0_8px_#F43F5E]'
+                                              : isActive
+                                              ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_10px_#2563EB] scale-110'
+                                              : isCompleted
+                                              ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]'
+                                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
+                                          }`}>
+                                            {isCancelled && idx === currentIdx ? '✗' : (isCompleted && !isActive ? '✓' : idx + 1)}
+                                          </div>
+                                          <span className={`text-[8.5px] sm:text-[9.5px] font-extrabold uppercase leading-tight mt-1.5 transition-colors text-center line-clamp-2 max-w-[85px] sm:max-w-[100px] break-words ${
+                                            isCancelled && idx === currentIdx
+                                              ? 'text-rose-500'
+                                              : isActive
+                                              ? 'text-blue-600 dark:text-blue-400'
+                                              : isCompleted
+                                              ? 'text-emerald-600 dark:text-emerald-400'
+                                              : 'text-slate-400 dark:text-slate-500'
+                                          }`}>
+                                            {step}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       ) : (
@@ -11967,47 +12128,86 @@ wishlistProducts.forEach(item => addToCart(item));
                             </div>
                           </div>
 
-                          {/* Animated Timeline */}
-                          <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 text-left">Delivery Progress Timeline</h4>
-                            <div className="flex justify-between items-center relative w-full px-2">
-                              <div className="absolute top-3 left-4 right-4 h-0.5 bg-slate-200 dark:bg-slate-700 pointer-events-none" />
-                              
-                              {['Order Placed', 'Preparing', 'Ready For Pickup', 'Delivery Partner Accepted', 'Out For Delivery', 'Delivered'].map((step, idx) => {
-                                const statusMap = {
-                                  'Order Received': 0,
-                                  'Preparing': 1,
-                                  'Ready For Pickup': 2,
-                                  'Assigned To Delivery Partner': 2,
-                                  'Delivery Partner Accepted': 3,
-                                  'Picked Up': 3,
-                                  'Out For Delivery': 4,
-                                  'Near Customer': 4,
-                                  'Delivered': 5,
-                                  'Completed': 5
-                                };
-                                const currentIdx = statusMap[trackingOrder.status] || 0;
-                                const isCompleted = idx <= currentIdx;
-                                const isActive = idx === currentIdx;
-                                
-                                return (
-                                  <div key={idx} className="flex flex-col items-center gap-1.5 z-10">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-bold text-[10px] transition-all duration-300 ${
-                                      isCompleted 
-                                        ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]' 
-                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
-                                    }`}>
-                                      {isCompleted ? '✓' : idx + 1}
-                                    </div>
-                                    <span className={`text-[8px] font-bold uppercase transition-colors ${
-                                      isActive ? 'text-[#f43397]' : isCompleted ? 'text-emerald-500' : 'text-slate-400'
-                                    }`}>
-                                      {step.replace('Delivery Partner ', '')}
-                                    </span>
-                                  </div>
-                                );
-                              })}
+                          {/* Animated Delivery Timeline */}
+                          <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 text-left font-sans">Delivery Progress Timeline</h4>
+                              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                trackingOrder.status === 'Delivered' || trackingOrder.status === 'Completed'
+                                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25'
+                                  : 'bg-blue-500/10 text-blue-500 border-blue-500/25'
+                              }`}>
+                                {trackingOrder.status || 'Processing'}
+                              </span>
                             </div>
+                            {(() => {
+                              const steps = [
+                                { id: 'placed', label: 'Order Placed' },
+                                { id: 'prep', label: 'Preparing' },
+                                { id: 'ready', label: 'Ready For Pickup' },
+                                { id: 'accepted', label: 'Partner Accepted' },
+                                { id: 'out', label: 'Out For Delivery' },
+                                { id: 'delivered', label: 'Delivered' }
+                              ];
+                              const statusMap = {
+                                'Order Received': 0,
+                                'Preparing': 1,
+                                'Ready For Pickup': 2,
+                                'Assigned To Delivery Partner': 2,
+                                'Delivery Partner Accepted': 3,
+                                'Picked Up': 3,
+                                'Out For Delivery': 4,
+                                'Near Customer': 4,
+                                'Delivered': 5,
+                                'Completed': 5
+                              };
+                              const currentIdx = statusMap[trackingOrder.status] || 0;
+                              const progressPercent = steps.length > 1 ? (Math.min(currentIdx, steps.length - 1) / (steps.length - 1)) * 100 : 0;
+
+                              return (
+                                <div className="relative w-full py-2">
+                                  <div 
+                                    className="absolute top-[22px] pointer-events-none"
+                                    style={{
+                                      left: `${(100 / (steps.length * 2))}%`,
+                                      right: `${(100 / (steps.length * 2))}%`
+                                    }}
+                                  >
+                                    <div className="h-1 bg-slate-200 dark:bg-slate-700/80 rounded-full w-full relative overflow-hidden">
+                                      <div 
+                                        className="h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out" 
+                                        style={{ width: `${progressPercent}%` }} 
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-between items-start relative w-full">
+                                    {steps.map((st, idx) => {
+                                      const isCompleted = idx <= currentIdx;
+                                      const isActive = idx === currentIdx;
+                                      return (
+                                        <div key={idx} className="flex-1 flex flex-col items-center text-center min-w-0 px-0.5 z-10">
+                                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-2 font-black text-[10px] sm:text-xs shrink-0 transition-all duration-300 ${
+                                            isActive
+                                              ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_10px_#2563EB] scale-110'
+                                              : isCompleted
+                                              ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_8px_#10B981]'
+                                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'
+                                          }`}>
+                                            {isCompleted && !isActive ? '✓' : idx + 1}
+                                          </div>
+                                          <span className={`text-[8.5px] sm:text-[9.5px] font-extrabold uppercase leading-tight mt-1.5 transition-colors text-center line-clamp-2 max-w-[70px] sm:max-w-[85px] break-words ${
+                                            isActive ? 'text-blue-600 dark:text-blue-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'
+                                          }`}>
+                                            {st.label}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Delivery Partner Details */}
@@ -12423,9 +12623,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                           type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
+                                            const ordReasons = getOrderSupportReasons(ord);
                                             setSupportOrderModal(ord);
                                             setIsReportSubmitted(false);
-                                            setReportReason('Order Defect / Damage');
+                                            setReportReason(ordReasons[0]);
                                             setReportNotes('');
                                           }}
                                           className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-slate-700 transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 text-[9px] font-black uppercase rounded-lg"
@@ -12468,7 +12669,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         </div>
 
                         {/* Bottom trust factors row */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xs mt-6 text-left shrink-0">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3.5 border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xs mt-4 text-left shrink-0">
                           {[
                             { title: 'Secure Payments', desc: '100% safe and secured payments', icon: ShieldCheck, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40' },
                             { title: '24/7 Support', desc: 'We are here to help you anytime', icon: Phone, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' },
@@ -13200,7 +13401,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         {/* Check-In / Departure / Appointment Time Slots */}
                         <div>
                           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : isStayItem ? 'Select Check-In Time Slot' : 'Select Appointment Time Slot'}</span>
-                          <div className="grid grid-cols-5 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                             {checkInTimeSlots
                               .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
                               .map((slot) => {
@@ -13851,6 +14052,25 @@ wishlistProducts.forEach(item => addToCart(item));
                         triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
                         return;
                       }
+                      if (isStayItem) {
+                        const primaryGuest = guestList[0] || {};
+                        const primaryName = (primaryGuest.name || profileName || currentUser?.name || '').trim();
+                        const primaryAadhaar = (primaryGuest.aadhaar || '').trim();
+                        const primaryPhone = (primaryGuest.phone || profilePhone || currentUser?.phone || '').replace(/\D/g, '').slice(-10);
+
+                        if (!primaryName) {
+                          triggerNotification("Please enter primary guest full name.", "error");
+                          return;
+                        }
+                        if (!primaryAadhaar || primaryAadhaar.length !== 12) {
+                          triggerNotification("Please enter a valid 12-digit Aadhaar Card number for primary guest.", "error");
+                          return;
+                        }
+                        if (!primaryPhone || primaryPhone.length !== 10) {
+                          triggerNotification("Please enter a valid 10-digit mobile number for primary guest.", "error");
+                          return;
+                        }
+                      }
                       if (isTravelItem) {
                         if (vendorBoardingPoints.length === 0) {
                           triggerNotification("No boarding points available for this trip. Booking cannot proceed.", "error");
@@ -13885,7 +14105,11 @@ wishlistProducts.forEach(item => addToCart(item));
                         stayMode: stayMode,
                         adults: numAdults,
                         children: numChildren,
-                        guestDetails: guestList.slice(0, numAdults + numChildren),
+                        guestDetails: guestList.slice(0, numAdults + numChildren).map((g, i) => i === 0 ? {
+                          ...g,
+                          name: g.name || profileName || currentUser?.name || 'Primary Guest',
+                          phone: g.phone || profilePhone || currentUser?.phone || ''
+                        } : g),
                         boardingPoint: isTravelItem ? (() => {
                           const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase());
                           return { name: matched?.name || boardingPoint.trim(), time: matched?.time || '', landmark: matched?.landmark || '' };
@@ -14066,7 +14290,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         {/* Check-In / Departure / Appointment Time Slots */}
                         <div>
                           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : isStayItem ? 'Select Check-In Time Slot' : 'Select Appointment Time Slot'}</span>
-                          <div className="grid grid-cols-5 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                             {checkInTimeSlots
                               .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
                               .map((slot) => {
@@ -14700,6 +14924,25 @@ wishlistProducts.forEach(item => addToCart(item));
                           triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
                           return;
                         }
+                        if (isStayItem) {
+                          const primaryGuest = guestList[0] || {};
+                          const primaryName = (primaryGuest.name || profileName || currentUser?.name || '').trim();
+                          const primaryAadhaar = (primaryGuest.aadhaar || '').trim();
+                          const primaryPhone = (primaryGuest.phone || profilePhone || currentUser?.phone || '').replace(/\D/g, '').slice(-10);
+
+                          if (!primaryName) {
+                            triggerNotification("Please enter primary guest full name.", "error");
+                            return;
+                          }
+                          if (!primaryAadhaar || primaryAadhaar.length !== 12) {
+                            triggerNotification("Please enter a valid 12-digit Aadhaar Card number for primary guest.", "error");
+                            return;
+                          }
+                          if (!primaryPhone || primaryPhone.length !== 10) {
+                            triggerNotification("Please enter a valid 10-digit mobile number for primary guest.", "error");
+                            return;
+                          }
+                        }
                         if (isTravelItem) {
                           if (vendorBoardingPoints.length === 0) {
                             triggerNotification("No boarding points available for this trip. Booking cannot proceed.", "error");
@@ -14734,7 +14977,11 @@ wishlistProducts.forEach(item => addToCart(item));
                           stayMode: stayMode,
                           adults: numAdults,
                           children: numChildren,
-                          guestDetails: guestList.slice(0, numAdults + numChildren),
+                          guestDetails: guestList.slice(0, numAdults + numChildren).map((g, i) => i === 0 ? {
+                            ...g,
+                            name: g.name || profileName || currentUser?.name || 'Primary Guest',
+                            phone: g.phone || profilePhone || currentUser?.phone || ''
+                          } : g),
                           boardingPoint: isTravelItem ? (() => {
                           const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === boardingPoint.trim().toLowerCase());
                           return { name: matched?.name || boardingPoint.trim(), time: matched?.time || '', landmark: matched?.landmark || '' };
@@ -14808,7 +15055,12 @@ wishlistProducts.forEach(item => addToCart(item));
                         <div className="w-8 h-8 rounded-full bg-slate-400/10 text-slate-500 flex items-center justify-center border border-slate-400/20">
                           <Star className="w-4 h-4 fill-slate-400 text-slate-400" />
                         </div>
-                        <span className="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 font-black px-2 py-0.5 rounded">Silver Tier</span>
+                        <div className="flex items-center gap-1.5">
+                          {(currentMembershipTier || '').toLowerCase().includes('silver') && (
+                            <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-xs">Active</span>
+                          )}
+                          <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 font-black px-2 py-0.5 rounded">Silver Tier</span>
+                        </div>
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Silver Membership</h4>
@@ -14834,15 +15086,17 @@ wishlistProducts.forEach(item => addToCart(item));
                   <div className={`border ${
                     (currentMembershipTier || '').toLowerCase().includes('gold') ? 'border-amber-400 ring-2 ring-amber-400/10 bg-amber-500/5' : 'border-slate-200 dark:border-slate-800'
                   } rounded-2xl p-5 flex flex-col justify-between text-left min-h-[360px] relative`}>
-                    {(currentMembershipTier || '').toLowerCase().includes('gold') && (
-                      <span className="absolute top-3 right-3 bg-amber-400 text-[#0b1e36] text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Active</span>
-                    )}
                     <div className="space-y-4">
                       <div className="flex justify-between items-start">
                         <div className="w-8 h-8 rounded-full bg-amber-400/10 text-amber-500 flex items-center justify-center border border-amber-400/20">
                           <Sparkles className="w-4 h-4 fill-amber-400 text-amber-400" />
                         </div>
-                        <span className="text-[9px] bg-amber-400/15 text-amber-600 dark:text-amber-400 border border-amber-450/20 font-black px-2 py-0.5 rounded">Gold Elite</span>
+                        <div className="flex items-center gap-1.5">
+                          {(currentMembershipTier || '').toLowerCase().includes('gold') && (
+                            <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-xs">Active</span>
+                          )}
+                          <span className="text-[9px] bg-amber-400/15 text-amber-600 dark:text-amber-400 border border-amber-400/20 font-black px-2 py-0.5 rounded">Gold Elite</span>
+                        </div>
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-slate-900 dark:text-white">Gold Membership</h4>
@@ -14880,15 +15134,17 @@ wishlistProducts.forEach(item => addToCart(item));
                 <div className={`border ${
                   (currentMembershipTier || '').toLowerCase().includes('diamond') ? 'border-cyan-400 ring-2 ring-cyan-400/10 bg-cyan-500/5' : 'border-slate-200 dark:border-slate-800/80 hover:border-cyan-450/40'
                 } rounded-2xl p-5 flex flex-col justify-between text-left min-h-[360px] relative`}>
-                  {(currentMembershipTier || '').toLowerCase().includes('diamond') && (
-                    <span className="absolute top-3 right-3 bg-cyan-400 text-cyan-950 text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Active</span>
-                  )}
                   <div className="space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="w-8 h-8 rounded-full bg-cyan-400/10 text-cyan-500 flex items-center justify-center border border-cyan-400/20">
-                        <Gem className="w-4 h-4 fill-cyan-450 text-cyan-450" />
+                        <Gem className="w-4 h-4 fill-cyan-400 text-cyan-400" />
                       </div>
-                      <span className="text-[9px] bg-cyan-400/15 text-cyan-600 dark:text-cyan-400 border border-cyan-450/20 font-black px-2 py-0.5 rounded">Diamond Prestige</span>
+                      <div className="flex items-center gap-1.5">
+                        {(currentMembershipTier || '').toLowerCase().includes('diamond') && (
+                          <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-xs">Active</span>
+                        )}
+                        <span className="text-[9px] bg-cyan-400/15 text-cyan-600 dark:text-cyan-400 border border-cyan-400/20 font-black px-2 py-0.5 rounded">Diamond Prestige</span>
+                      </div>
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-slate-900 dark:text-white">Diamond Membership</h4>
@@ -15320,10 +15576,19 @@ wishlistProducts.forEach(item => addToCart(item));
               {(() => {
                 const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
                 const totalAmt = selectedCart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-                const isBookingOrService = isTravelOrStayCart(selectedCart) || selectedCart.some(i => {
-                  const c = (i.subNavbarCategory || i.mainCategory || i.tag || i.category || '').toLowerCase();
-                  return c.includes('service') || c.includes('stay') || c.includes('hotel') || c.includes('travel') || c.includes('job');
+                const isService = selectedCart.some(i => {
+                  const norm = normalizeMainCatName(i.subNavbarCategory || i.mainCategory || i.category || i.tag || '');
+                  return norm === 'services';
                 });
+                const isStay = selectedCart.some(i => {
+                  const norm = normalizeMainCatName(i.subNavbarCategory || i.mainCategory || i.category || i.tag || '');
+                  return norm === 'stay' || i.bookingType || i.checkInDate || i.roomType;
+                });
+                const isTravel = selectedCart.some(i => {
+                  const norm = normalizeMainCatName(i.subNavbarCategory || i.mainCategory || i.category || i.tag || '');
+                  return norm === 'travel' || i.boardingPoint || i.droppingPoint;
+                });
+                const isBookingOrService = isService || isStay || isTravel;
 
                 return (
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 rounded-2xl p-4 space-y-2">
@@ -15333,7 +15598,22 @@ wishlistProducts.forEach(item => addToCart(item));
                         ₹{totalAmt.toLocaleString()}
                       </span>
                     </div>
-                    {!isBookingOrService && (
+                    {isService ? (
+                      <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                        <span>Service Convenience / Visiting Fee:</span>
+                        <span className="text-emerald-500 font-extrabold uppercase">Included / FREE</span>
+                      </div>
+                    ) : isStay ? (
+                      <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                        <span>Taxes & Stay Charges:</span>
+                        <span className="text-emerald-500 font-extrabold uppercase">Included</span>
+                      </div>
+                    ) : isTravel ? (
+                      <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
+                        <span>Taxes & Travel Booking Fee:</span>
+                        <span className="text-emerald-500 font-extrabold uppercase">Included</span>
+                      </div>
+                    ) : (
                       <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-400">
                         <span>Delivery Charge:</span>
                         <span className="text-emerald-500 font-extrabold uppercase">FREE Express</span>
@@ -15474,9 +15754,11 @@ wishlistProducts.forEach(item => addToCart(item));
                   {/* Payment Method Selector */}
                   {(() => {
                     const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
-                    const isBookingOrService = isTravelOrStayCart(selectedCart) || selectedCart.some(i => {
-                      const c = (i.subNavbarCategory || i.mainCategory || i.tag || i.category || '').toLowerCase();
-                      return c.includes('service') || c.includes('stay') || c.includes('hotel') || c.includes('travel') || c.includes('job');
+                    const isBookingOrService = selectedCart.some(i => {
+                      if (isTravelOrStayItem(i)) return true;
+                      if (Boolean(i.bookingDate || i.checkInDate || i.bookingType || i.roomType || i.stayMode || i.boardingPoint || i.droppingPoint)) return true;
+                      const norm = normalizeMainCatName(i.subNavbarCategory || i.mainCategory || i.category || i.tag || '');
+                      return ['travel', 'stay', 'services', 'jobs'].includes(norm);
                     });
 
                     const availableMethods = [
@@ -15486,6 +15768,10 @@ wishlistProducts.forEach(item => addToCart(item));
                       { id: 'wallet', label: 'Wallet', icon: '👛' },
                       ...(!isBookingOrService ? [{ id: 'cod', label: 'Cash on Delivery', icon: '💵' }] : [])
                     ];
+
+                    if (isBookingOrService && razorpayPayMethod === 'cod') {
+                      setTimeout(() => setRazorpayPayMethod('upi'), 0);
+                    }
 
                     return (
                       <div className={`grid ${availableMethods.length > 4 ? 'grid-cols-5' : 'grid-cols-4'} gap-2`}>
@@ -15618,6 +15904,32 @@ wishlistProducts.forEach(item => addToCart(item));
                           <span>Card Information</span>
                           <span className="text-blue-500 text-[10px] font-black uppercase bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200">256-Bit SSL</span>
                         </div>
+                        {savedCards.length > 0 && (
+                          <div className="space-y-1.5 pb-2 border-b border-slate-200 dark:border-slate-800">
+                            <span className="text-[10px] font-black uppercase text-slate-500 block">Saved Cards</span>
+                            <div className="flex flex-wrap gap-2">
+                              {savedCards.map((sc, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => {
+                                    setPaymentCardData({
+                                      number: sc.rawNumber || sc.number,
+                                      expiry: sc.expiry || '',
+                                      cvv: '',
+                                      name: sc.name || ''
+                                    });
+                                    triggerNotification(`Selected saved card ending in ${(sc.rawNumber || sc.number).slice(-4)}`);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 hover:border-blue-500 transition-colors cursor-pointer"
+                                >
+                                  <CreditCard className="w-3.5 h-3.5 text-blue-500" />
+                                  <span>•••• {(sc.rawNumber || sc.number).replace(/\s/g, '').slice(-4)}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Card Number</label>
                           <input
@@ -15673,6 +15985,18 @@ wishlistProducts.forEach(item => addToCart(item));
                             placeholder="Full Name as on Card"
                             className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
+                        </div>
+                        <div className="flex items-center gap-2 pt-1 text-xs">
+                          <input
+                            type="checkbox"
+                            id="save-card-checkbox"
+                            checked={saveCardForFuture}
+                            onChange={(e) => setSaveCardForFuture(e.target.checked)}
+                            className="w-4 h-4 rounded text-blue-600 cursor-pointer"
+                          />
+                          <label htmlFor="save-card-checkbox" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                            Save this card for faster future payments
+                          </label>
                         </div>
                         <div className="flex items-center justify-between pt-1">
                           <button
@@ -16085,10 +16409,10 @@ wishlistProducts.forEach(item => addToCart(item));
                             <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">CVV</label>
                             <input
                               type="password"
-                              maxLength={4}
+                              maxLength={3}
                               value={paymentCardData.cvv}
                               onChange={(e) => {
-                                const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                const raw = e.target.value.replace(/\D/g, '').slice(0, 3);
                                 setPaymentCardData(prev => ({ ...prev, cvv: raw }));
                               }}
                               placeholder="123"
@@ -16260,31 +16584,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     <label className="text-xs font-black uppercase tracking-wider text-slate-500 block">Select Issue / Reason</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {(() => {
-                        const isBooking = ['Booking', 'Stay', 'Travel', 'Services', 'Appointment'].includes(supportOrderModal.type) || 
-                          ['stay', 'travel', 'services'].includes((supportOrderModal.subNavbarCategory || '').toLowerCase());
-                        const isJob = supportOrderModal.type === 'Job' || (supportOrderModal.subNavbarCategory || '').toLowerCase() === 'jobs';
-                        
-                        let reasons = [
-                          'Order Defect / Damage',
-                          'Missing Item / Wrong Product',
-                          'Refund Request',
-                          'Delayed Delivery'
-                        ];
-                        if (isJob) {
-                          reasons = [
-                            'Application Status Inquiry',
-                            'Interview Reschedule Request',
-                            'Recruiter Unresponsive',
-                            'Withdraw Application'
-                          ];
-                        } else if (isBooking) {
-                          reasons = [
-                            'Booking Reschedule Request',
-                            'Cancellation & Full Refund',
-                            'Host / Vendor Unreachable',
-                            'Service Quality Issue'
-                          ];
-                        }
+                        const reasons = getOrderSupportReasons(supportOrderModal);
                         return reasons.map(reason => (
                           <button
                             key={reason}
@@ -16440,16 +16740,33 @@ wishlistProducts.forEach(item => addToCart(item));
 
       {/* -------------------- COMPARE MODAL -------------------- */}
       {isCompareModalOpen && selectedProduct && (() => {
-        // Strict same-category matching: mainCategory AND subcategory (category field) must both match
-        const refMain = (selectedProduct.mainCategory || '').toLowerCase().trim();
-        const refSub = (selectedProduct.category || selectedProduct.subcategory || '').toLowerCase().trim();
+        // Strict same-category matching: mainCategory, subcategory, and granular Level 3 childCategory
+        const refMain = (selectedProduct.mainCategory || selectedProduct.subNavbarCategory || '').toLowerCase().trim();
+        const refSub = (selectedProduct.subcategory || selectedProduct.subCategory || '').toLowerCase().trim();
+        const refChild = (selectedProduct.childCategory || selectedProduct.subSubcategory || selectedProduct.tag || '').toLowerCase().trim();
+        const refCat = (selectedProduct.category || '').toLowerCase().trim();
+
         const isComparableProduct = (p) => {
-          const candMain = (p.mainCategory || '').toLowerCase().trim();
-          const candSub = (p.category || p.subcategory || '').toLowerCase().trim();
+          const candMain = (p.mainCategory || p.subNavbarCategory || '').toLowerCase().trim();
+          const candSub = (p.subcategory || p.subCategory || '').toLowerCase().trim();
+          const candChild = (p.childCategory || p.subSubcategory || p.tag || '').toLowerCase().trim();
+          const candCat = (p.category || '').toLowerCase().trim();
+
           if (!refMain || !candMain) return false;
           if (candMain !== refMain) return false;
-          // If both have subcategory, enforce subcategory match too
-          if (refSub && candSub && candSub !== refSub) return false;
+
+          // If Level 3 Child Category exists on both, enforce Child Category match
+          if (refChild && candChild) {
+            return refChild === candChild;
+          }
+          // If Level 2 Subcategory exists on both, enforce Subcategory match
+          if (refSub && candSub) {
+            return refSub === candSub;
+          }
+          // Fall back to category field
+          if (refCat && candCat) {
+            return refCat === candCat;
+          }
           return true;
         };
         const manualItems = products.filter(p => p.id !== selectedProduct.id && manualCompareIds.includes(p.id));

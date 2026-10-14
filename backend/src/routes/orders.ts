@@ -699,6 +699,21 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const isCod = resolvedPaymentMethod === 'Cash on Delivery';
+    if (isCod) {
+      const bType = req.body.bookingType || (req.body as any).booking_type;
+      const isStayOrTravel = isTravelOrder || type === 'Travel' || type === 'Stay' || bType === 'Stay' || bType === 'Travel' ||
+        (Array.isArray(items) && items.some((it: any) => {
+          const cat = String(it.category || it.subNavbarCategory || it.mainCategory || it.tag || '').toLowerCase();
+          return cat.includes('travel') || cat.includes('stay') || cat.includes('hotel') || cat.includes('bus') || it.bookingType === 'Stay' || it.bookingType === 'Travel';
+        }));
+      if (isStayOrTravel) {
+        return res.status(400).json({
+          status: 'error',
+          code: 'COD_NOT_ALLOWED',
+          message: 'Cash on Delivery is not allowed for Travel and Stay bookings. Please pay using UPI, Card, Net Banking, or Connect Wallet.'
+        });
+      }
+    }
     let resolvedPaymentStatus = paymentStatus || payment_status;
     if (!resolvedPaymentStatus) {
       resolvedPaymentStatus = isCod ? 'Pending' : 'Paid';

@@ -160,6 +160,23 @@ export const validatePincode = (pincode) => {
   return { isValid: true, error: '' };
 };
 
+// 9.1 Asynchronous PIN code validation against India Post records
+export const verifyIndianPincodeAsync = async (pincode) => {
+  const sync = validatePincode(pincode);
+  if (!sync.isValid) return sync;
+
+  try {
+    const res = await fetch(`https://api.postalpincode.in/pincode/${encodeURIComponent(String(pincode).trim())}`);
+    const data = await res.json();
+    if (Array.isArray(data) && data[0]?.Status === 'Success' && Array.isArray(data[0]?.PostOffice) && data[0].PostOffice.length > 0) {
+      return { isValid: true, error: '', postOffices: data[0].PostOffice };
+    }
+    return { isValid: false, error: 'Please enter a valid, existing 6-digit Indian PIN code.' };
+  } catch (err) {
+    return sync;
+  }
+};
+
 // 10. Name (Letters and spaces only, 3-50 chars)
 export const validateName = (name) => {
   if (!name || !name.trim()) {

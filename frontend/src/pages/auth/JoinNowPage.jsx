@@ -12,10 +12,12 @@ import {
   validateAadhaar, 
   validatePan, 
   validatePincode, 
+  verifyIndianPincodeAsync,
   validatePassword, 
   validateConfirmPassword, 
   sanitizeInput 
 } from '../../utils/validation';
+import { getBackendUrl } from '../../services/apiSetup';
 
 export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToLoginPage }) {
   const [fullName, setFullName] = useState('');
@@ -35,6 +37,8 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [pincodeApiError, setPincodeApiError] = useState('');
+  const [isVerifyingPincode, setIsVerifyingPincode] = useState(false);
 
   // Touched state trackers for real-time validation UI
   const [touched, setTouched] = useState({});
@@ -49,7 +53,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   const emailVal = useMemo(() => validateEmail(email), [email]);
   const aadhaarVal = useMemo(() => validateAadhaar(aadhaarNumber), [aadhaarNumber]);
   const panVal = useMemo(() => validatePan(panNumber), [panNumber]);
-  const pincodeVal = useMemo(() => validatePincode(pincode), [pincode]);
+  const pincodeVal = useMemo(() => {
+    const sync = validatePincode(pincode);
+    if (!sync.isValid) return sync;
+    if (pincodeApiError) return { isValid: false, error: pincodeApiError };
+    return { isValid: true, error: '' };
+  }, [pincode, pincodeApiError]);
   const passwordVal = useMemo(() => validatePassword(password), [password]);
   const confirmPassVal = useMemo(() => validateConfirmPassword(password, confirmPassword), [password, confirmPassword]);
   const addressVal = useMemo(() => {
@@ -98,9 +107,21 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
     setPanNumber(val);
   };
 
-  const handlePincodeChange = (e) => {
+  const handlePincodeChange = async (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
     setPincode(val);
+    setPincodeApiError('');
+    if (val.length === 6) {
+      const syncVal = validatePincode(val);
+      if (syncVal.isValid) {
+        setIsVerifyingPincode(true);
+        const check = await verifyIndianPincodeAsync(val);
+        setIsVerifyingPincode(false);
+        if (!check.isValid) {
+          setPincodeApiError(check.error || 'Please enter a valid, existing 6-digit Indian PIN code.');
+        }
+      }
+    }
   };
 
   const handleNameChange = (e) => {
@@ -108,31 +129,9 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
     setFullName(val);
   };
 
-  // Backend API URL
+  // Standardized API Base URL (avoids /api/api duplication)
   const getApiBase = () => {
-    const formatApiUrl = (raw) => {
-      if (!raw) return '';
-      let clean = raw.trim().replace(/\/+$/, '');
-      if (!clean.startsWith('http://') && !clean.startsWith('https://')) clean = `http://${clean}`;
-      return `${clean}/api`;
-    };
-
-    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-    if (isHttps) {
-      if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://')) {
-        return formatApiUrl(import.meta.env.VITE_API_URL);
-      }
-      return '/api';
-    }
-
-    if (import.meta.env.VITE_API_URL) return formatApiUrl(import.meta.env.VITE_API_URL);
-    if (typeof window === 'undefined') return 'http://localhost:8001/api';
-    const hostname = window.location.hostname;
-    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' ||
-        hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
-      return `http://${hostname || 'localhost'}:8001/api`;
-    }
-    return 'https://api.ficapp.in/api';
+    return `${getBackendUrl()}/api`;
   };
 
   const handleSignupSubmit = async (e) => {

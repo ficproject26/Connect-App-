@@ -840,12 +840,33 @@ router.post('/register-customer', async (req, res) => {
     // Server-side Indian PIN Code Validation
     if (pincode !== undefined && pincode !== null && String(pincode).trim() !== '') {
         const cleanPin = String(pincode).trim();
-        if (!/^[1-9][0-9]{5}$/.test(cleanPin) || cleanPin === '100000' || cleanPin.startsWith('10')) {
+        const dummyCodes = ['123456', '654321', '100000', '999999', '282828', '121212', '101010', '131313', '242424', '363636'];
+        if (!/^[1-9][0-9]{5}$/.test(cleanPin) || dummyCodes.includes(cleanPin) || /^(\d)\1{5}$/.test(cleanPin) || cleanPin.startsWith('10')) {
             return res.status(400).json({
                 status: 'error',
                 code: 'INVALID_PINCODE',
                 message: 'Please enter a valid 6-digit Indian PIN code.'
             });
+        }
+        try {
+            const mongoDb = db_1.db.getDb();
+            if (mongoDb) {
+                const pinInDb = await mongoDb.collection('pincodes').findOne({ code: cleanPin });
+                if (!pinInDb) {
+                    const resp = await fetch(`https://api.postalpincode.in/pincode/${encodeURIComponent(cleanPin)}`, { signal: AbortSignal.timeout(3000) });
+                    const json = await resp.json();
+                    if (!Array.isArray(json) || json[0]?.Status !== 'Success' || !Array.isArray(json[0]?.PostOffice) || json[0].PostOffice.length === 0) {
+                        return res.status(400).json({
+                            status: 'error',
+                            code: 'INVALID_PINCODE',
+                            message: `PIN code '${cleanPin}' does not exist in Indian Postal records.`
+                        });
+                    }
+                }
+            }
+        }
+        catch (pinErr) {
+            // In case of timeout or offline, allow syntactic match
         }
     }
     try {
