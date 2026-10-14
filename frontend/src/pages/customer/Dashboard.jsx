@@ -20,6 +20,7 @@ import OrdersBookingsView from '../dashboards/OrdersBookingsView';
 import ProfileView from '../dashboards/ProfileView';
 import { sanitizeMobileInput } from '../../utils/validation';
 import { AuthContext, getOrGenerateCustomerId, isValidCustomerId, deduplicateAddresses } from '../../context/AuthContext';
+import { BookingDateInput, BookingTimeInput } from '../../components/common/BookingDateTimePicker';
 
 const getUserStorageKey = (user) => {
   if (!user) return 'default';
@@ -13325,8 +13326,8 @@ wishlistProducts.forEach(item => addToCart(item));
                     {/* Check-In & Check-Out Cards with Available / Not Available dates & times */}
                     <div className="space-y-4 mb-4 select-none">
                       {/* Check-In / Departure / Appointment Details Card */}
-                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3">
-                        <div className="flex items-center justify-between">
+                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3.5">
+                        <div className="flex items-center justify-between pb-1 border-b border-blue-100 dark:border-blue-900/40">
                           <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : isStayItem ? 'Check-In Details' : 'Appointment Details'}
                           </span>
@@ -13335,228 +13336,112 @@ wishlistProducts.forEach(item => addToCart(item));
                           </span>
                         </div>
 
-                        {/* Check-In / Departure / Appointment Date Strip */}
-                        <div>
-                          <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : isStayItem ? 'Select Check-In Date' : 'Select Appointment Date'}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                const container = e.currentTarget.parentElement?.nextElementSibling;
-                                if (container) {
-                                  container.scrollBy({ left: 150, behavior: 'smooth' });
-                                }
-                              }}
-                              className="text-[9px] font-extrabold text-blue-500 hover:text-blue-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
-                            >
-                              Scroll for dates →
-                            </button>
-                          </div>
-                          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                            {generateUpcomingDates(formatDateYYYYMMDD(todayObj), 14).map((d) => {
-                              const isSelected = stayCheckInDate === d.dateStr;
-                              return (
-                                <button
-                                  key={`in-date-${d.dateStr}`}
-                                  type="button"
-                                  disabled={!d.isAvailable}
-                                  onClick={() => {
-                                    setStayCheckInDate(d.dateStr);
-                                    if (d.dateStr === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(checkInTime, d.dateStr)) {
-                                      const validSlot = checkInTimeSlots.find(s => s.status === 'Available' && !isPastTimeForSelectedDate(s.time, d.dateStr));
-                                      if (validSlot) setCheckInTime(validSlot.time);
-                                    }
-                                    if (stayCheckOutDate <= d.dateStr) {
-                                      const next = new Date(d.dateStr + 'T00:00:00');
-                                      next.setDate(next.getDate() + 1);
-                                      setStayCheckOutDate(formatDateYYYYMMDD(next));
-                                    }
-                                  }}
-                                  className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
-                                    isSelected
-                                      ? 'bg-blue-600 text-white border-blue-600 shadow-md font-black ring-2 ring-blue-500/30'
-                                      : !d.isAvailable
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400'
-                                  }`}
-                                >
-                                  <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
-                                  <span className="text-sm font-black">{d.dayNumber}</span>
-                                  <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
-                                  <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
-                                    isSelected 
-                                      ? 'bg-blue-700 text-white' 
-                                      : !d.isAvailable 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                        {/* Modern Date and Time Inputs */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <BookingDateInput
+                            label={isTravelItem ? 'Travel Date' : isStayItem ? 'Check-In Date' : 'Appointment Date'}
+                            value={stayCheckInDate}
+                            minDate={formatDateYYYYMMDD(todayObj)}
+                            unavailableDates={activeScheduleModalItem?.unavailableDates}
+                            blockedDates={activeScheduleModalItem?.blockedDates}
+                            onChange={(selectedDateStr) => {
+                              setStayCheckInDate(selectedDateStr);
+                              if (selectedDateStr === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(checkInTime, selectedDateStr)) {
+                                const validSlot = checkInTimeSlots.find(s => s.status === 'Available' && !isPastTimeForSelectedDate(s.time, selectedDateStr));
+                                if (validSlot) setCheckInTime(validSlot.time);
+                              }
+                              if (stayCheckOutDate <= selectedDateStr) {
+                                const next = new Date(selectedDateStr + 'T00:00:00');
+                                next.setDate(next.getDate() + 1);
+                                setStayCheckOutDate(formatDateYYYYMMDD(next));
+                              }
+                            }}
+                          />
+
+                          <BookingTimeInput
+                            label={isTravelItem ? 'Travel Time' : isStayItem ? 'Check-In Time' : 'Appointment Time'}
+                            value={checkInTime}
+                            availableSlots={checkInTimeSlots}
+                            selectedDate={stayCheckInDate}
+                            isPastTimeFn={isPastTimeForSelectedDate}
+                            onChange={(selectedTimeStr) => {
+                              setCheckInTime(selectedTimeStr);
+                              if (selectedTimeStr.includes('09:00 AM') || selectedTimeStr.includes('10:00 AM') || selectedTimeStr.includes('11:00 AM') || selectedTimeStr.includes('09.00 AM') || selectedTimeStr.includes('12:00 PM') || selectedTimeStr.includes('01:00 PM') || selectedTimeStr.includes('02:00 PM')) {
+                                setStayMode('Day Option');
+                              } else if (selectedTimeStr.includes('09:00 PM') || selectedTimeStr.includes('08:00 PM') || selectedTimeStr.includes('09.00 PM') || selectedTimeStr.includes('06:00 PM')) {
+                                setStayMode('Night Option');
+                              }
+                            }}
+                          />
                         </div>
 
-                        {/* Check-In / Departure / Appointment Time Slots */}
-                        <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : isStayItem ? 'Select Check-In Time Slot' : 'Select Appointment Time Slot'}</span>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-                            {checkInTimeSlots
-                              .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
-                              .map((slot) => {
-                              const isSelected = checkInTime === slot.time;
-                              const isAvail = slot.status === 'Available';
-                              return (
-                                <button
-                                  key={`in-time-${slot.time}`}
-                                  type="button"
-                                  disabled={!isAvail}
-                                  onClick={() => {
-                                    setCheckInTime(slot.time);
-                                    if (slot.time.includes('09:00 AM') || slot.time.includes('10:00 AM') || slot.time.includes('11:00 AM') || slot.time.includes('09.00 AM') || slot.time.includes('12:00 PM') || slot.time.includes('01:00 PM') || slot.time.includes('02:00 PM')) {
-                                      setStayMode('Day Option');
-                                    } else if (slot.time.includes('09:00 PM') || slot.time.includes('08:00 PM') || slot.time.includes('09.00 PM') || slot.time.includes('06:00 PM')) {
-                                      setStayMode('Night Option');
-                                    }
-                                  }}
-                                  className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                      : !isAvail
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                  }`}
-                                >
-                                  <span className="text-[11px] font-extrabold">{slot.time}</span>
-                                  <span className={`text-[7.5px] font-black uppercase ${
-                                    isSelected 
-                                      ? 'text-white' 
-                                      : !isAvail 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : slot.status}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Manual Departure / Check-In / Appointment Time Entry */}
-                          <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-blue-50/50 dark:bg-blue-950/20 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                        {/* Boarding Point & Dropping Point (Travel Category Only) */}
+                        {isTravelItem && (
+                          <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3 mt-3.5">
+                            <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <MapPin className="w-4 h-4 text-blue-500" /> Boarding & Dropping Points
+                            </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : isStayItem ? 'Manual Check-In Time Entry' : 'Manual Appointment Time Entry'}</span>
-                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : isStayItem ? 'Select or type custom check-in time' : 'Select or type custom appointment time'}</span>
+                                <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                  BOARDING POINT <span className="text-rose-500">*</span>
+                                </label>
+                                {vendorBoardingPoints.length > 0 ? (
+                                  <select
+                                    value={boardingPoint}
+                                    onChange={(e) => {
+                                      const selectedName = e.target.value;
+                                      setBoardingPoint(selectedName);
+                                      const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === selectedName.trim().toLowerCase());
+                                      if (matched?.time) setCheckInTime(matched.time);
+                                    }}
+                                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                  >
+                                    <option value="">Select Boarding Point ▼</option>
+                                    {vendorBoardingPoints.map((bp, idx) => (
+                                      <option key={`m1-bp-opt-${idx}`} value={bp.name}>
+                                        {bp.name}{bp.time ? ` (${bp.time})` : ''}{bp.landmark ? ` - ${bp.landmark}` : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                    No boarding points available for this trip.
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input 
-                                type="time" 
-                                value={customTimeInput || ''} 
-                                min={stayCheckInDate === formatDateYYYYMMDD(todayObj) ? `${String(todayObj.getHours()).padStart(2, '0')}:${String(todayObj.getMinutes()).padStart(2, '0')}` : undefined}
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  if (!raw) {
-                                    setCustomTimeInput('');
-                                    return;
-                                  }
-                                  const [h, m] = raw.split(':');
-                                  let hour = parseInt(h, 10);
-                                  const min = parseInt(m, 10);
-                                  const ampm = hour >= 12 ? 'PM' : 'AM';
-                                  let hour12 = hour % 12 || 12;
-                                  const formatted = `${String(hour12).padStart(2, '0')}:${String(min).padStart(2, '0')} ${ampm}`;
-
-                                  const activeItem = activeScheduleModalItem || activeBookNowModalItem;
-                                  const slotCheck = getAuthoritativeSlotAvailability(formatted, stayCheckInDate, activeItem);
-                                  if (!slotCheck.isAvailable) {
-                                    triggerNotification(slotCheck.reason || "This time slot is not available for the selected date.", "error");
-                                    return;
-                                  }
-                                  setCustomTimeInput(raw);
-                                  setCheckInTime(formatted);
-                                }}
-                                className="bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
-                              />
-                              {checkInTime && (
-                                <span className="text-xs font-black text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900">
-                                  {checkInTime}
-                                </span>
-                              )}
+                              <div>
+                                <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                  DROPPING POINT <span className="text-rose-500">*</span>
+                                </label>
+                                {vendorDroppingPoints.length > 0 ? (
+                                  <select
+                                    value={droppingPoint}
+                                    onChange={(e) => setDroppingPoint(e.target.value)}
+                                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                  >
+                                    <option value="">Select Dropping Point ▼</option>
+                                    {vendorDroppingPoints.map((dp, idx) => (
+                                      <option key={`m1-dp-opt-${idx}`} value={dp.name}>
+                                        {dp.name}{dp.time ? ` (${dp.time})` : ''}{dp.landmark ? ` - ${dp.landmark}` : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                    No dropping points available for this trip.
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-
-                          {/* Boarding Point & Dropping Point (Travel Category Only) */}
-                          {isTravelItem && (
-                            <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3 mt-3.5">
-                              <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <MapPin className="w-4 h-4 text-blue-500" /> Boarding & Dropping Points
-                              </span>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    BOARDING POINT <span className="text-rose-500">*</span>
-                                  </label>
-                                  {vendorBoardingPoints.length > 0 ? (
-                                    <select
-                                      value={boardingPoint}
-                                      onChange={(e) => {
-                                        const selectedName = e.target.value;
-                                        setBoardingPoint(selectedName);
-                                        const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === selectedName.trim().toLowerCase());
-                                        if (matched?.time) setCheckInTime(matched.time);
-                                      }}
-                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
-                                    >
-                                      <option value="">Select Boarding Point ▼</option>
-                                      {vendorBoardingPoints.map((bp, idx) => (
-                                        <option key={`m1-bp-opt-${idx}`} value={bp.name}>
-                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}{bp.landmark ? ` - ${bp.landmark}` : ''}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : (
-                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
-                                      No boarding points available for this trip.
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    DROPPING POINT <span className="text-rose-500">*</span>
-                                  </label>
-                                  {vendorDroppingPoints.length > 0 ? (
-                                    <select
-                                      value={droppingPoint}
-                                      onChange={(e) => setDroppingPoint(e.target.value)}
-                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
-                                    >
-                                      <option value="">Select Dropping Point ▼</option>
-                                      {vendorDroppingPoints.map((dp, idx) => (
-                                        <option key={`m1-dp-opt-${idx}`} value={dp.name}>
-                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}{dp.landmark ? ` - ${dp.landmark}` : ''}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : (
-                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
-                                      No dropping points available for this trip.
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
 
                       {/* Check-Out Details Card (Stay Category Only) */}
                       {isStayItem && (
-                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3 mt-4">
-                          <div className="flex items-center justify-between">
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3.5 mt-4">
+                          <div className="flex items-center justify-between pb-1 border-b border-emerald-100 dark:border-emerald-900/40">
                             <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                               <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" /> Check-Out Details
                             </span>
@@ -13565,121 +13450,29 @@ wishlistProducts.forEach(item => addToCart(item));
                             </span>
                           </div>
 
-                          {/* Check-Out Date Strip */}
-                          <div>
-                            <div className="flex justify-between items-center mb-1.5">
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  const container = e.currentTarget.parentElement?.nextElementSibling;
-                                  if (container) {
-                                    container.scrollBy({ left: 150, behavior: 'smooth' });
-                                  }
-                                }}
-                                className="text-[9px] font-extrabold text-emerald-500 hover:text-emerald-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
-                              >
-                                Scroll for dates →
-                              </button>
-                            </div>
-                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14, activeScheduleModalItem).map((d) => {
-                                const isSelected = stayCheckOutDate === d.dateStr;
-                                const isAfterIn = d.dateStr > stayCheckInDate;
-                                return (
-                                  <button
-                                    key={`out-date-${d.dateStr}`}
-                                    type="button"
-                                    disabled={!d.isAvailable || !isAfterIn}
-                                    onClick={() => setStayCheckOutDate(d.dateStr)}
-                                    className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
-                                      isSelected
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                        : (!d.isAvailable || !isAfterIn)
-                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
-                                          : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                    }`}
-                                  >
-                                    <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
-                                    <span className="text-sm font-black">{d.dayNumber}</span>
-                                    <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
-                                    <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
-                                      isSelected 
-                                        ? 'bg-emerald-700 text-white' 
-                                        : !isAfterIn
-                                          ? 'text-red-500' 
-                                          : !d.isAvailable
-                                            ? 'text-amber-500'
-                                            : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-                                    }`}>
-                                      {isSelected ? 'SELECTED' : !isAfterIn ? 'INVALID' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <BookingDateInput
+                              label="Check-Out Date"
+                              value={stayCheckOutDate}
+                              minDate={(() => {
+                                if (!stayCheckInDate) return formatDateYYYYMMDD(tomorrowObj);
+                                const next = new Date(stayCheckInDate + 'T00:00:00');
+                                next.setDate(next.getDate() + 1);
+                                return formatDateYYYYMMDD(next);
+                              })()}
+                              unavailableDates={activeScheduleModalItem?.unavailableDates}
+                              blockedDates={activeScheduleModalItem?.blockedDates}
+                              accentColor="emerald"
+                              onChange={(selectedDateStr) => setStayCheckOutDate(selectedDateStr)}
+                            />
 
-                          {/* Check-Out Time Slots */}
-                          <div>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-Out Time Slot</span>
-                            <div className="grid grid-cols-5 gap-2">
-                              {['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '06:00 PM'].map((tSlot) => {
-                                const isSelected = checkOutTime === tSlot;
-                                return (
-                                  <button
-                                    key={`out-time-${tSlot}`}
-                                    type="button"
-                                    onClick={() => setCheckOutTime(tSlot)}
-                                    className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                    }`}
-                                  >
-                                    <span className="text-[11px] font-extrabold">{tSlot}</span>
-                                    <span className={`text-[7.5px] font-black uppercase ${isSelected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                      {isSelected ? 'SELECTED' : 'AVAILABLE'}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Manual Check-Out Time Entry */}
-                            <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                <div>
-                                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Check-Out Time Entry</span>
-                                  <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom check-out time</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <input 
-                                  type="time" 
-                                  value={customCheckOutTimeInput || ''} 
-                                  onChange={(e) => {
-                                    const raw = e.target.value;
-                                    setCustomCheckOutTimeInput(raw);
-                                    if (raw) {
-                                      const [h, m] = raw.split(':');
-                                      let hour = parseInt(h, 10);
-                                      const ampm = hour >= 12 ? 'PM' : 'AM';
-                                      hour = hour % 12 || 12;
-                                      const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
-                                      setCheckOutTime(formatted);
-                                    }
-                                  }}
-                                  className="bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
-                                />
-                                {checkOutTime && (
-                                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900">
-                                    {checkOutTime}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                            <BookingTimeInput
+                              label="Check-Out Time"
+                              value={checkOutTime}
+                              availableSlots={['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '06:00 PM']}
+                              accentColor="emerald"
+                              onChange={(selectedTimeStr) => setCheckOutTime(selectedTimeStr)}
+                            />
                           </div>
                         </div>
                       )}
@@ -14214,8 +14007,8 @@ wishlistProducts.forEach(item => addToCart(item));
                     {/* Check-In & Check-Out Cards with Available / Not Available view */}
                     <div className="space-y-4 mb-4 select-none">
                       {/* Check-In / Departure / Appointment Details Card */}
-                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3">
-                        <div className="flex items-center justify-between">
+                      <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3.5">
+                        <div className="flex items-center justify-between pb-1 border-b border-blue-100 dark:border-blue-900/40">
                           <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : isStayItem ? 'Check-In Details' : 'Appointment Details'}
                           </span>
@@ -14224,228 +14017,112 @@ wishlistProducts.forEach(item => addToCart(item));
                           </span>
                         </div>
 
-                        {/* Check-In / Departure / Appointment Date Strip */}
-                        <div>
-                          <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{isTravelItem ? 'Select Departure Date' : isStayItem ? 'Select Check-In Date' : 'Select Appointment Date'}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                const container = e.currentTarget.parentElement?.nextElementSibling;
-                                if (container) {
-                                  container.scrollBy({ left: 150, behavior: 'smooth' });
-                                }
-                              }}
-                              className="text-[9px] font-extrabold text-blue-500 hover:text-blue-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
-                            >
-                              Scroll for dates →
-                            </button>
-                          </div>
-                          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                            {generateUpcomingDates(formatDateYYYYMMDD(todayObj), 14).map((d) => {
-                              const isSelected = stayCheckInDate === d.dateStr;
-                              return (
-                                <button
-                                  key={`in-date-m2-${d.dateStr}`}
-                                  type="button"
-                                  disabled={!d.isAvailable}
-                                  onClick={() => {
-                                    setStayCheckInDate(d.dateStr);
-                                    if (d.dateStr === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(checkInTime, d.dateStr)) {
-                                      const validSlot = checkInTimeSlots.find(s => s.status === 'Available' && !isPastTimeForSelectedDate(s.time, d.dateStr));
-                                      if (validSlot) setCheckInTime(validSlot.time);
-                                    }
-                                    if (stayCheckOutDate <= d.dateStr) {
-                                      const next = new Date(d.dateStr + 'T00:00:00');
-                                      next.setDate(next.getDate() + 1);
-                                      setStayCheckOutDate(formatDateYYYYMMDD(next));
-                                    }
-                                  }}
-                                  className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
-                                    isSelected
-                                      ? 'bg-blue-600 text-white border-blue-600 shadow-md font-black ring-2 ring-blue-500/30'
-                                      : !d.isAvailable
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-blue-400'
-                                  }`}
-                                >
-                                  <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
-                                  <span className="text-sm font-black">{d.dayNumber}</span>
-                                  <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
-                                  <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
-                                    isSelected 
-                                      ? 'bg-blue-700 text-white' 
-                                      : !d.isAvailable 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                        {/* Modern Date and Time Inputs */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <BookingDateInput
+                            label={isTravelItem ? 'Travel Date' : isStayItem ? 'Check-In Date' : 'Appointment Date'}
+                            value={stayCheckInDate}
+                            minDate={formatDateYYYYMMDD(todayObj)}
+                            unavailableDates={activeBookNowModalItem?.unavailableDates}
+                            blockedDates={activeBookNowModalItem?.blockedDates}
+                            onChange={(selectedDateStr) => {
+                              setStayCheckInDate(selectedDateStr);
+                              if (selectedDateStr === formatDateYYYYMMDD(todayObj) && isPastTimeForSelectedDate(checkInTime, selectedDateStr)) {
+                                const validSlot = checkInTimeSlots.find(s => s.status === 'Available' && !isPastTimeForSelectedDate(s.time, selectedDateStr));
+                                if (validSlot) setCheckInTime(validSlot.time);
+                              }
+                              if (stayCheckOutDate <= selectedDateStr) {
+                                const next = new Date(selectedDateStr + 'T00:00:00');
+                                next.setDate(next.getDate() + 1);
+                                setStayCheckOutDate(formatDateYYYYMMDD(next));
+                              }
+                            }}
+                          />
+
+                          <BookingTimeInput
+                            label={isTravelItem ? 'Travel Time' : isStayItem ? 'Check-In Time' : 'Appointment Time'}
+                            value={checkInTime}
+                            availableSlots={checkInTimeSlots}
+                            selectedDate={stayCheckInDate}
+                            isPastTimeFn={isPastTimeForSelectedDate}
+                            onChange={(selectedTimeStr) => {
+                              setCheckInTime(selectedTimeStr);
+                              if (selectedTimeStr.includes('09:00 AM') || selectedTimeStr.includes('10:00 AM') || selectedTimeStr.includes('11:00 AM') || selectedTimeStr.includes('09.00 AM') || selectedTimeStr.includes('12:00 PM') || selectedTimeStr.includes('01:00 PM') || selectedTimeStr.includes('02:00 PM')) {
+                                setStayMode('Day Option');
+                              } else if (selectedTimeStr.includes('09:00 PM') || selectedTimeStr.includes('08:00 PM') || selectedTimeStr.includes('09.00 PM') || selectedTimeStr.includes('06:00 PM')) {
+                                setStayMode('Night Option');
+                              }
+                            }}
+                          />
                         </div>
 
-                        {/* Check-In / Departure / Appointment Time Slots */}
-                        <div>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">{isTravelItem ? 'Select Departure Time' : isStayItem ? 'Select Check-In Time Slot' : 'Select Appointment Time Slot'}</span>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-                            {checkInTimeSlots
-                              .filter((slot) => !isPastTimeForSelectedDate(slot.time, stayCheckInDate))
-                              .map((slot) => {
-                              const isSelected = checkInTime === slot.time;
-                              const isAvail = slot.status === 'Available';
-                              return (
-                                <button
-                                  key={`in-time-m2-${slot.time}`}
-                                  type="button"
-                                  disabled={!isAvail}
-                                  onClick={() => {
-                                    setCheckInTime(slot.time);
-                                    if (slot.time.includes('09:00 AM') || slot.time.includes('10:00 AM') || slot.time.includes('11:00 AM') || slot.time.includes('09.00 AM') || slot.time.includes('12:00 PM') || slot.time.includes('01:00 PM') || slot.time.includes('02:00 PM')) {
-                                      setStayMode('Day Option');
-                                    } else if (slot.time.includes('09:00 PM') || slot.time.includes('08:00 PM') || slot.time.includes('09.00 PM') || slot.time.includes('06:00 PM')) {
-                                      setStayMode('Night Option');
-                                    }
-                                  }}
-                                  className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                      : !isAvail
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed line-through'
-                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                  }`}
-                                >
-                                  <span className="text-[11px] font-extrabold">{slot.time}</span>
-                                  <span className={`text-[7.5px] font-black uppercase ${
-                                    isSelected 
-                                      ? 'text-white' 
-                                      : !isAvail 
-                                        ? 'text-red-500' 
-                                        : 'text-emerald-600 dark:text-emerald-400'
-                                  }`}>
-                                    {isSelected ? 'SELECTED' : slot.status}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Manual Departure / Appointment Time Entry */}
-                          <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-blue-50/50 dark:bg-blue-950/20 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                        {/* Boarding Point & Dropping Point (Travel Category Only) */}
+                        {isTravelItem && (
+                          <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3 mt-3.5">
+                            <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <MapPin className="w-4 h-4 text-blue-500" /> Boarding & Dropping Points
+                            </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">{isTravelItem ? 'Manual Departure Time Entry' : isStayItem ? 'Manual Check-In Time Entry' : 'Manual Appointment Time Entry'}</span>
-                                <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">{isTravelItem ? 'Select or type custom departure time' : isStayItem ? 'Select or type custom check-in time' : 'Select or type custom appointment time'}</span>
+                                <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                  BOARDING POINT <span className="text-rose-500">*</span>
+                                </label>
+                                {vendorBoardingPoints.length > 0 ? (
+                                  <select
+                                    value={boardingPoint}
+                                    onChange={(e) => {
+                                      const selectedName = e.target.value;
+                                      setBoardingPoint(selectedName);
+                                      const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === selectedName.trim().toLowerCase());
+                                      if (matched?.time) setCheckInTime(matched.time);
+                                    }}
+                                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                  >
+                                    <option value="">Select Boarding Point ▼</option>
+                                    {vendorBoardingPoints.map((bp, idx) => (
+                                      <option key={`m2-bp-opt-${idx}`} value={bp.name}>
+                                        {bp.name}{bp.time ? ` (${bp.time})` : ''}{bp.landmark ? ` - ${bp.landmark}` : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                    No boarding points available for this trip.
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input 
-                                type="time" 
-                                value={customTimeInput || ''} 
-                                min={stayCheckInDate === formatDateYYYYMMDD(todayObj) ? `${String(todayObj.getHours()).padStart(2, '0')}:${String(todayObj.getMinutes()).padStart(2, '0')}` : undefined}
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  if (!raw) {
-                                    setCustomTimeInput('');
-                                    return;
-                                  }
-                                  const [h, m] = raw.split(':');
-                                  let hour = parseInt(h, 10);
-                                  const min = parseInt(m, 10);
-                                  const ampm = hour >= 12 ? 'PM' : 'AM';
-                                  let hour12 = hour % 12 || 12;
-                                  const formatted = `${String(hour12).padStart(2, '0')}:${String(min).padStart(2, '0')} ${ampm}`;
-
-                                  const activeItem = activeScheduleModalItem || activeBookNowModalItem;
-                                  const slotCheck = getAuthoritativeSlotAvailability(formatted, stayCheckInDate, activeItem);
-                                  if (!slotCheck.isAvailable) {
-                                    triggerNotification(slotCheck.reason || "This time slot is not available for the selected date.", "error");
-                                    return;
-                                  }
-                                  setCustomTimeInput(raw);
-                                  setCheckInTime(formatted);
-                                }}
-                                className="bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
-                              />
-                              {checkInTime && (
-                                <span className="text-xs font-black text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900">
-                                  {checkInTime}
-                                </span>
-                              )}
+                              <div>
+                                <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                  DROPPING POINT <span className="text-rose-500">*</span>
+                                </label>
+                                {vendorDroppingPoints.length > 0 ? (
+                                  <select
+                                    value={droppingPoint}
+                                    onChange={(e) => setDroppingPoint(e.target.value)}
+                                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
+                                  >
+                                    <option value="">Select Dropping Point ▼</option>
+                                    {vendorDroppingPoints.map((dp, idx) => (
+                                      <option key={`m2-dp-opt-${idx}`} value={dp.name}>
+                                        {dp.name}{dp.time ? ` (${dp.time})` : ''}{dp.landmark ? ` - ${dp.landmark}` : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
+                                    No dropping points available for this trip.
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-
-                          {/* Boarding Point & Dropping Point (Travel Category Only) */}
-                          {isTravelItem && (
-                            <div className="bg-slate-50 dark:bg-slate-900/60 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl p-4 text-left space-y-3 mt-3.5">
-                              <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <MapPin className="w-4 h-4 text-blue-500" /> Boarding & Dropping Points
-                              </span>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    BOARDING POINT <span className="text-rose-500">*</span>
-                                  </label>
-                                  {vendorBoardingPoints.length > 0 ? (
-                                    <select
-                                      value={boardingPoint}
-                                      onChange={(e) => {
-                                        const selectedName = e.target.value;
-                                        setBoardingPoint(selectedName);
-                                        const matched = vendorBoardingPoints.find(bp => bp.name.toLowerCase() === selectedName.trim().toLowerCase());
-                                        if (matched?.time) setCheckInTime(matched.time);
-                                      }}
-                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
-                                    >
-                                      <option value="">Select Boarding Point ▼</option>
-                                      {vendorBoardingPoints.map((bp, idx) => (
-                                        <option key={`m2-bp-opt-${idx}`} value={bp.name}>
-                                          {bp.name}{bp.time ? ` (${bp.time})` : ''}{bp.landmark ? ` - ${bp.landmark}` : ''}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : (
-                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
-                                      No boarding points available for this trip.
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    DROPPING POINT <span className="text-rose-500">*</span>
-                                  </label>
-                                  {vendorDroppingPoints.length > 0 ? (
-                                    <select
-                                      value={droppingPoint}
-                                      onChange={(e) => setDroppingPoint(e.target.value)}
-                                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer"
-                                    >
-                                      <option value="">Select Dropping Point ▼</option>
-                                      {vendorDroppingPoints.map((dp, idx) => (
-                                        <option key={`m2-dp-opt-${idx}`} value={dp.name}>
-                                          {dp.name}{dp.time ? ` (${dp.time})` : ''}{dp.landmark ? ` - ${dp.landmark}` : ''}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : (
-                                    <div className="p-2.5 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-400 italic">
-                                      No dropping points available for this trip.
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
 
                       {/* Check-Out Details Card (Stay Category Only) */}
                       {isStayItem && (
-                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3 mt-4">
-                          <div className="flex items-center justify-between">
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-emerald-200/60 dark:border-emerald-900/40 rounded-2xl p-4 text-left space-y-3.5 mt-4">
+                          <div className="flex items-center justify-between pb-1 border-b border-emerald-100 dark:border-emerald-900/40">
                             <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                               <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" /> Check-Out Details
                             </span>
@@ -14454,121 +14131,29 @@ wishlistProducts.forEach(item => addToCart(item));
                             </span>
                           </div>
 
-                          {/* Check-Out Date Strip */}
-                          <div>
-                            <div className="flex justify-between items-center mb-1.5">
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Select Check-Out Date</span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  const container = e.currentTarget.parentElement?.nextElementSibling;
-                                  if (container) {
-                                    container.scrollBy({ left: 150, behavior: 'smooth' });
-                                  }
-                                }}
-                                className="text-[9px] font-extrabold text-emerald-500 hover:text-emerald-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5 transition-colors"
-                              >
-                                Scroll for dates →
-                              </button>
-                            </div>
-                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                              {generateUpcomingDates(stayCheckInDate || formatDateYYYYMMDD(todayObj), 14, activeBookNowModalItem).map((d) => {
-                                const isSelected = stayCheckOutDate === d.dateStr;
-                                const isAfterIn = d.dateStr > stayCheckInDate;
-                                return (
-                                  <button
-                                    key={`out-date-m2-${d.dateStr}`}
-                                    type="button"
-                                    disabled={!d.isAvailable || !isAfterIn}
-                                    onClick={() => setStayCheckOutDate(d.dateStr)}
-                                    className={`min-w-[72px] py-2 px-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 ${
-                                      isSelected
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                        : (!d.isAvailable || !isAfterIn)
-                                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed line-through'
-                                          : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                    }`}
-                                  >
-                                    <span className="text-[9px] font-extrabold uppercase opacity-80">{d.dayName}</span>
-                                    <span className="text-sm font-black">{d.dayNumber}</span>
-                                    <span className="text-[8px] font-bold uppercase">{d.monthName}</span>
-                                    <span className={`text-[7px] font-black uppercase px-1 py-0.2 rounded mt-0.5 ${
-                                      isSelected 
-                                        ? 'bg-emerald-700 text-white' 
-                                        : !isAfterIn
-                                          ? 'text-red-500' 
-                                          : !d.isAvailable
-                                            ? 'text-amber-500'
-                                            : 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-                                    }`}>
-                                      {isSelected ? 'SELECTED' : !isAfterIn ? 'INVALID' : !d.isAvailable ? 'FULL' : 'AVAILABLE'}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <BookingDateInput
+                              label="Check-Out Date"
+                              value={stayCheckOutDate}
+                              minDate={(() => {
+                                if (!stayCheckInDate) return formatDateYYYYMMDD(tomorrowObj);
+                                const next = new Date(stayCheckInDate + 'T00:00:00');
+                                next.setDate(next.getDate() + 1);
+                                return formatDateYYYYMMDD(next);
+                              })()}
+                              unavailableDates={activeBookNowModalItem?.unavailableDates}
+                              blockedDates={activeBookNowModalItem?.blockedDates}
+                              accentColor="emerald"
+                              onChange={(selectedDateStr) => setStayCheckOutDate(selectedDateStr)}
+                            />
 
-                          {/* Check-Out Time Slots */}
-                          <div>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Select Check-Out Time Slot</span>
-                            <div className="grid grid-cols-5 gap-2">
-                              {['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '06:00 PM'].map((tSlot) => {
-                                const isSelected = checkOutTime === tSlot;
-                                return (
-                                  <button
-                                    key={`out-time-m2-${tSlot}`}
-                                    type="button"
-                                    onClick={() => setCheckOutTime(tSlot)}
-                                    className={`py-2 px-1.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
-                                        : 'bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                                    }`}
-                                  >
-                                    <span className="text-[11px] font-extrabold">{tSlot}</span>
-                                    <span className={`text-[7.5px] font-black uppercase ${isSelected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                      {isSelected ? 'SELECTED' : 'AVAILABLE'}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Manual Check-Out Time Entry */}
-                            <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                <div>
-                                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 block leading-tight">Manual Check-Out Time Entry</span>
-                                  <span className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 block">Select or type custom check-out time</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <input 
-                                  type="time" 
-                                  value={customCheckOutTimeInput || ''} 
-                                  onChange={(e) => {
-                                    const raw = e.target.value;
-                                    setCustomCheckOutTimeInput(raw);
-                                    if (raw) {
-                                      const [h, m] = raw.split(':');
-                                      let hour = parseInt(h, 10);
-                                      const ampm = hour >= 12 ? 'PM' : 'AM';
-                                      hour = hour % 12 || 12;
-                                      const formatted = `${String(hour).padStart(2, '0')}:${m} ${ampm}`;
-                                      setCheckOutTime(formatted);
-                                    }
-                                  }}
-                                  className="bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-800 rounded-xl px-2.5 py-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
-                                />
-                                {checkOutTime && (
-                                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900">
-                                    {checkOutTime}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                            <BookingTimeInput
+                              label="Check-Out Time"
+                              value={checkOutTime}
+                              availableSlots={['11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '06:00 PM']}
+                              accentColor="emerald"
+                              onChange={(selectedTimeStr) => setCheckOutTime(selectedTimeStr)}
+                            />
                           </div>
                         </div>
                       )}
