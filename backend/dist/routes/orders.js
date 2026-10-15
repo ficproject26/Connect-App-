@@ -454,15 +454,18 @@ router.post('/', async (req, res) => {
             type.toLowerCase().includes('flight'))) ||
         Boolean(checkInDate && checkOutDate) ||
         Boolean(boardingPoint || droppingPoint);
-    if (!customer_name || !customer_phone || (!isTravelOrStayBooking && !customer_address) || amount === undefined || amount === null) {
+    const isServiceBooking = type === 'Services' || type === 'Service' ||
+        (typeof type === 'string' && (type.toLowerCase().includes('service')));
+    const isBookingWithoutPhysicalDelivery = isTravelOrStayBooking || isServiceBooking;
+    if (!customer_name || !customer_phone || (!isBookingWithoutPhysicalDelivery && !customer_address) || amount === undefined || amount === null) {
         return res.status(400).json({
             status: 'error',
-            message: isTravelOrStayBooking
+            message: isBookingWithoutPhysicalDelivery
                 ? 'Customer name, phone, and amount are required.'
                 : 'Customer name, phone, address, and amount are required.'
         });
     }
-    const resolvedCustomerAddress = customer_address || (isTravelOrStayBooking ? 'N/A (Booking Service)' : '');
+    const resolvedCustomerAddress = customer_address || (isBookingWithoutPhysicalDelivery ? 'N/A (Booking Service)' : '');
     try {
         if (vendor_id) {
             const isVendorActive = await db_1.db.isVendorActive(vendor_id);
@@ -591,6 +594,42 @@ router.post('/', async (req, res) => {
             }
             catch (e) { }
             travelProduct = await mongoDb.collection('products').findOne({ $or: queries });
+        }
+        const isStayOrder = type === 'Stay' || type === 'Hotel Stay' ||
+            (typeof type === 'string' && (type.toLowerCase().includes('stay') || type.toLowerCase().includes('hotel') || type.toLowerCase().includes('resort'))) ||
+            Boolean(checkInDate && checkOutDate);
+        if (isStayOrder) {
+            const totalGuests = numAdults + numChildren;
+            const guests = Array.isArray(guestDetails) && guestDetails.length > 0
+                ? guestDetails
+                : (Array.isArray(guestList) && guestList.length > 0 ? guestList : []);
+            if (totalGuests > 0 && guests.length < totalGuests) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Please provide information for all ${totalGuests} guests before booking.`
+                });
+            }
+            for (let i = 0; i < totalGuests; i++) {
+                const g = guests[i];
+                if (!g || !g.name || !String(g.name).trim()) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: `Guest ${i + 1} name is required.`
+                    });
+                }
+                if (!/^[a-zA-Z\s]{2,50}$/.test(String(g.name).trim())) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: `Guest ${i + 1} name must contain only letters and spaces.`
+                    });
+                }
+                if (!g.aadhaar || !/^\d{12}$/.test(String(g.aadhaar).trim())) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: `Guest ${i + 1} requires a valid 12-digit Aadhaar number.`
+                    });
+                }
+            }
         }
         const isTravelOrder = type === 'Travel' || (type || '').toLowerCase() === 'travel' ||
             travelProduct?.subNavbarCategory === 'Travel' || travelProduct?.mainCategory === 'Travel' ||

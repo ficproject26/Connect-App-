@@ -91,26 +91,36 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
     );
   }, [nameVal, phoneVal, emailVal, aadhaarVal, panVal, addressVal, cityVal, pincodeVal, passwordVal, confirmPassVal, agreeTerms]);
 
-  // Field Input Sanitizers and Formatters
+  // Field Input Sanitizers and Formatters with Immediate Validation
   const handlePhoneChange = (e) => {
     const val = sanitizeMobileInput(e.target.value);
     setPhoneNumber(val);
+    setTouched(prev => ({ ...prev, phoneNumber: true }));
+  };
+
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setEmail(val);
+    setTouched(prev => ({ ...prev, email: true }));
   };
 
   const handleAadhaarChange = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 12);
     setAadhaarNumber(val);
+    setTouched(prev => ({ ...prev, aadhaarNumber: true }));
   };
 
   const handlePanChange = (e) => {
     const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
     setPanNumber(val);
+    setTouched(prev => ({ ...prev, panNumber: true }));
   };
 
   const handlePincodeChange = async (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
     setPincode(val);
     setPincodeApiError('');
+    setTouched(prev => ({ ...prev, pincode: true }));
     if (val.length === 6) {
       const syncVal = validatePincode(val);
       if (syncVal.isValid) {
@@ -127,6 +137,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   const handleNameChange = (e) => {
     const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
     setFullName(val);
+    setTouched(prev => ({ ...prev, fullName: true }));
   };
 
   // Standardized API Base URL (avoids /api/api duplication)
@@ -317,7 +328,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
                         Phone Number <span className="text-rose-500">*</span>
                       </label>
-                      {touched.phoneNumber && phoneVal.isValid && (
+                      {(touched.phoneNumber || phoneNumber.length === 10) && phoneVal.isValid && (
                         <span className="text-emerald-500 flex items-center gap-0.5 text-[10px] font-bold">
                           <CheckCircle2 size={12} /> Valid
                         </span>
@@ -334,18 +345,18 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         onBlur={() => handleBlur('phoneNumber')}
                         placeholder="10-digit mobile number"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-8 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
-                          touched.phoneNumber && !phoneVal.isValid 
+                          (touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid 
                             ? 'border-rose-500 ring-2 ring-rose-500/20' 
-                            : touched.phoneNumber && phoneVal.isValid 
+                            : (touched.phoneNumber || phoneNumber.length === 10) && phoneVal.isValid 
                             ? 'border-emerald-500 ring-1 ring-emerald-500/30'
                             : 'border-slate-200/80 dark:border-slate-800 focus:border-[#FFB800]'
                         }`}
                       />
-                      {touched.phoneNumber && !phoneVal.isValid && (
+                      {(touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid && (
                         <AlertCircle className="w-3.5 h-3.5 text-rose-500 absolute right-3 top-1/2 -translate-y-1/2" />
                       )}
                     </div>
-                    {touched.phoneNumber && !phoneVal.isValid && (
+                    {(touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid && (
                       <p className="text-[10px] font-bold text-rose-500 mt-1">{phoneVal.error}</p>
                     )}
                   </div>
@@ -357,7 +368,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
                       Email Address <span className="text-rose-500">*</span>
                     </label>
-                    {touched.email && emailVal.isValid && (
+                    {(touched.email || email.length > 0) && emailVal.isValid && (
                       <span className="text-emerald-500 flex items-center gap-0.5 text-[10px] font-bold">
                         <CheckCircle2 size={12} /> Valid
                       </span>
@@ -369,22 +380,22 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       type="email"
                       required
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={handleEmailChange}
                       onBlur={() => handleBlur('email')}
                       placeholder="Enter your valid email address"
                       className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-8 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
-                        touched.email && !emailVal.isValid 
+                        (touched.email || email.length > 0) && !emailVal.isValid 
                           ? 'border-rose-500 ring-2 ring-rose-500/20' 
-                          : touched.email && emailVal.isValid 
+                          : (touched.email || email.length > 0) && emailVal.isValid 
                           ? 'border-emerald-500 ring-1 ring-emerald-500/30'
                           : 'border-slate-200/80 dark:border-slate-800 focus:border-[#FFB800]'
                       }`}
                     />
-                    {touched.email && !emailVal.isValid && (
+                    {(touched.email || email.length > 0) && !emailVal.isValid && (
                       <AlertCircle className="w-3.5 h-3.5 text-rose-500 absolute right-3 top-1/2 -translate-y-1/2" />
                     )}
                   </div>
-                  {touched.email && !emailVal.isValid && (
+                  {(touched.email || email.length > 0) && !emailVal.isValid && (
                     <p className="text-[10px] font-bold text-rose-500 mt-1">{emailVal.error}</p>
                   )}
                 </div>
@@ -558,9 +569,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
                           Pincode <span className="text-rose-500">*</span>
                         </label>
-                        {touched.pincode && pincodeVal.isValid && (
+                        {(touched.pincode || pincode.length === 6) && pincodeVal.isValid && (
                           <span className="text-emerald-500 flex items-center gap-0.5 text-[10px] font-bold">
                             <CheckCircle2 size={12} /> Valid
+                          </span>
+                        )}
+                        {isVerifyingPincode && (
+                          <span className="text-amber-500 flex items-center gap-1 text-[10px] font-bold">
+                            <div className="w-2.5 h-2.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /> Verifying...
                           </span>
                         )}
                       </div>
@@ -571,16 +587,16 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         value={pincode}
                         onChange={handlePincodeChange}
                         onBlur={() => handleBlur('pincode')}
-                        placeholder="6-digit Pincode"
+                        placeholder="6-digit Indian PIN"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
-                          touched.pincode && !pincodeVal.isValid 
+                          (touched.pincode || pincode.length > 0) && !pincodeVal.isValid 
                             ? 'border-rose-500 ring-2 ring-rose-500/20' 
-                            : touched.pincode && pincodeVal.isValid 
+                            : (touched.pincode || pincode.length === 6) && pincodeVal.isValid 
                             ? 'border-emerald-500 ring-1 ring-emerald-500/30'
                             : 'border-slate-200/80 dark:border-slate-800 focus:border-[#FFB800]'
                         }`}
                       />
-                      {touched.pincode && !pincodeVal.isValid && (
+                      {(touched.pincode || pincode.length > 0) && !pincodeVal.isValid && (
                         <p className="text-[10px] font-bold text-rose-500 mt-1">{pincodeVal.error}</p>
                       )}
                     </div>

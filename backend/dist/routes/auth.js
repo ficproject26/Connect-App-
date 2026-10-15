@@ -11,6 +11,7 @@ const securityManager_1 = require("../security/securityManager");
 const middleware_1 = require("../security/middleware");
 const customerIdService_1 = require("../services/customerIdService");
 const roleAuthorization_1 = require("../security/roleAuthorization");
+const smsService_1 = require("../services/smsService");
 const router = (0, express_1.Router)();
 const normalizeAddressStr = (addr) => {
     if (!addr)
@@ -497,6 +498,26 @@ router.post('/send-otp', middleware_1.authRateLimiter, async (req, res) => {
             });
         }
         const { otp, cooldownSeconds } = securityManager_1.securityManager.generateOTP(target);
+        // Real SMS Gateway Dispatch
+        const isTargetPhone = /^\d+$/.test(target.replace(/\D/g, ''));
+        let deliveryStatus = {
+            delivered: false,
+            simulated: false,
+            message: `OTP sent successfully to ${target}. Valid for 5 minutes.`
+        };
+        if (isTargetPhone) {
+            const smsRes = await smsService_1.smsService.sendOTP(target, otp);
+            if (!smsRes.success && !smsRes.simulated) {
+                return res.status(502).json({
+                    status: 'error',
+                    code: 'SMS_DELIVERY_FAILED',
+                    message: smsRes.statusMessage || 'SMS delivery failed through carrier gateway.'
+                });
+            }
+            deliveryStatus.delivered = smsRes.delivered;
+            deliveryStatus.simulated = !!smsRes.simulated;
+            deliveryStatus.message = smsRes.statusMessage;
+        }
         securityManager_1.securityManager.logEvent({
             action: 'OTP_REQUESTED',
             email: target,
@@ -504,13 +525,15 @@ router.post('/send-otp', middleware_1.authRateLimiter, async (req, res) => {
             device: req.headers['user-agent'] || 'Unknown',
             country: 'India',
             status: 'SUCCESS',
-            details: `Generated 6-digit OTP (expires in 5 minutes).`
+            details: `Generated 6-digit OTP (expires in 5 minutes). Delivered: ${deliveryStatus.delivered}, Simulated: ${deliveryStatus.simulated}`
         });
         return res.json({
             status: 'success',
-            message: `OTP sent successfully to ${target}. Valid for 5 minutes.`,
+            delivered: deliveryStatus.delivered,
+            simulated: deliveryStatus.simulated,
+            message: deliveryStatus.message,
             cooldownSeconds,
-            otp
+            ...(deliveryStatus.simulated ? { otp } : {})
         });
     }
     catch (err) {
@@ -627,8 +650,8 @@ router.post('/verify-otp', middleware_1.authRateLimiter, async (req, res) => {
         user: responseUser
     });
 });
-// 3.5. POST: /api/auth/forgot-password/send-otp
-router.post('/forgot-password/send-otp', middleware_1.authRateLimiter, async (req, res) => {
+// 3.5. POST: /api/auth/forgot-password/send-otp (and aliases /forgot-password-otp, /forgot-password/otp)
+router.post(['/forgot-password/send-otp', '/forgot-password-otp', '/forgot-password/otp'], middleware_1.authRateLimiter, async (req, res) => {
     const { identifier, mobileOrEmail, email, phone } = req.body;
     const target = (identifier || mobileOrEmail || email || phone || '').toString().trim();
     const ip = req.ip || '127.0.0.1';
@@ -663,10 +686,22 @@ router.post('/forgot-password/send-otp', middleware_1.authRateLimiter, async (re
         // Uniform response to prevent account enumeration
         let cooldown = 30;
         let generatedOtp = '';
+        let isSimulated = false;
         if (dbUser) {
             const { otp, cooldownSeconds } = securityManager_1.securityManager.generateOTP('reset_' + normalizedTarget);
             cooldown = cooldownSeconds;
             generatedOtp = otp;
+            if (isNumeric) {
+                const smsRes = await smsService_1.smsService.sendOTP(target, otp);
+                if (!smsRes.success && !smsRes.simulated) {
+                    return res.status(502).json({
+                        status: 'error',
+                        code: 'SMS_DELIVERY_FAILED',
+                        message: smsRes.statusMessage || 'SMS delivery failed.'
+                    });
+                }
+                isSimulated = !!smsRes.simulated;
+            }
             securityManager_1.securityManager.logEvent({
                 action: 'PASSWORD_RESET_OTP_REQUESTED',
                 email: normalizedTarget,
@@ -683,15 +718,15 @@ router.post('/forgot-password/send-otp', middleware_1.authRateLimiter, async (re
                 ? `Verification code sent to ${target}. Valid for 5 minutes.`
                 : 'If an account exists with this email or mobile number, a verification code has been sent.',
             cooldownSeconds: cooldown,
-            otp: generatedOtp || undefined
+            ...(isSimulated ? { otp: generatedOtp } : {})
         });
     }
     catch (err) {
         return res.status(429).json({ status: 'error', message: err.message || 'Please wait before requesting another OTP.' });
     }
 });
-// 3.6. POST: /api/auth/forgot-password/verify-and-reset
-router.post('/forgot-password/verify-and-reset', middleware_1.authRateLimiter, async (req, res) => {
+// 3.6. POST: /api/auth/forgot-password/verify-and-reset (and aliases /forgot-password-reset, /forgot-password/reset)
+router.post(['/forgot-password/verify-and-reset', '/forgot-password-reset', '/forgot-password/reset'], middleware_1.authRateLimiter, async (req, res) => {
     const { identifier, mobileOrEmail, email, phone, otp, newPassword, confirmPassword } = req.body;
     const target = (identifier || mobileOrEmail || email || phone || '').toString().trim();
     const passwordToSet = newPassword || confirmPassword || '';
@@ -858,37 +893,42 @@ router.post('/register-customer', async (req, res) => {
             });
         }
     }
-    // Server-side Indian PIN Code Validation
-    if (pincode !== undefined && pincode !== null && String(pincode).trim() !== '') {
-        const cleanPin = String(pincode).trim();
-        const dummyCodes = ['123456', '654321', '100000', '999999', '282828', '121212', '101010', '131313', '242424', '363636'];
-        if (!/^[1-9][0-9]{5}$/.test(cleanPin) || dummyCodes.includes(cleanPin) || /^(\d)\1{5}$/.test(cleanPin) || cleanPin.startsWith('10')) {
-            return res.status(400).json({
-                status: 'error',
-                code: 'INVALID_PINCODE',
-                message: 'Please enter a valid 6-digit Indian PIN code.'
-            });
-        }
-        try {
-            const mongoDb = db_1.db.getDb();
-            if (mongoDb) {
-                const pinInDb = await mongoDb.collection('pincodes').findOne({ code: cleanPin });
-                if (!pinInDb) {
-                    const resp = await fetch(`https://api.postalpincode.in/pincode/${encodeURIComponent(cleanPin)}`, { signal: AbortSignal.timeout(3000) });
-                    const json = await resp.json();
-                    if (!Array.isArray(json) || json[0]?.Status !== 'Success' || !Array.isArray(json[0]?.PostOffice) || json[0].PostOffice.length === 0) {
-                        return res.status(400).json({
-                            status: 'error',
-                            code: 'INVALID_PINCODE',
-                            message: `PIN code '${cleanPin}' does not exist in Indian Postal records.`
-                        });
-                    }
+    // Server-side Indian PIN Code Validation (Strict Mandatory Requirement)
+    if (!pincode || String(pincode).trim() === '') {
+        return res.status(400).json({
+            status: 'error',
+            code: 'PINCODE_REQUIRED',
+            message: 'PIN code is required. Please enter a valid 6-digit Indian PIN code.'
+        });
+    }
+    const cleanPin = String(pincode).trim();
+    const dummyCodes = ['123456', '654321', '100000', '999999', '282828', '121212', '101010', '131313', '242424', '363636'];
+    if (!/^[1-9][0-9]{5}$/.test(cleanPin) || dummyCodes.includes(cleanPin) || /^(\d)\1{5}$/.test(cleanPin) || cleanPin.startsWith('10')) {
+        return res.status(400).json({
+            status: 'error',
+            code: 'INVALID_PINCODE',
+            message: 'Please enter a valid 6-digit Indian PIN code.'
+        });
+    }
+    try {
+        const mongoDb = db_1.db.getDb();
+        if (mongoDb) {
+            const pinInDb = await mongoDb.collection('pincodes').findOne({ code: cleanPin });
+            if (!pinInDb) {
+                const resp = await fetch(`https://api.postalpincode.in/pincode/${encodeURIComponent(cleanPin)}`, { signal: AbortSignal.timeout(3000) });
+                const json = await resp.json();
+                if (!Array.isArray(json) || json[0]?.Status !== 'Success' || !Array.isArray(json[0]?.PostOffice) || json[0].PostOffice.length === 0) {
+                    return res.status(400).json({
+                        status: 'error',
+                        code: 'INVALID_PINCODE',
+                        message: `PIN code '${cleanPin}' does not exist in Indian Postal records.`
+                    });
                 }
             }
         }
-        catch (pinErr) {
-            // In case of timeout or offline, allow syntactic match
-        }
+    }
+    catch (pinErr) {
+        // In case of timeout or offline, allow valid syntactic match
     }
     try {
         const mongoDb = db_1.db.getDb();
@@ -1562,6 +1602,47 @@ router.put('/customer-notifications/read', middleware_1.optionalAuthenticateToke
             }, { $set: { notification_read: true, notificationRead: true } }).catch(() => { });
         }
         return res.json({ status: 'success', message: 'All notifications marked as read', unreadCount: 0 });
+    }
+    catch (err) {
+        return res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+// Delete Notification Endpoint
+router.delete(['/customer-notifications/:id', '/notifications/:id'], middleware_1.optionalAuthenticateToken, async (req, res) => {
+    const notifId = req.params.id;
+    if (!notifId) {
+        return res.status(400).json({ status: 'error', message: 'Notification ID is required.' });
+    }
+    try {
+        const mongoDb = db_1.db.getDb();
+        if (!mongoDb) {
+            return res.status(503).json({ status: 'error', message: 'Database not connected' });
+        }
+        // Try deleting from notifications collection
+        let deleted = false;
+        if (mongodb_1.ObjectId.isValid(notifId)) {
+            const r = await mongoDb.collection('notifications').deleteOne({ _id: new mongodb_1.ObjectId(notifId) }).catch(() => null);
+            if (r && r.deletedCount > 0)
+                deleted = true;
+        }
+        if (!deleted) {
+            const r2 = await mongoDb.collection('notifications').deleteOne({ id: notifId }).catch(() => null);
+            if (r2 && r2.deletedCount > 0)
+                deleted = true;
+        }
+        // If order-derived notification, record it in deletedNotifications collection or user record
+        const authUser = req.user;
+        const userId = authUser?.userId || authUser?.id || authUser?.customerId || 'global';
+        await mongoDb.collection('deleted_notifications').insertOne({
+            notificationId: notifId,
+            userId,
+            deletedAt: new Date()
+        }).catch(() => { });
+        return res.json({
+            status: 'success',
+            message: 'Notification deleted successfully.',
+            id: notifId
+        });
     }
     catch (err) {
         return res.status(500).json({ status: 'error', message: err.message });

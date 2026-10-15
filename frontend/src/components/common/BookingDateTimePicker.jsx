@@ -207,7 +207,7 @@ export function BookingDateInput({
 
       {/* Calendar Popup */}
       {isOpen && (
-        <div className="absolute top-full left-0 sm:left-0 mt-2 z-[70] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[calc(100vw-2.5rem)] max-w-[320px] select-none animate-scale-up max-h-[75vh] overflow-y-auto scrollbar-thin">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 mt-2 z-[105] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[min(calc(100vw-2.5rem),320px)] select-none animate-scale-up max-h-[75vh] overflow-y-auto scrollbar-thin">
           {/* Calendar Header */}
           <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 dark:border-slate-800/80">
             <button
@@ -460,7 +460,7 @@ export function BookingTimeInput({
 
       {/* Time Picker Popup */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 z-[70] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[calc(100vw-2.5rem)] max-w-[320px] select-none animate-scale-up max-h-[75vh] overflow-y-auto scrollbar-thin">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 z-[105] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[min(calc(100vw-2.5rem),320px)] select-none animate-scale-up max-h-[75vh] overflow-y-auto scrollbar-thin">
           {/* Header */}
           <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100 dark:border-slate-800/80">
             <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-1.5">

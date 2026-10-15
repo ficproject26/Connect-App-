@@ -6,6 +6,7 @@ import { securityManager } from '../security/securityManager';
 import { authRateLimiter, authenticateToken, optionalAuthenticateToken, AuthenticatedRequest } from '../security/middleware';
 import { generateCustomerId, isValidCustomerId, ensureCustomerIdIndexes } from '../services/customerIdService';
 import { checkAccountApproval, verifyRoleAuthorizedForApp, getAppRoleConfig } from '../security/roleAuthorization';
+import { smsService } from '../services/smsService';
 
 const router = Router();
 
@@ -517,6 +518,28 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
 
     const { otp, cooldownSeconds } = securityManager.generateOTP(target);
 
+    // Real SMS Gateway Dispatch
+    const isTargetPhone = /^\d+$/.test(target.replace(/\D/g, ''));
+    let deliveryStatus = {
+      delivered: false,
+      simulated: false,
+      message: `OTP sent successfully to ${target}. Valid for 5 minutes.`
+    };
+
+    if (isTargetPhone) {
+      const smsRes = await smsService.sendOTP(target, otp);
+      if (!smsRes.success && !smsRes.simulated) {
+        return res.status(502).json({
+          status: 'error',
+          code: 'SMS_DELIVERY_FAILED',
+          message: smsRes.statusMessage || 'SMS delivery failed through carrier gateway.'
+        });
+      }
+      deliveryStatus.delivered = smsRes.delivered;
+      deliveryStatus.simulated = !!smsRes.simulated;
+      deliveryStatus.message = smsRes.statusMessage;
+    }
+
     securityManager.logEvent({
       action: 'OTP_REQUESTED',
       email: target,
@@ -524,14 +547,16 @@ router.post('/send-otp', authRateLimiter, async (req: Request, res: Response) =>
       device: req.headers['user-agent'] || 'Unknown',
       country: 'India',
       status: 'SUCCESS',
-      details: `Generated 6-digit OTP (expires in 5 minutes).`
+      details: `Generated 6-digit OTP (expires in 5 minutes). Delivered: ${deliveryStatus.delivered}, Simulated: ${deliveryStatus.simulated}`
     });
 
     return res.json({
       status: 'success',
-      message: `OTP sent successfully to ${target}. Valid for 5 minutes.`,
+      delivered: deliveryStatus.delivered,
+      simulated: deliveryStatus.simulated,
+      message: deliveryStatus.message,
       cooldownSeconds,
-      otp
+      ...(deliveryStatus.simulated ? { otp } : {})
     });
   } catch (err: any) {
     return res.status(429).json({ status: 'error', message: err.message });
@@ -663,8 +688,8 @@ router.post('/verify-otp', authRateLimiter, async (req: Request, res: Response) 
   });
 });
 
-// 3.5. POST: /api/auth/forgot-password/send-otp
-router.post('/forgot-password/send-otp', authRateLimiter, async (req: Request, res: Response) => {
+// 3.5. POST: /api/auth/forgot-password/send-otp (and aliases /forgot-password-otp, /forgot-password/otp)
+router.post(['/forgot-password/send-otp', '/forgot-password-otp', '/forgot-password/otp'], authRateLimiter, async (req: Request, res: Response) => {
   const { identifier, mobileOrEmail, email, phone } = req.body;
   const target = (identifier || mobileOrEmail || email || phone || '').toString().trim();
   const ip = req.ip || '127.0.0.1';
@@ -702,10 +727,25 @@ router.post('/forgot-password/send-otp', authRateLimiter, async (req: Request, r
     // Uniform response to prevent account enumeration
     let cooldown = 30;
     let generatedOtp = '';
+    let isSimulated = false;
+
     if (dbUser) {
       const { otp, cooldownSeconds } = securityManager.generateOTP('reset_' + normalizedTarget);
       cooldown = cooldownSeconds;
       generatedOtp = otp;
+
+      if (isNumeric) {
+        const smsRes = await smsService.sendOTP(target, otp);
+        if (!smsRes.success && !smsRes.simulated) {
+          return res.status(502).json({
+            status: 'error',
+            code: 'SMS_DELIVERY_FAILED',
+            message: smsRes.statusMessage || 'SMS delivery failed.'
+          });
+        }
+        isSimulated = !!smsRes.simulated;
+      }
+
       securityManager.logEvent({
         action: 'PASSWORD_RESET_OTP_REQUESTED',
         email: normalizedTarget,
@@ -723,15 +763,15 @@ router.post('/forgot-password/send-otp', authRateLimiter, async (req: Request, r
         ? `Verification code sent to ${target}. Valid for 5 minutes.`
         : 'If an account exists with this email or mobile number, a verification code has been sent.',
       cooldownSeconds: cooldown,
-      otp: generatedOtp || undefined
+      ...(isSimulated ? { otp: generatedOtp } : {})
     });
   } catch (err: any) {
     return res.status(429).json({ status: 'error', message: err.message || 'Please wait before requesting another OTP.' });
   }
 });
 
-// 3.6. POST: /api/auth/forgot-password/verify-and-reset
-router.post('/forgot-password/verify-and-reset', authRateLimiter, async (req: Request, res: Response) => {
+// 3.6. POST: /api/auth/forgot-password/verify-and-reset (and aliases /forgot-password-reset, /forgot-password/reset)
+router.post(['/forgot-password/verify-and-reset', '/forgot-password-reset', '/forgot-password/reset'], authRateLimiter, async (req: Request, res: Response) => {
   const { identifier, mobileOrEmail, email, phone, otp, newPassword, confirmPassword } = req.body;
   const target = (identifier || mobileOrEmail || email || phone || '').toString().trim();
   const passwordToSet = newPassword || confirmPassword || '';
@@ -921,37 +961,43 @@ router.post('/register-customer', async (req: Request, res: Response) => {
     }
   }
 
-  // Server-side Indian PIN Code Validation
-  if (pincode !== undefined && pincode !== null && String(pincode).trim() !== '') {
-    const cleanPin = String(pincode).trim();
-    const dummyCodes = ['123456', '654321', '100000', '999999', '282828', '121212', '101010', '131313', '242424', '363636'];
-    if (!/^[1-9][0-9]{5}$/.test(cleanPin) || dummyCodes.includes(cleanPin) || /^(\d)\1{5}$/.test(cleanPin) || cleanPin.startsWith('10')) {
-      return res.status(400).json({
-        status: 'error',
-        code: 'INVALID_PINCODE',
-        message: 'Please enter a valid 6-digit Indian PIN code.'
-      });
-    }
+  // Server-side Indian PIN Code Validation (Strict Mandatory Requirement)
+  if (!pincode || String(pincode).trim() === '') {
+    return res.status(400).json({
+      status: 'error',
+      code: 'PINCODE_REQUIRED',
+      message: 'PIN code is required. Please enter a valid 6-digit Indian PIN code.'
+    });
+  }
 
-    try {
-      const mongoDb = db.getDb();
-      if (mongoDb) {
-        const pinInDb = await mongoDb.collection('pincodes').findOne({ code: cleanPin });
-        if (!pinInDb) {
-          const resp = await fetch(`https://api.postalpincode.in/pincode/${encodeURIComponent(cleanPin)}`, { signal: AbortSignal.timeout(3000) });
-          const json: any = await resp.json();
-          if (!Array.isArray(json) || json[0]?.Status !== 'Success' || !Array.isArray(json[0]?.PostOffice) || json[0].PostOffice.length === 0) {
-            return res.status(400).json({
-              status: 'error',
-              code: 'INVALID_PINCODE',
-              message: `PIN code '${cleanPin}' does not exist in Indian Postal records.`
-            });
-          }
+  const cleanPin = String(pincode).trim();
+  const dummyCodes = ['123456', '654321', '100000', '999999', '282828', '121212', '101010', '131313', '242424', '363636'];
+  if (!/^[1-9][0-9]{5}$/.test(cleanPin) || dummyCodes.includes(cleanPin) || /^(\d)\1{5}$/.test(cleanPin) || cleanPin.startsWith('10')) {
+    return res.status(400).json({
+      status: 'error',
+      code: 'INVALID_PINCODE',
+      message: 'Please enter a valid 6-digit Indian PIN code.'
+    });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb) {
+      const pinInDb = await mongoDb.collection('pincodes').findOne({ code: cleanPin });
+      if (!pinInDb) {
+        const resp = await fetch(`https://api.postalpincode.in/pincode/${encodeURIComponent(cleanPin)}`, { signal: AbortSignal.timeout(3000) });
+        const json: any = await resp.json();
+        if (!Array.isArray(json) || json[0]?.Status !== 'Success' || !Array.isArray(json[0]?.PostOffice) || json[0].PostOffice.length === 0) {
+          return res.status(400).json({
+            status: 'error',
+            code: 'INVALID_PINCODE',
+            message: `PIN code '${cleanPin}' does not exist in Indian Postal records.`
+          });
         }
       }
-    } catch (pinErr) {
-      // In case of timeout or offline, allow syntactic match
     }
+  } catch (pinErr) {
+    // In case of timeout or offline, allow valid syntactic match
   }
 
   try {
@@ -1707,6 +1753,49 @@ router.put('/customer-notifications/read', optionalAuthenticateToken, async (req
     }
 
     return res.json({ status: 'success', message: 'All notifications marked as read', unreadCount: 0 });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// Delete Notification Endpoint
+router.delete(['/customer-notifications/:id', '/notifications/:id'], optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const notifId = req.params.id;
+  if (!notifId) {
+    return res.status(400).json({ status: 'error', message: 'Notification ID is required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) {
+      return res.status(503).json({ status: 'error', message: 'Database not connected' });
+    }
+
+    // Try deleting from notifications collection
+    let deleted = false;
+    if (ObjectId.isValid(notifId)) {
+      const r = await mongoDb.collection('notifications').deleteOne({ _id: new ObjectId(notifId) }).catch(() => null);
+      if (r && r.deletedCount > 0) deleted = true;
+    }
+    if (!deleted) {
+      const r2 = await mongoDb.collection('notifications').deleteOne({ id: notifId }).catch(() => null);
+      if (r2 && r2.deletedCount > 0) deleted = true;
+    }
+
+    // If order-derived notification, record it in deletedNotifications collection or user record
+    const authUser = req.user;
+    const userId = authUser?.userId || authUser?.id || authUser?.customerId || 'global';
+    await mongoDb.collection('deleted_notifications').insertOne({
+      notificationId: notifId,
+      userId,
+      deletedAt: new Date()
+    }).catch(() => {});
+
+    return res.json({
+      status: 'success',
+      message: 'Notification deleted successfully.',
+      id: notifId
+    });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
   }

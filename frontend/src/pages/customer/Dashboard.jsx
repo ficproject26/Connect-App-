@@ -1185,8 +1185,11 @@ export default function CustomerDashboard({
 
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [selectedColor, setSelectedColor] = useState('Red');
+  const [selectedColor, setSelectedColor] = useState('Phantom Black');
   const [selectedVariant, setSelectedVariant] = useState('Original / Regular');
+  const [selectedStorage, setSelectedStorage] = useState('256GB');
+  const [selectedRam, setSelectedRam] = useState('8GB RAM');
+  const [selectedPackSize, setSelectedPackSize] = useState('1 kg');
   const [selectedSize, setSelectedSize] = useState('8');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [selectedBusType, setSelectedBusType] = useState('');
@@ -3033,11 +3036,25 @@ export default function CustomerDashboard({
     }
   };
 
+  const getDeletedNotificationIds = () => {
+    try {
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('connect_deleted_notifications') : null;
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  };
+
   // Derive order-based notifications from customer orders as a reliable real-time baseline
   const deriveOrderNotifications = useCallback(() => {
     if (!Array.isArray(customerOrders) || customerOrders.length === 0) return [];
     const readIds = getReadNotificationIds();
-    return customerOrders.slice(0, 20).map(ord => {
+    const deletedIds = getDeletedNotificationIds();
+    return customerOrders.slice(0, 20).filter(ord => {
+      const ordNum = ord.order_number || ord.id || 'N/A';
+      const notifId = `ord-notif-${ord._id || ord.id || ordNum}`;
+      return !deletedIds.has(notifId) && !deletedIds.has(String(ord._id || ord.id || ordNum));
+    }).map(ord => {
       const ordNum = ord.order_number || ord.id || 'N/A';
       const status = ord.status || 'Order Placed';
       const prodName = (ord.product_details || ord.productName || 'Order').replace(/\s*\(Qty:\s*\d+\)/gi, '');
@@ -3097,6 +3114,38 @@ export default function CustomerDashboard({
     loadCustomerNotifications();
   }, [customerOrders, loadCustomerNotifications]);
 
+  const handleDeleteNotification = async (notifId) => {
+    if (!notifId) return;
+    try {
+      const deletedIds = getDeletedNotificationIds();
+      deletedIds.add(notifId);
+      const cleanId = String(notifId).replace('ord-notif-', '');
+      deletedIds.add(cleanId);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('connect_deleted_notifications', JSON.stringify([...deletedIds]));
+      }
+      setNotificationsList(prev => prev.filter(n => n.id !== notifId && n.id !== cleanId));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+
+      // Call backend DELETE endpoint
+      try {
+        await apiFetch(`/api/auth/customer-notifications/${cleanId}`, {
+          method: 'DELETE'
+        });
+      } catch (e) {
+        // Fallback endpoint
+        try {
+          await apiFetch(`/api/auth/notifications/${cleanId}`, { method: 'DELETE' });
+        } catch (err) {}
+      }
+
+      triggerNotification("Notification removed");
+    } catch (err) {
+      console.warn("Failed deleting notification:", err);
+      triggerNotification("Failed to delete notification", "error");
+    }
+  };
+
   const markAllNotificationsAsRead = () => {
     try {
       const allIds = notificationsList.map(n => n.id);
@@ -3113,18 +3162,44 @@ export default function CustomerDashboard({
     }
   };
 
-  // Lock/unlock body scroll whenever any modal or drawer is open
+  // Lock/unlock body scroll whenever any modal, drawer, or pop-up is open (Issue 20)
   useEffect(() => {
-    const anyModalOpen = isProfileModalOpen || isWishlistOpen || isCartOpen || isCompareModalOpen || isNotificationsOpen || !!shareModalProduct;
+    const anyModalOpen = Boolean(
+      isProfileModalOpen || 
+      isWishlistOpen || 
+      isCartOpen || 
+      isCompareModalOpen || 
+      isNotificationsOpen || 
+      isMobileMenuOpen || 
+      isLocationDropdownOpen || 
+      shareModalProduct || 
+      activeScheduleModalItem || 
+      activeBookNowModalItem || 
+      selectedJob || 
+      bookingDetailsModal || 
+      supportOrderModal || 
+      isAddressModalOpen || 
+      isRazorpayModalOpen || 
+      isLoginModalOpen
+    );
     if (anyModalOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
     } else {
       document.body.style.overflow = '';
+      document.body.style.touchAction = '';
     }
     return () => {
       document.body.style.overflow = '';
+      document.body.style.touchAction = '';
     };
-  }, [isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, isNotificationsOpen, shareModalProduct]);
+  }, [
+    isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, 
+    isNotificationsOpen, isMobileMenuOpen, isLocationDropdownOpen, 
+    shareModalProduct, activeScheduleModalItem, activeBookNowModalItem, 
+    selectedJob, bookingDetailsModal, supportOrderModal, isAddressModalOpen, 
+    isRazorpayModalOpen, isLoginModalOpen
+  ]);
 
   // Hover Mega Menu State & Handlers
   const [hoveredLink, setHoveredLink] = useState(null);
@@ -4447,11 +4522,75 @@ export default function CustomerDashboard({
   };
 
   const renderPaymentsView = () => {
+    const spendingStats = (() => {
+      let total = 0;
+      let today = 0;
+      let thisWeek = 0;
+      let thisMonth = 0;
+      let thisYear = 0;
+
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).getTime();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+
+      (customerOrders || []).forEach(ord => {
+        if (!ord || ord.status === 'Cancelled' || ord.status === 'Refunded' || ord.is_refunded) return;
+        const amt = Number(ord.totalAmount || ord.total || ord.amount || 0);
+        if (amt <= 0) return;
+
+        const ordDate = ord.createdAt || ord.date ? new Date(ord.createdAt || ord.date).getTime() : now.getTime();
+        total += amt;
+        if (ordDate >= startOfToday) today += amt;
+        if (ordDate >= startOfWeek) thisWeek += amt;
+        if (ordDate >= startOfMonth) thisMonth += amt;
+        if (ordDate >= startOfYear) thisYear += amt;
+      });
+
+      return { total, today, thisWeek, thisMonth, thisYear };
+    })();
+
     return (
       <div className="space-y-4 animate-fade-in text-left">
         <div>
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Payment Logs</h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">Track your order transaction and payment statuses</p>
+          <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Payment Logs & Spending Summary</h3>
+          <p className="text-[11px] text-slate-400 mt-0.5">Track your order transaction, payment statuses, and overall spending history</p>
+        </div>
+
+        {/* Spending Summary Cards - Issue 24 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-2">
+          <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Total Spent</span>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white">₹{spendingStats.total.toLocaleString()}</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 mt-0.5">Lifetime</span>
+          </div>
+
+          <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-400">This Month</span>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white">₹{spendingStats.thisMonth.toLocaleString()}</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 mt-0.5">Current cycle</span>
+          </div>
+
+          <div className="bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-800/40 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-400">Past 7 Days</span>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white">₹{spendingStats.thisWeek.toLocaleString()}</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 mt-0.5">Weekly</span>
+          </div>
+
+          <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">Today</span>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white">₹{spendingStats.today.toLocaleString()}</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 mt-0.5">24 hours</span>
+          </div>
         </div>
 
         <div className="space-y-3 pr-1">
@@ -4560,12 +4699,56 @@ export default function CustomerDashboard({
     return false;
   };
 
+  const getUnavailableRibbonText = (product) => {
+    if (!product) return 'OUT OF STOCK';
+    const subNav = (product.subNavbarCategory || '').toLowerCase();
+    const mainCat = (product.mainCategory || '').toLowerCase();
+    const tag = (product.tag || '').toLowerCase();
+    const cat = (product.category || '').toLowerCase();
+    const type = (product.type || product.bookingType || '').toLowerCase();
+    const all = `${subNav} ${mainCat} ${tag} ${cat} ${type}`;
+
+    if (all.includes('stay') || all.includes('hotel') || all.includes('resort') || Boolean(product.roomType)) {
+      return 'ROOM NOT AVAILABLE';
+    }
+    if (all.includes('service')) {
+      return 'SERVICE NOT AVAILABLE';
+    }
+    if (all.includes('travel') || all.includes('bus') || all.includes('flight') || all.includes('tour')) {
+      return 'BUS NOT AVAILABLE';
+    }
+    return 'OUT OF STOCK';
+  };
+
+  const getUnavailableNotificationText = (product) => {
+    if (!product) return "This item is currently unavailable.";
+    const ribbon = getUnavailableRibbonText(product);
+    if (ribbon === 'ROOM NOT AVAILABLE') return "Room is not available for the selected dates.";
+    if (ribbon === 'SERVICE NOT AVAILABLE') return "Service is currently not available for booking.";
+    if (ribbon === 'BUS NOT AVAILABLE') return "Bus is not available (No seats available for this trip).";
+    return "Vendor is currently unavailable for this item (Out of Stock).";
+  };
+
+  const getUnavailableDetailButtonText = (product) => {
+    if (!product) return 'Out of Stock';
+    const ribbon = getUnavailableRibbonText(product);
+    if (ribbon === 'ROOM NOT AVAILABLE') return 'Room Not Available';
+    if (ribbon === 'SERVICE NOT AVAILABLE') return 'Service Not Available';
+    if (ribbon === 'BUS NOT AVAILABLE') return 'Bus Not Available / No Seats';
+    return 'Out of Stock';
+  };
+
+  const getUnavailableCartBadge = (item) => {
+    if (!item) return 'Out of Stock';
+    return getUnavailableDetailButtonText(item);
+  };
+
   const addToCart = (product) => {
     if (!product) return;
     setOrderSuccess(false);
     const live = products.find(p => String(p.id) === String(product.id) || String(p._id) === String(product._id || product.id) || (p.name && product.name && p.name.trim().toLowerCase() === product.name.trim().toLowerCase()));
     if (isVendorProductUnavailable(live || product)) {
-      triggerNotification("Vendor is currently unavailable for this item (Out of Stock).", "error");
+      triggerNotification(getUnavailableNotificationText(live || product), "error");
       return;
     }
     const prodId = product.id || `prod-${Date.now()}`;
@@ -4573,16 +4756,48 @@ export default function CustomerDashboard({
     const prodPrice = product.price || product.fee || 0;
     const prodImg = product.image || product.img || getCategoryFallbackImage(product);
 
+    const normCat = normalizeMainCatName(product.subNavbarCategory || product.mainCategory || product.category || product.tag || '');
+    const nameLower = (product.name || '').toLowerCase();
+    const isPhoneOrLaptop = normCat === 'products' && (
+      nameLower.includes('phone') || nameLower.includes('mobile') || nameLower.includes('laptop') || 
+      nameLower.includes('notebook') || nameLower.includes('macbook') || nameLower.includes('tablet') || 
+      nameLower.includes('ipad') || (product.category || '').toLowerCase().includes('electronic')
+    );
+    const isDailyNeeds = normCat === 'daily needs' || (product.subNavbarCategory || '').toLowerCase().includes('daily') || (product.category || '').toLowerCase().includes('grocery');
+
+    const configDetails = product.configurationDetails || (
+      isPhoneOrLaptop
+        ? `${selectedStorage || '256GB'} • ${selectedRam || '8GB RAM'} • ${selectedColor || 'Phantom Black'}`
+        : isDailyNeeds
+          ? `${selectedPackSize || '1 kg'}${selectedVariant ? ` (${selectedVariant})` : ''}`
+          : undefined
+    );
+
+    const cartPayload = {
+      ...product,
+      id: prodId,
+      name: prodName,
+      price: prodPrice,
+      image: prodImg,
+      quantity: product.quantity || 1,
+      configurationDetails: configDetails,
+      selectedStorage: isPhoneOrLaptop ? selectedStorage : product.selectedStorage,
+      selectedRam: isPhoneOrLaptop ? selectedRam : product.selectedRam,
+      selectedColor: isPhoneOrLaptop ? selectedColor : product.selectedColor,
+      selectedPackSize: isDailyNeeds ? selectedPackSize : product.selectedPackSize,
+      selectedVariant: isDailyNeeds ? selectedVariant : product.selectedVariant
+    };
+
     setCart(prev => {
       const existing = prev.find(item => item && item.id === prodId);
       if (existing) {
         return prev.map(item =>
           item && item.id === prodId
-            ? { ...item, quantity: (item.quantity || 1) + 1 }
+            ? { ...item, quantity: (item.quantity || 1) + 1, configurationDetails: configDetails }
             : item
         );
       }
-      return [...prev, { ...product, id: prodId, name: prodName, price: prodPrice, image: prodImg, quantity: product.quantity || 1 }];
+      return [...prev, cartPayload];
     });
     setSelectedCartItems(prev => prev.includes(prodId) ? prev : [...prev, prodId]);
     triggerNotification(`Added "${prodName}" to cart!`);
@@ -5326,7 +5541,7 @@ export default function CustomerDashboard({
           </div>
 
           {/* Location Selector */}
-          <div className="relative shrink-0 z-[99999]">
+          <div className={`relative shrink-0 ${isMobileMenuOpen ? 'hidden md:block' : 'z-30'}`}>
             <button 
               type="button"
               onClick={(e) => {
@@ -5874,30 +6089,7 @@ export default function CustomerDashboard({
               </span>
             </div>
 
-            {/* Mobile Dropdown Selector */}
-            <div className="relative w-full mb-3">
-              <select
-                value={activeSubCat}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSidebarActiveCat(val);
-                }}
-                className="w-full appearance-none bg-slate-50 dark:bg-slate-800/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-2xl py-3 pl-4 pr-10 text-xs font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-2xs transition-all cursor-pointer"
-              >
-                <option value="ALL">ALL {currentMainCategory.toUpperCase()} CATEGORIES</option>
-                {subcategoryKeys.map((catKey) => (
-                  <option key={catKey} value={catKey}>
-                    {catKey.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-400 flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
-                <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              </div>
-            </div>
-
-            {/* Horizontal Pill Bar for 1-Tap Fast Selection */}
+            {/* Horizontal Pill Bar for 1-Tap Fast Selection (Issue 19) */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar -mx-1 px-1">
               <button
                 type="button"
@@ -5993,7 +6185,7 @@ export default function CustomerDashboard({
             </span>
 
             {childItemsToDisplay.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3.5 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
                 {childItemsToDisplay.map((childTitle) => (
                   <div
                     key={childTitle}
@@ -6049,13 +6241,13 @@ export default function CustomerDashboard({
                         }
                       }, 100);
                     }}
-                    className="bg-[#f8fafc] dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 hover:border-amber-400 dark:hover:border-amber-400 rounded-2xl px-4 py-3.5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all cursor-pointer group select-none"
+                    className="bg-[#f8fafc] dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 hover:border-amber-400 dark:hover:border-amber-400 rounded-xl sm:rounded-2xl px-2.5 sm:px-4 py-2 sm:py-3.5 flex items-center justify-between shadow-2xs hover:shadow-md transition-all cursor-pointer group select-none gap-1.5"
                   >
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors truncate">
+                    <span className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors truncate">
                       {childTitle}
                     </span>
-                    <div className="w-6 h-6 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 group-hover:bg-amber-400 group-hover:border-amber-400 text-slate-400 group-hover:text-slate-950 flex items-center justify-center transition-all shrink-0">
-                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900 group-hover:bg-amber-400 group-hover:border-amber-400 text-slate-400 group-hover:text-slate-950 flex items-center justify-center transition-all shrink-0">
+                      <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
                     </div>
                   </div>
                 ))}
@@ -7149,7 +7341,7 @@ export default function CustomerDashboard({
                   {isVendorProductUnavailable(product) && (
                     <div className="absolute top-0 left-0 z-20 w-24 h-24 overflow-hidden pointer-events-none">
                       <div className="absolute top-4 -left-7 w-28 py-0.5 text-[8px] font-black text-center uppercase tracking-widest rotate-[-45deg] text-white bg-red-600 shadow-md">
-                        OUT OF STOCK
+                        {getUnavailableRibbonText(product)}
                       </div>
                     </div>
                   )}
@@ -8625,7 +8817,7 @@ export default function CustomerDashboard({
                             {isVendorProductUnavailable(product) && (
                               <div className="absolute top-0 left-0 z-20 w-24 h-24 overflow-hidden pointer-events-none">
                                 <div className="absolute top-4 -left-7 w-28 py-0.5 text-[8px] font-black text-center uppercase tracking-widest rotate-[-45deg] text-white bg-red-600 shadow-md">
-                                  OUT OF STOCK
+                                  {getUnavailableRibbonText(product)}
                                 </div>
                               </div>
                             )}
@@ -10624,40 +10816,162 @@ export default function CustomerDashboard({
                 return null;
               })()}
 
-              {/* Daily Needs / Grocery Flavour & Customization Selector */}
+              {/* Product Configuration Options for Electronics (Phones, Laptops, Tablets) - Issue 22 */}
               {(() => {
+                const normCat = normalizeMainCatName(selectedProduct?.subNavbarCategory || selectedProduct?.mainCategory || selectedProduct?.category || selectedProduct?.tag || '');
+                const nameLower = (selectedProduct?.name || '').toLowerCase();
+                const isPhoneOrLaptop = normCat === 'products' && (
+                  nameLower.includes('phone') || nameLower.includes('mobile') || nameLower.includes('laptop') || 
+                  nameLower.includes('notebook') || nameLower.includes('macbook') || nameLower.includes('tablet') || 
+                  nameLower.includes('ipad') || (selectedProduct?.category || '').toLowerCase().includes('electronic')
+                );
+
+                if (!isPhoneOrLaptop) return null;
+
+                const storageOptions = ['128GB', '256GB', '512GB', '1TB'];
+                const ramOptions = nameLower.includes('laptop') || nameLower.includes('macbook') ? ['8GB RAM', '16GB RAM', '32GB RAM'] : ['6GB RAM', '8GB RAM', '12GB RAM'];
+                const colorOptions = ['Phantom Black', 'Silver Frost', 'Midnight Blue'];
+
+                return (
+                  <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 rounded-2xl p-4 mb-3.5 text-left space-y-3.5">
+                    <span className="text-[11px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider block">
+                      ⚙️ Select Device Configuration
+                    </span>
+
+                    {/* Storage Variant */}
+                    <div>
+                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Storage Capacity</span>
+                      <div className="flex flex-wrap gap-2">
+                        {storageOptions.map(st => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => setSelectedStorage(st)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                              selectedStorage === st
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-blue-400'
+                            }`}
+                          >
+                            {st}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* RAM Variant */}
+                    <div>
+                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Memory (RAM)</span>
+                      <div className="flex flex-wrap gap-2">
+                        {ramOptions.map(r => (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setSelectedRam(r)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                              selectedRam === r
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-blue-400'
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Color Variant */}
+                    <div>
+                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Color Finish</span>
+                      <div className="flex flex-wrap gap-2">
+                        {colorOptions.map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setSelectedColor(c)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                              selectedColor === c
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-blue-400'
+                            }`}
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Daily Needs / Grocery Customization (Pack Size, Weight, Flavour) - Issue 23 */}
+              {(() => {
+                const normCat = normalizeMainCatName(selectedProduct?.subNavbarCategory || selectedProduct?.mainCategory || selectedProduct?.category || selectedProduct?.tag || '');
+                const isDailyNeeds = normCat === 'daily needs' || (selectedProduct?.subNavbarCategory || '').toLowerCase().includes('daily') || (selectedProduct?.category || '').toLowerCase().includes('grocery');
+
+                if (!isDailyNeeds) return null;
+
+                const nameLower = (selectedProduct?.name || '').toLowerCase();
+                const isLiquid = nameLower.includes('milk') || nameLower.includes('oil') || nameLower.includes('juice') || nameLower.includes('water') || nameLower.includes('ghee');
+                const packSizes = isLiquid ? ['500 ml', '1 Litre', '2 Litre', '5 Litre'] : ['250g', '500g', '1 kg', '2 kg', '5 kg'];
+                
                 const flavours = Array.isArray(selectedProduct.flavors) && selectedProduct.flavors.length > 0
                   ? selectedProduct.flavors
                   : Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0
                     ? selectedProduct.variants
-                    : null;
-
-                if (!flavours || flavours.length === 0) return null;
+                    : (nameLower.includes('milk') || nameLower.includes('tea') || nameLower.includes('snack') || nameLower.includes('biscuit') || nameLower.includes('juice')
+                      ? ['Original / Regular', 'Elaichi / Cardamom', 'Chocolate', 'Strawberry']
+                      : ['Standard Pack', 'Family Pack', 'Organic / Premium']);
 
                 return (
-                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-xl p-3 mb-3 text-left space-y-2">
-                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
-                      Select Flavour / Variant
+                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-4 mb-3.5 text-left space-y-3.5">
+                    <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
+                      🍃 Product Customization & Pack Options
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      {flavours.map(f => (
-                        <button
-                          key={f}
-                          type="button"
-                          onClick={() => {
-                            setSelectedVariant(f);
-                            triggerNotification(`Selected flavour: ${f}`);
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-extrabold border transition-all cursor-pointer ${
-                            selectedVariant === f
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                          }`}
-                        >
-                          {f}
-                        </button>
-                      ))}
+
+                    {/* Pack / Weight Size */}
+                    <div>
+                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Pack Size / Weight</span>
+                      <div className="flex flex-wrap gap-2">
+                        {packSizes.map(ps => (
+                          <button
+                            key={ps}
+                            type="button"
+                            onClick={() => setSelectedPackSize(ps)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                              selectedPackSize === ps
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                            }`}
+                          >
+                            {ps}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* Flavour / Variety */}
+                    {flavours && flavours.length > 0 && (
+                      <div>
+                        <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Select Flavour / Variety</span>
+                        <div className="flex flex-wrap gap-2">
+                          {flavours.map(f => (
+                            <button
+                              key={f}
+                              type="button"
+                              onClick={() => setSelectedVariant(f)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                                selectedVariant === f
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
+                              }`}
+                            >
+                              {f}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -10677,7 +10991,7 @@ export default function CustomerDashboard({
                 
                 {isVendorProductUnavailable(selectedProduct) ? (
                   <div className="flex-1 py-2 px-3 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-black text-[11px] sm:text-xs uppercase tracking-wide rounded-xl flex items-center justify-center text-center gap-1.5 min-h-[36px] sm:h-10 leading-snug select-none">
-                    <span>Vendor Currently Unavailable (Out of Stock)</span>
+                    <span>{getUnavailableDetailButtonText(selectedProduct)}</span>
                   </div>
                 ) : getActionButtons(selectedProduct).showBooking ? (
                   <div className="flex items-center gap-2 w-full sm:flex-1">
@@ -11320,8 +11634,13 @@ export default function CustomerDashboard({
                         <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
                         {isOutOfStock && (
                           <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60 inline-block mt-0.5">
-                            Out of Stock
+                            {getUnavailableCartBadge(item)}
                           </span>
+                        )}
+                        {item.configurationDetails && (
+                          <p className="text-[9.5px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
+                            {item.configurationDetails}
+                          </p>
                         )}
                         {(item.boardingPoint || item.droppingPoint) && (
                           <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate mt-0.5">
@@ -11658,9 +11977,22 @@ wishlistProducts.forEach(item => addToCart(item));
                         <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
                           {notif.title || 'Notification'}
                         </h4>
-                        <span className="text-[9px] font-semibold text-slate-400 shrink-0">
-                          {notif.time || 'Recently'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[9px] font-semibold text-slate-400">
+                            {notif.time || 'Recently'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteNotification(notif.id);
+                            }}
+                            className="w-5 h-5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors cursor-pointer border-none bg-transparent"
+                            title="Delete notification"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                         {notif.message || notif.text}
@@ -11702,7 +12034,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           {(currentUser?.name || profileName || 'U').charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <div className="flex flex-col text-left min-w-0 truncate">
+                      <div className="flex flex-col text-left min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
                           {currentUser?.name || profileName}
                         </h4>
@@ -11715,10 +12047,10 @@ wishlistProducts.forEach(item => addToCart(item));
                     {/* Mobile Explicit Logout Button */}
                     <button 
                       onClick={handlePerformLogout}
-                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50 rounded-xl text-xs font-extrabold transition-colors flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
+                      className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50 rounded-xl text-xs font-extrabold transition-colors flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
                       title="Logout"
                     >
-                      <LogOut className="w-3.5 h-3.5 text-red-600" />
+                      <LogOut className="w-3.5 h-3.5 text-red-600 shrink-0" />
                       <span>Logout</span>
                     </button>
                   </div>
@@ -11809,7 +12141,7 @@ wishlistProducts.forEach(item => addToCart(item));
             </div>
 
             {/* Modal Right Content Panel */}
-            <div className="flex-grow p-4 sm:p-5 md:p-6 pb-28 sm:pb-16 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full overscroll-contain">
+            <div className="flex-grow p-4 sm:p-5 md:p-6 pb-6 sm:pb-8 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full overscroll-contain">
 
               <div className="flex-grow max-w-full">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
