@@ -379,31 +379,31 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
     <div className="min-h-screen w-full flex bg-slate-50 dark:bg-[#070b14] overflow-hidden select-none font-sans relative">
       
       {/* ==================== LEFT PANEL: LOGIN FORM ==================== */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-8 md:p-10 lg:p-12 z-10 overflow-y-auto">
+      <div className="w-full lg:w-1/2 flex flex-col justify-between p-4 sm:p-8 md:p-10 lg:p-12 z-10 overflow-y-auto">
         
         {/* Top Navbar Header */}
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
+        <div className="flex items-center justify-between w-full flex-wrap gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
               <img src={logoImg} alt="Connect Logo" className="w-full h-full object-cover" />
             </div>
-            <div className="text-left">
-              <h1 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider leading-none">
+            <div className="text-left min-w-0">
+              <h1 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider leading-none truncate">
                 CONNECT APP
               </h1>
-              <p className="text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5">All Services, One Platform</p>
+              <p className="text-[8.5px] sm:text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5 truncate">All Services, One Platform</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto shrink-0">
             {/* Mobile Language Selector Toggle */}
             <div className="relative lg:hidden">
               <button 
                 type="button"
                 onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-                className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-200"
+                className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-200"
               >
-                <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span>{SUPPORTED_LANGUAGES.find(l => l.code === currentLang)?.nativeName || 'English'}</span>
                 <span className="text-[9px] opacity-70">▼</span>
               </button>
@@ -434,7 +434,7 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
             <button
               onClick={onBackToHome}
-              className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer border-none bg-transparent"
+              className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer border-none bg-transparent py-1 px-1"
             >
               ← {t('home', currentLang)}
             </button>

@@ -221,25 +221,25 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
       <div className="w-full max-w-2xl bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-8 md:p-10 shadow-xl space-y-5 my-auto shrink-0">
         
         {/* Top Header Logo & Login Link */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
           <div 
             onClick={onBackToHome}
-            className="flex items-center gap-2.5 cursor-pointer group"
+            className="flex items-center gap-2.5 cursor-pointer group min-w-0"
           >
             <img 
               src={logoImg} 
               alt="Connect App Logo" 
-              className="w-10 h-10 object-cover rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs group-hover:scale-105 transition-transform" 
+              className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs group-hover:scale-105 transition-transform shrink-0" 
             />
-            <div>
+            <div className="min-w-0">
               <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none uppercase">
                 Connect <span className="text-[#FFB800]">App</span>
               </h1>
-              <p className="text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5">All Services, One Platform</p>
+              <p className="text-[9px] font-bold text-slate-400 tracking-wide uppercase mt-0.5 truncate">All Services, One Platform</p>
             </div>
           </div>
 
-          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0">
             Already have an account?{' '}
             <button
               onClick={onNavigateToLoginPage}

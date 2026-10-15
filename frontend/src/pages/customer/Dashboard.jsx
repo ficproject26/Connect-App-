@@ -970,17 +970,50 @@ export function isPastTimeForSelectedDate(timeStr, dateStr) {
   return false;
 }
 
+export function getProductArchetype(product) {
+  if (!product) return null;
+  const text = `${product.name || ''} ${product.subcategory || ''} ${product.childCategory || ''} ${product.tag || ''} ${product.category || ''} ${product.description || ''}`.toLowerCase();
+  
+  if (/\b(laptop|notebook|macbook|chromebook|thinkpad|zenbook|ideapad|ultrabook)\b/.test(text)) return 'laptop';
+  if (/\b(charger|adapter|charging cable|usb cable|type-c cable|lightning cable|power brick|power adapter)\b/.test(text)) return 'charger';
+  if (/\b(power bank|powerbank|portable charger)\b/.test(text)) return 'powerbank';
+  if (/\b(smartphone|smart phone|iphone|android phone|mobile phone|galaxy s|pixel \d)\b/.test(text) || (/\b(phone|mobile)\b/.test(text) && !/\b(charger|case|cover|holder|stand)\b/.test(text))) return 'phone';
+  if (/\b(headphone|headphones|earphone|earphones|earbuds|airpods|headset|neckband|tws|bluetooth headphone)\b/.test(text)) return 'audio';
+  if (/\b(smartwatch|smart watch|apple watch|fitness band|smart band)\b/.test(text)) return 'smartwatch';
+  if (/\b(tablet|ipad|galaxy tab)\b/.test(text)) return 'tablet';
+  if (/\b(television|smart tv|led tv|oled tv|qled tv|\btv\b)\b/.test(text)) return 'tv';
+  if (/\b(camera|dslr|mirrorless|action cam|gopro)\b/.test(text)) return 'camera';
+  if (/\b(refrigerator|fridge)\b/.test(text)) return 'refrigerator';
+  if (/\b(washing machine|washer|dryer)\b/.test(text)) return 'washing_machine';
+  if (/\b(microwave|oven|otg)\b/.test(text)) return 'microwave';
+  if (/\b(ac|air conditioner)\b/.test(text)) return 'air_conditioner';
+  if (/\b(router|wifi router|modem)\b/.test(text)) return 'networking';
+  if (/\b(mouse|keyboard|keypad|trackpad)\b/.test(text)) return 'peripherals';
+  if (/\b(monitor|display screen)\b/.test(text)) return 'monitor';
+  
+  // Fashion / Apparel
+  if (/\b(lehenga|choli|ghagra)\b/.test(text)) return 'lehenga';
+  if (/\b(saree|sari)\b/.test(text)) return 'saree';
+  if (/\b(shirt|t-shirt|tshirt|tee)\b/.test(text)) return 'shirt';
+  if (/\b(jeans|denim|trousers|pants)\b/.test(text)) return 'pants';
+  if (/\b(dress|gown|frock|kurti|kurta)\b/.test(text)) return 'dress';
+  if (/\b(shoe|shoes|sneaker|sneakers|boots|sandals|footwear)\b/.test(text)) return 'footwear';
+  
+  return null;
+}
+
 export function isTravelOrStayItem(item) {
   if (!item) return false;
   const norm = normalizeMainCatName(item.subNavbarCategory || item.mainCategory || item.category || item.tag || '');
-  if (['products', 'food', 'daily needs', 'jobs', 'services'].includes(norm)) {
+  if (['products', 'food', 'daily needs', 'jobs', 'services', 'electronics', 'clothing', 'fashion', 'grocery', 'appliances'].includes(norm)) {
     return false;
   }
   if (norm === 'travel' || norm === 'stay') {
     return true;
   }
 
-  if (Boolean(item.roomType || item.stayMode || item.boardingPoint || item.droppingPoint)) {
+  // Never use roomType alone because Mongoose defaults roomType to 'Standard' on all products
+  if (Boolean(item.boardingPoint || item.droppingPoint || (item.stayMode && item.stayMode !== 'Day Option'))) {
     return true;
   }
 
@@ -3064,9 +3097,27 @@ export default function CustomerDashboard({
       const notifId = `ord-notif-${ord._id || ord.id || ordNum}`;
       const isRead = Boolean(ord.notification_read || ord.notificationRead || isDelivered || readIds.has(notifId));
 
+      const isJob = ord.type === 'Job' || ord.type === 'Jobs';
+      const isBooking = ['Booking', 'Stay', 'Travel', 'Appointment', 'Services', 'Service', 'Hospital', 'Doctor'].includes(ord.type);
+      const notifType = isJob ? 'job' : isBooking ? 'booking' : 'order';
+
       let title = `Order #${ordNum}`;
       let message = `${prodName} is currently ${status}`;
-      if (status === 'Order Received' || status === 'Order Placed') {
+      if (isJob) {
+        title = `Job Application: ${prodName}`;
+        message = isCancelled 
+          ? `Your application for ${prodName} was not selected.` 
+          : isDelivered 
+          ? `Congratulations! You have been selected for ${prodName}.` 
+          : `Your application for ${prodName} is currently ${status}.`;
+      } else if (isBooking) {
+        title = `Booking #${ordNum}`;
+        message = isDelivered 
+          ? `Your booking for ${prodName} was completed.` 
+          : isCancelled 
+          ? `Your booking for ${prodName} has been cancelled.` 
+          : `Your booking for ${prodName} is confirmed.`;
+      } else if (status === 'Order Received' || status === 'Order Placed') {
         title = `Order #${ordNum} Placed`;
         message = `Your order for ${prodName} (₹${ord.amount || ord.price || 0}) was received.`;
       } else if (isDelivered) {
@@ -3082,13 +3133,16 @@ export default function CustomerDashboard({
 
       return {
         id: notifId,
+        entityId: ord.id || ord._id || ordNum,
+        orderId: ord.id || ord._id,
+        order: ord,
         title,
         message,
         text: message,
         time: ord.created_at ? new Date(ord.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently',
         date: ord.created_at || new Date().toISOString(),
         read: isRead,
-        type: 'order',
+        type: notifType,
         status
       };
     });
@@ -3147,6 +3201,75 @@ export default function CustomerDashboard({
     }
   };
 
+  const handleClearAllNotifications = () => {
+    if (notificationsList.length === 0) return;
+    const confirmClear = window.confirm("Are you sure you want to clear all notifications?");
+    if (!confirmClear) return;
+
+    try {
+      const deletedIds = getDeletedNotificationIds();
+      notificationsList.forEach(n => {
+        if (n.id) {
+          deletedIds.add(n.id);
+          deletedIds.add(String(n.id).replace('ord-notif-', ''));
+        }
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('connect_deleted_notifications', JSON.stringify([...deletedIds]));
+      }
+      setNotificationsList([]);
+      setUnreadCount(0);
+      triggerNotification("All notifications cleared", "success");
+    } catch (e) {
+      console.warn("Failed clearing all notifications:", e);
+    }
+  };
+
+  const handleNotificationClick = (notif) => {
+    if (!notif) return;
+    if (!notif.read) {
+      try {
+        const existing = getReadNotificationIds();
+        if (notif.id) existing.add(notif.id);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('connect_read_notifications', JSON.stringify([...existing]));
+        }
+      } catch (e) {}
+      setNotificationsList(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+
+    const entityId = notif.entityId || notif.orderId || String(notif.id).replace('ord-notif-', '');
+    const matchedOrder = customerOrders.find(o => 
+      String(o.id) === entityId || 
+      String(o._id) === entityId || 
+      String(o.order_number) === entityId
+    ) || notif.order;
+
+    setIsNotificationsOpen(false);
+    setIsProfileModalOpen(true);
+
+    if (matchedOrder) {
+      const typeLower = (matchedOrder.type || '').toLowerCase();
+      if (typeLower === 'job' || typeLower === 'jobs' || notif.type === 'job') {
+        setActiveProfileTab('myjobs');
+      } else if (['booking', 'stay', 'travel', 'appointment', 'services', 'service', 'hospital', 'doctor'].includes(typeLower) || notif.type === 'booking') {
+        setActiveProfileTab('bookings');
+      } else {
+        setActiveProfileTab('orders');
+      }
+      setTrackingOrder(matchedOrder);
+    } else {
+      if (notif.type === 'job') {
+        setActiveProfileTab('myjobs');
+      } else if (notif.type === 'booking') {
+        setActiveProfileTab('bookings');
+      } else {
+        setActiveProfileTab('orders');
+      }
+    }
+  };
+
   const markAllNotificationsAsRead = () => {
     try {
       const allIds = notificationsList.map(n => n.id);
@@ -3180,25 +3303,39 @@ export default function CustomerDashboard({
       supportOrderModal || 
       isAddressModalOpen || 
       isRazorpayModalOpen || 
+      membershipCheckoutModal || 
+      isPreviewResumeOpen || 
       isLoginModalOpen
     );
     if (anyModalOpen) {
       document.body.style.overflow = 'hidden';
       document.body.style.touchAction = 'none';
+      document.documentElement.style.overflow = 'hidden';
+      if (mainScrollRef.current) {
+        mainScrollRef.current.style.overflow = 'hidden';
+      }
     } else {
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
+      document.documentElement.style.overflow = '';
+      if (mainScrollRef.current) {
+        mainScrollRef.current.style.overflow = '';
+      }
     }
     return () => {
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
+      document.documentElement.style.overflow = '';
+      if (mainScrollRef.current) {
+        mainScrollRef.current.style.overflow = '';
+      }
     };
   }, [
     isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, 
     isNotificationsOpen, isMobileMenuOpen, isLocationDropdownOpen, 
     shareModalProduct, activeScheduleModalItem, activeBookNowModalItem, 
     appliedJobId, supportOrderModal, isAddressModalOpen, 
-    isRazorpayModalOpen, isLoginModalOpen
+    isRazorpayModalOpen, membershipCheckoutModal, isPreviewResumeOpen, isLoginModalOpen
   ]);
 
   // Hover Mega Menu State & Handlers
@@ -3641,6 +3778,7 @@ export default function CustomerDashboard({
   const [selectedColors, setSelectedColors] = useState([]);
   const [selectedPrices, setSelectedPrices] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Accordion Toggle States
   const [openFilters, setOpenFilters] = useState({
@@ -6077,7 +6215,7 @@ export default function CustomerDashboard({
     return (
       <div className="w-full bg-white dark:bg-slate-900 border-none rounded-3xl p-5 sm:p-7 text-slate-900 dark:text-slate-100 transition-all">
         <div className="w-full flex flex-col md:flex-row gap-6 md:gap-8">
-          {/* Mobile View: SECOND-LEVEL SUBCATEGORY DROPDOWN & PILLS (Mobile ONLY) */}
+          {/* Mobile View: SECOND-LEVEL SUBCATEGORY DROPDOWN (Mobile ONLY) */}
           <div className="block md:hidden w-full border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-2 text-left">
             <div className="flex items-center justify-between mb-2 px-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
@@ -6088,40 +6226,27 @@ export default function CustomerDashboard({
               </span>
             </div>
 
-            {/* Horizontal Pill Bar for 1-Tap Fast Selection (Issue 19) */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar -mx-1 px-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setSidebarActiveCat('ALL');
+            {/* Mobile Dropdown Selector (Retained as primary selector, removing redundant chips below) */}
+            <div className="relative w-full">
+              <select
+                value={activeSubCat}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSidebarActiveCat(val);
                 }}
-                className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
-                  activeSubCat === 'ALL'
-                    ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
+                className="w-full appearance-none bg-slate-50 dark:bg-slate-800/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-2xl py-3 pl-4 pr-10 text-xs font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-2xs transition-all cursor-pointer"
               >
-                ALL
-              </button>
-              {subcategoryKeys.map((catKey) => {
-                const isActive = activeSubCat !== 'ALL' && activeSubCat.trim().toLowerCase() === catKey.trim().toLowerCase();
-                return (
-                  <button
-                    key={catKey}
-                    type="button"
-                    onClick={() => {
-                      setSidebarActiveCat(catKey);
-                    }}
-                    className={`py-2 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border-none shrink-0 whitespace-nowrap select-none ${
-                      isActive
-                        ? 'bg-[#0b1e36] text-white dark:bg-amber-400 dark:text-[#0b1e36] shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {catKey}
-                  </button>
-                );
-              })}
+                <option value="ALL">ALL {currentMainCategory.toUpperCase()} CATEGORIES</option>
+                {subcategoryKeys.map((catKey) => (
+                  <option key={catKey} value={catKey}>
+                    {catKey.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-400 flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              </div>
             </div>
           </div>
 
@@ -6530,11 +6655,11 @@ export default function CustomerDashboard({
                 {/* Tier Info & Benefits */}
                 <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col justify-between flex-grow space-y-4">
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border whitespace-nowrap inline-flex items-center shrink-0 ${tier.badgeColor}`}>
+                    <div className="flex items-center justify-between gap-2 w-full">
+                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider border whitespace-nowrap inline-flex items-center shrink-0 ${tier.badgeColor}`}>
                         {tier.name}
                       </span>
-                      <span className="text-lg font-black text-slate-900 dark:text-white shrink-0 tracking-tight whitespace-nowrap">
+                      <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white shrink-0 tracking-tight whitespace-nowrap">
                         {tier.price}
                       </span>
                     </div>
@@ -7889,25 +8014,33 @@ export default function CustomerDashboard({
     return (
       <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-6 text-slate-800 dark:text-slate-200">
         <div className="flex flex-col gap-6 w-full items-stretch">
-          {/* Horizontal Filters Bar (Clean 2-Column Grid on Mobile, Flex Row on Desktop) */}
+          {/* Horizontal Filters Bar (Collapsible on Mobile, Flex Row on Desktop) */}
           <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
             {/* Header Row on Mobile / Left Label on Desktop */}
-            <div className="flex items-center justify-between md:justify-start gap-2 border-b md:border-b-0 pb-2.5 md:pb-0 border-slate-100 dark:border-slate-800/60">
-              <div className="flex items-center gap-1.5 text-slate-900 dark:text-white font-black text-xs">
+            <div className={`flex items-center justify-between md:justify-start gap-2 ${isMobileFiltersOpen ? 'border-b md:border-b-0 pb-2.5 md:pb-0' : ''} border-slate-100 dark:border-slate-800/60`}>
+              <button 
+                type="button"
+                onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+                className="md:pointer-events-none flex items-center gap-1.5 text-slate-900 dark:text-white font-black text-xs bg-transparent border-none p-0 cursor-pointer"
+                title="Toggle filter panel"
+              >
                 <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
                 <span>FILTERS</span>
-              </div>
-              <button 
-                onClick={clearAllFilters} 
-                className="md:hidden text-[11px] font-black text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 rounded-xl cursor-pointer"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Reset</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 md:hidden transition-transform duration-200 ${isMobileFiltersOpen ? 'rotate-180 text-amber-500' : ''}`} />
               </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={clearAllFilters} 
+                  className="text-[11px] font-black text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 rounded-xl cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Reset</span>
+                </button>
+              </div>
             </div>
 
-            {/* Select Inputs Grid on Mobile / Flex Row on Desktop */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3.5 w-full md:w-auto">
+            {/* Select Inputs Grid on Mobile (collapsible) / Flex Row on Desktop (always visible) */}
+            <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} md:flex grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3.5 w-full md:w-auto animate-fade-in`}>
               {/* Home Tab Filters */}
               {activeTab === 'Home' && (
                 <>
@@ -8468,31 +8601,45 @@ export default function CustomerDashboard({
 
                                     <div>
                                       {resumeFile ? (
-                                        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40 hover:border-blue-400 hover:shadow-xs transition-all group">
-                                          <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-bold text-xs">
+                                        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-2.5 sm:gap-3 bg-slate-50/50 dark:bg-slate-950/40 hover:border-blue-400 hover:shadow-xs transition-all group w-full overflow-hidden">
+                                          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-black text-xs shrink-0">
                                               PDF
                                             </div>
-                                            <div className="text-left">
-                                              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1">
+                                            <div className="text-left min-w-0 flex-1">
+                                              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" title={resumeFile.name}>
                                                 {resumeFile.name}
                                               </h4>
-                                              <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                                PDF • {resumeFile.size || '450 KB'} • <button type="button" onClick={() => {
-                                                  if (resumeFile?.url) {
-                                                    setIsPreviewResumeOpen(true);
-                                                  } else {
-                                                    triggerNotification("Resume file preview is unavailable.", "error");
-                                                  }
-                                                }} className="text-blue-600 dark:text-blue-400 font-extrabold underline border-none bg-transparent cursor-pointer p-0">Click to View Resume</button>
-                                              </span>
+                                              <div className="text-[10px] text-slate-400 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5">
+                                                <span>PDF • {resumeFile.size || '450 KB'}</span>
+                                                <span>•</span>
+                                                <button 
+                                                  type="button" 
+                                                  onClick={() => {
+                                                    if (resumeFile?.url) {
+                                                      setIsPreviewResumeOpen(true);
+                                                    } else {
+                                                      triggerNotification("Resume file preview is unavailable.", "error");
+                                                    }
+                                                  }} 
+                                                  className="text-blue-600 dark:text-blue-400 font-extrabold hover:underline border-none bg-transparent cursor-pointer p-0 inline"
+                                                >
+                                                  Click to View Resume
+                                                </button>
+                                              </div>
                                             </div>
                                           </div>
                                           <button
                                             type="button"
-                                            onClick={() => setResumeFile(null)}
-                                            className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                                            onClick={() => {
+                                              if (window.confirm("Are you sure you want to remove this resume?")) {
+                                                setResumeFile(null);
+                                                triggerNotification("Resume removed");
+                                              }
+                                            }}
+                                            className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-500 rounded-xl transition-colors border-none bg-transparent cursor-pointer shrink-0"
                                             title="Delete Resume"
+                                            aria-label="Delete Resume"
                                           >
                                             <Trash2 className="w-4 h-4" />
                                           </button>
@@ -8711,10 +8858,15 @@ export default function CustomerDashboard({
               ) : (
                 /* ================= JOBS LISTING BOARD ================= */
                 <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-4 py-3 shadow-xs text-slate-800 dark:text-slate-200 w-full text-left">
-                    <h2 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight text-left">
-                      Open Positions <span className="text-xs font-medium text-slate-400 dark:text-slate-500">({filteredJobs.length} items found)</span>
-                    </h2>
+                  <div className="flex items-center justify-between gap-3 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-4 py-3 shadow-xs text-slate-800 dark:text-slate-200 w-full text-left flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                        Open Positions
+                      </h2>
+                      <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 whitespace-nowrap">
+                        {filteredJobs.length} available
+                      </span>
+                    </div>
                   </div>
 
                   {filteredJobs.length === 0 ? (
@@ -11050,14 +11202,14 @@ export default function CustomerDashboard({
                           triggerNotification(`Proceeding to checkout...`);
                         }
                       }}
-                      className="flex-1 py-3 sm:py-3.5 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-11 sm:h-12"
+                      className="flex-1 py-3 sm:py-3.5 px-2 sm:px-3 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-[11px] sm:text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-11 sm:h-12 leading-none whitespace-nowrap"
                     >
-                      {selectedProduct.subNavbarCategory === 'Services' ? (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      {selectedProduct.subNavbarCategory === 'Services' || selectedProduct.mainCategory === 'Services' || getActionButtons(selectedProduct).bookingText === 'BOOK APPOINTMENT' ? (
+                        <Calendar className="w-4 h-4 shrink-0" />
                       ) : (
-                        <Zap className="w-4 h-4 text-white" />
+                        <Zap className="w-4 h-4 text-white shrink-0" />
                       )}
-                      <span>{getActionButtons(selectedProduct).bookingText}</span>
+                      <span className="leading-none">{getActionButtons(selectedProduct).bookingText}</span>
                     </button>
                   </div>
                 ) : (
@@ -11438,7 +11590,7 @@ export default function CustomerDashboard({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-800 dark:text-slate-200 font-sans antialiased flex flex-col transition-colors duration-300">
       {/* -------------------- SLEEK TOAST NOTIFICATIONS -------------------- */}
-      <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+      <div className="fixed top-4 sm:top-6 inset-x-3 sm:inset-x-auto sm:right-6 z-[9999] flex flex-col gap-2.5 sm:gap-3 pointer-events-none sm:max-w-sm w-auto sm:w-full">
         {toasts.map((t) => {
           const isError = t.type === 'error' || (t.text || '').toLowerCase().includes('failed') || (t.text || '').toLowerCase().includes('error') || (t.text || '').toLowerCase().includes('denied') || (t.text || '').toLowerCase().includes('insufficient');
           const isSuccess = t.type === 'success' || (t.text || '').toLowerCase().includes('success') || (t.text || '').toLowerCase().includes('added') || (t.text || '').toLowerCase().includes('saved') || (t.text || '').toLowerCase().includes('placed') || (t.text || '').toLowerCase().includes('congratulations');
@@ -11454,7 +11606,7 @@ export default function CustomerDashboard({
                   : 'bg-slate-900/90 dark:bg-[#0b1329]/95 text-slate-100 border-slate-700/60 shadow-slate-950/50'
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                 {isError ? (
                   <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
                 ) : isSuccess ? (
@@ -11921,6 +12073,14 @@ wishlistProducts.forEach(item => addToCart(item));
                     Mark all read
                   </button>
                 )}
+                {notificationsList.length > 0 && (
+                  <button
+                    onClick={handleClearAllNotifications}
+                    className="text-[10px] font-extrabold text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 px-2.5 py-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer border-none bg-transparent"
+                  >
+                    Clear all
+                  </button>
+                )}
                 <button
                   onClick={() => setIsNotificationsOpen(false)}
                   className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer border-none"
@@ -11951,23 +12111,11 @@ wishlistProducts.forEach(item => addToCart(item));
                 notificationsList.map((notif, idx) => (
                   <div 
                     key={notif.id || idx}
-                    onClick={() => {
-                      if (!notif.read) {
-                        try {
-                          const existing = getReadNotificationIds();
-                          if (notif.id) existing.add(notif.id);
-                          if (typeof localStorage !== 'undefined') {
-                            localStorage.setItem('connect_read_notifications', JSON.stringify([...existing]));
-                          }
-                        } catch (e) {}
-                        setNotificationsList(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
-                        setUnreadCount(prev => Math.max(0, prev - 1));
-                      }
-                    }}
+                    onClick={() => handleNotificationClick(notif)}
                     className={`p-3 rounded-2xl border transition-all text-left flex items-start gap-3 cursor-pointer ${
                       notif.read 
-                        ? 'bg-transparent border-slate-150 dark:border-slate-800/60 opacity-75' 
-                        : 'bg-amber-50/40 dark:bg-amber-500/5 border-amber-200/60 dark:border-amber-500/20 shadow-2xs'
+                        ? 'bg-transparent border-slate-150 dark:border-slate-800/60 opacity-75 hover:bg-slate-50/50 dark:hover:bg-slate-800/30' 
+                        : 'bg-amber-50/40 dark:bg-amber-500/5 border-amber-200/60 dark:border-amber-500/20 shadow-2xs hover:bg-amber-50/80 dark:hover:bg-amber-500/10'
                     }`}
                   >
                     <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1.5 ${notif.read ? 'bg-slate-300 dark:bg-slate-700' : 'bg-amber-500 animate-pulse'}`} />
@@ -12924,7 +13072,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                 })}
                               </div>
                             ) : (
-                              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                              <div className="space-y-3">
                                 {filteredCustomerOrders.map(ord => {
                                   const statusBadgeStyle = 
                                     ord.status === 'Delivered' || ord.status === 'Completed'
@@ -15197,86 +15345,95 @@ wishlistProducts.forEach(item => addToCart(item));
       )}
       {/* Interactive Resume Preview Modal */}
       {isPreviewResumeOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 text-left relative max-h-[90vh] overflow-y-auto scrollbar-thin">
-            <button 
-              type="button"
-              onClick={() => setIsPreviewResumeOpen(false)}
-              className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 text-rose-500 flex items-center justify-center font-black text-sm shrink-0">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fade-in select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[92vh] text-left overflow-hidden">
+            
+            {/* Header Row */}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3 sm:pb-4 shrink-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 text-rose-500 flex items-center justify-center font-black text-xs sm:text-sm shrink-0">
                   PDF
                 </div>
-                <div className="text-left">
-                  <h3 className="text-base font-black text-slate-900 dark:text-white line-clamp-1">
+                <div className="min-w-0 flex-1 text-left">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate">
                     {resumeFile?.name || 'Uploaded_Candidate_CV.pdf'}
                   </h3>
-                  <span className="text-xs text-slate-400 font-semibold block mt-0.5">
+                  <span className="text-[10px] sm:text-xs text-slate-400 font-semibold block truncate mt-0.5">
                     Uploaded by {applicantName || profileName || currentUser?.name || 'Applicant'} • {applicantEmail || profileEmail || currentUser?.email || 'N/A'}
                   </span>
                 </div>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50">
-                Verified File ✓
-              </span>
-            </div>
-
-            {/* Resume Document Viewer */}
-            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 sm:p-5 space-y-4 text-xs font-sans text-slate-700 dark:text-slate-300 text-left">
-              <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h4 className="text-base font-black text-slate-900 dark:text-white">
-                  {applicantName || profileName || currentUser?.name || 'Candidate Name'}
-                </h4>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 font-extrabold mt-0.5">
-                  Official Uploaded Curriculum Vitae (CV / Resume)
-                </p>
-                <div className="flex flex-wrap gap-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-2">
-                  <span>📧 {applicantEmail || profileEmail || currentUser?.email || 'N/A'}</span>
-                  <span>📞 {applicantPhone || currentUser?.phone || 'N/A'}</span>
-                  {applicantLocation && <span>📍 {applicantLocation}</span>}
-                </div>
+              
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="hidden sm:inline-flex text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50">
+                  Verified File ✓
+                </span>
+                <button 
+                  type="button"
+                  onClick={() => setIsPreviewResumeOpen(false)}
+                  className="p-1.5 sm:p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                  title="Close preview"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-
-              {/* Uploaded File Real Document Preview Box */}
-              {resumeFile?.url ? (
-                <div className="space-y-3">
-                  <div className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white">
-                    <iframe
-                      src={resumeFile.url}
-                      title="Resume Document Preview"
-                      className="w-full h-full border-none"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
-                    <span>File: <strong className="text-slate-800 dark:text-white">{resumeFile.name}</strong> ({resumeFile.size})</span>
-                    <button
-                      type="button"
-                      onClick={() => window.open(resumeFile.url, '_blank')}
-                      className="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> Open in full window
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 text-center space-y-2">
-                  <FileText className="w-10 h-10 text-slate-400 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Resume file not loaded or expired.</p>
-                </div>
-              )}
             </div>
 
-            <div className="flex flex-wrap justify-end gap-3 pt-2">
+            {/* Scrollable Modal Content Body */}
+            <div className="flex-1 overflow-y-auto space-y-4 py-3 sm:py-4 scrollbar-thin">
+              {/* Resume Document Viewer */}
+              <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-5 space-y-3.5 text-xs font-sans text-slate-700 dark:text-slate-300 text-left">
+                <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate">
+                    {applicantName || profileName || currentUser?.name || 'Candidate Name'}
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-extrabold mt-0.5">
+                    Official Uploaded Curriculum Vitae (CV / Resume)
+                  </p>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-2 break-all">
+                    <span>📧 {applicantEmail || profileEmail || currentUser?.email || 'N/A'}</span>
+                    <span>📞 {applicantPhone || currentUser?.phone || 'N/A'}</span>
+                    {applicantLocation && <span>📍 {applicantLocation}</span>}
+                  </div>
+                </div>
+
+                {/* Uploaded File Real Document Preview Box */}
+                {resumeFile?.url ? (
+                  <div className="space-y-2.5">
+                    <div className="w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white">
+                      <iframe
+                        src={resumeFile.url}
+                        title="Resume Document Preview"
+                        className="w-full h-full border-none"
+                      />
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-slate-400 px-1">
+                      <span className="truncate max-w-full sm:max-w-xs">File: <strong className="text-slate-800 dark:text-white">{resumeFile.name}</strong> ({resumeFile.size})</span>
+                      <button
+                        type="button"
+                        onClick={() => window.open(resumeFile.url, '_blank')}
+                        className="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer self-start sm:self-auto"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> Open in full window
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 text-center space-y-2">
+                    <FileText className="w-10 h-10 text-slate-400 mx-auto" />
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Resume file not loaded or expired.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
               {resumeFile?.url && (
                 <button
                   type="button"
                   onClick={() => window.open(resumeFile.url, '_blank')}
-                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none flex items-center gap-1.5 shadow-xs"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 shadow-xs"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Open In New Tab</span>
@@ -15298,14 +15455,14 @@ wishlistProducts.forEach(item => addToCart(item));
                   }
                   setIsPreviewResumeOpen(false);
                 }}
-                className="px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-900 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none"
+                className="w-full sm:w-auto px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-900 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none text-center"
               >
                 Download CV File
               </button>
               <button
                 type="button"
                 onClick={() => setIsPreviewResumeOpen(false)}
-                className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer border-none"
+                className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer border-none text-center"
               >
                 Close Preview
               </button>
@@ -15724,45 +15881,51 @@ wishlistProducts.forEach(item => addToCart(item));
               const firstItem = selectedCart[0];
               const normCat = normalizeMainCatName(firstItem?.subNavbarCategory || firstItem?.mainCategory || firstItem?.category || firstItem?.tag || '');
 
-              let categoryLabel = 'Product Purchase';
+              const isTravel = normCat === 'travel' || Boolean(firstItem?.boardingPoint || firstItem?.droppingPoint || (firstItem?.category || '').toLowerCase().includes('travel') || (firstItem?.category || '').toLowerCase().includes('tour'));
+              const isStay = !isTravel && (normCat === 'stay' || (Boolean(firstItem?.stayMode && firstItem?.stayMode !== 'Day Option')) || (firstItem?.category || '').toLowerCase().includes('hotel') || (firstItem?.category || '').toLowerCase().includes('resort'));
+              const isServices = !isTravel && !isStay && (normCat === 'services' || (firstItem?.category || '').toLowerCase().includes('service'));
+              const isFood = !isTravel && !isStay && !isServices && (normCat === 'food' || (firstItem?.category || '').toLowerCase().includes('food') || (firstItem?.category || '').toLowerCase().includes('restaurant'));
+              const isDaily = !isTravel && !isStay && !isServices && !isFood && (normCat === 'daily needs' || (firstItem?.category || '').toLowerCase().includes('daily') || (firstItem?.category || '').toLowerCase().includes('grocery'));
+
+              let categoryLabel = 'Product Order';
               let categoryIcon = <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />;
               let badgeColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
               let bannerBg = 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-100 dark:border-amber-900/40';
 
-              if (normCat === 'services' || (firstItem?.category || '').toLowerCase().includes('service')) {
-                categoryLabel = 'Service Booking';
-                categoryIcon = <Wrench className="w-4 h-4 text-indigo-500 shrink-0" />;
-                badgeColor = 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800';
-                bannerBg = 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-900/40';
-              } else if (normCat === 'food' || (firstItem?.category || '').toLowerCase().includes('food') || (firstItem?.category || '').toLowerCase().includes('restaurant')) {
-                categoryLabel = 'Food Order';
-                categoryIcon = <Utensils className="w-4 h-4 text-orange-500 shrink-0" />;
-                badgeColor = 'bg-orange-100 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-800';
-                bannerBg = 'bg-orange-50/80 dark:bg-orange-950/40 border-orange-100 dark:border-orange-900/40';
-              } else if (normCat === 'daily needs' || (firstItem?.category || '').toLowerCase().includes('daily') || (firstItem?.category || '').toLowerCase().includes('grocery')) {
-                categoryLabel = 'Daily Needs Order';
-                categoryIcon = <ShoppingCart className="w-4 h-4 text-emerald-500 shrink-0" />;
-                badgeColor = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
-                bannerBg = 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-900/40';
-              } else if (normCat === 'stay' || (firstItem?.category || '').toLowerCase().includes('hotel') || (firstItem?.category || '').toLowerCase().includes('resort') || firstItem?.roomType) {
-                categoryLabel = 'Hotel Stay Booking';
-                categoryIcon = <Building2 className="w-4 h-4 text-teal-500 shrink-0" />;
-                badgeColor = 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300 border-teal-200 dark:border-teal-800';
-                bannerBg = 'bg-teal-50/80 dark:bg-teal-950/40 border-teal-100 dark:border-teal-900/40';
-              } else if (normCat === 'travel' || firstItem?.boardingPoint || firstItem?.droppingPoint || (firstItem?.category || '').toLowerCase().includes('travel') || (firstItem?.category || '').toLowerCase().includes('tour')) {
+              if (isTravel) {
                 categoryLabel = 'Travel Booking';
                 categoryIcon = <Plane className="w-4 h-4 text-blue-500 shrink-0" />;
                 badgeColor = 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-blue-200 dark:border-blue-800';
                 bannerBg = 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-100 dark:border-blue-900/40';
+              } else if (isStay) {
+                categoryLabel = 'Hotel Stay Booking';
+                categoryIcon = <Building2 className="w-4 h-4 text-teal-500 shrink-0" />;
+                badgeColor = 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300 border-teal-200 dark:border-teal-800';
+                bannerBg = 'bg-teal-50/80 dark:bg-teal-950/40 border-teal-100 dark:border-teal-900/40';
+              } else if (isServices) {
+                categoryLabel = 'Service Booking';
+                categoryIcon = <Wrench className="w-4 h-4 text-indigo-500 shrink-0" />;
+                badgeColor = 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800';
+                bannerBg = 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-900/40';
+              } else if (isFood) {
+                categoryLabel = 'Food Order';
+                categoryIcon = <Utensils className="w-4 h-4 text-orange-500 shrink-0" />;
+                badgeColor = 'bg-orange-100 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-800';
+                bannerBg = 'bg-orange-50/80 dark:bg-orange-950/40 border-orange-100 dark:border-orange-900/40';
+              } else if (isDaily) {
+                categoryLabel = 'Daily Needs Order';
+                categoryIcon = <ShoppingCart className="w-4 h-4 text-emerald-500 shrink-0" />;
+                badgeColor = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+                bannerBg = 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-900/40';
               } else {
-                categoryLabel = 'Product Purchase';
+                categoryLabel = 'Product Order';
                 categoryIcon = <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />;
                 badgeColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
                 bannerBg = 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-100 dark:border-amber-900/40';
               }
 
               const activeAddr = addresses.find(a => a.id === selectedCheckoutAddressId) || addresses[0];
-              const isPhysicalDelivery = ['products', 'food', 'daily needs'].includes(normCat);
+              const isPhysicalDelivery = ['products', 'food', 'daily needs'].includes(normCat) || (!isTravel && !isStay && !isServices);
 
               return (
                 <div className={`${bannerBg} px-5 py-3 border-b text-left text-xs space-y-1.5 select-none`}>
@@ -15783,11 +15946,21 @@ wishlistProducts.forEach(item => addToCart(item));
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
                     <div className="font-semibold text-slate-900 dark:text-white line-clamp-1 flex-1 min-w-0" title={firstItem?.name || 'Order Item'}>
-                      <strong>{firstItem?.name || 'Order Item'}</strong>
+                      <strong>{firstItem?.vendorName || firstItem?.name || 'Order Item'}</strong>
                       {firstItem?.quantity && firstItem.quantity > 1 ? ` (Qty: ${firstItem.quantity})` : ''}
-                      {(firstItem?.bookingDate || firstItem?.checkInDate) && (
+                      {isTravel && (firstItem?.fromCity || firstItem?.toCity) && (
+                        <span className="text-blue-600 dark:text-blue-400 font-bold ml-1.5">
+                          • {firstItem.fromCity} → {firstItem.toCity}
+                        </span>
+                      )}
+                      {(firstItem?.bookingDate || firstItem?.selectedDate || firstItem?.checkInDate) && (
                         <span className="text-slate-500 dark:text-slate-400 font-medium ml-1.5">
-                          • {formatDate(firstItem?.bookingDate || firstItem?.checkInDate)}
+                          • {formatDate(firstItem?.bookingDate || firstItem?.selectedDate || firstItem?.checkInDate)}
+                        </span>
+                      )}
+                      {isTravel && (firstItem?.boardingPoint || firstItem?.droppingPoint) && (
+                        <span className="text-slate-500 dark:text-slate-400 font-medium ml-1.5">
+                          ({formatTravelPointSimple(firstItem?.boardingPoint) || 'Departure'} → {formatTravelPointSimple(firstItem?.droppingPoint) || 'Arrival'})
                         </span>
                       )}
                     </div>
@@ -15834,7 +16007,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
                     const isBookingOrService = selectedCart.some(i => {
                       if (isTravelOrStayItem(i)) return true;
-                      if (Boolean(i.bookingDate || i.checkInDate || i.bookingType || i.roomType || i.stayMode || i.boardingPoint || i.droppingPoint)) return true;
+                      if (Boolean(i.bookingDate || i.selectedDate || i.checkInDate || i.bookingType || (i.stayMode && i.stayMode !== 'Day Option') || i.boardingPoint || i.droppingPoint)) return true;
                       const norm = normalizeMainCatName(i.subNavbarCategory || i.mainCategory || i.category || i.tag || '');
                       return ['travel', 'stay', 'services', 'jobs'].includes(norm);
                     });
@@ -16697,10 +16870,10 @@ wishlistProducts.forEach(item => addToCart(item));
                   <a
                     href="tel:18001234567"
                     onClick={() => triggerNotification("Calling Connect Helpline: +91 1800-123-4567...")}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 transition-all no-underline shadow-sm"
+                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 transition-all no-underline shadow-sm leading-none text-center"
                   >
-                    <Phone className="w-4 h-4" />
-                    <span>Direct Call Helpline (+91 1800-123-4567)</span>
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Direct Call Helpline (+91 1800-123-4567)</span>
                   </a>
                 </>
               )}
@@ -16708,11 +16881,11 @@ wishlistProducts.forEach(item => addToCart(item));
 
             {/* Footer */}
             {!isReportSubmitted && (
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setSupportOrderModal(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 bg-transparent border-none cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs"
                 >
                   Cancel
                 </button>
@@ -16832,6 +17005,11 @@ wishlistProducts.forEach(item => addToCart(item));
 
           if (!refMain || !candMain) return false;
           if (candMain !== refMain) return false;
+
+          // Archetype-level matching: Laptops vs Chargers share Electronics but must not compare
+          const refArch = getProductArchetype(selectedProduct);
+          const candArch = getProductArchetype(p);
+          if (refArch && candArch && refArch !== candArch) return false;
 
           // If Level 3 Child Category exists on both, enforce Child Category match
           if (refChild && candChild) {

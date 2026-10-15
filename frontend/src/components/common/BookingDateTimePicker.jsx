@@ -207,7 +207,15 @@ export function BookingDateInput({
 
       {/* Calendar Popup */}
       {isOpen && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 mt-2 z-[105] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[min(calc(100vw-2.5rem),320px)] select-none animate-scale-up max-h-[75vh] overflow-y-auto scrollbar-thin">
+        <>
+          <div 
+            className="fixed inset-0 bg-black/40 z-[104] sm:hidden"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+            }} 
+          />
+          <div className="fixed inset-x-3 top-1/2 -translate-y-1/2 sm:inset-auto sm:top-full sm:left-0 sm:translate-x-0 sm:translate-y-0 sm:absolute sm:mt-2 z-[105] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[min(calc(100vw-1.5rem),330px)] select-none animate-scale-up max-h-[85vh] overflow-y-auto scrollbar-thin mx-auto">
           {/* Calendar Header */}
           <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-100 dark:border-slate-800/80">
             <button
@@ -313,7 +321,8 @@ export function BookingDateInput({
               Close
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -460,139 +469,153 @@ export function BookingTimeInput({
 
       {/* Time Picker Popup */}
       {isOpen && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 z-[105] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[min(calc(100vw-2.5rem),320px)] select-none animate-scale-up max-h-[75vh] overflow-y-auto scrollbar-thin">
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100 dark:border-slate-800/80">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-1.5">
-              <Clock className={`w-3.5 h-3.5 ${accentClasses.headerIcon}`} /> Select Time
-            </span>
-            <span className={`text-xs font-mono font-black px-2 py-0.5 rounded-lg border ${accentClasses.badge}`}>
-              {value || `${timeState.hour}:${timeState.minute} ${timeState.ampm}`}
-            </span>
-          </div>
+        <>
+          {/* Mobile Overlay Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/40 z-[104] sm:hidden"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+            }} 
+          />
 
-          {/* Quick Predefined Time Slots */}
-          <div className="mb-3">
-            <span className="text-[10px] font-black uppercase text-slate-400 block mb-1.5">
-              Available Slots
-            </span>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-36 overflow-y-auto scrollbar-thin pr-1">
-              {slotsList.map((slot) => {
-                const isSelected = value === slot.time;
-                const isPast = isPastTimeFn && selectedDate ? isPastTimeFn(slot.time, selectedDate) : false;
-                const isAvail = slot.status === 'Available' && !isPast;
-
-                return (
-                  <button
-                    key={slot.time}
-                    type="button"
-                    disabled={!isAvail}
-                    onClick={() => {
-                      onChange?.(slot.time);
-                      setIsOpen(false);
-                    }}
-                    className={`py-1.5 px-1 rounded-xl text-xs font-bold border transition-all flex items-center justify-center border-none cursor-pointer ${
-                      isSelected
-                        ? accentClasses.selectedBg
-                        : !isAvail
-                        ? 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 border-slate-200 opacity-40 cursor-not-allowed line-through'
-                        : `bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 ${accentClasses.hoverChip}`
-                    }`}
-                  >
-                    {slot.time}
-                  </button>
-                );
-              })}
+          <div className="fixed inset-x-3 top-1/2 -translate-y-1/2 sm:inset-auto sm:top-full sm:right-0 sm:left-auto sm:translate-x-0 sm:translate-y-0 sm:absolute sm:mt-2 z-[105] bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5 sm:p-4 w-[min(calc(100vw-1.5rem),330px)] select-none animate-scale-up max-h-[85vh] flex flex-col mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-slate-800/80 shrink-0">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-1.5">
+                <Clock className={`w-3.5 h-3.5 ${accentClasses.headerIcon}`} /> Select Time
+              </span>
+              <span className={`text-xs font-mono font-black px-2 py-0.5 rounded-lg border ${accentClasses.badge}`}>
+                {value || `${timeState.hour}:${timeState.minute} ${timeState.ampm}`}
+              </span>
             </div>
-          </div>
 
-          {/* Custom Time Selector (Hours : Minutes : AM/PM) */}
-          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
-            <span className="text-[10px] font-black uppercase text-slate-400 block mb-2">
-              Custom Time Entry
-            </span>
+            {/* Scrollable Content Container */}
+            <div className="overflow-y-auto min-h-0 flex-1 scrollbar-thin pr-0.5 space-y-3">
+              {/* Quick Predefined Time Slots */}
+              <div>
+                <span className="text-[10px] font-black uppercase text-slate-400 block mb-1.5">
+                  Available Slots
+                </span>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-36 overflow-y-auto scrollbar-thin pr-1">
+                  {slotsList.map((slot) => {
+                    const isSelected = value === slot.time;
+                    const isPast = isPastTimeFn && selectedDate ? isPastTimeFn(slot.time, selectedDate) : false;
+                    const isAvail = slot.status === 'Available' && !isPast;
 
-            <div className="flex items-center justify-between gap-1.5 bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
-              {/* Hour Dropdown */}
-              <div className="flex-1">
-                <label className="text-[9px] font-bold text-slate-400 block mb-0.5 text-center">Hour</label>
-                <select
-                  value={timeState.hour}
-                  onChange={(e) => setTimeState(prev => ({ ...prev, hour: e.target.value }))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-1 px-1.5 text-xs font-bold text-slate-800 dark:text-white text-center cursor-pointer focus:outline-none"
-                >
-                  {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(h => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
+                    return (
+                      <button
+                        key={slot.time}
+                        type="button"
+                        disabled={!isAvail}
+                        onClick={() => {
+                          onChange?.(slot.time);
+                          setIsOpen(false);
+                        }}
+                        className={`py-1.5 px-1 rounded-xl text-xs font-bold border transition-all flex items-center justify-center border-none cursor-pointer ${
+                          isSelected
+                            ? accentClasses.selectedBg
+                            : !isAvail
+                            ? 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 border-slate-200 opacity-40 cursor-not-allowed line-through'
+                            : `bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 ${accentClasses.hoverChip}`
+                        }`}
+                      >
+                        {slot.time}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <span className="font-bold text-slate-400 self-end mb-1">:</span>
+              {/* Custom Time Selector (Hours : Minutes : AM/PM) */}
+              <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
+                <span className="text-[10px] font-black uppercase text-slate-400 block mb-2">
+                  Custom Time Entry
+                </span>
 
-              {/* Minute Dropdown */}
-              <div className="flex-1">
-                <label className="text-[9px] font-bold text-slate-400 block mb-0.5 text-center">Minute</label>
-                <select
-                  value={timeState.minute}
-                  onChange={(e) => setTimeState(prev => ({ ...prev, minute: e.target.value }))}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-1 px-1.5 text-xs font-bold text-slate-800 dark:text-white text-center cursor-pointer focus:outline-none"
-                >
-                  {['00', '15', '30', '45'].map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="flex items-center justify-between gap-1.5 bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                  {/* Hour Dropdown */}
+                  <div className="flex-1">
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5 text-center">Hour</label>
+                    <select
+                      value={timeState.hour}
+                      onChange={(e) => setTimeState(prev => ({ ...prev, hour: e.target.value }))}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-1 px-1.5 text-xs font-bold text-slate-800 dark:text-white text-center cursor-pointer focus:outline-none"
+                    >
+                      {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map(h => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* AM/PM Selector */}
-              <div className="flex flex-col justify-end">
-                <label className="text-[9px] font-bold text-slate-400 block mb-0.5 text-center">Period</label>
-                <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setTimeState(prev => ({ ...prev, ampm: 'AM' }))}
-                    className={`px-2 py-1 text-[11px] font-black border-none cursor-pointer transition-colors ${
-                      timeState.ampm === 'AM'
-                        ? accentClasses.activeAmPm
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    AM
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTimeState(prev => ({ ...prev, ampm: 'PM' }))}
-                    className={`px-2 py-1 text-[11px] font-black border-none cursor-pointer transition-colors ${
-                      timeState.ampm === 'PM'
-                        ? accentClasses.activeAmPm
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    PM
-                  </button>
+                  <span className="font-bold text-slate-400 self-end mb-1">:</span>
+
+                  {/* Minute Dropdown */}
+                  <div className="flex-1">
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5 text-center">Minute</label>
+                    <select
+                      value={timeState.minute}
+                      onChange={(e) => setTimeState(prev => ({ ...prev, minute: e.target.value }))}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-1 px-1.5 text-xs font-bold text-slate-800 dark:text-white text-center cursor-pointer focus:outline-none"
+                    >
+                      {['00', '15', '30', '45'].map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* AM/PM Selector */}
+                  <div className="flex flex-col justify-end">
+                    <label className="text-[9px] font-bold text-slate-400 block mb-0.5 text-center">Period</label>
+                    <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setTimeState(prev => ({ ...prev, ampm: 'AM' }))}
+                        className={`px-2 py-1 text-[11px] font-black border-none cursor-pointer transition-colors ${
+                          timeState.ampm === 'AM'
+                            ? accentClasses.activeAmPm
+                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        AM
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTimeState(prev => ({ ...prev, ampm: 'PM' }))}
+                        className={`px-2 py-1 text-[11px] font-black border-none cursor-pointer transition-colors ${
+                          timeState.ampm === 'PM'
+                            ? accentClasses.activeAmPm
+                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        PM
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Apply Button */}
-            <div className="mt-3 flex items-center justify-between">
+            {/* Pinned Action Controls Footer */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-none bg-transparent cursor-pointer p-0"
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-none bg-transparent cursor-pointer p-1"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleApplyCustomTime}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm cursor-pointer border-none flex items-center gap-1 ${accentClasses.buttonBg}`}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm cursor-pointer border-none flex items-center gap-1.5 ${accentClasses.buttonBg}`}
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Apply Time</span>
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
