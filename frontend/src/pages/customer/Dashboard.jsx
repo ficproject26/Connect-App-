@@ -90,7 +90,7 @@ import {
   LifeBuoy, LogOut, MapPin, Phone, PhoneCall, Package, Bell, Copy, Briefcase, Utensils, UserCheck, Settings, Wind,
   Activity, GraduationCap, Building2, Landmark, ShieldAlert, Sun, Moon,
   Gem, CheckCircle2, XCircle, AlertTriangle, Home, ArrowRight, ArrowLeft, Tag, Clock, Trash2, Users, ThumbsUp, Calendar,
-  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe, Mail, FileText, Upload, QrCode
+  Wifi, Crown, Headphones, Wrench, Stethoscope, Building, Video, Globe, Mail, FileText, Upload, QrCode, ExternalLink
 } from 'lucide-react';
 
 import saree1 from '../../assets/images/saree_1.png';
@@ -972,25 +972,32 @@ export function isPastTimeForSelectedDate(timeStr, dateStr) {
 
 export function isTravelOrStayItem(item) {
   if (!item) return false;
-  const subNav = (item.subNavbarCategory || '').toLowerCase();
-  const mainCat = (item.mainCategory || '').toLowerCase();
-  const tag = (item.tag || '').toLowerCase();
-  const cat = (item.category || '').toLowerCase();
-  const sub = (item.subcategory || item.subCategory || '').toLowerCase();
-  const type = (item.bookingType || item.type || '').toLowerCase();
+  const norm = normalizeMainCatName(item.subNavbarCategory || item.mainCategory || item.category || item.tag || '');
+  if (['products', 'food', 'daily needs', 'jobs', 'services'].includes(norm)) {
+    return false;
+  }
+  if (norm === 'travel' || norm === 'stay') {
+    return true;
+  }
 
-  if (Boolean(item.checkInDate || item.bookingDate || item.roomType || item.stayMode || item.boardingPoint || item.droppingPoint)) {
+  if (Boolean(item.roomType || item.stayMode || item.boardingPoint || item.droppingPoint)) {
     return true;
   }
 
   const travelOrStayKeywords = [
     'travel', 'stay', 'hotel', 'resort', 'resorts', 'villa', 'villas', 'homestay',
-    'room', 'rooms', 'lodge', 'lodging', 'pg', 'hostel', 'bus', 'buses', 'tour', 'tours',
-    'flight', 'flights', 'train', 'cab', 'cabs', 'taxi', 'transport'
+    'lodge', 'lodging', 'pg', 'hostel', 'bus', 'buses', 'tour', 'tours',
+    'flight', 'flights', 'cab', 'cabs', 'taxi', 'transport'
   ];
 
+  const subNav = (item.subNavbarCategory || '').toLowerCase();
+  const mainCat = (item.mainCategory || '').toLowerCase();
+  const tag = (item.tag || '').toLowerCase();
+  const cat = (item.category || '').toLowerCase();
+  const type = (item.bookingType || '').toLowerCase();
+
   return travelOrStayKeywords.some(k => 
-    subNav.includes(k) || mainCat.includes(k) || tag.includes(k) || cat.includes(k) || sub.includes(k) || type.includes(k)
+    subNav.includes(k) || mainCat.includes(k) || tag.includes(k) || cat.includes(k) || type.includes(k)
   );
 }
 
@@ -3179,11 +3186,47 @@ export default function CustomerDashboard({
     if (currentUser?.phone) setApplicantPhone(currentUser.phone);
   }, [currentUser, profileName, profileEmail]);
 
+  // Reset transient job-specific form state when switching between jobs (Issue 12B)
+  const prevAppliedJobIdRef = useRef(appliedJobId);
+  useEffect(() => {
+    if (appliedJobId && appliedJobId !== prevAppliedJobIdRef.current) {
+      prevAppliedJobIdRef.current = appliedJobId;
+      setJobSubmitSuccess(false);
+      setApplicantLocation('');
+      setApplicantCurrentCompany('');
+      setApplicantExperience('Fresher');
+      setApplicantNoticePeriod('Immediate');
+      setApplicantLinkedIn(currentUser?.linkedin || '');
+      setApplicantPortfolio(currentUser?.portfolio || '');
+      setResumeFile(null);
+      setApplicantCoverLetter('');
+    } else if (!appliedJobId) {
+      prevAppliedJobIdRef.current = null;
+    }
+  }, [appliedJobId, currentUser]);
+
+  const handleOpenJobApplication = (jobId) => {
+    setAppliedJobId(jobId);
+    setJobSubmitSuccess(false);
+    setApplicantName(currentUser?.name || profileName || '');
+    setApplicantEmail(currentUser?.email || profileEmail || '');
+    setApplicantPhone(currentUser?.phone ? String(currentUser.phone).replace(/\D/g, '').slice(-10) : (profilePhone ? String(profilePhone).replace(/\D/g, '').slice(-10) : ''));
+    setApplicantLocation('');
+    setApplicantCurrentCompany('');
+    setApplicantExperience('Fresher');
+    setApplicantNoticePeriod('Immediate');
+    setApplicantLinkedIn(currentUser?.linkedin || '');
+    setApplicantPortfolio(currentUser?.portfolio || '');
+    setResumeFile(null);
+    setApplicantCoverLetter('');
+  };
+
   // When activeTab changes to Jobs, always show Jobs listing page first
   useEffect(() => {
     if (activeTab === 'Jobs') {
       setAppliedJobId(null);
       setJobSubmitSuccess(false);
+      setResumeFile(null);
     }
   }, [activeTab]);
 
@@ -4144,7 +4187,7 @@ export default function CustomerDashboard({
 
   const renderAddressBookSection = () => {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 pb-12">
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Saved Addresses</h3>
@@ -4328,18 +4371,18 @@ export default function CustomerDashboard({
               </div>
             </div>
 
-            <div className="flex gap-3 justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex gap-3 justify-end pt-3 pb-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setIsAddingAddress(false)}
-                className="px-4 py-2 border border-slate-250 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer text-slate-600 dark:text-slate-300"
+                className="px-5 py-2.5 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer text-slate-700 dark:text-slate-300 shadow-3xs"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveAddress}
-                className="px-5 py-2 bg-[#0b1e36] hover:bg-[#13325a] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                className="px-6 py-2.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md"
               >
                 Save
               </button>
@@ -4382,13 +4425,16 @@ export default function CustomerDashboard({
                     </span>
                   </div>
 
-                  <div className="flex justify-end gap-2.5 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-900">
+                  <div className="flex items-center justify-between gap-2.5 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-900">
+                    <span className="text-[10px] text-slate-400 font-medium">Saved Address Action</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteAddress(addr.id)}
-                      className="text-[10px] font-black text-red-500 hover:text-red-600 transition-colors uppercase tracking-wider cursor-pointer border-none bg-transparent"
+                      className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-3xs"
+                      title="Delete Address"
                     >
-                      Delete
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
                     </button>
                   </div>
                 </div>
@@ -6293,11 +6339,11 @@ export default function CustomerDashboard({
                 {/* Tier Info & Benefits */}
                 <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col justify-between flex-grow space-y-4">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border ${tier.badgeColor}`}>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border whitespace-nowrap inline-flex items-center shrink-0 ${tier.badgeColor}`}>
                         {tier.name}
                       </span>
-                      <span className="text-lg font-black text-slate-900 dark:text-white">
+                      <span className="text-lg font-black text-slate-900 dark:text-white shrink-0 tracking-tight whitespace-nowrap">
                         {tier.price}
                       </span>
                     </div>
@@ -8241,7 +8287,13 @@ export default function CustomerDashboard({
                                                 {resumeFile.name}
                                               </h4>
                                               <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                                PDF • {resumeFile.size || '450 KB'} • <button type="button" onClick={() => setIsPreviewResumeOpen(true)} className="text-blue-600 dark:text-blue-400 font-extrabold underline border-none bg-transparent cursor-pointer p-0">Click to View Resume</button>
+                                                PDF • {resumeFile.size || '450 KB'} • <button type="button" onClick={() => {
+                                                  if (resumeFile?.url) {
+                                                    setIsPreviewResumeOpen(true);
+                                                  } else {
+                                                    triggerNotification("Resume file preview is unavailable.", "error");
+                                                  }
+                                                }} className="text-blue-600 dark:text-blue-400 font-extrabold underline border-none bg-transparent cursor-pointer p-0">Click to View Resume</button>
                                               </span>
                                             </div>
                                           </div>
@@ -8263,10 +8315,15 @@ export default function CustomerDashboard({
                                             onChange={(e) => {
                                               if (e.target.files && e.target.files[0]) {
                                                 const file = e.target.files[0];
+                                                const fileUrl = URL.createObjectURL(file);
                                                 setResumeFile({
                                                   name: file.name,
-                                                  size: `${(file.size / 1024).toFixed(0)} KB`
+                                                  size: `${(file.size / 1024).toFixed(0)} KB`,
+                                                  rawFile: file,
+                                                  type: file.type || 'application/pdf',
+                                                  url: fileUrl
                                                 });
+                                                triggerNotification(`Resume "${file.name}" uploaded successfully.`);
                                               }
                                             }}
                                           />
@@ -8485,7 +8542,7 @@ export default function CustomerDashboard({
                         return (
                           <div 
                             key={job.id} 
-                            onClick={() => setAppliedJobId(job.id)}
+                            onClick={() => handleOpenJobApplication(job.id)}
                             className="p-5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200 cursor-pointer"
                           >
                             <div className="space-y-3">
@@ -8538,7 +8595,7 @@ export default function CustomerDashboard({
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setAppliedJobId(job.id);
+                                  handleOpenJobApplication(job.id);
                                 }}
                                 className="w-full text-center bg-[#0b1e36] dark:bg-amber-400 hover:bg-amber-500 dark:hover:bg-amber-500 text-white dark:text-[#0b1e36] font-black text-xs uppercase tracking-widest py-3 rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center space-x-1"
                               >
@@ -8823,7 +8880,7 @@ export default function CustomerDashboard({
                                             setIsLoginModalOpen(true);
                                           } else {
                                             setActiveTab('Jobs');
-                                            setAppliedJobId(product.id);
+                                            handleOpenJobApplication(product.id);
                                             triggerNotification(`Applying for ${product.name}...`);
                                           }
                                         }} 
@@ -10695,7 +10752,7 @@ export default function CustomerDashboard({
                     onClick={() => {
                       setSelectedProduct(null);
                       setActiveTab('Jobs');
-                      setAppliedJobId(selectedProduct.id);
+                      handleOpenJobApplication(selectedProduct.id);
                       triggerNotification(`Applying for ${selectedProduct.name}...`);
                     }}
                     className="w-full sm:flex-1 py-3 sm:py-3.5 bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-98 border-none h-11 sm:h-12"
@@ -11752,7 +11809,7 @@ wishlistProducts.forEach(item => addToCart(item));
             </div>
 
             {/* Modal Right Content Panel */}
-            <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full overscroll-contain">
+            <div className="flex-grow p-4 sm:p-5 md:p-6 pb-28 sm:pb-16 overflow-y-auto flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-slate-800 dark:text-slate-200 relative max-w-full overscroll-contain">
 
               <div className="flex-grow max-w-full">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
@@ -12537,133 +12594,154 @@ wishlistProducts.forEach(item => addToCart(item));
                               </div>
                             ) : (
                               <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                                {filteredCustomerOrders.map(ord => (
-                                  <div key={ord.id} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 flex justify-between items-center bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xs">
-                                    <div className="flex items-center gap-3">
-                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs ${
-                                        ord.type === 'Job' || ord.type === 'Jobs'
-                                          ? 'bg-indigo-400/15 border border-indigo-400/20 text-indigo-500'
-                                          : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type)
-                                          ? 'bg-blue-400/15 border border-blue-400/20 text-blue-500'
-                                          : 'bg-amber-400/15 border border-amber-400/20 text-amber-500'
-                                      }`}>
-                                        {ord.type === 'Job' || ord.type === 'Jobs' ? (
-                                          <Briefcase className="w-5 h-5" />
-                                        ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? (
-                                          <Calendar className="w-5 h-5" />
-                                        ) : (
-                                          <ShoppingBag className="w-5 h-5" />
-                                        )}
-                                      </div>
-                                      <div className="text-left">
-                                        <h4 className="text-xs font-bold text-slate-800 dark:text-white line-clamp-1">
-                                          {(ord.type === 'Job' || ord.type === 'Jobs' || ord.type === 'Booking' || ['Stay', 'Travel', 'Services', 'Appointment'].includes(ord.type)) ? (ord.product_details || '').replace(/\s*\(Qty:\s*\d+\)/gi, '') : ord.product_details}
-                                        </h4>
-                                        <span className="text-[9px] text-slate-400 block mt-0.5">
-                                          {ord.type === 'Job' || ord.type === 'Jobs' ? 'Application No: ' : 
-                                           ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? 'Booking Ref: ' : 
-                                           'Order No: '}#{ord.order_number}
-                                        </span>
-                                        <span className="text-[9px] text-slate-400 block mt-0.5">
-                                          {ord.type === 'Job' || ord.type === 'Jobs' ? 'Applied On: ' : 
-                                           ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? 'Booked On: ' : 
-                                           'Ordered On: '}{new Date(ord.created_at || Date.now()).toLocaleDateString()}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className="text-right flex flex-col items-end gap-1.5 shrink-0">
-                                      <span className="text-xs font-extrabold text-slate-800 dark:text-white">₹{ord.amount}</span>
-                                      <div className="flex gap-2 items-center">
-                                        {ord.type === 'Job' || ord.type === 'Jobs' ? (
-                                          <button 
-                                            onClick={() => {
-                                              setActiveProfileTab('myjobs');
-                                              setTrackingOrder(ord);
-                                            }} 
-                                            className="px-2.5 py-1 bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
-                                          >
-                                            View Status
-                                          </button>
-                                        ) : (['Booking', 'Stay', 'Travel', 'Appointment', 'Services', 'Service', 'Hospital', 'Doctor'].includes(ord.type) || activeProfileTab === 'bookings') ? (
-                                          <button 
-                                            onClick={() => {
-                                              setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
-                                              setTrackingOrder(ord);
-                                            }} 
-                                            className="px-2.5 py-1 bg-blue-600 text-white hover:bg-blue-700 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
-                                          >
-                                            Booking Details
-                                          </button>
-                                        ) : (
-                                          <>
-                                            {!['Delivered', 'Cancelled'].includes(ord.status) && (
-                                              <button 
-                                                onClick={() => {
-                                                  setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
-                                                  setTrackingOrder(ord);
-                                                }} 
-                                                className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase rounded-lg border-none cursor-pointer"
-                                              >
-                                                Track Live
-                                              </button>
-                                            )}
-                                            {['Delivered'].includes(ord.status) && (
-                                              <button 
-                                                onClick={() => {
-                                                  setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
-                                                  setTrackingOrder(ord);
-                                                }} 
-                                                className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer"
-                                              >
-                                                Rate Partner ★
-                                              </button>
-                                            )}
-                                          </>
-                                        )}
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const ordReasons = getOrderSupportReasons(ord);
-                                            setSupportOrderModal(ord);
-                                            setIsReportSubmitted(false);
-                                            setReportReason(ordReasons[0]);
-                                            setReportNotes('');
-                                          }}
-                                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-slate-700 transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 text-[9px] font-black uppercase rounded-lg"
-                                          title="Contact Support / Report Issue"
-                                        >
-                                          <PhoneCall className="w-3 h-3" />
-                                          <span>Support</span>
-                                        </button>
-                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
-                                          ord.status === 'Delivered'
-                                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                            : ord.status === 'Cancelled'
-                                            ? 'bg-red-500/10 text-red-450 border-red-500/20'
-                                            : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                {filteredCustomerOrders.map(ord => {
+                                  const statusBadgeStyle = 
+                                    ord.status === 'Delivered' || ord.status === 'Completed'
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                      : ord.status === 'Cancelled'
+                                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+
+                                  const statusText = 
+                                    ord.type === 'Job' || ord.type === 'Jobs' ? (
+                                      ord.status === 'Order Received' ? 'Under Preview' :
+                                      ord.status === 'Preparing' ? 'Resume Screening' :
+                                      ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(ord.status) ? 'Shortlisted' :
+                                      ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(ord.status) ? 'Interview Scheduled' :
+                                      ['Delivered', 'Completed'].includes(ord.status) ? 'Selected' :
+                                      ord.status === 'Cancelled' ? 'Rejected' : 'Under Review'
+                                    ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? (
+                                      ord.status === 'Order Received' ? 'Pending' :
+                                      ['Preparing', 'Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(ord.status) ? 'Confirmed' :
+                                      ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(ord.status) ? 'Active' :
+                                      ['Delivered', 'Completed'].includes(ord.status) ? 'Completed' :
+                                      ord.status === 'Cancelled' ? 'Cancelled' : 'Pending'
+                                    ) : (
+                                      ord.status.replace('Delivery Partner ', '')
+                                    );
+
+                                  return (
+                                    <div key={ord.id} className="border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+                                      <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                                          ord.type === 'Job' || ord.type === 'Jobs'
+                                            ? 'bg-indigo-400/15 border border-indigo-400/20 text-indigo-500'
+                                            : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type)
+                                            ? 'bg-blue-400/15 border border-blue-400/20 text-blue-500'
+                                            : 'bg-amber-400/15 border border-amber-400/20 text-amber-500'
                                         }`}>
                                           {ord.type === 'Job' || ord.type === 'Jobs' ? (
-                                            ord.status === 'Order Received' ? 'Under Preview' :
-                                            ord.status === 'Preparing' ? 'Resume Screening' :
-                                            ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(ord.status) ? 'Shortlisted' :
-                                            ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(ord.status) ? 'Interview Scheduled' :
-                                            ['Delivered', 'Completed'].includes(ord.status) ? 'Selected' :
-                                            ord.status === 'Cancelled' ? 'Rejected' : 'Under Review'
+                                            <Briefcase className="w-5 h-5" />
                                           ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? (
-                                            ord.status === 'Order Received' ? 'Pending' :
-                                            ['Preparing', 'Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(ord.status) ? 'Confirmed' :
-                                            ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(ord.status) ? 'Active' :
-                                            ['Delivered', 'Completed'].includes(ord.status) ? 'Completed' :
-                                            ord.status === 'Cancelled' ? 'Cancelled' : 'Pending'
+                                            <Calendar className="w-5 h-5" />
                                           ) : (
-                                            ord.status.replace('Delivery Partner ', '')
+                                            <ShoppingBag className="w-5 h-5" />
                                           )}
+                                        </div>
+                                        <div className="text-left flex-1 min-w-0">
+                                          <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white truncate">
+                                            {(ord.type === 'Job' || ord.type === 'Jobs' || ord.type === 'Booking' || ['Stay', 'Travel', 'Services', 'Appointment'].includes(ord.type)) ? (ord.product_details || '').replace(/\s*\(Qty:\s*\d+\)/gi, '') : ord.product_details}
+                                          </h4>
+                                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-slate-400 font-medium mt-0.5">
+                                            <span>
+                                              {ord.type === 'Job' || ord.type === 'Jobs' ? 'App No: ' : 
+                                               ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? 'Ref: ' : 
+                                               'Order: '}
+                                              <strong className="text-slate-600 dark:text-slate-300">#{ord.order_number}</strong>
+                                            </span>
+                                            <span>•</span>
+                                            <span>
+                                              {ord.type === 'Job' || ord.type === 'Jobs' ? 'Applied: ' : 
+                                               ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? 'Booked: ' : 
+                                               'Ordered: '}
+                                              {new Date(ord.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </span>
+                                          </div>
+                                          
+                                          {/* Action Buttons */}
+                                          <div className="flex items-center gap-2 mt-2 pt-0.5">
+                                            {ord.type === 'Job' || ord.type === 'Jobs' ? (
+                                              <button 
+                                                type="button"
+                                                onClick={() => {
+                                                  setActiveProfileTab('myjobs');
+                                                  setTrackingOrder(ord);
+                                                }} 
+                                                className="px-2.5 py-1 bg-[#0b1e36] text-white hover:bg-amber-500 hover:text-slate-950 text-[9.5px] font-black uppercase rounded-lg border-none cursor-pointer shadow-3xs"
+                                              >
+                                                View Status
+                                              </button>
+                                            ) : (['Booking', 'Stay', 'Travel', 'Appointment', 'Services', 'Service', 'Hospital', 'Doctor'].includes(ord.type) || activeProfileTab === 'bookings') ? (
+                                              <button 
+                                                type="button"
+                                                onClick={() => {
+                                                  setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
+                                                  setTrackingOrder(ord);
+                                                }} 
+                                                className="px-2.5 py-1 bg-blue-600 text-white hover:bg-blue-700 text-[9.5px] font-black uppercase rounded-lg border-none cursor-pointer shadow-3xs"
+                                              >
+                                                Booking Details
+                                              </button>
+                                            ) : (
+                                              <>
+                                                {!['Delivered', 'Cancelled'].includes(ord.status) && (
+                                                  <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                      setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
+                                                      setTrackingOrder(ord);
+                                                    }} 
+                                                    className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9.5px] font-black uppercase rounded-lg border-none cursor-pointer shadow-3xs"
+                                                  >
+                                                    Track Live
+                                                  </button>
+                                                )}
+                                                {['Delivered'].includes(ord.status) && (
+                                                  <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                      setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
+                                                      setTrackingOrder(ord);
+                                                    }} 
+                                                    className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9.5px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer shadow-3xs"
+                                                  >
+                                                    Rate Partner ★
+                                                  </button>
+                                                )}
+                                              </>
+                                            )}
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                const ordReasons = getOrderSupportReasons(ord);
+                                                setSupportOrderModal(ord);
+                                                setIsReportSubmitted(false);
+                                                setReportReason(ordReasons[0]);
+                                                setReportNotes('');
+                                              }}
+                                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-3xs flex items-center justify-center gap-1 text-[9.5px] font-black uppercase rounded-lg"
+                                              title="Contact Support / Report Issue"
+                                            >
+                                              <PhoneCall className="w-3 h-3 text-blue-500" />
+                                              <span>Support</span>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Dedicated Right Column for Amount & Status Badge */}
+                                      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 min-w-[120px] text-right">
+                                        <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono">
+                                          ₹{Number(ord.amount || 0).toLocaleString()}
+                                        </span>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border whitespace-nowrap shrink-0 ${statusBadgeStyle}`}>
+                                          {statusText}
                                         </span>
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -13568,14 +13646,20 @@ wishlistProducts.forEach(item => addToCart(item));
                               Guest Information Details ({adultCount + childCount} Guest{adultCount + childCount > 1 ? 's' : ''})
                             </span>
                             {Array.from({ length: adultCount + childCount }).map((_, idx) => (
-                              <div key={`modal1-guest-${idx}`} className="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-left">
-                                <span className="text-[9.5px] font-extrabold text-amber-600 dark:text-amber-400 uppercase flex items-center justify-between">
-                                  <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
-                                  {idx === 0 && <span className="text-[8px] bg-amber-400/20 text-amber-600 px-2 py-0.5 rounded font-extrabold">Main Contact</span>}
-                                </span>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div key={`modal1-guest-${idx}`} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-left shadow-2xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
+                                  </span>
+                                  {idx === 0 && (
+                                    <span className="text-[8.5px] bg-amber-400/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-amber-400/30">
+                                      Main Contact
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
                                   <div className="flex flex-col gap-1">
-                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Full Name</span>
+                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Full Name *</label>
                                     <input 
                                       type="text" 
                                       required
@@ -13589,11 +13673,11 @@ wishlistProducts.forEach(item => addToCart(item));
                                         });
                                       }}
                                       placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : `Guest ${idx + 1} Full Name`}
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
                                     />
                                   </div>
                                   <div className="flex flex-col gap-1">
-                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Aadhaar Card Number</span>
+                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aadhaar Card No *</label>
                                     <input 
                                       type="text" 
                                       required
@@ -13608,11 +13692,11 @@ wishlistProducts.forEach(item => addToCart(item));
                                         });
                                       }}
                                       placeholder="12-Digit Aadhaar No"
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
                                     />
                                   </div>
                                   <div className="flex flex-col gap-1">
-                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Phone Number</span>
+                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Number *</label>
                                     <input 
                                       type="tel" 
                                       required
@@ -13626,8 +13710,8 @@ wishlistProducts.forEach(item => addToCart(item));
                                           return updated;
                                         });
                                       }}
-                                      placeholder="10-Digit Phone No"
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                      placeholder="10-Digit Mobile No"
+                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
                                     />
                                   </div>
                                 </div>
@@ -14249,14 +14333,20 @@ wishlistProducts.forEach(item => addToCart(item));
                               Guest Information Details ({adultCount + childCount} Guest{adultCount + childCount > 1 ? 's' : ''})
                             </span>
                             {Array.from({ length: adultCount + childCount }).map((_, idx) => (
-                              <div key={`modal2-guest-${idx}`} className="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-left">
-                                <span className="text-[9.5px] font-extrabold text-amber-600 dark:text-amber-400 uppercase flex items-center justify-between">
-                                  <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
-                                  {idx === 0 && <span className="text-[8px] bg-amber-400/20 text-amber-600 px-2 py-0.5 rounded font-extrabold">Main Contact</span>}
-                                </span>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div key={`modal2-guest-${idx}`} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-left shadow-2xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
+                                  </span>
+                                  {idx === 0 && (
+                                    <span className="text-[8.5px] bg-amber-400/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-amber-400/30">
+                                      Main Contact
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
                                   <div className="flex flex-col gap-1">
-                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Full Name</span>
+                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Full Name *</label>
                                     <input 
                                       type="text" 
                                       required
@@ -14270,11 +14360,11 @@ wishlistProducts.forEach(item => addToCart(item));
                                         });
                                       }}
                                       placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : `Guest ${idx + 1} Full Name`}
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
                                     />
                                   </div>
                                   <div className="flex flex-col gap-1">
-                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Aadhaar Card Number</span>
+                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aadhaar Card No *</label>
                                     <input 
                                       type="text" 
                                       required
@@ -14289,26 +14379,26 @@ wishlistProducts.forEach(item => addToCart(item));
                                         });
                                       }}
                                       placeholder="12-Digit Aadhaar No"
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
                                     />
                                   </div>
                                   <div className="flex flex-col gap-1">
-                                    <span className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase">Phone Number</span>
+                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Number *</label>
                                     <input 
                                       type="tel" 
                                       required
                                       maxLength={10}
                                       value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : '')}
                                       onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                        const val = sanitizeMobileInput(e.target.value);
                                         setGuestList(prev => {
                                           const updated = [...prev];
                                           updated[idx] = { ...(updated[idx] || {}), phone: val };
                                           return updated;
                                         });
                                       }}
-                                      placeholder="10-Digit Phone No"
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:outline-none"
+                                      placeholder="10-Digit Mobile No"
+                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
                                     />
                                   </div>
                                 </div>
@@ -14806,8 +14896,8 @@ wishlistProducts.forEach(item => addToCart(item));
             </div>
 
             {/* Resume Document Viewer */}
-            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-6 space-y-5 text-xs font-sans text-slate-700 dark:text-slate-300 text-left">
-              <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 sm:p-5 space-y-4 text-xs font-sans text-slate-700 dark:text-slate-300 text-left">
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
                 <h4 className="text-base font-black text-slate-900 dark:text-white">
                   {applicantName || profileName || currentUser?.name || 'Candidate Name'}
                 </h4>
@@ -14821,35 +14911,60 @@ wishlistProducts.forEach(item => addToCart(item));
                 </div>
               </div>
 
-              {/* Uploaded File Details Box */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4.5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <FileText className="w-5 h-5 text-indigo-500" />
-                    <div>
-                      <span className="text-xs font-extrabold text-slate-800 dark:text-white block line-clamp-1">
-                        {resumeFile?.name || 'Candidate_CV_Document.pdf'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-semibold block">
-                        Format: PDF Document • Status: Scanned & Attached
-                      </span>
-                    </div>
+              {/* Uploaded File Real Document Preview Box */}
+              {resumeFile?.url ? (
+                <div className="space-y-3">
+                  <div className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white">
+                    <iframe
+                      src={resumeFile.url}
+                      title="Resume Document Preview"
+                      className="w-full h-full border-none"
+                    />
                   </div>
-                  <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 font-bold px-2.5 py-1 rounded-lg">
-                    {resumeFile?.size ? (resumeFile.size / 1024).toFixed(0) + ' KB' : 'Active CV'}
-                  </span>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+                    <span>File: <strong className="text-slate-800 dark:text-white">{resumeFile.name}</strong> ({resumeFile.size})</span>
+                    <button
+                      type="button"
+                      onClick={() => window.open(resumeFile.url, '_blank')}
+                      className="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Open in full window
+                    </button>
+                  </div>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  This document was directly uploaded by the applicant for job application screening. The employer HR team can review and download the original file using the action button below.
+              ) : (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 text-center space-y-2">
+                  <FileText className="w-10 h-10 text-slate-400 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Resume file not loaded or expired.</p>
                 </div>
-              </div>
+              )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
+              {resumeFile?.url && (
+                <button
+                  type="button"
+                  onClick={() => window.open(resumeFile.url, '_blank')}
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none flex items-center gap-1.5 shadow-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open In New Tab</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
-                  triggerNotification(`Downloading ${resumeFile?.name || 'Uploaded CV'}...`);
+                  if (resumeFile?.url) {
+                    const a = document.createElement('a');
+                    a.href = resumeFile.url;
+                    a.download = resumeFile.name || 'Resume_Document.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    triggerNotification(`Downloaded "${resumeFile.name}".`);
+                  } else {
+                    triggerNotification(`Downloading ${resumeFile?.name || 'Uploaded CV'}...`);
+                  }
                   setIsPreviewResumeOpen(false);
                 }}
                 className="px-5 py-2.5 bg-[#FFC107] hover:bg-amber-500 text-slate-900 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-xs border-none"
@@ -15273,51 +15388,98 @@ wishlistProducts.forEach(item => addToCart(item));
             {/* Selected Address / Booking Details Preview Banner */}
             {(() => {
               const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
-              const isBookingCheckout = isTravelOrStayCart(selectedCart);
+              if (selectedCart.length === 0) return null;
 
-              if (isBookingCheckout) {
-                const firstItem = selectedCart[0];
-                const isStay = (firstItem?.subNavbarCategory || firstItem?.mainCategory || firstItem?.tag || firstItem?.category || '').toLowerCase().includes('stay') || (firstItem?.category || '').toLowerCase().includes('hotel');
-                return (
-                  <div className="bg-emerald-50/80 dark:bg-emerald-950/40 px-5 py-2.5 border-b border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-left text-xs">
-                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 overflow-hidden">
-                      {isStay ? (
-                        <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      ) : (
-                        <Plane className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                      )}
-                      <span className="truncate font-semibold">
-                        {isStay ? 'Hotel Stay Booking' : 'Travel Booking'}: <strong className="text-slate-900 dark:text-white">{firstItem?.name || 'Booking Service'}</strong>
-                        {firstItem?.bookingDate || firstItem?.checkInDate ? ` • ${formatDate(firstItem?.bookingDate || firstItem?.checkInDate)}` : ''}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider bg-emerald-100/80 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full shrink-0">
-                      Confirmed Details
-                    </span>
-                  </div>
-                );
+              const firstItem = selectedCart[0];
+              const normCat = normalizeMainCatName(firstItem?.subNavbarCategory || firstItem?.mainCategory || firstItem?.category || firstItem?.tag || '');
+
+              let categoryLabel = 'Product Purchase';
+              let categoryIcon = <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />;
+              let badgeColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+              let bannerBg = 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-100 dark:border-amber-900/40';
+
+              if (normCat === 'services' || (firstItem?.category || '').toLowerCase().includes('service')) {
+                categoryLabel = 'Service Booking';
+                categoryIcon = <Wrench className="w-4 h-4 text-indigo-500 shrink-0" />;
+                badgeColor = 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800';
+                bannerBg = 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-900/40';
+              } else if (normCat === 'food' || (firstItem?.category || '').toLowerCase().includes('food') || (firstItem?.category || '').toLowerCase().includes('restaurant')) {
+                categoryLabel = 'Food Order';
+                categoryIcon = <Utensils className="w-4 h-4 text-orange-500 shrink-0" />;
+                badgeColor = 'bg-orange-100 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-800';
+                bannerBg = 'bg-orange-50/80 dark:bg-orange-950/40 border-orange-100 dark:border-orange-900/40';
+              } else if (normCat === 'daily needs' || (firstItem?.category || '').toLowerCase().includes('daily') || (firstItem?.category || '').toLowerCase().includes('grocery')) {
+                categoryLabel = 'Daily Needs Order';
+                categoryIcon = <ShoppingCart className="w-4 h-4 text-emerald-500 shrink-0" />;
+                badgeColor = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+                bannerBg = 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-900/40';
+              } else if (normCat === 'stay' || (firstItem?.category || '').toLowerCase().includes('hotel') || (firstItem?.category || '').toLowerCase().includes('resort') || firstItem?.roomType) {
+                categoryLabel = 'Hotel Stay Booking';
+                categoryIcon = <Building2 className="w-4 h-4 text-teal-500 shrink-0" />;
+                badgeColor = 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300 border-teal-200 dark:border-teal-800';
+                bannerBg = 'bg-teal-50/80 dark:bg-teal-950/40 border-teal-100 dark:border-teal-900/40';
+              } else if (normCat === 'travel' || firstItem?.boardingPoint || firstItem?.droppingPoint || (firstItem?.category || '').toLowerCase().includes('travel') || (firstItem?.category || '').toLowerCase().includes('tour')) {
+                categoryLabel = 'Travel Booking';
+                categoryIcon = <Plane className="w-4 h-4 text-blue-500 shrink-0" />;
+                badgeColor = 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+                bannerBg = 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-100 dark:border-blue-900/40';
+              } else {
+                categoryLabel = 'Product Purchase';
+                categoryIcon = <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />;
+                badgeColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+                bannerBg = 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-100 dark:border-amber-900/40';
               }
 
               const activeAddr = addresses.find(a => a.id === selectedCheckoutAddressId) || addresses[0];
-              if (!activeAddr) return null;
+              const isPhysicalDelivery = ['products', 'food', 'daily needs'].includes(normCat);
+
               return (
-                <div className="bg-blue-50/80 dark:bg-blue-950/40 px-5 py-2.5 border-b border-blue-100 dark:border-blue-900/40 flex items-center justify-between text-left text-xs">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 overflow-hidden">
-                    <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="truncate font-semibold">
-                      Deliver to <strong className="text-slate-900 dark:text-white">{activeAddr.name}</strong> ({activeAddr.locality || activeAddr.city}, {activeAddr.pincode})
+                <div className={`${bannerBg} px-5 py-3 border-b text-left text-xs space-y-1.5 select-none`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 font-black text-slate-800 dark:text-white uppercase tracking-wider text-[11px]">
+                      {categoryIcon}
+                      <span>{categoryLabel}</span>
+                      {selectedCart.length > 1 && (
+                        <span className="text-[10px] text-slate-400 font-bold lowercase">
+                          (+{selectedCart.length - 1} more item{selectedCart.length > 2 ? 's' : ''})
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 ${badgeColor}`}>
+                      Confirmed Details ✓
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsRazorpayModalOpen(false);
-                      setIsAddressModalOpen(true);
-                    }}
-                    className="text-[10px] font-black text-amber-500 hover:underline uppercase shrink-0 border-none bg-transparent cursor-pointer ml-2"
-                  >
-                    Change
-                  </button>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-slate-700 dark:text-slate-300">
+                    <div className="font-semibold text-slate-900 dark:text-white line-clamp-1 flex-1 min-w-0" title={firstItem?.name || 'Order Item'}>
+                      <strong>{firstItem?.name || 'Order Item'}</strong>
+                      {firstItem?.quantity && firstItem.quantity > 1 ? ` (Qty: ${firstItem.quantity})` : ''}
+                      {(firstItem?.bookingDate || firstItem?.checkInDate) && (
+                        <span className="text-slate-500 dark:text-slate-400 font-medium ml-1.5">
+                          • {formatDate(firstItem?.bookingDate || firstItem?.checkInDate)}
+                        </span>
+                      )}
+                    </div>
+
+                    {isPhysicalDelivery && activeAddr && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
+                        <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span className="truncate max-w-[180px]">
+                          {activeAddr.locality || activeAddr.city} ({activeAddr.pincode})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsRazorpayModalOpen(false);
+                            setIsAddressModalOpen(true);
+                          }}
+                          className="text-[10px] font-black text-amber-500 hover:underline uppercase shrink-0 border-none bg-transparent cursor-pointer ml-1"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
