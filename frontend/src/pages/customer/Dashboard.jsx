@@ -1378,6 +1378,7 @@ export default function CustomerDashboard({
   const [sortBy, setSortBy] = useState('default');
   const [activeScheduleModalItem, setActiveScheduleModalItem] = useState(null);
   const [activeBookNowModalItem, setActiveBookNowModalItem] = useState(null);
+  const [appliedJobId, setAppliedJobId] = useState(null);
 
   useEffect(() => {
     const activeItem = activeScheduleModalItem || activeBookNowModalItem;
@@ -3231,7 +3232,6 @@ export default function CustomerDashboard({
   }, [hoveredLink]);
 
   // Job Application States
-  const [appliedJobId, setAppliedJobId] = useState(null);
   const [applicantName, setApplicantName] = useState(currentUser?.name || profileName || '');
   const [applicantEmail, setApplicantEmail] = useState(currentUser?.email || profileEmail || '');
   const [applicantResume, setApplicantResume] = useState('');
