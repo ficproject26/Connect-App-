@@ -3175,8 +3175,7 @@ export default function CustomerDashboard({
       shareModalProduct || 
       activeScheduleModalItem || 
       activeBookNowModalItem || 
-      selectedJob || 
-      bookingDetailsModal || 
+      appliedJobId || 
       supportOrderModal || 
       isAddressModalOpen || 
       isRazorpayModalOpen || 
@@ -3197,7 +3196,7 @@ export default function CustomerDashboard({
     isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, 
     isNotificationsOpen, isMobileMenuOpen, isLocationDropdownOpen, 
     shareModalProduct, activeScheduleModalItem, activeBookNowModalItem, 
-    selectedJob, bookingDetailsModal, supportOrderModal, isAddressModalOpen, 
+    appliedJobId, supportOrderModal, isAddressModalOpen, 
     isRazorpayModalOpen, isLoginModalOpen
   ]);
 
