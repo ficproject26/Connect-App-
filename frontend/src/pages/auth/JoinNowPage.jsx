@@ -6,11 +6,14 @@ import {
 import logoImg from '../../assets/images/forge india logo.jpg';
 import { 
   validateName, 
+  formatCapitalizedName,
   validateMobile, 
   sanitizeMobileInput,
   validateEmail, 
   validateAadhaar, 
+  sanitizeAadhaarInput,
   validatePan, 
+  formatPanInput,
   validatePincode, 
   verifyIndianPincodeAsync,
   validatePassword, 
@@ -105,13 +108,13 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   };
 
   const handleAadhaarChange = (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+    const val = sanitizeAadhaarInput(e.target.value);
     setAadhaarNumber(val);
     setTouched(prev => ({ ...prev, aadhaarNumber: true }));
   };
 
   const handlePanChange = (e) => {
-    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    const val = formatPanInput(e.target.value);
     setPanNumber(val);
     setTouched(prev => ({ ...prev, panNumber: true }));
   };
@@ -135,7 +138,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   };
 
   const handleNameChange = (e) => {
-    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+    const val = formatCapitalizedName(e.target.value);
     setFullName(val);
     setTouched(prev => ({ ...prev, fullName: true }));
   };

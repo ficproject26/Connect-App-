@@ -134,6 +134,25 @@ const findCustomerInMongo = async (identifier) => {
 };
 // Strict Indian Mobile Number Regex: ^[6-9][0-9]{9}$
 const INDIAN_MOBILE_REGEX = /^[6-9][0-9]{9}$/;
+const formatCapitalizedName = (val) => {
+    if (!val)
+        return '';
+    const noLeading = val.replace(/^\s+/, '');
+    return noLeading.replace(/(^|[\s.\-'])([a-zA-Z\u00C0-\u024F\u0900-\u0D7F])/g, (match, sep, char) => sep + char.toUpperCase());
+};
+const validateName = (name, label = 'Full Name') => {
+    if (!name || !name.trim())
+        return { valid: false, message: `${label} is required.` };
+    const clean = name.trim();
+    if (clean.length < 2)
+        return { valid: false, message: `${label} must be at least 2 characters long.` };
+    if (clean.length > 70)
+        return { valid: false, message: `${label} cannot exceed 70 characters.` };
+    const regex = /^[\p{L}\s.'\-]+$/u;
+    if (!regex.test(clean))
+        return { valid: false, message: `${label} contains invalid characters.` };
+    return { valid: true, message: '' };
+};
 const validateIndianMobile = (phone) => {
     if (!phone || !phone.trim()) {
         return { valid: false, message: 'Mobile number is required.' };
@@ -147,6 +166,78 @@ const validateIndianMobile = (phone) => {
     }
     if (!INDIAN_MOBILE_REGEX.test(cleaned)) {
         return { valid: false, message: 'Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' };
+    }
+    return { valid: true, message: '' };
+};
+const validateEmail = (email) => {
+    if (!email || !email.trim())
+        return { valid: false, message: 'Email address is required.' };
+    const cleaned = email.trim().toLowerCase();
+    if (/\s/.test(cleaned))
+        return { valid: false, message: 'Email cannot contain spaces.' };
+    const atCount = (cleaned.match(/@/g) || []).length;
+    if (atCount !== 1)
+        return { valid: false, message: 'Enter a valid email address with exactly one @.' };
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(cleaned))
+        return { valid: false, message: 'Enter a valid email address (e.g. name@domain.com).' };
+    return { valid: true, message: '' };
+};
+const validatePassword = (password) => {
+    if (!password)
+        return { valid: false, message: 'Password is required.' };
+    if (password.length < 6)
+        return { valid: false, message: 'Password must be at least 6 characters long.' };
+    const regex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{6,}$/;
+    if (!regex.test(password)) {
+        return { valid: false, message: 'Password must contain at least 1 uppercase letter, 1 number, and 1 special character.' };
+    }
+    return { valid: true, message: '' };
+};
+const validateAadhaar = (aadhaar) => {
+    if (!aadhaar || !String(aadhaar).trim())
+        return { valid: false, message: 'Aadhaar number is required.' };
+    const cleaned = String(aadhaar).trim().replace(/\s+/g, '');
+    if (!/^\d{12}$/.test(cleaned)) {
+        return { valid: false, message: 'Enter a valid 12-digit Aadhaar number.' };
+    }
+    return { valid: true, message: '' };
+};
+const validatePan = (pan) => {
+    if (!pan || !String(pan).trim())
+        return { valid: false, message: 'PAN number is required.' };
+    const cleaned = String(pan).trim().toUpperCase();
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleaned)) {
+        return { valid: false, message: 'Enter a valid 10-character PAN number (e.g. ABCDE1234F).' };
+    }
+    return { valid: true, message: '' };
+};
+const calculateAge = (dobString) => {
+    if (!dobString)
+        return -1;
+    const dob = new Date(dobString);
+    if (isNaN(dob.getTime()))
+        return -1;
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+};
+const validateDateOfBirth = (dob, minAge = 18) => {
+    if (!dob)
+        return { valid: false, message: 'Date of birth is required.' };
+    const birthDate = new Date(dob);
+    if (isNaN(birthDate.getTime()))
+        return { valid: false, message: 'Enter a valid date of birth.' };
+    const today = new Date();
+    if (birthDate > today)
+        return { valid: false, message: 'Date of birth cannot be in the future.' };
+    const age = calculateAge(dob);
+    if (age < minAge) {
+        return { valid: false, message: `You must be at least ${minAge} years old to register.` };
     }
     return { valid: true, message: '' };
 };
@@ -734,8 +825,12 @@ router.post(['/forgot-password/verify-and-reset', '/forgot-password-reset', '/fo
     if (!target || !otp || !passwordToSet) {
         return res.status(400).json({ status: 'error', message: 'Email/mobile number, OTP, and new password are required.' });
     }
-    if (passwordToSet.length < 8) {
-        return res.status(400).json({ status: 'error', message: 'Password must be at least 8 characters long.' });
+    const passCheck = validatePassword(passwordToSet);
+    if (!passCheck.valid) {
+        return res.status(400).json({ status: 'error', message: passCheck.message });
+    }
+    if (confirmPassword && newPassword && confirmPassword !== newPassword) {
+        return res.status(400).json({ status: 'error', message: 'Password and Confirm Password do not match.' });
     }
     const normalizedTarget = target.toLowerCase();
     const verifyRes = securityManager_1.securityManager.verifyOTP('reset_' + normalizedTarget, otp);
@@ -881,16 +976,57 @@ router.post('/logout-all-devices', middleware_1.authenticateToken, (req, res) =>
 // Customer Registration Persistence
 router.post('/register-customer', async (req, res) => {
     const { name, email, phone, password, address, city, pincode, aadhaarNumber, panNumber } = req.body;
-    // Server-side Indian Mobile Number Validation (bypass protection)
+    // 1. Name validation & title-case capitalization
+    if (name) {
+        const nameCheck = validateName(name, 'Full Name');
+        if (!nameCheck.valid) {
+            return res.status(400).json({ status: 'error', code: 'INVALID_NAME', message: nameCheck.message });
+        }
+    }
+    const cleanName = formatCapitalizedName(name || '');
+    // 2. Email validation
+    if (email) {
+        const emailCheck = validateEmail(email);
+        if (!emailCheck.valid) {
+            return res.status(400).json({ status: 'error', code: 'INVALID_EMAIL', message: emailCheck.message });
+        }
+    }
+    // 3. Indian Mobile Number validation (exactly 10 digits starting with 6, 7, 8, 9)
     const cleanPhone = (phone || '').replace(/\D/g, '');
-    if (cleanPhone) {
-        const mobileCheck = validateIndianMobile(cleanPhone);
-        if (!mobileCheck.valid) {
-            return res.status(400).json({
-                status: 'error',
-                code: 'INVALID_MOBILE',
-                message: mobileCheck.message
-            });
+    const mobileCheck = validateIndianMobile(cleanPhone);
+    if (!mobileCheck.valid) {
+        return res.status(400).json({
+            status: 'error',
+            code: 'INVALID_MOBILE',
+            message: mobileCheck.message
+        });
+    }
+    // 4. Password validation (min 6 chars, uppercase, number, special char)
+    if (password) {
+        const passCheck = validatePassword(password);
+        if (!passCheck.valid) {
+            return res.status(400).json({ status: 'error', code: 'INVALID_PASSWORD', message: passCheck.message });
+        }
+    }
+    // 5. Aadhaar validation (12 digits)
+    if (aadhaarNumber) {
+        const aadhaarCheck = validateAadhaar(aadhaarNumber);
+        if (!aadhaarCheck.valid) {
+            return res.status(400).json({ status: 'error', code: 'INVALID_AADHAAR', message: aadhaarCheck.message });
+        }
+    }
+    // 6. PAN validation (ABCDE1234F format)
+    if (panNumber) {
+        const panCheck = validatePan(panNumber);
+        if (!panCheck.valid) {
+            return res.status(400).json({ status: 'error', code: 'INVALID_PAN', message: panCheck.message });
+        }
+    }
+    // 7. Date of birth validation (min 18 years)
+    if (req.body.dob || req.body.dateOfBirth) {
+        const dobCheck = validateDateOfBirth(req.body.dob || req.body.dateOfBirth);
+        if (!dobCheck.valid) {
+            return res.status(400).json({ status: 'error', code: 'INVALID_DOB', message: dobCheck.message });
         }
     }
     // Server-side Indian PIN Code Validation (Strict Mandatory Requirement)
@@ -942,7 +1078,7 @@ router.post('/register-customer', async (req, res) => {
         const userId = 'cust_' + Date.now();
         const initialAddresses = address ? [{
                 id: 'addr_1_' + Date.now(),
-                name: name || 'Connect Member',
+                name: cleanName || 'Connect Member',
                 phone: cleanPhone,
                 pincode: pincode || '',
                 locality: city || '',
@@ -977,7 +1113,7 @@ router.post('/register-customer', async (req, res) => {
             _id: userId,
             registrationId: uniqueCustId,
             customerId: uniqueCustId,
-            name: name || 'Connect Customer',
+            name: cleanName || 'Connect Customer',
             email: cleanEmail,
             phone: cleanPhone,
             password: hashedPassword,
@@ -1216,18 +1352,37 @@ router.put('/customer-profile', middleware_1.authenticateToken, async (req, res)
             return res.status(503).json({ status: 'error', message: 'Database not connected' });
         }
         const updateFields = { updatedAt: new Date().toISOString() };
-        if (name)
-            updateFields.name = name.trim();
-        if (email)
+        if (name) {
+            const nameCheck = validateName(name, 'Full Name');
+            if (!nameCheck.valid) {
+                return res.status(400).json({ status: 'error', code: 'INVALID_NAME', message: nameCheck.message });
+            }
+            updateFields.name = formatCapitalizedName(name);
+        }
+        if (email) {
+            const emailCheck = validateEmail(email);
+            if (!emailCheck.valid) {
+                return res.status(400).json({ status: 'error', code: 'INVALID_EMAIL', message: emailCheck.message });
+            }
             updateFields.email = email.toLowerCase().trim();
-        if (phone)
+        }
+        if (phone) {
+            const phoneCheck = validateIndianMobile(phone);
+            if (!phoneCheck.valid) {
+                return res.status(400).json({ status: 'error', code: 'INVALID_MOBILE', message: phoneCheck.message });
+            }
             updateFields.phone = phone.replace(/\D/g, '');
+        }
         const newAvatar = avatar !== undefined ? avatar : photo;
         if (newAvatar !== undefined) {
             updateFields.avatar = newAvatar;
             updateFields.photo = newAvatar;
         }
         if (password) {
+            const passCheck = validatePassword(password);
+            if (!passCheck.valid) {
+                return res.status(400).json({ status: 'error', code: 'INVALID_PASSWORD', message: passCheck.message });
+            }
             updateFields.password = await bcryptjs_1.default.hash(password, 10);
         }
         const filter = buildCustomerMongoFilter(target);

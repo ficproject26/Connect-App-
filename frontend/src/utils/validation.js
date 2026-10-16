@@ -3,110 +3,128 @@
  * Strict Indian Banking & UIDAI Standard Validation Rules.
  */
 
-// 1. Strict Indian Mobile Number Sanitizer (Typing prevention: Digits only, starts with 6,7,8,9, max 10 digits)
+// 1. Name Normalization & Formatting
+// Automatically capitalize the first alphabetic character of each name part
+// Preserve appropriate spaces between words, strip leading spaces
+export const formatCapitalizedName = (val) => {
+  if (val === null || val === undefined) return '';
+  const noLeading = String(val).replace(/^\s+/, '');
+  // Capitalize first letter of each word (supporting English, European, and Indian regional script letters)
+  return noLeading.replace(/(^|[\s.\-'])([a-zA-Z\u00C0-\u024F\u0900-\u0D7F])/g, (match, sep, char) => sep + char.toUpperCase());
+};
+
+// 1.1 Name Validation (2 to 70 characters, allows legitimate Indian and international names, regional-language characters, valid name punctuation)
+export const validateName = (name, fieldLabel = 'Full Name', minLen = 2, maxLen = 70) => {
+  if (!name || !String(name).trim()) {
+    return { isValid: false, error: `${fieldLabel} is required.` };
+  }
+  const cleaned = String(name).trim();
+  if (cleaned.length < minLen) {
+    return { isValid: false, error: `${fieldLabel} must be at least ${minLen} characters long.` };
+  }
+  if (cleaned.length > maxLen) {
+    return { isValid: false, error: `${fieldLabel} cannot exceed ${maxLen} characters.` };
+  }
+  // Allow letters (including international and regional scripts), spaces, dots, hyphens, and apostrophes
+  const validNameRegex = /^[\p{L}\s.'\-]+$/u;
+  if (!validNameRegex.test(cleaned)) {
+    return { isValid: false, error: `${fieldLabel} can contain letters, spaces, dots, hyphens, and apostrophes only.` };
+  }
+  return { isValid: true, error: '' };
+};
+
+// 2. Strict Indian Mobile Number Sanitizer (Typing prevention: Digits only, starts with 6,7,8,9, max 10 digits)
 export const sanitizeMobileInput = (val) => {
   if (!val) return '';
-  let digits = val.replace(/\D/g, ''); // Digits only
+  let digits = String(val).replace(/\D/g, ''); // Digits only
   if (digits.length > 0 && !/[6-9]/.test(digits[0])) {
     return ''; // Ignore invalid first digit
   }
   return digits.slice(0, 10); // Cap at 10 digits
 };
 
-// 2. Strict Indian Mobile Number Validator (Regex: ^[6-9][0-9]{9}$)
-export const validateMobile = (mobile) => {
-  if (!mobile || !mobile.trim()) {
-    return { isValid: false, error: 'Mobile number is required.' };
+// 2.1 Strict Indian Mobile Number Validator (Regex: ^[6-9][0-9]{9}$)
+export const validateMobile = (mobile, fieldLabel = 'Mobile number') => {
+  if (!mobile || !String(mobile).trim()) {
+    return { isValid: false, error: `${fieldLabel} is required.` };
   }
-  const cleaned = mobile.trim();
+  const cleaned = String(mobile).trim();
   if (cleaned.length > 0 && !/^[6-9]/.test(cleaned)) {
-    return { isValid: false, error: 'Mobile number must start with 6, 7, 8, or 9.' };
+    return { isValid: false, error: `${fieldLabel} must start with 6, 7, 8, or 9.` };
   }
   if (!/^\d+$/.test(cleaned)) {
-    return { isValid: false, error: 'Mobile number must contain digits only.' };
+    return { isValid: false, error: `${fieldLabel} must contain digits only.` };
   }
   if (cleaned.length < 10) {
-    return { isValid: false, error: 'Enter a valid 10-digit mobile number.' };
+    return { isValid: false, error: `Enter a valid 10-digit ${fieldLabel.toLowerCase()}.` };
   }
   if (!/^[6-9][0-9]{9}$/.test(cleaned)) {
-    return { isValid: false, error: 'Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.' };
+    return { isValid: false, error: `Enter a valid 10-digit ${fieldLabel.toLowerCase()} starting with 6, 7, 8, or 9.` };
   }
   return { isValid: true, error: '' };
 };
 
 // 3. Alternate Mobile Number (Optional, if entered must match Indian mobile rules)
 export const validateAltMobile = (mobile) => {
-  if (!mobile || !mobile.trim()) {
+  if (!mobile || !String(mobile).trim()) {
     return { isValid: true, error: '' };
   }
-  return validateMobile(mobile);
+  return validateMobile(mobile, 'Alternate mobile number');
 };
 
-// 4. Aadhaar Number (Required, 12 digits)
-export const validateAadhaar = (aadhaar) => {
-  if (!aadhaar || !aadhaar.trim()) {
-    return { isValid: false, error: 'Enter a valid 12-digit Aadhaar number.' };
-  }
-  const cleaned = aadhaar.trim().replace(/\s+/g, '');
-  if (!/^\d{12}$/.test(cleaned)) {
-    return { isValid: false, error: 'Enter a valid 12-digit Aadhaar number.' };
-  }
-  return { isValid: true, error: '' };
+// 4. Email Validation (Standard email structure: localpart@domain.extension, exactly one @)
+export const normalizeEmail = (email) => {
+  return email ? String(email).trim().toLowerCase() : '';
 };
 
-// 5. PAN Number (Required, ABCDE1234F format)
-export const validatePan = (pan) => {
-  if (!pan || !pan.trim()) {
-    return { isValid: false, error: 'Enter a valid PAN number.' };
-  }
-  const cleaned = pan.trim().toUpperCase();
-  const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-  if (!panRegex.test(cleaned)) {
-    return { isValid: false, error: 'Enter a valid PAN number.' };
-  }
-  return { isValid: true, error: '' };
-};
-
-// 6. Email (Required, RFC standard format)
 export const validateEmail = (email) => {
-  if (!email || !email.trim()) {
+  if (!email || !String(email).trim()) {
     return { isValid: false, error: 'Enter a valid email address.' };
   }
-  const cleaned = email.trim();
+  const cleaned = String(email).trim();
+  if (/\s/.test(cleaned)) {
+    return { isValid: false, error: 'Email address cannot contain spaces.' };
+  }
+  const atCount = (cleaned.match(/@/g) || []).length;
+  if (atCount !== 1) {
+    return { isValid: false, error: 'Email address must contain exactly one "@" symbol.' };
+  }
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(cleaned)) {
-    return { isValid: false, error: 'Enter a valid email address.' };
+    return { isValid: false, error: 'Enter a valid email address (e.g. name@domain.com).' };
   }
   return { isValid: true, error: '' };
 };
 
-// 7. Password Strength & Requirement (Min 8 chars, Uppercase, Lowercase, Number, Special char)
+// 5. Password Validation (Min 6 chars, >=1 uppercase, >=1 digit, >=1 special character)
+// Pattern: ^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{6,}$
+export const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{6,}$/;
+
 export const validatePassword = (password) => {
   if (!password) {
     return { isValid: false, score: 0, label: 'Weak', color: 'bg-slate-200 dark:bg-slate-800', error: 'Password is required.' };
   }
-  if (password.length < 8) {
-    return { isValid: false, score: 1, label: 'Weak', color: 'bg-rose-500', error: 'Password must be at least 8 characters long.' };
+  if (password.length < 6) {
+    return { isValid: false, score: 1, label: 'Weak', color: 'bg-rose-500', error: 'Password must be at least 6 characters long.' };
   }
   const hasUpper = /[A-Z]/.test(password);
-  const hasLower = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
-  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9\s]/.test(password);
 
-  if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
-    return { 
-      isValid: false, 
-      score: 2, 
-      label: 'Medium', 
-      color: 'bg-amber-500', 
-      error: 'Password must contain uppercase, lowercase, number & special character.' 
-    };
+  if (!hasUpper) {
+    return { isValid: false, score: 2, label: 'Medium', color: 'bg-amber-500', error: 'Password must contain at least 1 uppercase letter (A-Z).' };
+  }
+  if (!hasNumber) {
+    return { isValid: false, score: 2, label: 'Medium', color: 'bg-amber-500', error: 'Password must contain at least 1 numeric digit (0-9).' };
+  }
+  if (!hasSpecial) {
+    return { isValid: false, score: 2, label: 'Medium', color: 'bg-amber-500', error: 'Password must contain at least 1 special character (e.g. @, #, $, !).' };
   }
 
   return { isValid: true, score: 4, label: 'Strong', color: 'bg-emerald-500', error: '' };
 };
 
-// 8. Confirm Password Match
+// 5.1 Confirm Password Match
 export const validateConfirmPassword = (password, confirmPassword) => {
   if (!confirmPassword) {
     return { isValid: false, error: 'Confirm password is required.' };
@@ -117,7 +135,141 @@ export const validateConfirmPassword = (password, confirmPassword) => {
   return { isValid: true, error: '' };
 };
 
-// 9. Pincode (Strict 6-digit Indian PIN code, starts with valid Indian postal circles 1-8 / 9, rejects repetitive/dummy patterns like 282828, 123456, 111111)
+// 6. Aadhaar Number Sanitizer & Validation (Exactly 12 numeric digits)
+export const sanitizeAadhaarInput = (val) => {
+  return String(val || '').replace(/\D/g, '').slice(0, 12);
+};
+
+export const maskAadhaar = (aadhaar) => {
+  if (!aadhaar) return '';
+  const clean = String(aadhaar).replace(/\D/g, '');
+  if (clean.length < 4) return clean;
+  return `•••• •••• ${clean.slice(-4)}`;
+};
+
+export const validateAadhaar = (aadhaar) => {
+  if (!aadhaar || !String(aadhaar).trim()) {
+    return { isValid: false, error: 'Enter a valid 12-digit Aadhaar number.' };
+  }
+  const cleaned = String(aadhaar).trim().replace(/\s+/g, '');
+  if (!/^\d{12}$/.test(cleaned)) {
+    return { isValid: false, error: 'Aadhaar number must be exactly 12 numeric digits.' };
+  }
+  return { isValid: true, error: '' };
+};
+
+// 7. PAN Card Formatter & Validation (ABCDE1234F format)
+export const formatPanInput = (val) => {
+  return String(val || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+};
+
+export const validatePan = (pan) => {
+  if (!pan || !String(pan).trim()) {
+    return { isValid: false, error: 'Enter a valid PAN number.' };
+  }
+  const cleaned = String(pan).trim().toUpperCase();
+  const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+  if (!panRegex.test(cleaned)) {
+    return { isValid: false, error: 'Enter a valid 10-character PAN number (e.g. ABCDE1234F).' };
+  }
+  return { isValid: true, error: '' };
+};
+
+// 8. Bank Account Number Formatter & Validation (Numeric only, 9 to 18 digits)
+export const formatBankAccountInput = (val) => {
+  return String(val || '').replace(/\D/g, '').slice(0, 18);
+};
+
+export const maskBankAccount = (acc) => {
+  if (!acc) return '';
+  const clean = String(acc).replace(/\D/g, '');
+  if (clean.length < 4) return clean;
+  return `••••••••${clean.slice(-4)}`;
+};
+
+export const validateBankAccount = (accountNo, confirmAccountNo = undefined) => {
+  if (!accountNo || !String(accountNo).trim()) {
+    return { isValid: false, error: 'Bank account number is required.' };
+  }
+  const cleaned = String(accountNo).trim().replace(/\s+/g, '');
+  if (!/^\d+$/.test(cleaned)) {
+    return { isValid: false, error: 'Bank account number must contain numeric digits only.' };
+  }
+  if (cleaned.length < 9 || cleaned.length > 18) {
+    return { isValid: false, error: 'Bank account number must be between 9 and 18 digits.' };
+  }
+  if (confirmAccountNo !== undefined && confirmAccountNo !== null && confirmAccountNo !== '') {
+    const cleanConfirm = String(confirmAccountNo).trim().replace(/\s+/g, '');
+    if (cleaned !== cleanConfirm) {
+      return { isValid: false, error: 'Bank account numbers do not match.' };
+    }
+  }
+  return { isValid: true, error: '' };
+};
+
+// 9. IFSC Code Formatter & Validation (11 characters: 4 uppercase letters, '0', 6 alphanumeric)
+export const formatIfscInput = (val) => {
+  return String(val || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+};
+
+export const validateIfsc = (ifsc) => {
+  if (!ifsc || !String(ifsc).trim()) {
+    return { isValid: false, error: 'IFSC code is required.' };
+  }
+  const cleaned = String(ifsc).trim().toUpperCase();
+  if (cleaned.length !== 11) {
+    return { isValid: false, error: 'IFSC code must be exactly 11 characters (e.g. SBIN0001234).' };
+  }
+  if (cleaned.charAt(4) !== '0') {
+    return { isValid: false, error: 'The 5th character of the IFSC code must be 0 (zero).' };
+  }
+  const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+  if (!ifscRegex.test(cleaned)) {
+    return { isValid: false, error: 'Enter a valid 11-character IFSC code (e.g. SBIN0001234).' };
+  }
+  return { isValid: true, error: '' };
+};
+
+// 10. Date of Birth & Minimum Age 18 Validation
+export const calculateAge = (dobString) => {
+  if (!dobString) return -1;
+  const dob = new Date(dobString);
+  if (isNaN(dob.getTime())) return -1;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+export const validateDateOfBirth = (dob, minAge = 18) => {
+  if (!dob) {
+    return { isValid: false, error: 'Date of birth is required.' };
+  }
+  const birthDate = new Date(dob);
+  if (isNaN(birthDate.getTime())) {
+    return { isValid: false, error: 'Enter a valid date of birth.' };
+  }
+  const today = new Date();
+  if (birthDate > today) {
+    return { isValid: false, error: 'Date of birth cannot be in the future.' };
+  }
+  const age = calculateAge(dob);
+  if (age < minAge) {
+    return { isValid: false, error: `You must be at least ${minAge} years old to register.` };
+  }
+  return { isValid: true, error: '', age };
+};
+
+export const getMinAge18CutoffDate = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().split('T')[0];
+};
+
+// 11. Pincode (Strict 6-digit Indian PIN code, starts with valid Indian postal circles 1-8 / 9)
 export const validatePincode = (pincode) => {
   if (!pincode || !String(pincode).trim()) {
     return { isValid: false, error: 'Please enter a valid 6-digit Indian PIN code.' };
@@ -160,7 +312,7 @@ export const validatePincode = (pincode) => {
   return { isValid: true, error: '' };
 };
 
-// 9.1 Asynchronous PIN code validation against India Post records
+// 11.1 Asynchronous PIN code validation against India Post records
 export const verifyIndianPincodeAsync = async (pincode) => {
   const sync = validatePincode(pincode);
   if (!sync.isValid) return sync;
@@ -177,25 +329,7 @@ export const verifyIndianPincodeAsync = async (pincode) => {
   }
 };
 
-// 10. Name (Letters and spaces only, 3-50 chars)
-export const validateName = (name) => {
-  if (!name || !name.trim()) {
-    return { isValid: false, error: 'Full Name is required.' };
-  }
-  const cleaned = name.trim();
-  if (cleaned.length < 3) {
-    return { isValid: false, error: 'Name must be at least 3 characters long.' };
-  }
-  if (cleaned.length > 50) {
-    return { isValid: false, error: 'Name cannot exceed 50 characters.' };
-  }
-  if (!/^[a-zA-Z\s]+$/.test(cleaned)) {
-    return { isValid: false, error: 'Name can contain letters and spaces only.' };
-  }
-  return { isValid: true, error: '' };
-};
-
-// 11. Sanitizer for Text Fields (Prevent HTML tags, SQL injections, multiple spaces)
+// 12. Sanitizer for Text Fields (Prevent HTML tags, SQL injections, multiple spaces)
 export const sanitizeInput = (val) => {
   if (!val || typeof val !== 'string') return '';
   return val
@@ -204,7 +338,7 @@ export const sanitizeInput = (val) => {
     .replace(/\s+/g, ' '); // Collapse multiple spaces
 };
 
-// 12. File Upload Validation (JPG, JPEG, PNG, PDF <= 5MB)
+// 13. File Upload Validation (JPG, JPEG, PNG, PDF <= 5MB)
 export const validateFileUpload = (file, allowedTypes = ['jpg', 'jpeg', 'png', 'pdf'], maxSizeMB = 5) => {
   if (!file) {
     return { isValid: false, error: 'Please select a file to upload.' };

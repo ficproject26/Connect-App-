@@ -8,6 +8,7 @@ import useAuth from '../../hooks/useAuth';
 import logoImg from '../../assets/images/forge india logo.jpg';
 import { SUPPORTED_LANGUAGES, getStoredLanguage, setStoredLanguage, t } from '../../utils/i18n';
 import { getBackendUrl } from '../../services/apiSetup';
+import { validatePassword, validateConfirmPassword } from '../../utils/validation';
 
 export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoinNow }) {
   const { login } = useAuth();
@@ -323,13 +324,15 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       return;
     }
 
-    if (passClean.length < 8) {
-      setForgotError(t('passwordMinLength', currentLang));
+    const passCheck = validatePassword(passClean);
+    if (!passCheck.isValid) {
+      setForgotError(passCheck.error || t('passwordMinLength', currentLang));
       return;
     }
 
-    if (passClean !== confirmClean) {
-      setForgotError(t('passwordsDoNotMatch', currentLang));
+    const matchCheck = validateConfirmPassword(passClean, confirmClean);
+    if (!matchCheck.isValid) {
+      setForgotError(matchCheck.error || t('passwordsDoNotMatch', currentLang));
       return;
     }
 

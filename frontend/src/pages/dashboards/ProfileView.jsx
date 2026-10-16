@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { 
   validateName, 
+  formatCapitalizedName,
   validateMobile, 
   sanitizeMobileInput,
   validateEmail, 
@@ -154,7 +155,7 @@ export default function ProfileView({ currentUser, onSave }) {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
+                  onChange={(e) => setName(formatCapitalizedName(e.target.value))}
                   className={`w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 ${
                     !nameVal.isValid ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
                   }`}
