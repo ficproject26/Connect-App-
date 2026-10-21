@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import useCustomer from '../../hooks/useCustomer';
 import useAuth from '../../hooks/useAuth';
 import { getBackendUrl } from '../../services/apiSetup';
@@ -18,6 +19,17 @@ export default function Wallet() {
   const [razorpayMethod, setRazorpayMethod] = useState('upi');
   const [selectedBank, setSelectedBank] = useState('HDFC Bank');
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Lock background scroll when Razorpay modal is open (Bug 17)
+  useEffect(() => {
+    if (isRazorpayModalOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isRazorpayModalOpen]);
 
   // UPI / QR and Card Payment State Management
   const [upiSubTab, setUpiSubTab] = useState('upi_id'); // 'upi_id' | 'qr_code'
@@ -465,7 +477,7 @@ export default function Wallet() {
       </div>
 
       {/* RAZORPAY PAYMENT GATEWAY MODAL */}
-      {isRazorpayModalOpen && razorpayOrderData && (
+      {isRazorpayModalOpen && razorpayOrderData && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg max-h-[92dvh] rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col">
             
@@ -727,7 +739,8 @@ export default function Wallet() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

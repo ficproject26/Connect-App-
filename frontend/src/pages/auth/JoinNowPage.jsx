@@ -512,7 +512,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         type="text"
                         required
                         value={address}
-                        onChange={(e) => setAddress(e.target.value)}
+                        onChange={(e) => {
+                          setAddress(e.target.value);
+                          setTouched(prev => ({ ...prev, address: true }));
+                        }}
                         onBlur={() => handleBlur('address')}
                         placeholder="House/Flat No, Street, Locality"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-8 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
@@ -550,7 +553,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         type="text"
                         required
                         value={city}
-                        onChange={(e) => setCity(e.target.value)}
+                        onChange={(e) => {
+                          setCity(e.target.value);
+                          setTouched(prev => ({ ...prev, city: true }));
+                        }}
                         onBlur={() => handleBlur('city')}
                         placeholder="e.g. Bangalore"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
@@ -627,7 +633,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         type={showPassword ? "text" : "password"}
                         required
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setTouched(prev => ({ ...prev, password: true }));
+                        }}
                         onBlur={() => handleBlur('password')}
                         placeholder="Min 8 chars, A-z, 0-9, @"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
@@ -686,7 +695,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         type={showConfirmPassword ? "text" : "password"}
                         required
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setTouched(prev => ({ ...prev, confirmPassword: true }));
+                        }}
                         onBlur={() => handleBlur('confirmPassword')}
                         placeholder="Re-enter password"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-9 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${

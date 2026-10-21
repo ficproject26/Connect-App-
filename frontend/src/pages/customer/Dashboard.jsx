@@ -2088,6 +2088,141 @@ export default function CustomerDashboard({
     }
   });
 
+  const [paymentUpiError, setPaymentUpiError] = useState('');
+  const [isPayAtHotelConfirmOpen, setIsPayAtHotelConfirmOpen] = useState(false);
+  const [isSubmittingPayAtHotel, setIsSubmittingPayAtHotel] = useState(false);
+  const [payAtHotelSuccessData, setPayAtHotelSuccessData] = useState(null);
+
+  const getAddressModalDescription = () => {
+    const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+    const targetItem = selectedCart[0] || activeBookNowModalItem || selectedProduct;
+    const rawCat = (targetItem?.subNavbarCategory || targetItem?.mainCategory || targetItem?.category || targetItem?.tag || activeTab || '').toLowerCase();
+    
+    if (rawCat.includes('stay') || rawCat.includes('hotel') || rawCat.includes('resort')) {
+      return "Choose or confirm your stay booking details and guest information.";
+    }
+    if (rawCat.includes('travel') || rawCat.includes('bus') || rawCat.includes('tour') || rawCat.includes('flight')) {
+      return "Choose or confirm your travel booking details and pickup location, if applicable.";
+    }
+    if (rawCat.includes('service')) {
+      return "Choose the address where you want the service to be performed.";
+    }
+    return "Choose where your order should be delivered.";
+  };
+
+  const getAddressModalTitle = () => {
+    const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
+    const targetItem = selectedCart[0] || activeBookNowModalItem || selectedProduct;
+    const rawCat = (targetItem?.subNavbarCategory || targetItem?.mainCategory || targetItem?.category || targetItem?.tag || activeTab || '').toLowerCase();
+    
+    if (rawCat.includes('stay')) return "Stay Booking & Guest Details";
+    if (rawCat.includes('travel')) return "Travel Booking & Location Details";
+    if (rawCat.includes('service')) return "Select Service Address";
+    return "Select Delivery Address";
+  };
+
+  const handleConfirmPayAtHotel = async () => {
+    if (!selectedProduct) return;
+    if (!currentUser) {
+      setIsPayAtHotelConfirmOpen(false);
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setIsSubmittingPayAtHotel(true);
+    try {
+      const s = new Date(stayCheckInDate), e = new Date(stayCheckOutDate); 
+      const nights = (!isNaN(s.getTime()) && !isNaN(e.getTime()) && Math.ceil((e - s) / 86400000) > 0) ? Math.ceil((e - s) / 86400000) : 1;
+      const basePrice = selectedProduct.price || 20000;
+      const totalPrice = basePrice * nights;
+      const orderRef = 'HTL-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+
+      const orderPayload = {
+        vendor_id: selectedProduct.vendorId || selectedProduct.vendor_id || '3w8hhon38mqg7ni0u',
+        customer_id: currentUser?.id || currentUser?.customerId || getOrGenerateCustomerId(currentUser),
+        customer_name: profileName || currentUser?.name || 'Customer',
+        customer_phone: profilePhone || currentUser?.phone || '',
+        customer_email: profileEmail || currentUser?.email || '',
+        customer_address: `${selectedProduct.name}, ${selectedProduct.city || selectedProduct.vendorCity || 'Bangalore'}`,
+        product_details: `Stay Reservation: ${selectedProduct.name} (Standard Room, ${nights} night${nights > 1 ? 's' : ''})`,
+        amount: totalPrice,
+        totalAmount: totalPrice,
+        finalAmount: totalPrice,
+        paymentMethod: 'Pay at Hotel',
+        payment_method: 'Pay at Hotel',
+        paymentStatus: 'Pending',
+        payment_status: 'Pending',
+        order_number: orderRef,
+        items: [{
+          productId: selectedProduct.id || selectedProduct._id,
+          name: selectedProduct.name,
+          price: basePrice,
+          quantity: 1
+        }],
+        type: 'Stay',
+        appointmentDate: stayCheckInDate,
+        appointmentTimeSlot: '12:00 PM',
+        checkInDate: stayCheckInDate,
+        checkOutDate: stayCheckOutDate,
+        nights: nights,
+        roomType: 'Standard Room'
+      };
+
+      const orderRes = await apiFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderPayload)
+      }).catch(err => ({ status: 'error', message: err?.message }));
+
+      const savedOrder = (orderRes && !orderRes.status?.includes('error')) ? (orderRes.order || orderRes) : null;
+      const finalOrderNumber = savedOrder?.order_number || orderRef;
+
+      const newOrderEntry = {
+        id: savedOrder?._id || savedOrder?.id || ('ord_' + Date.now()),
+        order_number: finalOrderNumber,
+        type: 'Stay',
+        vendorName: selectedProduct.vendorName || selectedProduct.brand || selectedProduct.name,
+        amount: totalPrice,
+        paymentMethod: 'Pay at Hotel',
+        paymentStatus: 'Pending',
+        status: 'Confirmed',
+        date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        product_details: `Stay Reservation: ${selectedProduct.name} (Standard Room)`,
+        items: [{
+          productId: selectedProduct.id || selectedProduct._id,
+          name: selectedProduct.name,
+          price: basePrice,
+          quantity: 1,
+          checkInDate: stayCheckInDate,
+          checkOutDate: stayCheckOutDate,
+          roomType: 'Standard Room',
+          nights: nights
+        }],
+        checkInDate: stayCheckInDate,
+        checkOutDate: stayCheckOutDate,
+        nights: nights,
+        roomType: 'Standard Room'
+      };
+
+      setCustomerOrders(prev => [newOrderEntry, ...prev]);
+      setIsPayAtHotelConfirmOpen(false);
+      setPayAtHotelSuccessData({
+        order_number: finalOrderNumber,
+        hotelName: selectedProduct.name,
+        checkInDate: stayCheckInDate,
+        checkOutDate: stayCheckOutDate,
+        nights: nights,
+        totalPrice: totalPrice,
+        roomType: 'Standard Room'
+      });
+      triggerNotification(`Hotel reservation confirmed! Reference #${finalOrderNumber}`);
+    } catch (err) {
+      console.error("Pay at Hotel error:", err);
+      triggerNotification("Could not complete hotel reservation. Please try again.", "error");
+    } finally {
+      setIsSubmittingPayAtHotel(false);
+    }
+  };
+
   const handleFetchRazorpayQr = useCallback(async (amountRupees) => {
     setPaymentQrLoading(true);
     try {
@@ -2259,6 +2394,12 @@ export default function CustomerDashboard({
   const mainScrollRef = useRef(null);
 
   useEffect(() => {
+    if (selectedProduct) {
+      const pTab = getCanonicalTabName(selectedProduct);
+      if (pTab === activeTab) {
+        return;
+      }
+    }
     setSelectedProduct(null);
     if (mainScrollRef.current) {
       mainScrollRef.current.scrollTop = 0;
@@ -2283,26 +2424,54 @@ export default function CustomerDashboard({
   const lastPushedProductIdRef = useRef(null);
 
   useEffect(() => {
-    const currentId = selectedProduct ? selectedProduct.id : null;
+    const currentId = selectedProduct ? (selectedProduct.id || selectedProduct._id) : null;
     if (currentId !== lastPushedProductIdRef.current) {
       if (selectedProduct) {
-        window.history.pushState({ productId: selectedProduct.id }, '');
+        const prodId = selectedProduct.id || selectedProduct._id;
+        const tab = selectedProduct.mainCategory || selectedProduct.subNavbarCategory || selectedProduct.category || activeTab || 'Products';
+        const newUrl = `${window.location.pathname}?tab=${encodeURIComponent(tab)}&product=${encodeURIComponent(prodId)}`;
+        window.history.pushState({ productId: prodId, tab }, '', newUrl);
       } else {
         if (lastPushedProductIdRef.current !== null) {
-          window.history.pushState(null, '');
+          const tab = activeTab || 'Home';
+          const newUrl = `${window.location.pathname}${tab !== 'Home' ? `?tab=${encodeURIComponent(tab)}` : ''}`;
+          window.history.pushState(null, '', newUrl);
         }
       }
       lastPushedProductIdRef.current = currentId;
     }
-  }, [selectedProduct]);
+  }, [selectedProduct, activeTab]);
+
+  const hasLoadedUrlProductRef = useRef(false);
+  useEffect(() => {
+    if (hasLoadedUrlProductRef.current || !Array.isArray(products) || products.length === 0) return;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const prodParam = params.get('product') || params.get('productId');
+      if (prodParam) {
+        const match = products.find(p => String(p.id) === String(prodParam) || String(p._id) === String(prodParam) || (p.name && p.name.toLowerCase() === prodParam.toLowerCase()));
+        if (match) {
+          setSelectedProduct(match);
+          const canonicalTab = getCanonicalTabName(match);
+          if (canonicalTab) {
+            setActiveTab(canonicalTab);
+            setSelectedSubNavbarCategory(canonicalTab);
+          }
+          hasLoadedUrlProductRef.current = true;
+        }
+      }
+    }
+  }, [products]);
 
   useEffect(() => {
     const handlePopState = (event) => {
-      const stateId = event.state && event.state.productId ? event.state.productId : null;
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const urlProdId = urlParams ? (urlParams.get('product') || urlParams.get('productId')) : null;
+      const stateId = (event.state && event.state.productId) ? event.state.productId : urlProdId;
       lastPushedProductIdRef.current = stateId;
       
       if (stateId) {
-        const prod = products.find(p => p.id === stateId || String(p.id) === String(stateId));
+        const prod = products.find(p => p.id === stateId || String(p.id) === String(stateId) || p._id === stateId || String(p._id) === String(stateId));
         if (prod) {
           setSelectedProduct(prod);
           return;
@@ -3299,10 +3468,11 @@ export default function CustomerDashboard({
       shareModalProduct || 
       activeScheduleModalItem || 
       activeBookNowModalItem || 
-      appliedJobId || 
       supportOrderModal || 
       isAddressModalOpen || 
       isRazorpayModalOpen || 
+      isPayAtHotelConfirmOpen || 
+      payAtHotelSuccessData || 
       membershipCheckoutModal || 
       isPreviewResumeOpen || 
       isLoginModalOpen
@@ -3334,8 +3504,8 @@ export default function CustomerDashboard({
     isProfileModalOpen, isWishlistOpen, isCartOpen, isCompareModalOpen, 
     isNotificationsOpen, isMobileMenuOpen, isLocationDropdownOpen, 
     shareModalProduct, activeScheduleModalItem, activeBookNowModalItem, 
-    appliedJobId, supportOrderModal, isAddressModalOpen, 
-    isRazorpayModalOpen, membershipCheckoutModal, isPreviewResumeOpen, isLoginModalOpen
+    supportOrderModal, isAddressModalOpen, 
+    isRazorpayModalOpen, isPayAtHotelConfirmOpen, payAtHotelSuccessData, membershipCheckoutModal, isPreviewResumeOpen, isLoginModalOpen
   ]);
 
   // Hover Mega Menu State & Handlers
@@ -4055,7 +4225,7 @@ export default function CustomerDashboard({
               if (data.isDuplicate) {
                 triggerNotification("This address is already saved.", "info");
               } else {
-                triggerNotification("Address saved in database & selected for delivery!");
+                triggerNotification("Address saved successfully.");
               }
               savedAddr = data.address || (data.addresses ? data.addresses.find(a => normalizeAddressStr(a) === normalizeAddressStr(addressPayload)) : null);
               if (savedAddr && savedAddr.id) {
@@ -4073,7 +4243,7 @@ export default function CustomerDashboard({
       savedAddr = { ...addressPayload, id: fallbackId };
       setAddresses(prev => deduplicateAddresses([savedAddr, ...prev.filter(a => a.id !== savedAddr.id)]));
       setSelectedCheckoutAddressId(savedAddr.id);
-      triggerNotification("Address saved & selected for delivery!");
+      triggerNotification("Address saved successfully.");
     }
 
     setIsAddingAddress(false);
@@ -4106,7 +4276,7 @@ export default function CustomerDashboard({
         } catch (e) {}
       }
     }
-    triggerNotification("Address deleted from database.");
+    triggerNotification("Address deleted successfully.");
   };
 
   const getCartCheckoutButtonText = () => {
@@ -4677,7 +4847,11 @@ export default function CustomerDashboard({
         const amt = Number(ord.totalAmount || ord.total || ord.amount || 0);
         if (amt <= 0) return;
 
-        const ordDate = ord.createdAt || ord.date ? new Date(ord.createdAt || ord.date).getTime() : now.getTime();
+        // Backend stores date in created_at; fall back to createdAt / date / orderDate
+        const rawDate = ord.created_at || ord.createdAt || ord.date || ord.orderDate;
+        if (!rawDate) return; // skip orders without a valid date (don't count as today)
+        const ordDate = new Date(rawDate).getTime();
+        if (isNaN(ordDate)) return;
         total += amt;
         if (ordDate >= startOfToday) today += amt;
         if (ordDate >= startOfWeek) thisWeek += amt;
@@ -4730,71 +4904,88 @@ export default function CustomerDashboard({
           </div>
         </div>
 
-        <div className="space-y-3 pr-1">
+        <div className="space-y-3 pr-1 pb-16">
           {customerOrders.length === 0 ? (
             <div className="py-12 text-center text-slate-400 text-xs border border-slate-150 dark:border-slate-800/60 rounded-xl bg-slate-50/50 dark:bg-slate-950/20">
               No payment transactions found. Place an order to generate payments.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase text-slate-400 font-bold">
-                    <th className="py-2.5 px-3">Transaction ID</th>
-                    <th className="py-2.5 px-3">Product Description</th>
-                    <th className="py-2.5 px-3 font-semibold">Date</th>
-                    <th className="py-2.5 px-3">Method</th>
-                    <th className="py-2.5 px-3 text-right">Amount</th>
-                    <th className="py-2.5 px-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customerOrders.map(ord => {
-                    const rawM = ord.paymentMethod || ord.payment_method || 'Connect Wallet';
-                    const isOrdCod = String(rawM).toLowerCase().includes('cash') || String(rawM).toLowerCase().includes('cod');
-                    const isDelivered = ['Delivered', 'Completed'].includes(ord.status);
-                    const isPaid = ord.paymentStatus === 'Paid' || ord.payment_status === 'Paid' || isDelivered || (!isOrdCod && ord.paymentStatus !== 'Failed' && ord.paymentStatus !== 'Pending');
-
-                    let statusColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
-                    let statusLabel = "Paid";
-                    
-                    if (ord.status === "Cancelled") {
-                      statusColor = "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20";
-                      statusLabel = "Cancelled";
-                    } else if (ord.status === "Refunded" || ord.is_refunded) {
-                      statusColor = "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
-                      statusLabel = "Refunded";
-                    } else if (isPaid) {
-                      statusColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
-                      statusLabel = "Paid";
-                    } else if (isOrdCod) {
-                      statusColor = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-                      statusLabel = "COD Pending";
-                    } else {
-                      statusColor = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-                      statusLabel = ord.paymentStatus || "Pending";
-                    }
-
-                    const txnDisplay = ord.transactionId || ('TXN_' + (ord.order_number || String(ord.id || '').slice(-6)).toUpperCase());
-
-                    return (
-                      <tr key={ord.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-800 dark:text-slate-100 transition-colors">
-                        <td className="py-3 px-3 font-mono text-[10px] text-slate-500 dark:text-slate-400">{txnDisplay}</td>
-                        <td className="py-3 px-3 max-w-[150px] truncate font-medium">{ord.product_details}</td>
-                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</td>
-                        <td className="py-3 px-3 font-semibold text-slate-600 dark:text-slate-300">{rawM}</td>
-                        <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">₹{ord.amount}</td>
-                        <td className="py-3 px-3 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusColor}`}>
-                            {statusLabel}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Mobile card list (hidden on md+) */}
+              <div className="block md:hidden space-y-3">
+                {customerOrders.map(ord => {
+                  const rawM = ord.paymentMethod || ord.payment_method || 'Connect Wallet';
+                  const isOrdCod = String(rawM).toLowerCase().includes('cash') || String(rawM).toLowerCase().includes('cod');
+                  const isDelivered = ['Delivered', 'Completed'].includes(ord.status);
+                  const isPaid = ord.paymentStatus === 'Paid' || ord.payment_status === 'Paid' || isDelivered || (!isOrdCod && ord.paymentStatus !== 'Failed' && ord.paymentStatus !== 'Pending');
+                  let statusColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+                  let statusLabel = 'Paid';
+                  if (ord.status === 'Cancelled') { statusColor = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'; statusLabel = 'Cancelled'; }
+                  else if (ord.status === 'Refunded' || ord.is_refunded) { statusColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'; statusLabel = 'Refunded'; }
+                  else if (isPaid) { statusColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'; statusLabel = 'Paid'; }
+                  else if (isOrdCod) { statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'; statusLabel = 'COD Pending'; }
+                  else { statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'; statusLabel = ord.paymentStatus || 'Pending'; }
+                  const txnDisplay = ord.transactionId || ('TXN_' + (ord.order_number || String(ord.id || '').slice(-6)).toUpperCase());
+                  return (
+                    <div key={ord.id} className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/50 rounded-xl p-3 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <span className="font-mono text-[10px] text-slate-400">{txnDisplay}</span>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusColor}`}>{statusLabel}</span>
+                      </div>
+                      <div className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">{ord.product_details}</div>
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-slate-500">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</span>
+                        <span className="font-extrabold text-[#f43397]">₹{ord.amount}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-semibold">{rawM}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop table (hidden on mobile) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase text-slate-400 font-bold">
+                      <th className="py-2.5 px-3">Transaction ID</th>
+                      <th className="py-2.5 px-3">Product Description</th>
+                      <th className="py-2.5 px-3 font-semibold">Date</th>
+                      <th className="py-2.5 px-3">Method</th>
+                      <th className="py-2.5 px-3 text-right">Amount</th>
+                      <th className="py-2.5 px-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customerOrders.map(ord => {
+                      const rawM = ord.paymentMethod || ord.payment_method || 'Connect Wallet';
+                      const isOrdCod = String(rawM).toLowerCase().includes('cash') || String(rawM).toLowerCase().includes('cod');
+                      const isDelivered = ['Delivered', 'Completed'].includes(ord.status);
+                      const isPaid = ord.paymentStatus === 'Paid' || ord.payment_status === 'Paid' || isDelivered || (!isOrdCod && ord.paymentStatus !== 'Failed' && ord.paymentStatus !== 'Pending');
+                      let statusColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+                      let statusLabel = 'Paid';
+                      if (ord.status === 'Cancelled') { statusColor = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'; statusLabel = 'Cancelled'; }
+                      else if (ord.status === 'Refunded' || ord.is_refunded) { statusColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'; statusLabel = 'Refunded'; }
+                      else if (isPaid) { statusColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'; statusLabel = 'Paid'; }
+                      else if (isOrdCod) { statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'; statusLabel = 'COD Pending'; }
+                      else { statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'; statusLabel = ord.paymentStatus || 'Pending'; }
+                      const txnDisplay = ord.transactionId || ('TXN_' + (ord.order_number || String(ord.id || '').slice(-6)).toUpperCase());
+                      return (
+                        <tr key={ord.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-800 dark:text-slate-100 transition-colors">
+                          <td className="py-3 px-3 font-mono text-[10px] text-slate-500 dark:text-slate-400">{txnDisplay}</td>
+                          <td className="py-3 px-3 max-w-[150px] truncate font-medium">{ord.product_details}</td>
+                          <td className="py-3 px-3 text-slate-500 dark:text-slate-400">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</td>
+                          <td className="py-3 px-3 font-semibold text-slate-600 dark:text-slate-300">{rawM}</td>
+                          <td className="py-3 px-3 font-extrabold text-[#f43397] text-right">₹{ord.amount}</td>
+                          <td className="py-3 px-3 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusColor}`}>{statusLabel}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -4845,33 +5036,50 @@ export default function CustomerDashboard({
     const type = (product.type || product.bookingType || '').toLowerCase();
     const all = `${subNav} ${mainCat} ${tag} ${cat} ${type}`;
 
-    if (all.includes('stay') || all.includes('hotel') || all.includes('resort') || Boolean(product.roomType)) {
-      return 'ROOM NOT AVAILABLE';
-    }
     if (all.includes('service')) {
-      return 'SERVICE NOT AVAILABLE';
+      return 'UNAVAILABLE';
     }
     if (all.includes('travel') || all.includes('bus') || all.includes('flight') || all.includes('tour')) {
-      return 'BUS NOT AVAILABLE';
+      return 'UNAVAILABLE';
+    }
+    if (all.includes('stay') || all.includes('hotel') || all.includes('resort')) {
+      return 'ROOM NOT AVAILABLE';
     }
     return 'OUT OF STOCK';
   };
 
   const getUnavailableNotificationText = (product) => {
     if (!product) return "This item is currently unavailable.";
+    const subNav = (product.subNavbarCategory || '').toLowerCase();
+    const mainCat = (product.mainCategory || '').toLowerCase();
+    const tag = (product.tag || '').toLowerCase();
+    const cat = (product.category || '').toLowerCase();
+    const all = `${subNav} ${mainCat} ${tag} ${cat}`;
+
+    if (all.includes('travel') || all.includes('bus') || all.includes('flight') || all.includes('tour')) {
+      return "Travel is not available for the selected date.";
+    }
+    if (all.includes('service')) {
+      return "Vendor Unavailable";
+    }
     const ribbon = getUnavailableRibbonText(product);
     if (ribbon === 'ROOM NOT AVAILABLE') return "Room is not available for the selected dates.";
-    if (ribbon === 'SERVICE NOT AVAILABLE') return "Service is currently not available for booking.";
-    if (ribbon === 'BUS NOT AVAILABLE') return "Bus is not available (No seats available for this trip).";
     return "Vendor is currently unavailable for this item (Out of Stock).";
   };
 
   const getUnavailableDetailButtonText = (product) => {
     if (!product) return 'Out of Stock';
+    const subNav = (product.subNavbarCategory || '').toLowerCase();
+    const mainCat = (product.mainCategory || '').toLowerCase();
+    const tag = (product.tag || '').toLowerCase();
+    const cat = (product.category || '').toLowerCase();
+    const all = `${subNav} ${mainCat} ${tag} ${cat}`;
+
+    if (all.includes('service') || all.includes('travel') || all.includes('bus') || all.includes('tour')) {
+      return 'Vendor Unavailable';
+    }
     const ribbon = getUnavailableRibbonText(product);
     if (ribbon === 'ROOM NOT AVAILABLE') return 'Room Not Available';
-    if (ribbon === 'SERVICE NOT AVAILABLE') return 'Service Not Available';
-    if (ribbon === 'BUS NOT AVAILABLE') return 'Bus Not Available / No Seats';
     return 'Out of Stock';
   };
 
@@ -5091,15 +5299,24 @@ export default function CustomerDashboard({
   // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)
   const filteredProducts = useMemo(() => {
     const normalizeCity = (city) => {
-      if (!city) return 'bangalore';
-      const c = city.toLowerCase();
-      if (c === 'bengaluru' || c === 'bangalore') return 'bangalore';
+      if (!city) return '';
+      const c = city.trim().toLowerCase();
+      if (c.includes('bengaluru') || c.includes('bangalore')) return 'bangalore';
+      if (c.includes('mumbai') || c.includes('bombay')) return 'mumbai';
+      if (c.includes('delhi') || c.includes('new delhi')) return 'delhi';
+      if (c.includes('chennai') || c.includes('madras')) return 'chennai';
+      if (c.includes('hyderabad')) return 'hyderabad';
+      if (c.includes('kolkata') || c.includes('calcutta')) return 'kolkata';
+      if (c.includes('pune')) return 'pune';
       return c;
     };
 
     let result = activeProducts.filter(product => {
       const pCity = (product.vendorCity || product.city || '').trim().toLowerCase();
       const sCity = (selectedLocation?.city || '').trim().toLowerCase();
+      const fullLoc = `${product.vendorCity || ''} ${product.city || ''} ${product.location || ''} ${product.address || ''} ${product.vendorAddress || ''} ${product.area || ''}`.toLowerCase();
+      const normSCity = normalizeCity(sCity);
+
       const matchesLocation = !selectedLocation?.city || 
         sCity === '' ||
         sCity === 'all' || 
@@ -5115,7 +5332,8 @@ export default function CustomerDashboard({
         pCity === 'online' || 
         pCity === 'pan india' || 
         pCity === 'india' ||
-        normalizeCity(pCity) === normalizeCity(sCity);
+        (normSCity && fullLoc.includes(normSCity)) ||
+        (normSCity && normalizeCity(pCity) === normSCity);
 
       const matchesSearch = (searchQuery === '' || 
         (product.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
@@ -5966,12 +6184,6 @@ export default function CustomerDashboard({
                         </span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 cursor-pointer border-none bg-transparent"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 )}
 
@@ -6461,7 +6673,7 @@ export default function CustomerDashboard({
     const currentLevel = getMembershipLevel(currentMembershipTier);
 
     return (
-      <div className="p-4 md:p-8 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl text-left text-slate-800 dark:text-white max-w-7xl mx-auto space-y-8 animate-fade-in">
+      <div className="p-4 md:p-8 pb-20 sm:pb-12 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl text-left text-slate-800 dark:text-white max-w-7xl mx-auto space-y-8 animate-fade-in">
         {/* Header Title */}
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
@@ -6491,7 +6703,7 @@ export default function CustomerDashboard({
                 <div className="space-y-4">
                   <div
                     onClick={() => setFlippedCardKey(isFlipped ? null : tier.key)}
-                    className="relative w-full aspect-[1.58/1] rounded-2xl cursor-pointer select-none group-hover:scale-[1.02] transition-transform duration-300 shadow-2xl"
+                    className="relative w-full min-h-[225px] sm:min-h-[240px] md:aspect-[1.58/1] rounded-2xl cursor-pointer select-none group-hover:scale-[1.02] transition-transform duration-300 shadow-2xl"
                     style={{ perspective: '1000px' }}
                   >
                     <div
@@ -8015,29 +8227,21 @@ export default function CustomerDashboard({
       <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-6 text-slate-800 dark:text-slate-200">
         <div className="flex flex-col gap-6 w-full items-stretch">
           {/* Horizontal Filters Bar (Collapsible on Mobile, Flex Row on Desktop) */}
-          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
-            {/* Header Row on Mobile / Left Label on Desktop */}
-            <div className={`flex items-center justify-between md:justify-start gap-2 ${isMobileFiltersOpen ? 'border-b md:border-b-0 pb-2.5 md:pb-0' : ''} border-slate-100 dark:border-slate-800/60`}>
-              <button 
-                type="button"
-                onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
-                className="md:pointer-events-none flex items-center gap-1.5 text-slate-900 dark:text-white font-black text-xs bg-transparent border-none p-0 cursor-pointer"
-                title="Toggle filter panel"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
-                <span>FILTERS</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 md:hidden transition-transform duration-200 ${isMobileFiltersOpen ? 'rotate-180 text-amber-500' : ''}`} />
-              </button>
-              <div className="flex items-center gap-2">
+          {!appliedJobId && (
+            <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
+              {/* Header Row on Mobile / Left Label on Desktop */}
+              <div className={`flex items-center justify-between md:justify-start gap-2 ${isMobileFiltersOpen ? 'border-b md:border-b-0 pb-2.5 md:pb-0' : ''} border-slate-100 dark:border-slate-800/60`}>
                 <button 
-                  onClick={clearAllFilters} 
-                  className="text-[11px] font-black text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 rounded-xl cursor-pointer"
+                  type="button"
+                  onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+                  className="md:pointer-events-none flex items-center gap-1.5 text-slate-900 dark:text-white font-black text-xs bg-transparent border-none p-0 cursor-pointer"
+                  title="Toggle filter panel"
                 >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Reset</span>
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                  <span>FILTERS</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 md:hidden transition-transform duration-200 ${isMobileFiltersOpen ? 'rotate-180 text-amber-500' : ''}`} />
                 </button>
               </div>
-            </div>
 
             {/* Select Inputs Grid on Mobile (collapsible) / Flex Row on Desktop (always visible) */}
             <div className={`${isMobileFiltersOpen ? 'grid' : 'hidden'} md:flex grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3.5 w-full md:w-auto animate-fade-in`}>
@@ -8302,16 +8506,17 @@ export default function CustomerDashboard({
                 <option value="rating-desc">Sort: Highest Rated</option>
               </select>
 
-              {/* Reset Filters button (Desktop only, mobile version is top right) */}
+              {/* Reset Filters button */}
               <button 
                 onClick={clearAllFilters} 
-                className="hidden md:flex text-xs font-black text-amber-500 hover:text-amber-600 transition-colors items-center gap-1.5 px-3 py-2 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 rounded-xl cursor-pointer"
+                className="col-span-2 sm:col-span-auto flex text-xs font-black text-amber-500 hover:text-amber-600 transition-colors items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 rounded-xl cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Reset</span>
               </button>
             </div>
           </div>
+          )}
 
           {/* Catalog grid or Jobs Board (spanning full width!) */}
           <div className="w-full space-y-6">
@@ -9257,7 +9462,22 @@ export default function CustomerDashboard({
                     <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto mb-3">
                       {activeTab === 'Food' ? <Utensils className="w-6 h-6" /> : activeTab === 'Services' ? <Sparkles className="w-6 h-6" /> : activeTab === 'Stay' ? <BedDouble className="w-6 h-6" /> : activeTab === 'Travel' ? <Plane className="w-6 h-6" /> : activeTab === 'Jobs' ? <Briefcase className="w-6 h-6" /> : <ShoppingBag className="w-6 h-6" />}
                     </div>
-                    <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">No items match your filter criteria</h3>
+                    <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">
+                      {(() => {
+                        if (selectedRating !== null) {
+                          return "No items are available for the selected rating.";
+                        }
+                        const hasLoc = (selectedLocTypes && selectedLocTypes.length > 0) || (fromLocation && fromLocation !== '') || (toLocation && toLocation !== '');
+                        if (hasLoc) {
+                          if (activeTab === 'Services') return "No services are available in the selected location.";
+                          if (activeTab === 'Travel') return "No travel options are available in the selected location.";
+                          if (activeTab === 'Stay') return "No stays are available in the selected location.";
+                          if (activeTab === 'Food') return "No food items are available in the selected location.";
+                          return "No items are available in the selected location.";
+                        }
+                        return "No items match your filter criteria";
+                      })()}
+                    </h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Try resetting or selecting different filters to see available options.</p>
                     <button 
                       onClick={clearAllFilters}
@@ -9444,8 +9664,22 @@ export default function CustomerDashboard({
               <div className="border-t border-slate-100 dark:border-slate-900 pt-3 space-y-2 text-xs"><div className="flex justify-between"><span className="text-slate-400 font-bold">Price per night</span><span className="font-extrabold text-slate-800 dark:text-white">₹{selectedRoom.price.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Taxes & Fees</span><span className="font-extrabold text-slate-800 dark:text-white">₹{taxes.toLocaleString()}</span></div><div className="flex justify-between"><span className="text-slate-400 font-bold">Membership Discount</span><span className="font-extrabold text-emerald-600">- ₹{memberDiscount.toLocaleString()}</span></div></div>
               <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline"><div><span className="text-sm font-black text-slate-900 dark:text-white block">Total Amount</span><span className="text-[9px] text-slate-400 font-bold">Incl. all taxes</span></div><span className="text-xl font-black text-slate-900 dark:text-white">₹{totalPrice.toLocaleString()}</span></div>
               <div className="bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl px-3 py-2.5 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /><div><span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block">Free Cancellation</span><span className="text-[9px] text-emerald-600/70 font-bold">Cancel up to 24 hrs before check-in for full refund.</span></div></div>
-              <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate(formatDate(stayCheckInDate)); setSelectedModalTime('12:00 PM'); setSelectedModalType('Standard Room'); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Continue to Payment <ArrowRight className="w-4 h-4" /></button>
-              <button onClick={() => triggerNotification("Pay at Hotel option selected!")} className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all border border-slate-200 dark:border-slate-800 cursor-pointer">Pay at Hotel</button>
+              {isVendorProductUnavailable(selectedProduct) ? (
+                <div className="w-full py-3.5 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-extrabold text-xs uppercase tracking-widest rounded-xl flex items-center justify-center cursor-not-allowed select-none">
+                  Rooms Not Available
+                </div>
+              ) : (
+                <>
+                  <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate(formatDate(stayCheckInDate)); setSelectedModalTime('12:00 PM'); setSelectedModalType('Standard Room'); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Continue to Payment <ArrowRight className="w-4 h-4" /></button>
+                  <button onClick={() => {
+                    if (!currentUser) {
+                      setIsLoginModalOpen(true);
+                    } else {
+                      setIsPayAtHotelConfirmOpen(true);
+                    }
+                  }} className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all border border-slate-200 dark:border-slate-800 cursor-pointer">Pay at Hotel</button>
+                </>
+              )}
               <div className="flex items-center gap-2 justify-center pt-1"><span className="text-[9px] text-slate-400 font-bold">We accept</span>{['VISA','MasterCard','RuPay','UPI'].map((p, pi) => <span key={pi} className="text-[8px] font-black text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded">{p}</span>)}</div>
             </div>
           </div>
@@ -10124,24 +10358,24 @@ export default function CustomerDashboard({
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <button
-                  onClick={() => triggerNotification("Initiating chat with travel desk agent...")}
-                  className="flex-1 sm:flex-none px-3.5 sm:px-5 py-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-black uppercase transition-all h-11 sm:h-12 cursor-pointer whitespace-nowrap shadow-xs"
-                >
-                  Chat Agent
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveBookNowModalItem(selectedProduct);
-                    setSelectedModalDate('Wednesday, 21 May 2025');
-                    setSelectedModalTime('09:00 PM');
-                    setSelectedModalType('AC Sleeper (2+1)');
-                    setSelectedTimeOfDayTab('Evening');
-                  }}
-                  className="flex-1 sm:flex-none px-4 sm:px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 border-none h-11 sm:h-12 cursor-pointer whitespace-nowrap"
-                >
-                  Book Ticket
-                </button>
+                {isVendorProductUnavailable(selectedProduct) ? (
+                  <div className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-extrabold text-xs uppercase tracking-widest rounded-xl flex items-center justify-center h-11 sm:h-12 cursor-not-allowed select-none">
+                    UNAVAILABLE
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setActiveBookNowModalItem(selectedProduct);
+                      setSelectedModalDate('Wednesday, 21 May 2025');
+                      setSelectedModalTime('09:00 PM');
+                      setSelectedModalType('AC Sleeper (2+1)');
+                      setSelectedTimeOfDayTab('Evening');
+                    }}
+                    className="w-full sm:w-auto px-4 sm:px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 border-none h-11 sm:h-12 cursor-pointer whitespace-nowrap"
+                  >
+                    Book Ticket
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -11064,15 +11298,20 @@ export default function CustomerDashboard({
 
                 const nameLower = (selectedProduct?.name || '').toLowerCase();
                 const isLiquid = nameLower.includes('milk') || nameLower.includes('oil') || nameLower.includes('juice') || nameLower.includes('water') || nameLower.includes('ghee');
-                const packSizes = isLiquid ? ['500 ml', '1 Litre', '2 Litre', '5 Litre'] : ['250g', '500g', '1 kg', '2 kg', '5 kg'];
+                const isPackPiece = nameLower.includes('soap') || nameLower.includes('brush') || nameLower.includes('shampoo') || nameLower.includes('paste');
+                const packSizes = isPackPiece 
+                  ? ['1 pc', 'Pack of 3', 'Family Pack (5 pcs)']
+                  : isLiquid 
+                    ? ['500 ml', '1 Litre', '2 Litre', '5 Litre'] 
+                    : ['250g', '500g', '1 kg', '2 kg', '5 kg'];
                 
                 const flavours = Array.isArray(selectedProduct.flavors) && selectedProduct.flavors.length > 0
                   ? selectedProduct.flavors
                   : Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0
                     ? selectedProduct.variants
-                    : (nameLower.includes('milk') || nameLower.includes('tea') || nameLower.includes('snack') || nameLower.includes('biscuit') || nameLower.includes('juice')
-                      ? ['Original / Regular', 'Elaichi / Cardamom', 'Chocolate', 'Strawberry']
-                      : ['Standard Pack', 'Family Pack', 'Organic / Premium']);
+                    : ((nameLower.includes('tea') || nameLower.includes('juice') || nameLower.includes('biscuit') || nameLower.includes('snack') || nameLower.includes('shake') || nameLower.includes('ice cream') || (nameLower.includes('milk') && !nameLower.includes('cow') && !nameLower.includes('packet')))
+                      ? ['Regular', 'Cardamom / Elaichi', 'Chocolate', 'Strawberry']
+                      : null);
 
                 return (
                   <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-4 mb-3.5 text-left space-y-3.5">
@@ -11146,7 +11385,7 @@ export default function CustomerDashboard({
                   </div>
                 ) : getActionButtons(selectedProduct).showBooking ? (
                   <div className="flex items-center gap-2 w-full sm:flex-1">
-                    {!( ['Stay', 'Travel'].includes(selectedProduct.subNavbarCategory) || ['Stay', 'Travel'].includes(selectedProduct.tag) || isMedicalService(selectedProduct) || selectedProduct.category === 'Hospital' || selectedProduct.category === 'Hospitals' ) && (() => {
+                    {!( ['Stay', 'Travel', 'Services'].includes(selectedProduct.subNavbarCategory) || ['Stay', 'Travel', 'Services'].includes(selectedProduct.tag) || normalizeMainCatName(selectedProduct.subNavbarCategory || selectedProduct.mainCategory || selectedProduct.category) === 'services' || isMedicalService(selectedProduct) || selectedProduct.category === 'Hospital' || selectedProduct.category === 'Hospitals' ) && (() => {
                       const cartItem = cart.find(i => String(i.id) === String(selectedProduct.id) || String(i.id) === String(selectedProduct._id));
                       const inCartQty = cartItem ? (cartItem.quantity || 1) : 0;
                       return inCartQty > 0 ? (
@@ -13227,7 +13466,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         </div>
 
                         {/* Bottom trust factors row */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3.5 border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xs mt-4 text-left shrink-0">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3.5 border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xs mt-4 mb-6 md:mb-0 text-left shrink-0">
                           {[
                             { title: 'Secure Payments', desc: '100% safe and secured payments', icon: ShieldCheck, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/40' },
                             { title: '24/7 Support', desc: 'We are here to help you anytime', icon: Phone, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' },
@@ -13889,7 +14128,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : isStayItem ? 'Check-In Details' : 'Appointment Details'}
                           </span>
                           <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-full">
-                            {formatDateFromYYYYMMDD(stayCheckInDate)} • {checkInTime}
+                            {formatDateFromYYYYMMDD(stayCheckInDate)} | {checkInTime}
                           </span>
                         </div>
 
@@ -14003,7 +14242,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" /> Check-Out Details
                             </span>
                             <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
-                              {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
+                              {formatDateFromYYYYMMDD(stayCheckOutDate)} | {checkOutTime}
                             </span>
                           </div>
 
@@ -14144,7 +14383,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       required
                                       value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
                                       onChange={(e) => {
-                                        const val = e.target.value;
+                                        const val = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
                                         setGuestList(prev => {
                                           const updated = [...prev];
                                           updated[idx] = { ...(updated[idx] || {}), name: val };
@@ -14576,7 +14815,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" /> {isTravelItem ? 'Departure Details' : isStayItem ? 'Check-In Details' : 'Appointment Details'}
                           </span>
                           <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-full">
-                            {formatDateFromYYYYMMDD(stayCheckInDate)} • {checkInTime}
+                            {formatDateFromYYYYMMDD(stayCheckInDate)} | {checkInTime}
                           </span>
                         </div>
 
@@ -14690,7 +14929,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" /> Check-Out Details
                             </span>
                             <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full">
-                              {formatDateFromYYYYMMDD(stayCheckOutDate)} • {checkOutTime}
+                              {formatDateFromYYYYMMDD(stayCheckOutDate)} | {checkOutTime}
                             </span>
                           </div>
 
@@ -14831,7 +15070,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       required
                                       value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
                                       onChange={(e) => {
-                                        const val = e.target.value;
+                                        const val = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
                                         setGuestList(prev => {
                                           const updated = [...prev];
                                           updated[idx] = { ...(updated[idx] || {}), name: val };
@@ -15483,8 +15722,8 @@ wishlistProducts.forEach(item => addToCart(item));
                   <MapPin className="w-5 h-5 text-[#0b1e36]" />
                 </div>
                 <div className="text-left min-w-0">
-                  <h3 className="font-extrabold text-sm tracking-tight text-white truncate">Select Delivery & Service Address</h3>
-                  <p className="text-[10px] text-blue-200 mt-0.5 truncate">Choose where your order or service booking should be delivered</p>
+                  <h3 className="font-extrabold text-sm tracking-tight text-white truncate">{getAddressModalTitle()}</h3>
+                  <p className="text-[10px] text-blue-200 mt-0.5 truncate">{getAddressModalDescription()}</p>
                 </div>
               </div>
 
@@ -15846,7 +16085,7 @@ wishlistProducts.forEach(item => addToCart(item));
       {/* -------------------- 7. RAZORPAY PAYMENT GATEWAY MODAL -------------------- */}
       {isRazorpayModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col max-h-[92dvh]">
             
             {/* Top Bar with Razorpay Brand Header */}
             <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center relative overflow-hidden">
@@ -15865,11 +16104,21 @@ wishlistProducts.forEach(item => addToCart(item));
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-[10px] uppercase font-bold text-blue-300 block">Total Amount</span>
-                <span className="text-lg font-black text-amber-400">
-                  ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
-                </span>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-blue-300 block">Total Amount</span>
+                  <span className="text-lg font-black text-amber-400">
+                    ₹{cart.filter(item => selectedCartItems.includes(item.id)).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRazorpayModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border-none shrink-0"
+                  title="Close payment"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -16090,10 +16339,16 @@ wishlistProducts.forEach(item => addToCart(item));
                               <input
                                 type="text"
                                 value={paymentUpiId}
-                                onChange={(e) => setPaymentUpiId(e.target.value)}
+                                onChange={(e) => {
+                                  setPaymentUpiId(e.target.value);
+                                  if (paymentUpiError) setPaymentUpiError(null);
+                                }}
                                 placeholder="Enter UPI ID (e.g. yourname@oksbi)"
                                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
+                              {paymentUpiError && (
+                                <p className="text-[11px] font-bold text-red-500 mt-1">{paymentUpiError}</p>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-[10px] text-slate-400 font-bold">Quick test:</span>
@@ -16379,8 +16634,10 @@ wishlistProducts.forEach(item => addToCart(item));
                           if (paymentUpiSubTab === 'upi_id') {
                             const trimmedUpi = (paymentUpiId || '').trim();
                             if (!trimmedUpi || !trimmedUpi.includes('@')) {
-                              triggerNotification('Please enter a valid UPI ID (e.g. name@upi or success@razorpay)', 'error');
+                              setPaymentUpiError('Please enter a valid UPI ID (e.g. name@upi or success@razorpay)');
                               return;
+                            } else {
+                              setPaymentUpiError(null);
                             }
                           }
                         } else if (razorpayPayMethod === 'card') {
@@ -16766,7 +17023,7 @@ wishlistProducts.forEach(item => addToCart(item));
       {/* -------------------- 8. ORDER SUPPORT & REPORTING MODAL -------------------- */}
       {supportOrderModal && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col max-h-[90vh] md:max-h-[92dvh]">
             
             {/* Header */}
             <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center">
@@ -16902,6 +17159,225 @@ wishlistProducts.forEach(item => addToCart(item));
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- 9. PAY AT HOTEL CONFIRMATION & REFERENCE MODAL -------------------- */}
+      {(isPayAtHotelConfirmOpen || payAtHotelSuccessData) && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
+                  <Building2 className="w-5 h-5 text-slate-950" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-extrabold text-sm tracking-tight text-white">
+                    {payAtHotelSuccessData ? 'Booking Confirmed!' : 'Confirm Pay at Hotel'}
+                  </h3>
+                  <p className="text-[10px] text-blue-200 mt-0.5">
+                    {payAtHotelSuccessData ? 'Room reserved with hotel desk' : 'No advance payment required'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPayAtHotelConfirmOpen(false);
+                  setPayAtHotelSuccessData(null);
+                }}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border-none shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 overflow-y-auto text-left">
+              {payAtHotelSuccessData ? (
+                <div className="space-y-4 text-center">
+                  <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+                    <Check className="w-7 h-7" />
+                  </div>
+                  <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
+                    Room Reserved Successfully!
+                  </h4>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-left space-y-2">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Booking Reference</span>
+                      <span className="text-xs font-mono font-extrabold text-blue-600 dark:text-blue-400">
+                        #{payAtHotelSuccessData.orderNumber || payAtHotelSuccessData.id || 'HTL-BOOKING'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Hotel</span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {selectedProduct?.name || 'Hotel Stay'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Payment Mode</span>
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Pay at Reception on Check-In</span>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Total Payable:</span>
+                      <span className="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        ₹{(selectedProduct?.price || 2499).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    A confirmation SMS/WhatsApp has been dispatched to your mobile. Please present your government ID at the hotel front desk during check-in.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-2xl text-xs space-y-2">
+                    <div className="font-extrabold text-amber-900 dark:text-amber-200 text-sm">
+                      {selectedProduct?.name || 'Hotel Stay'}
+                    </div>
+                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                      <span>Room Price:</span>
+                      <span className="font-mono font-extrabold text-slate-900 dark:text-white">
+                        ₹{(selectedProduct?.price || 2499).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                      <span>Payment Status:</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">Pay at Hotel Reception</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>Zero upfront advance required to guarantee your stay.</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>Free cancellation up to 24 hours prior to check-in time.</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>Cash, UPI, Credit/Debit cards accepted at the hotel front desk.</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center gap-3">
+              {payAtHotelSuccessData ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPayAtHotelConfirmOpen(false);
+                    setPayAtHotelSuccessData(null);
+                    setSelectedProduct(null);
+                  }}
+                  className="w-full py-3 bg-[#0b1e36] hover:bg-[#13325a] dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-[#0b1e36] font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none shadow-md text-center"
+                >
+                  Done
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsPayAtHotelConfirmOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs border-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSubmittingPayAtHotel}
+                    onClick={async () => {
+                      if (isSubmittingPayAtHotel) return;
+                      setIsSubmittingPayAtHotel(true);
+                      try {
+                        const totalPayable = selectedProduct?.price || 2499;
+                        const orderNum = `HTL-${Date.now().toString().slice(-6)}`;
+                        const orderPayload = {
+                          type: 'Stay',
+                          order_number: orderNum,
+                          amount: totalPayable,
+                          items: [{
+                            id: selectedProduct?.id || selectedProduct?._id,
+                            name: selectedProduct?.name,
+                            price: totalPayable,
+                            quantity: 1
+                          }],
+                          payment_method: 'Pay at Hotel',
+                          payment_status: 'Pending',
+                          status: 'Confirmed',
+                          vendor_id: selectedProduct?.vendorId || selectedProduct?.vendor_id,
+                          customer_id: currentUser?.customerId || activeCustomerId,
+                          customer_name: currentUser?.name || profileName,
+                          customer_phone: currentUser?.phone || profilePhone,
+                          customer_email: currentUser?.email || profileEmail
+                        };
+
+                        const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+                        const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+                        const endpoints = [
+                          adminBackend ? `${adminBackend}/api/orders` : '',
+                          baseBackend ? `${baseBackend}/api/orders` : '',
+                          `/api/orders`
+                        ].filter(Boolean);
+
+                        let createdOrder = null;
+                        for (const url of [...new Set(endpoints)]) {
+                          try {
+                            const res = await fetch(url, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(orderPayload)
+                            });
+                            if (res.ok) {
+                              const data = await res.json();
+                              createdOrder = data?.order || data?.data || { orderNumber: orderNum };
+                              break;
+                            }
+                          } catch (e) {}
+                        }
+
+                        const finalRef = createdOrder || { orderNumber: orderNum };
+                        setPayAtHotelSuccessData(finalRef);
+                        setCustomerOrders(prev => [
+                          {
+                            id: finalRef._id || finalRef.id || orderNum,
+                            order_number: orderNum,
+                            amount: totalPayable,
+                            status: 'Confirmed',
+                            type: 'Stay',
+                            created_at: new Date().toISOString(),
+                            product_details: selectedProduct?.name || 'Hotel Stay',
+                            items: orderPayload.items
+                          },
+                          ...prev
+                        ]);
+                        triggerNotification("Room reserved successfully! Pay at Hotel confirmed.");
+                      } catch (err) {
+                        triggerNotification("Failed to reserve room. Please try again.", "error");
+                      } finally {
+                        setIsSubmittingPayAtHotel(false);
+                      }
+                    }}
+                    className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none shadow-md flex items-center gap-2"
+                  >
+                    {isSubmittingPayAtHotel ? (
+                      <span>Reserving Room...</span>
+                    ) : (
+                      <span>Confirm Reservation</span>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -17198,59 +17674,68 @@ wishlistProducts.forEach(item => addToCart(item));
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-3 text-center pt-2">
-              {/* WhatsApp */}
-              <a 
-                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out ${shareModalProduct.name} on Connect: ${typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in'}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShareModalProduct(null)}
-                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 hover:scale-105 transition-transform no-underline"
-              >
-                <span className="text-2xl">💬</span>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">WhatsApp</span>
-              </a>
+            {(() => {
+              const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.ficapp.in';
+              const pId = shareModalProduct.id || shareModalProduct._id || '';
+              const tab = shareModalProduct.mainCategory || shareModalProduct.subNavbarCategory || shareModalProduct.category || activeTab || 'Products';
+              const canonicalShareUrl = `${origin}/?tab=${encodeURIComponent(tab)}&product=${encodeURIComponent(pId)}`;
+              const shareMessage = `Check out ${shareModalProduct.name} on Connect: ${canonicalShareUrl}`;
 
-              {/* Email */}
-              <a 
-                href={`mailto:?subject=${encodeURIComponent(shareModalProduct.name)}&body=${encodeURIComponent(`Check out ${shareModalProduct.name} on Connect: ${typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in'}`)}`}
-                onClick={() => setShareModalProduct(null)}
-                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 hover:scale-105 transition-transform no-underline"
-              >
-                <span className="text-2xl">✉️</span>
-                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300">Email</span>
-              </a>
+              return (
+                <div className="grid grid-cols-4 gap-3 text-center pt-2">
+                  {/* WhatsApp */}
+                  <a 
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setShareModalProduct(null)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 hover:scale-105 transition-transform no-underline"
+                  >
+                    <span className="text-2xl">💬</span>
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">WhatsApp</span>
+                  </a>
 
-              {/* Twitter / X */}
-              <a 
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${shareModalProduct.name} on Connect: ${typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in'}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShareModalProduct(null)}
-                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 hover:scale-105 transition-transform no-underline"
-              >
-                <span className="text-2xl">🐦</span>
-                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Twitter</span>
-              </a>
+                  {/* Email */}
+                  <a 
+                    href={`mailto:?subject=${encodeURIComponent(shareModalProduct.name)}&body=${encodeURIComponent(shareMessage)}`}
+                    onClick={() => setShareModalProduct(null)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 hover:scale-105 transition-transform no-underline"
+                  >
+                    <span className="text-2xl">✉️</span>
+                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300">Email</span>
+                  </a>
 
-              {/* Copy Link */}
-              <button 
-                onClick={async () => {
-                  try {
-                    const url = typeof window !== 'undefined' ? window.location.href : 'https://www.ficapp.in';
-                    await navigator.clipboard.writeText(url);
-                    triggerNotification('Link copied to clipboard!');
-                  } catch (e) {
-                    triggerNotification('Link copied!');
-                  }
-                  setShareModalProduct(null);
-                }}
-                className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 hover:scale-105 transition-transform cursor-pointer"
-              >
-                <Copy className="w-6 h-6 text-amber-500" />
-                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">Copy Link</span>
-              </button>
-            </div>
+                  {/* Twitter / X */}
+                  <a 
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareMessage)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setShareModalProduct(null)}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 hover:scale-105 transition-transform no-underline"
+                  >
+                    <span className="text-2xl">🐦</span>
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Twitter</span>
+                  </a>
+
+                  {/* Copy Link */}
+                  <button 
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(canonicalShareUrl);
+                        triggerNotification('Product link copied to clipboard!');
+                      } catch (e) {
+                        triggerNotification('Product link copied!');
+                      }
+                      setShareModalProduct(null);
+                    }}
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    <Copy className="w-6 h-6 text-amber-500" />
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">Copy Link</span>
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
