@@ -3177,6 +3177,15 @@ export default function CustomerDashboard({
 
   const handleProcessMembershipPayment = async () => {
     if (!membershipCheckoutModal || membershipProcessing) return;
+    if (membershipPayMethod === 'upi' && paymentUpiSubTab === 'upi_id') {
+      const upiVal = (paymentUpiId || '').trim();
+      const upiRegex = /^[\w.-]+@[\w.-]+$/;
+      if (!upiVal || !upiRegex.test(upiVal)) {
+        setPaymentUpiError("Please enter a valid UPI ID (e.g. yourname@okhdfcbank, success@razorpay)");
+        return;
+      }
+    }
+    setPaymentUpiError('');
     const { orderData, planKey, planName, targetUserId, onSuccessCallback } = membershipCheckoutModal;
     setMembershipProcessing(true);
 
@@ -4552,7 +4561,9 @@ export default function CustomerDashboard({
       setOrderSuccess(true);
       setIsRazorpayModalOpen(false);
       setRazorpayProcessing(false);
-      if (methodName === 'Connect Wallet') {
+      if (isLastOrderBooking) {
+        triggerNotification("Booking Successful! Your reservation details have been generated.");
+      } else if (methodName === 'Connect Wallet') {
         triggerNotification("Wallet payment successful & Order placed!");
       } else if (methodName === 'Cash on Delivery') {
         triggerNotification("Order placed with Cash on Delivery!");
@@ -5043,7 +5054,7 @@ export default function CustomerDashboard({
       return 'UNAVAILABLE';
     }
     if (all.includes('stay') || all.includes('hotel') || all.includes('resort')) {
-      return 'ROOM NOT AVAILABLE';
+      return 'UNAVAILABLE';
     }
     return 'OUT OF STOCK';
   };
@@ -6892,9 +6903,10 @@ export default function CustomerDashboard({
                       <button
                         disabled
                         type="button"
-                        className="w-full py-3 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 text-xs font-black uppercase tracking-wider rounded-xl cursor-not-allowed text-center border-none"
+                        className="w-full py-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 text-xs font-black uppercase tracking-wider rounded-xl cursor-default text-center flex items-center justify-center gap-1.5"
                       >
-                        Active Plan
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Active Plan • 30 Days Remaining</span>
                       </button>
                     ) : isLowerPlan ? (
                       <button
@@ -9465,6 +9477,9 @@ export default function CustomerDashboard({
                     <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">
                       {(() => {
                         if (selectedRating !== null) {
+                          if (activeTab === 'Services') return "No Services Available for the Selected Rating";
+                          if (activeTab === 'Stay') return "No Rooms Available for the Selected Rating";
+                          if (activeTab === 'Travel') return "No Travel Options Available for the Selected Rating";
                           return "No items are available for the selected rating.";
                         }
                         const hasLoc = (selectedLocTypes && selectedLocTypes.length > 0) || (fromLocation && fromLocation !== '') || (toLocation && toLocation !== '');
@@ -10817,20 +10832,24 @@ export default function CustomerDashboard({
         {/* Breadcrumbs */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl px-5 py-3 shadow-xs">
           <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={() => { setSelectedProduct(null); const t = (activeTab && activeTab !== 'Home') ? activeTab : getCanonicalTabName(selectedProduct); setActiveTab(t); setSelectedSubNavbarCategory(t); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
+            <button onClick={() => { setSelectedProduct(null); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span>
             <button onClick={() => { 
-              const mainCat = selectedProduct.subNavbarCategory || 'Products';
+              const mainCat = selectedProduct.subNavbarCategory || selectedProduct.mainCategory || 'Products';
               setSelectedProduct(null); 
               setActiveTab(mainCat); 
               setSelectedSubNavbarCategory(mainCat); 
             }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              {selectedProduct.subNavbarCategory || 'Products'}
+              {selectedProduct.subNavbarCategory || selectedProduct.mainCategory || 'Products'}
             </button>
-            <span>&gt;</span>
-            <span className="hover:text-amber-500 transition-colors">{selectedProduct.category}</span>
+            {selectedProduct.category && selectedProduct.category.toLowerCase().trim() !== (selectedProduct.name || '').toLowerCase().trim() && (
+              <>
+                <span>&gt;</span>
+                <span className="hover:text-amber-500 transition-colors">{selectedProduct.category}</span>
+              </>
+            )}
             <span>&gt;</span>
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
@@ -12389,7 +12408,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 {/* 1. Mobile Header View (< md) */}
                 <div className="flex md:hidden flex-col gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/60 w-full">
                   <div className="flex items-center justify-between gap-2 w-full">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <button
                         onClick={() => {
                           setIsProfileModalOpen(false);
@@ -12411,7 +12430,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
                           {currentUser?.name || profileName}
                         </h4>
-                        <span className="text-[9.5px] font-mono text-amber-600 dark:text-amber-400 font-bold truncate">
+                        <span className="text-[9.5px] font-mono text-amber-600 dark:text-amber-400 font-bold break-all leading-tight">
                           ID: {activeCustomerId}
                         </span>
                       </div>
@@ -13504,6 +13523,14 @@ wishlistProducts.forEach(item => addToCart(item));
                         setIsSavingProfile(true);
 
                         try {
+                          if (profilePhone) {
+                            const cleanPhone = profilePhone.replace(/\D/g, '');
+                            if (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
+                              triggerNotification("Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.", "error");
+                              return;
+                            }
+                          }
+
                           // Password change validation
                           if (profilePassword || profileConfirmPassword) {
                             if (profilePassword !== profileConfirmPassword) {
@@ -13712,8 +13739,15 @@ wishlistProducts.forEach(item => addToCart(item));
                           <input 
                             type="text" 
                             value={profilePhone}
-                            onChange={(e) => setProfilePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                            placeholder="Enter 10-digit mobile number"
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              if (raw && !/^[6-9]/.test(raw)) {
+                                triggerNotification("Mobile number must start with 6, 7, 8, or 9.", "warning");
+                                return;
+                              }
+                              setProfilePhone(raw);
+                            }}
+                            placeholder="Enter 10-digit mobile number (starts with 6, 7, 8, or 9)"
                             maxLength={10}
                             className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 focus:outline-none focus:border-amber-500 font-medium text-slate-800 dark:text-slate-100"
                           />
@@ -13770,44 +13804,53 @@ wishlistProducts.forEach(item => addToCart(item));
                     </div>
 
                     <div className="space-y-3.5 pt-2">
-                      <label className="flex items-center justify-between cursor-pointer border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         <div>
                           <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">Email Notifications</h4>
                           <span className="text-[10px] text-slate-400">Receive order invoices and coupon updates</span>
                         </div>
-                        <input 
-                          type="checkbox" 
-                          checked={settingsNotify}
-                          onChange={() => setSettingsNotify(!settingsNotify)}
-                          className="accent-[#0b1e36] w-4.5 h-4.5 cursor-pointer"
-                        />
-                      </label>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsNotify(prev => !prev)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settingsNotify ? 'bg-[#003B95]' : 'bg-slate-300 dark:bg-slate-700'}`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${settingsNotify ? 'translate-x-5' : 'translate-x-0'}`}
+                          />
+                        </button>
+                      </div>
 
-                      <label className="flex items-center justify-between cursor-pointer border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         <div>
                           <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">SMS Tracking Alerts</h4>
                           <span className="text-[10px] text-slate-400">Get courier delivery status via phone message</span>
                         </div>
-                        <input 
-                          type="checkbox" 
-                          checked={settingsSMS}
-                          onChange={() => setSettingsSMS(!settingsSMS)}
-                          className="accent-[#0b1e36] w-4.5 h-4.5 cursor-pointer"
-                        />
-                      </label>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsSMS(prev => !prev)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settingsSMS ? 'bg-[#003B95]' : 'bg-slate-300 dark:bg-slate-700'}`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${settingsSMS ? 'translate-x-5' : 'translate-x-0'}`}
+                          />
+                        </button>
+                      </div>
 
-                      <label className="flex items-center justify-between cursor-pointer pb-2">
+                      <div className="flex items-center justify-between pb-2">
                         <div>
                           <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">Two-Factor Authentication</h4>
                           <span className="text-[10px] text-slate-400">Enforce extra layer of password code security</span>
                         </div>
-                        <input 
-                          type="checkbox" 
-                          checked={settingsSecurity}
-                          onChange={() => setSettingsSecurity(!settingsSecurity)}
-                          className="accent-[#0b1e36] w-4.5 h-4.5 cursor-pointer"
-                        />
-                      </label>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsSecurity(prev => !prev)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settingsSecurity ? 'bg-[#003B95]' : 'bg-slate-300 dark:bg-slate-700'}`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${settingsSecurity ? 'translate-x-5' : 'translate-x-0'}`}
+                          />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -14634,23 +14677,27 @@ wishlistProducts.forEach(item => addToCart(item));
                         triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
                         return;
                       }
-                      if (isStayItem) {
-                        const primaryGuest = guestList[0] || {};
-                        const primaryName = (primaryGuest.name || profileName || currentUser?.name || '').trim();
-                        const primaryAadhaar = (primaryGuest.aadhaar || '').trim();
-                        const primaryPhone = (primaryGuest.phone || profilePhone || currentUser?.phone || '').replace(/\D/g, '').slice(-10);
+                      if (isStayItem || isTravelItem) {
+                        const totalGuestsToValidate = Math.max(1, (adultCount || 1) + (childCount || 0));
+                        for (let gIdx = 0; gIdx < totalGuestsToValidate; gIdx++) {
+                          const gInfo = guestList[gIdx] || {};
+                          const gName = (gInfo.name || (gIdx === 0 ? (profileName || currentUser?.name || '') : '')).trim();
+                          const gAadhaar = (gInfo.aadhaar || '').trim();
+                          const gPhone = (gInfo.phone || (gIdx === 0 ? (profilePhone || currentUser?.phone || '') : '')).replace(/\D/g, '').slice(-10);
+                          const gLabel = gIdx === 0 ? "primary guest / traveler" : `Guest / Traveler ${gIdx + 1}`;
 
-                        if (!primaryName) {
-                          triggerNotification("Please enter primary guest full name.", "error");
-                          return;
-                        }
-                        if (!primaryAadhaar || primaryAadhaar.length !== 12) {
-                          triggerNotification("Please enter a valid 12-digit Aadhaar Card number for primary guest.", "error");
-                          return;
-                        }
-                        if (!primaryPhone || primaryPhone.length !== 10) {
-                          triggerNotification("Please enter a valid 10-digit mobile number for primary guest.", "error");
-                          return;
+                          if (!gName) {
+                            triggerNotification(`Please enter full name for ${gLabel}.`, "error");
+                            return;
+                          }
+                          if (!gAadhaar || gAadhaar.length !== 12) {
+                            triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
+                            return;
+                          }
+                          if (gIdx === 0 && (!gPhone || gPhone.length !== 10)) {
+                            triggerNotification("Please enter a valid 10-digit mobile number for primary guest / traveler.", "error");
+                            return;
+                          }
                         }
                       }
                       if (isTravelItem) {
@@ -15304,23 +15351,27 @@ wishlistProducts.forEach(item => addToCart(item));
                           triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
                           return;
                         }
-                        if (isStayItem) {
-                          const primaryGuest = guestList[0] || {};
-                          const primaryName = (primaryGuest.name || profileName || currentUser?.name || '').trim();
-                          const primaryAadhaar = (primaryGuest.aadhaar || '').trim();
-                          const primaryPhone = (primaryGuest.phone || profilePhone || currentUser?.phone || '').replace(/\D/g, '').slice(-10);
+                        if (isStayItem || isTravelItem) {
+                          const totalGuestsToValidate = Math.max(1, (adultCount || 1) + (childCount || 0));
+                          for (let gIdx = 0; gIdx < totalGuestsToValidate; gIdx++) {
+                            const gInfo = guestList[gIdx] || {};
+                            const gName = (gInfo.name || (gIdx === 0 ? (profileName || currentUser?.name || '') : '')).trim();
+                            const gAadhaar = (gInfo.aadhaar || '').trim();
+                            const gPhone = (gInfo.phone || (gIdx === 0 ? (profilePhone || currentUser?.phone || '') : '')).replace(/\D/g, '').slice(-10);
+                            const gLabel = gIdx === 0 ? "primary guest / traveler" : `Guest / Traveler ${gIdx + 1}`;
 
-                          if (!primaryName) {
-                            triggerNotification("Please enter primary guest full name.", "error");
-                            return;
-                          }
-                          if (!primaryAadhaar || primaryAadhaar.length !== 12) {
-                            triggerNotification("Please enter a valid 12-digit Aadhaar Card number for primary guest.", "error");
-                            return;
-                          }
-                          if (!primaryPhone || primaryPhone.length !== 10) {
-                            triggerNotification("Please enter a valid 10-digit mobile number for primary guest.", "error");
-                            return;
+                            if (!gName) {
+                              triggerNotification(`Please enter full name for ${gLabel}.`, "error");
+                              return;
+                            }
+                            if (!gAadhaar || gAadhaar.length !== 12) {
+                              triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
+                              return;
+                            }
+                            if (gIdx === 0 && (!gPhone || gPhone.length !== 10)) {
+                              triggerNotification("Please enter a valid 10-digit mobile number for primary guest / traveler.", "error");
+                              return;
+                            }
                           }
                         }
                         if (isTravelItem) {
@@ -15708,9 +15759,9 @@ wishlistProducts.forEach(item => addToCart(item));
                 <div className="w-10 h-10 rounded-2xl bg-amber-400 text-[#0b1e36] flex items-center justify-center font-black text-lg shadow-md shrink-0">
                   <MapPin className="w-5 h-5 text-[#0b1e36]" />
                 </div>
-                <div className="text-left min-w-0">
-                  <h3 className="font-extrabold text-sm tracking-tight text-white truncate">{getAddressModalTitle()}</h3>
-                  <p className="text-[10px] text-blue-200 mt-0.5 truncate">{getAddressModalDescription()}</p>
+                <div className="text-left min-w-0 flex-1">
+                  <h3 className="font-extrabold text-xs sm:text-sm tracking-tight text-white leading-tight">{getAddressModalTitle()}</h3>
+                  <p className="text-[10px] text-blue-200 mt-0.5 leading-tight hidden xs:block">{getAddressModalDescription()}</p>
                 </div>
               </div>
 
@@ -16134,7 +16185,7 @@ wishlistProducts.forEach(item => addToCart(item));
                 badgeColor = 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-blue-200 dark:border-blue-800';
                 bannerBg = 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-100 dark:border-blue-900/40';
               } else if (isStay) {
-                categoryLabel = 'Hotel Stay Booking';
+                categoryLabel = 'Hotel Booking';
                 categoryIcon = <Building2 className="w-4 h-4 text-teal-500 shrink-0" />;
                 badgeColor = 'bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300 border-teal-200 dark:border-teal-800';
                 bannerBg = 'bg-teal-50/80 dark:bg-teal-950/40 border-teal-100 dark:border-teal-900/40';
@@ -16823,10 +16874,18 @@ wishlistProducts.forEach(item => addToCart(item));
                             <input
                               type="text"
                               value={paymentUpiId}
-                              onChange={(e) => setPaymentUpiId(e.target.value)}
+                              onChange={(e) => {
+                                setPaymentUpiId(e.target.value);
+                                if (paymentUpiError) setPaymentUpiError('');
+                              }}
                               placeholder="Enter UPI ID (e.g. success@razorpay)"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className={`w-full bg-white dark:bg-slate-900 border ${paymentUpiError ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-300 dark:border-slate-700'} rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                             />
+                            {paymentUpiError && (
+                              <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400 text-left animate-fade-in flex items-center gap-1">
+                                <span>⚠️</span> {paymentUpiError}
+                              </p>
+                            )}
                             <p className="text-[10px] text-slate-400">Razorpay instant verification VPA. Click Pay below to complete transaction.</p>
                           </div>
                         ) : (
