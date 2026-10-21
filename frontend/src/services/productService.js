@@ -259,13 +259,22 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
     return getCategoryFallbackImage(pContext);
   }
 
-  // Valid vendor uploads CDN on vendor.ficapp.in
+  // Route vendor uploads through backend upload handler to prevent ERR_CONNECTION_RESET
   if (url.includes('vendor.ficapp.in/uploads/')) {
-    return url.startsWith('http://') ? url.replace('http://', 'https://') : url;
+    const cleanPath = url.substring(url.indexOf('/uploads/'));
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    if (baseBackend) {
+      return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
+    }
+    return `https://api.ficapp.in${cleanPath}`;
   }
   if (url.includes('localhost:8002/uploads/') || url.includes('127.0.0.1:8002/uploads/')) {
     const cleanPath = url.substring(url.indexOf('/uploads/'));
-    return `https://vendor.ficapp.in${cleanPath}`;
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    if (baseBackend) {
+      return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
+    }
+    return `https://api.ficapp.in${cleanPath}`;
   }
 
   if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
