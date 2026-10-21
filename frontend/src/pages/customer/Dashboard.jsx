@@ -10584,7 +10584,7 @@ export default function CustomerDashboard({
 
     // Helper to get action buttons dynamically
     const getActionButtons = (product) => {
-      if (!product) return { chatText: "Chat", actionText: "ACTION", bookingText: "", showBooking: false };
+      if (!product) return { actionText: "ACTION", bookingText: "", showBooking: false };
       const subCat = product.subNavbarCategory;
       const cat = product.category;
       const mainCat = product.mainCategory;
@@ -10603,28 +10603,24 @@ export default function CustomerDashboard({
       
       if (isJob) {
         return {
-          chatText: "Chat with HR",
           actionText: "APPLY NOW",
           bookingText: "",
           showBooking: false
         };
       } else if (subCat === 'Services' || cat === 'Hospitals' || cat === 'Hospital' || isMedical) {
         return {
-          chatText: isMedical ? "Chat with Doctor" : "Chat with Service Expert",
           actionText: "ADD TO CART",
           bookingText: "BOOK APPOINTMENT",
           showBooking: true
         };
       } else if (subCat === 'Stay') {
         return {
-          chatText: "Chat with Host",
           actionText: "ADD TO CART",
           bookingText: "BOOK STAY",
           showBooking: true
         };
       } else if (subCat === 'Travel') {
         return {
-          chatText: "Chat with Agent",
           actionText: "ADD TO CART",
           bookingText: "BOOK TICKET",
           showBooking: true
@@ -10632,7 +10628,6 @@ export default function CustomerDashboard({
       } else {
         // Products / Daily Needs / Food
         return {
-          chatText: "Chat with Seller",
           actionText: "ADD TO CART",
           bookingText: "ORDER NOW",
           showBooking: true
@@ -11371,14 +11366,6 @@ export default function CustomerDashboard({
             <div className="space-y-3 mt-3 sm:mt-4">
               {/* Action Buttons Row */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-1 w-full">
-                <button
-                  onClick={() => triggerNotification("Initiating chat session...")}
-                  className="w-full sm:w-auto px-3.5 py-2 sm:py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 h-9 sm:h-10 shrink-0 shadow-xs"
-                >
-                  <svg className="w-3.5 h-3.5 text-slate-500 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                  <span>{getActionButtons(selectedProduct).chatText}</span>
-                </button>
-                
                 {isVendorProductUnavailable(selectedProduct) ? (
                   <div className="flex-1 py-2 px-3 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-black text-[11px] sm:text-xs uppercase tracking-wide rounded-xl flex items-center justify-center text-center gap-1.5 min-h-[36px] sm:h-10 leading-snug select-none">
                     <span>{getUnavailableDetailButtonText(selectedProduct)}</span>
@@ -17440,7 +17427,7 @@ wishlistProducts.forEach(item => addToCart(item));
                   { q: 'How do I track my order?', a: 'Go to My Orders, click on any active order and tap "Track Order" to see real-time delivery status.' },
                   { q: 'How do I cancel or return an order?', a: 'Open the order details from My Orders, then click the "Report / Support" button to raise a cancellation or return request.' },
                   { q: 'How do I update my delivery address?', a: 'Go to your Profile > Settings tab > Saved Addresses to add or edit your delivery addresses.' },
-                  { q: 'How do I contact a vendor directly?', a: 'Visit the vendor\'s product page and use the "Call" or "Chat" button to connect with them directly.' },
+                  { q: 'How do I contact a vendor directly?', a: 'Visit the vendor\'s store or contact our 24/7 Connect Help & Support helpline for direct assistance.' },
                   { q: 'Where can I view my wallet balance?', a: 'Navigate to your Profile and click on "Connect Wallet" from the sidebar menu.' }
                 ].map((faq, i) => (
                   <details key={i} className="group border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
