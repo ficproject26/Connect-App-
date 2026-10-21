@@ -434,22 +434,11 @@ export function BookingTimeInput({
       <div className="relative">
         <input
           type="text"
+          readOnly
           value={value}
           onClick={() => setIsOpen(!isOpen)}
-          onChange={(e) => {
-            const val = e.target.value;
-            onChange?.(val);
-            const match = String(val).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-            if (match) {
-              setTimeState({
-                hour: String(parseInt(match[1], 10)).padStart(2, '0'),
-                minute: match[2],
-                ampm: match[3].toUpperCase()
-              });
-            }
-          }}
-          placeholder="Select or enter time (e.g. 10:00 AM)"
-          className={`w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl py-2.5 pl-3.5 pr-10 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 shadow-2xs cursor-pointer transition-all hover:border-slate-300 dark:hover:border-slate-700 focus:outline-none ${accentClasses.ring} ${
+          placeholder="Select time slot (e.g. 10:00 AM)"
+          className={`w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl py-2.5 pl-3.5 pr-10 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 shadow-2xs cursor-pointer transition-all hover:border-slate-300 dark:hover:border-slate-700 focus:outline-none select-none ${accentClasses.ring} ${
             isOpen ? (isEmerald ? 'ring-2 ring-emerald-500/20 border-emerald-500' : 'ring-2 ring-blue-500/20 border-blue-500') : ''
           }`}
         />

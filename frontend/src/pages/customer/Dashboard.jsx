@@ -1971,9 +1971,24 @@ export default function CustomerDashboard({
   });
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
-  const [settingsNotify, setSettingsNotify] = useState(true);
-  const [settingsSMS, setSettingsSMS] = useState(false);
-  const [settingsSecurity, setSettingsSecurity] = useState(true);
+  const [settingsNotify, setSettingsNotify] = useState(() => {
+    try {
+      const saved = localStorage.getItem('connect_customer_settings_notify');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch (e) { return true; }
+  });
+  const [settingsSMS, setSettingsSMS] = useState(() => {
+    try {
+      const saved = localStorage.getItem('connect_customer_settings_sms');
+      return saved !== null ? JSON.parse(saved) : false;
+    } catch (e) { return false; }
+  });
+  const [settingsSecurity, setSettingsSecurity] = useState(() => {
+    try {
+      const saved = localStorage.getItem('connect_customer_settings_security');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch (e) { return true; }
+  });
 
   const [addresses, setAddresses] = useState(() => {
     if (currentUser?.addresses && Array.isArray(currentUser.addresses) && currentUser.addresses.length > 0) {
@@ -2439,12 +2454,19 @@ export default function CustomerDashboard({
   const [activeProductImage, setActiveProductImage] = useState(null);
   const [activeThumbnailIndex, setActiveThumbnailIndex] = useState(0);
 
-  // Synchronize selectedProduct gallery details and scroll position on change
+  // Synchronize selectedProduct gallery details, active category navigation tab, and scroll position on change
   useEffect(() => {
     setActiveProductImage(null);
     setActiveThumbnailIndex(0);
     setSelectedColor('Red');
     setSelectedSize('8');
+    if (selectedProduct) {
+      const canonicalTab = getCanonicalTabName(selectedProduct);
+      if (canonicalTab && activeTab !== canonicalTab) {
+        setActiveTab(canonicalTab);
+        setSelectedSubNavbarCategory(canonicalTab);
+      }
+    }
     if (mainScrollRef.current) {
       mainScrollRef.current.scrollTop = 0;
     }
@@ -3292,10 +3314,26 @@ export default function CustomerDashboard({
     if (!Array.isArray(customerOrders) || customerOrders.length === 0) return [];
     const readIds = getReadNotificationIds();
     const deletedIds = getDeletedNotificationIds();
+    let clearedAtMs = 0;
+    try {
+      const savedCutoff = localStorage.getItem('connect_notifications_cleared_at');
+      if (savedCutoff) clearedAtMs = Number(savedCutoff) || 0;
+    } catch (e) {}
+
     return customerOrders.slice(0, 20).filter(ord => {
       const ordNum = ord.order_number || ord.id || 'N/A';
       const notifId = `ord-notif-${ord._id || ord.id || ordNum}`;
-      return !deletedIds.has(notifId) && !deletedIds.has(String(ord._id || ord.id || ordNum));
+      if (deletedIds.has(notifId) || deletedIds.has(String(ord._id || ord.id || ordNum))) {
+        return false;
+      }
+      if (clearedAtMs > 0) {
+        const rawDate = ord.created_at || ord.createdAt || ord.date;
+        const ordTime = rawDate ? new Date(rawDate).getTime() : 0;
+        if (ordTime && ordTime <= clearedAtMs) {
+          return false;
+        }
+      }
+      return true;
     }).map(ord => {
       const ordNum = ord.order_number || ord.id || 'N/A';
       const status = ord.status || 'Order Placed';
@@ -3424,6 +3462,7 @@ export default function CustomerDashboard({
       });
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('connect_deleted_notifications', JSON.stringify([...deletedIds]));
+        localStorage.setItem('connect_notifications_cleared_at', String(Date.now()));
       }
       setNotificationsList([]);
       setUnreadCount(0);
@@ -5062,7 +5101,8 @@ export default function CustomerDashboard({
   const isVendorProductUnavailable = (product) => {
     if (!product) return false;
     if (!isRealVendorProduct(product)) return true;
-    if (product.status === 'Unavailable' || product.status === 'Out of Stock' || product.status === 'Out of stock' || product.status === 'Inactive') return true;
+    if (product.vendorStatus === 'Suspended' || product.isVendorSuspended === true || product.businessStatus === 'Suspended') return true;
+    if (product.status === 'Unavailable' || product.status === 'Out of Stock' || product.status === 'Out of stock' || product.status === 'Inactive' || product.status === 'Suspended') return true;
     if (product.availability === false || product.isAvailable === false || product.isActive === false) return true;
     if (product.stock !== undefined && product.stock !== null && (parseInt(product.stock) === 0 || String(product.stock).startsWith('0'))) return true;
     return false;
@@ -7125,22 +7165,37 @@ export default function CustomerDashboard({
         setIsLoginModalOpen(true);
         return;
       }
+      setSelectedProduct(null);
+      setSelectedCategories([]);
+      setSelectedBrands([]);
+      setSelectedPrices([]);
+      setSelectedColors([]);
+      setSelectedRating(null);
+      setSearchQuery('');
+
+      const validTabs = ['Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'];
+
       if (slide.redirectLink) {
         if (slide.redirectLink.startsWith('http://') || slide.redirectLink.startsWith('https://')) {
           window.open(slide.redirectLink, '_blank', 'noopener,noreferrer');
+          return;
         } else {
-          const cat = slide.redirectLink.replace('/', '');
-          if (cat) {
-            setActiveTab(cat);
-            setSelectedSubNavbarCategory(cat);
+          const rawCat = slide.redirectLink.replace(/^\/+/, '').trim();
+          const matchedTab = validTabs.find(t => t.toLowerCase() === rawCat.toLowerCase());
+          if (matchedTab) {
+            setActiveTab(matchedTab);
+            setSelectedSubNavbarCategory(matchedTab);
+            return;
           }
         }
-        return;
       }
       if (slide.category) {
-        setActiveTab(slide.category);
-        setSelectedSubNavbarCategory(slide.category);
-        return;
+        const matchedTab = validTabs.find(t => t.toLowerCase() === String(slide.category).toLowerCase().trim());
+        if (matchedTab) {
+          setActiveTab(matchedTab);
+          setSelectedSubNavbarCategory(matchedTab);
+          return;
+        }
       }
       setActiveTab('Products');
       setSelectedSubNavbarCategory('Products');
@@ -9714,16 +9769,7 @@ export default function CustomerDashboard({
                   Rooms Not Available
                 </div>
               ) : (
-                <>
-                  <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate(formatDate(stayCheckInDate)); setSelectedModalTime('12:00 PM'); setSelectedModalType('Standard Room'); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Continue to Payment <ArrowRight className="w-4 h-4" /></button>
-                  <button onClick={() => {
-                    if (!currentUser) {
-                      setIsLoginModalOpen(true);
-                    } else {
-                      setIsPayAtHotelConfirmOpen(true);
-                    }
-                  }} className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all border border-slate-200 dark:border-slate-800 cursor-pointer">Pay at Hotel</button>
-                </>
+                <button onClick={() => { setActiveBookNowModalItem(selectedProduct); setSelectedModalDate(formatDate(stayCheckInDate)); setSelectedModalTime('12:00 PM'); setSelectedModalType('Standard Room'); setSelectedTimeOfDayTab('Morning'); }} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer border-none flex items-center justify-center gap-2">Continue to Payment <ArrowRight className="w-4 h-4" /></button>
               )}
               <div className="flex items-center gap-2 justify-center pt-1"><span className="text-[9px] text-slate-400 font-bold">We accept</span>{['VISA','MasterCard','RuPay','UPI'].map((p, pi) => <span key={pi} className="text-[8px] font-black text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded">{p}</span>)}</div>
             </div>
@@ -13841,7 +13887,14 @@ wishlistProducts.forEach(item => addToCart(item));
                         </div>
                         <button
                           type="button"
-                          onClick={() => setSettingsNotify(prev => !prev)}
+                          onClick={() => {
+                            setSettingsNotify(prev => {
+                              const next = !prev;
+                              try { localStorage.setItem('connect_customer_settings_notify', JSON.stringify(next)); } catch (e) {}
+                              triggerNotification(`Email notifications ${next ? 'enabled' : 'disabled'}`);
+                              return next;
+                            });
+                          }}
                           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settingsNotify ? 'bg-[#003B95]' : 'bg-slate-300 dark:bg-slate-700'}`}
                         >
                           <span
@@ -13857,7 +13910,14 @@ wishlistProducts.forEach(item => addToCart(item));
                         </div>
                         <button
                           type="button"
-                          onClick={() => setSettingsSMS(prev => !prev)}
+                          onClick={() => {
+                            setSettingsSMS(prev => {
+                              const next = !prev;
+                              try { localStorage.setItem('connect_customer_settings_sms', JSON.stringify(next)); } catch (e) {}
+                              triggerNotification(`SMS tracking alerts ${next ? 'enabled' : 'disabled'}`);
+                              return next;
+                            });
+                          }}
                           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settingsSMS ? 'bg-[#003B95]' : 'bg-slate-300 dark:bg-slate-700'}`}
                         >
                           <span
@@ -13873,7 +13933,14 @@ wishlistProducts.forEach(item => addToCart(item));
                         </div>
                         <button
                           type="button"
-                          onClick={() => setSettingsSecurity(prev => !prev)}
+                          onClick={() => {
+                            setSettingsSecurity(prev => {
+                              const next = !prev;
+                              try { localStorage.setItem('connect_customer_settings_security', JSON.stringify(next)); } catch (e) {}
+                              triggerNotification(`Two-factor authentication ${next ? 'enabled' : 'disabled'}`);
+                              return next;
+                            });
+                          }}
                           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settingsSecurity ? 'bg-[#003B95]' : 'bg-slate-300 dark:bg-slate-700'}`}
                         >
                           <span
@@ -14707,6 +14774,11 @@ wishlistProducts.forEach(item => addToCart(item));
                         triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
                         return;
                       }
+                      const matchedSlot = checkInTimeSlots.find(s => s.time === checkInTime);
+                      if (matchedSlot && matchedSlot.status !== 'Available') {
+                        triggerNotification(`The selected time slot (${checkInTime}) is ${matchedSlot.status || 'not available'}. Please select an available slot.`, "error");
+                        return;
+                      }
                       if (isStayItem || isTravelItem) {
                         const totalGuestsToValidate = Math.max(1, (adultCount || 1) + (childCount || 0));
                         for (let gIdx = 0; gIdx < totalGuestsToValidate; gIdx++) {
@@ -15379,6 +15451,11 @@ wishlistProducts.forEach(item => addToCart(item));
                         }
                         if (isPastTimeForSelectedDate(checkInTime, stayCheckInDate)) {
                           triggerNotification("Selected time slot is in the past. Please select an upcoming time slot.", "error");
+                          return;
+                        }
+                        const matchedSlot = checkInTimeSlots.find(s => s.time === checkInTime);
+                        if (matchedSlot && matchedSlot.status !== 'Available') {
+                          triggerNotification(`The selected time slot (${checkInTime}) is ${matchedSlot.status || 'not available'}. Please select an available slot.`, "error");
                           return;
                         }
                         if (isStayItem || isTravelItem) {
@@ -16645,6 +16722,14 @@ wishlistProducts.forEach(item => addToCart(item));
                     })()}
                   </div>
 
+                  {/* Inline Modal Payment Error Alert (Bug 8) */}
+                  {paymentUpiError && (
+                    <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-bold animate-fade-in text-left">
+                      <XCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                      <span className="flex-1 leading-snug">{paymentUpiError}</span>
+                    </div>
+                  )}
+
                   {/* Pay Button */}
                   {razorpayPayMethod === 'wallet' ? (() => {
                     const selectedCart = cart.filter(item => selectedCartItems.includes(item.id));
@@ -16711,31 +16796,32 @@ wishlistProducts.forEach(item => addToCart(item));
                         } else if (razorpayPayMethod === 'card') {
                           const cleanCard = (paymentCardData.number || '').replace(/\s/g, '');
                           if (cleanCard.length < 15) {
-                            triggerNotification('Please enter a valid 16-digit card number', 'error');
+                            setPaymentUpiError('Please enter a valid 16-digit card number');
                             return;
                           }
                           if (!paymentCardData.expiry || !paymentCardData.expiry.includes('/')) {
-                            triggerNotification('Please enter card expiry in MM/YY format', 'error');
+                            setPaymentUpiError('Please enter card expiry in MM/YY format');
                             return;
                           }
                           if (!paymentCardData.cvv || paymentCardData.cvv.length !== 3) {
-                            triggerNotification('Please enter a valid 3-digit CVV', 'error');
+                            setPaymentUpiError('Please enter a valid 3-digit CVV');
                             return;
                           }
                           if (!paymentCardData.name || !paymentCardData.name.trim()) {
-                            triggerNotification('Please enter the cardholder name', 'error');
+                            setPaymentUpiError('Please enter the cardholder name');
                             return;
                           }
                           if (!/^[a-zA-Z\s]+$/.test(paymentCardData.name.trim())) {
-                            triggerNotification('Cardholder name can contain letters and spaces only', 'error');
+                            setPaymentUpiError('Cardholder name can contain letters and spaces only');
                             return;
                           }
                         } else if (razorpayPayMethod === 'netbanking') {
                           if (!selectedNetbank) {
-                            triggerNotification('Please select a bank to proceed with Net Banking payment', 'error');
+                            setPaymentUpiError('Please select a bank to proceed with Net Banking payment');
                             return;
                           }
                         }
+                        setPaymentUpiError(null);
                         setRazorpayProcessing(true);
                         const method = razorpayPayMethod === 'upi' 
                           ? (paymentUpiSubTab === 'qr_code' ? 'UPI QR' : 'UPI') 
@@ -17098,11 +17184,11 @@ wishlistProducts.forEach(item => addToCart(item));
 
       {/* -------------------- 8. ORDER SUPPORT & REPORTING MODAL -------------------- */}
       {supportOrderModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col max-h-[90vh] md:max-h-[92dvh]">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative text-slate-800 dark:text-slate-200 flex flex-col max-h-[85dvh]">
             
             {/* Header */}
-            <div className="bg-[#0b1e36] text-white p-5 flex justify-between items-center">
+            <div className="bg-[#0b1e36] text-white p-4 sm:p-5 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shrink-0">
                   <PhoneCall className="w-5 h-5" />
@@ -17115,14 +17201,14 @@ wishlistProducts.forEach(item => addToCart(item));
               <button
                 type="button"
                 onClick={() => setSupportOrderModal(null)}
-                className="p-1.5 rounded-full hover:bg-white/10 text-white/80 transition-colors cursor-pointer border-none bg-transparent"
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/80 transition-colors cursor-pointer border-none bg-transparent shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Content Body */}
-            <div className="p-6 space-y-4 flex-1 overflow-y-auto text-left">
+            <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto overscroll-contain text-left">
               {isReportSubmitted ? (
                 <div className="py-8 text-center space-y-3">
                   <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
@@ -17136,7 +17222,7 @@ wishlistProducts.forEach(item => addToCart(item));
               ) : (
                 <>
                   {/* Reporting Order Info Summary */}
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-4 rounded-2xl space-y-2">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 p-3.5 sm:p-4 rounded-2xl space-y-2">
                     <div className="flex justify-between items-baseline">
                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Order Reference</span>
                       <span className="text-xs font-mono font-extrabold text-blue-600 dark:text-blue-400">#{supportOrderModal.order_number}</span>
@@ -17203,10 +17289,10 @@ wishlistProducts.forEach(item => addToCart(item));
                   <a
                     href="tel:18001234567"
                     onClick={() => triggerNotification("Calling Connect Helpline: +91 1800-123-4567...")}
-                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 transition-all no-underline shadow-sm leading-none text-center"
+                    className="w-full py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all no-underline shadow-sm leading-tight text-center"
                   >
                     <Phone className="w-4 h-4 shrink-0" />
-                    <span className="truncate">Direct Call Helpline (+91 1800-123-4567)</span>
+                    <span className="break-words">Direct Call Helpline (+91 1800-123-4567)</span>
                   </a>
                 </>
               )}
@@ -17214,11 +17300,11 @@ wishlistProducts.forEach(item => addToCart(item));
 
             {/* Footer */}
             {!isReportSubmitted && (
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center gap-3">
+              <div className="bg-slate-50 dark:bg-slate-950 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setSupportOrderModal(null)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs"
+                  className="px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs"
                 >
                   Cancel
                 </button>
@@ -17228,7 +17314,7 @@ wishlistProducts.forEach(item => addToCart(item));
                     setIsReportSubmitted(true);
                     triggerNotification(`Report submitted for order #${supportOrderModal.order_number}`);
                   }}
-                  className="px-5 py-2.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none shadow-sm"
+                  className="px-4 sm:px-5 py-2.5 bg-[#0b1e36] hover:bg-[#13325a] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none shadow-sm"
                 >
                   Submit Report
                 </button>
