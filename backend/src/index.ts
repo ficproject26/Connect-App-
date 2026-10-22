@@ -53,8 +53,19 @@ const PORT = process.env.PORT || 8000;
 // resolve client IP from X-Forwarded-For without trusting spoofed upstream headers.
 app.set('trust proxy', true);
 
+import compression from 'compression';
+
 // Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
 app.disable('x-powered-by');
+
+// Enable Gzip/Deflate compression for all JSON and text responses (reduces payload by 70-85%)
+app.use(compression({
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
 
 // Enterprise CORS Protection Middleware (Restricted to Trusted Origins, no arbitrary origin reflection)
 app.use(corsSecurityMiddleware);
@@ -70,14 +81,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(sanitizeInputsMiddleware);
 
-// Serve static uploaded files (with cross-origin resource sharing & fallback resolution)
+// Serve static uploaded files (with cross-origin resource sharing, maxAge caching & fallback resolution)
 app.use('/uploads', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.header('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
   next();
-}, express.static(path.join(process.cwd(), 'uploads')));
+}, express.static(path.join(process.cwd(), 'uploads'), { maxAge: '7d', etag: true }));
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), { maxAge: '7d', etag: true }));
 
 // Resilient fallback for uploaded files: check sibling vendor uploads and upstream vendor backend
 app.get('/uploads/:filename(*)', async (req, res, next) => {
@@ -156,7 +168,10 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
     const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
     if (!forceRefresh) {
       const cached = await cacheManager.get('cache:categories:tree');
-      if (cached) return res.json(cached);
+      if (cached) {
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+        return res.json(cached);
+      }
     }
 
     const mongoDb = db.getDb();
@@ -180,6 +195,7 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
 
       const responseData = roots.length > 0 ? roots : all;
       await cacheManager.set('cache:categories:tree', responseData, 120);
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       return res.json(responseData);
     }
     return res.json([]);
@@ -257,6 +273,7 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
     if (!forceRefresh) {
       const cached = await cacheManager.get('cache:products:public');
       if (cached) {
+        res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
         return res.json(cached);
       }
     }
@@ -453,7 +470,7 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
       });
 
       await cacheManager.set('cache:products:public', mappedActiveProducts, 120);
-
+      res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
       return res.json(mappedActiveProducts);
     }
     return res.json([]);

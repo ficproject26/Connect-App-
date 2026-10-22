@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -9,15 +9,15 @@ import { socketService } from '../../services/socketService';
 import { getActiveMainCategories, fetchAdminCategories, buildActiveCategoryTree, normalizeCategoryName } from '../../services/categoryService';
 import useCustomer from '../../hooks/useCustomer';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
-import WalletPage from './Wallet';
-import Offers from './Offers';
+const WalletPage = lazy(() => import('./Wallet'));
+const Offers = lazy(() => import('./Offers'));
 import LoginModal from '../../components/auth/LoginModal';
 import ResponsiveSidebar from '../../components/common/ResponsiveSidebar';
-import CustomerDashboardView from '../dashboards/CustomerDashboardView';
-import VendorDashboardView from '../dashboards/VendorDashboardView';
-import AdminDashboardView from '../dashboards/AdminDashboardView';
-import OrdersBookingsView from '../dashboards/OrdersBookingsView';
-import ProfileView from '../dashboards/ProfileView';
+const DashboardSubFallback = () => (
+  <div className="py-12 flex justify-center items-center">
+    <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+  </div>
+);
 import { sanitizeMobileInput } from '../../utils/validation';
 import { AuthContext, getOrGenerateCustomerId, isValidCustomerId, deduplicateAddresses } from '../../context/AuthContext';
 import { BookingDateInput, BookingTimeInput } from '../../components/common/BookingDateTimePicker';
@@ -7566,7 +7566,7 @@ export default function CustomerDashboard({
 
               <div className="w-[110px] sm:w-[125px] h-full rounded-2xl overflow-hidden relative shadow-3xs shrink-0 bg-slate-100 flex items-center justify-center">
                 {offer.image ? (
-                  <img src={offer.image} alt={offer.brand} onError={(e) => { e.target.style.display = 'none'; }} className="w-full h-full object-cover" />
+                  <img src={offer.image} alt={offer.brand} loading="lazy" decoding="async" onError={(e) => { e.target.style.display = 'none'; }} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-slate-100 dark:bg-slate-900/60 flex items-center justify-center p-2 text-center select-none">
                     <ShoppingBag className="w-6 h-6 text-slate-300 dark:text-slate-600" />
@@ -7939,7 +7939,7 @@ export default function CustomerDashboard({
           {stays.map((stay, idx) => (
             <div key={idx} onClick={() => { setActiveProductImage(stay.image); setActiveThumbnailIndex(0); setSelectedProduct(stay); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={stay.image || getCategoryFallbackImage(stay)} alt={stay.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(stay); }} className="w-full h-full object-cover" />
+                <img src={stay.image || getCategoryFallbackImage(stay)} alt={stay.name} loading="lazy" decoding="async" onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(stay); }} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-amber-400 text-slate-900 dark:text-slate-100 text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">15% SAVINGS</span>
               </div>
               <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
@@ -7980,7 +7980,7 @@ export default function CustomerDashboard({
           {restaurants.map((rest, idx) => (
             <div key={idx} onClick={() => setSelectedProduct(rest)} className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between text-slate-800 dark:text-slate-200 cursor-pointer hover:-translate-y-0.5">
               <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-950 overflow-hidden relative border-b border-slate-100 dark:border-slate-800/60">
-                <img src={rest.image || getCategoryFallbackImage(rest)} alt={rest.name} onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(rest); }} className="w-full h-full object-cover" />
+                <img src={rest.image || getCategoryFallbackImage(rest)} alt={rest.name} loading="lazy" decoding="async" onError={(e) => { e.target.onerror = null; e.target.src = getCategoryFallbackImage(rest); }} className="w-full h-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 bg-rose-500 text-white text-[6px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">FLAT 20% OFF</span>
               </div>
               <div className="p-2.5 flex-1 flex flex-col justify-between text-left">
@@ -11642,7 +11642,7 @@ export default function CustomerDashboard({
                           <span className="text-[9px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider">Job Opening</span>
                         </div>
                       ) : (
-                        <img src={prod.image} alt={prod.name} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
+                        <img src={prod.image} alt={prod.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" />
                       )}
                       {prod.tag && <span className="absolute left-2.5 top-2.5 bg-slate-900/80 text-white text-[7px] font-black px-2 py-0.5 rounded uppercase">{prod.tag}</span>}
                       <button 
@@ -11959,7 +11959,9 @@ export default function CustomerDashboard({
         {selectedProduct ? (
           renderProductDetailsPage()
         ) : activeTab === 'Offers' ? (
-          <Offers />
+          <Suspense fallback={<DashboardSubFallback />}>
+            <Offers />
+          </Suspense>
         ) : searchQuery !== '' ? (
           /* SEARCH DIRECT CATALOG VIEW */
           <div className="space-y-8 w-full text-slate-800 dark:text-slate-200 animate-fade-in">
@@ -13579,7 +13581,9 @@ wishlistProducts.forEach(item => addToCart(item));
                 {/* CONNECT WALLET TAB */}
                 {activeProfileTab === 'wallet' && (
                   <div className="animate-fade-in text-left">
-                    <WalletPage />
+                    <Suspense fallback={<DashboardSubFallback />}>
+                      <WalletPage />
+                    </Suspense>
                   </div>
                 )}
 

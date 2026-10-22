@@ -399,6 +399,8 @@ const sanitizeProduct = (p) => {
 
 let activeGetProductsPromise = null;
 let memoryProductCache = null;
+let lastProductsFetchTime = 0;
+const CACHE_FRESH_MS = 20000;
 
 try {
   if (typeof window !== 'undefined') {
@@ -407,6 +409,7 @@ try {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         memoryProductCache = parsed;
+        lastProductsFetchTime = Date.now();
       }
     }
   }
@@ -416,6 +419,7 @@ export const productService = {
   clearCache: () => {
     activeGetProductsPromise = null;
     memoryProductCache = null;
+    lastProductsFetchTime = 0;
     try {
       if (typeof window !== 'undefined') {
         window.sessionStorage?.removeItem('cached_vendor_products');
@@ -429,8 +433,9 @@ export const productService = {
   },
 
   getProducts: async (forceRefresh = false) => {
+    const now = Date.now();
     if (!forceRefresh && Array.isArray(memoryProductCache) && memoryProductCache.length > 0) {
-      if (!activeGetProductsPromise) {
+      if (now - lastProductsFetchTime >= CACHE_FRESH_MS && !activeGetProductsPromise) {
         productService.getProducts(true).catch(() => {});
       }
       return { success: true, products: memoryProductCache, source: 'cache' };
@@ -449,15 +454,9 @@ export const productService = {
 
         const baseVendorUrl = getVendorBackendUrl();
         const baseUrl = getBackendUrl();
-        const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-        const isLocal = isLocalHostname(hostname);
         const endpoints = [
-          baseVendorUrl ? `${baseVendorUrl}/api/public/products` : null,
           baseUrl ? `${baseUrl}/api/public/products` : null,
-          ...(isLocal ? [
-            'http://localhost:8004/api/public/products',
-            'http://localhost:8001/api/public/products'
-          ] : []),
+          baseVendorUrl && baseVendorUrl !== baseUrl ? `${baseVendorUrl}/api/public/products` : null,
           '/api/public/products'
         ];
         const uniqueEndpoints = [...new Set(endpoints.filter(Boolean))];
@@ -466,11 +465,11 @@ export const productService = {
           return new Promise(async (resolve, reject) => {
             try {
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 20000);
+              const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-              const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
-                signal: controller.signal,
-                cache: 'no-store'
+              const fetchUrl = forceRefresh ? `${endpoint}?refresh=true` : endpoint;
+              const res = await fetch(fetchUrl, { 
+                signal: controller.signal
               }).catch(() => null);
               clearTimeout(timeoutId);
 
@@ -495,6 +494,7 @@ export const productService = {
           const fastestProducts = await Promise.any(uniqueEndpoints.map(ep => fetchEndpoint(ep)));
           if (Array.isArray(fastestProducts) && fastestProducts.length > 0) {
             memoryProductCache = fastestProducts;
+            lastProductsFetchTime = Date.now();
             try {
               if (typeof window !== 'undefined') {
                 window.sessionStorage?.setItem('cached_vendor_products', JSON.stringify(fastestProducts));
@@ -507,11 +507,11 @@ export const productService = {
           for (const endpoint of uniqueEndpoints) {
             try {
               const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 25000);
+              const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-              const res = await fetch(`${endpoint}?t=${Date.now()}`, { 
-                signal: controller.signal,
-                cache: 'no-store'
+              const fetchUrl = forceRefresh ? `${endpoint}?refresh=true` : endpoint;
+              const res = await fetch(fetchUrl, { 
+                signal: controller.signal
               }).catch(() => null);
               clearTimeout(timeoutId);
 
@@ -522,6 +522,7 @@ export const productService = {
                   const vendorProducts = filterVendorAddedOnly(rawList);
                   if (vendorProducts.length > 0) {
                     memoryProductCache = vendorProducts;
+                    lastProductsFetchTime = Date.now();
                     try {
                       if (typeof window !== 'undefined') {
                         window.sessionStorage?.setItem('cached_vendor_products', JSON.stringify(vendorProducts));

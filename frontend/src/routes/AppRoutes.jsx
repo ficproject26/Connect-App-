@@ -1,18 +1,26 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, Suspense, lazy } from 'react';
 import useAuth from '../hooks/useAuth';
 import useCustomer from '../hooks/useCustomer';
 import { authService } from '../services/authService';
 import LandingLayout from '../layouts/LandingLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import CustomerLayout from '../layouts/CustomerLayout';
-// Pages
-import LandingPage from '../pages/landing/LandingPage';
-import LoginPage from '../pages/auth/LoginPage';
-import JoinNowPage from '../pages/auth/JoinNowPage';
-import CustomerDashboard from '../pages/customer/Dashboard';
-import CategoryDetails from '../pages/landing/CategoryDetails';
-import SubServiceDetails from '../pages/landing/SubServiceDetails';
-import AccountStatusNotice from '../pages/auth/AccountStatusNotice';
+
+// Route-level code splitting & lazy loading
+const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
+const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
+const JoinNowPage = lazy(() => import('../pages/auth/JoinNowPage'));
+const CustomerDashboard = lazy(() => import('../pages/customer/Dashboard'));
+const CategoryDetails = lazy(() => import('../pages/landing/CategoryDetails'));
+const SubServiceDetails = lazy(() => import('../pages/landing/SubServiceDetails'));
+const AccountStatusNotice = lazy(() => import('../pages/auth/AccountStatusNotice'));
+
+const PageFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center p-8">
+    <div className="w-9 h-9 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+    <span className="mt-3 text-xs font-semibold tracking-wider text-slate-400 uppercase">Loading...</span>
+  </div>
+);
 
 import ErrorBoundary from '../components/common/ErrorBoundary';
 
@@ -104,12 +112,14 @@ export default function AppRoutes({
 
     return (
       <AuthLayout>
-        <AccountStatusNotice
-          statusType={statusType}
-          user={currentUser}
-          onLogout={handleLogout}
-          onBackHome={handleHomeNavigate}
-        />
+        <Suspense fallback={<PageFallback />}>
+          <AccountStatusNotice
+            statusType={statusType}
+            user={currentUser}
+            onLogout={handleLogout}
+            onBackHome={handleHomeNavigate}
+          />
+        </Suspense>
       </AuthLayout>
     );
   }
@@ -119,17 +129,19 @@ export default function AppRoutes({
     return (
       <CustomerLayout>
         <ErrorBoundary>
-          <CustomerDashboard 
-            key="guest"
-            currentUser={null} 
-            onLogOut={handleLogout} 
-            onJobsClick={() => setIsJobsOpen(true)}
-            onCategoryClick={handleCategoryClick}
-            isLandingPage={true}
-            hideProfile={true}
-            onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
-            onNavigateToJoinNow={() => setCurrentPage('join-now')}
-          />
+          <Suspense fallback={<PageFallback />}>
+            <CustomerDashboard 
+              key="guest"
+              currentUser={null} 
+              onLogOut={handleLogout} 
+              onJobsClick={() => setIsJobsOpen(true)}
+              onCategoryClick={handleCategoryClick}
+              isLandingPage={true}
+              hideProfile={true}
+              onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+              onNavigateToJoinNow={() => setCurrentPage('join-now')}
+            />
+          </Suspense>
         </ErrorBoundary>
       </CustomerLayout>
     );
@@ -140,13 +152,15 @@ export default function AppRoutes({
     return (
       <CustomerLayout>
         <ErrorBoundary>
-          <CustomerDashboard 
-            key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
-            currentUser={effectiveUser} 
-            onLogOut={handleLogout} 
-            onJobsClick={() => setIsJobsOpen(true)}
-            onCategoryClick={handleCategoryClick}
-          />
+          <Suspense fallback={<PageFallback />}>
+            <CustomerDashboard 
+              key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
+              currentUser={effectiveUser} 
+              onLogOut={handleLogout} 
+              onJobsClick={() => setIsJobsOpen(true)}
+              onCategoryClick={handleCategoryClick}
+            />
+          </Suspense>
         </ErrorBoundary>
       </CustomerLayout>
     );
@@ -157,13 +171,15 @@ export default function AppRoutes({
       return (
         <CustomerLayout>
           <ErrorBoundary>
-            <CustomerDashboard 
-              key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
-              currentUser={effectiveUser} 
-              onLogOut={handleLogout} 
-              onJobsClick={() => setIsJobsOpen(true)}
-              onCategoryClick={handleCategoryClick}
-            />
+            <Suspense fallback={<PageFallback />}>
+              <CustomerDashboard 
+                key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
+                currentUser={effectiveUser} 
+                onLogOut={handleLogout} 
+                onJobsClick={() => setIsJobsOpen(true)}
+                onCategoryClick={handleCategoryClick}
+              />
+            </Suspense>
           </ErrorBoundary>
         </CustomerLayout>
       );
@@ -171,11 +187,13 @@ export default function AppRoutes({
 
     return (
       <AuthLayout>
-        <LoginPage
-          onAuthSuccess={handleAuthSuccess}
-          onBackToHome={handleHomeNavigate}
-          onNavigateToJoinNow={() => setCurrentPage('join-now')}
-        />
+        <Suspense fallback={<PageFallback />}>
+          <LoginPage
+            onAuthSuccess={handleAuthSuccess}
+            onBackToHome={handleHomeNavigate}
+            onNavigateToJoinNow={() => setCurrentPage('join-now')}
+          />
+        </Suspense>
       </AuthLayout>
     );
   }
@@ -183,13 +201,15 @@ export default function AppRoutes({
   if (currentPage === 'join-now') {
     return (
       <AuthLayout>
-        <JoinNowPage
-          onAuthSuccess={(user) => {
-            register(user, user.role, handleAuthSuccess);
-          }}
-          onBackToHome={handleHomeNavigate}
-          onNavigateToLoginPage={() => setCurrentPage('login')}
-        />
+        <Suspense fallback={<PageFallback />}>
+          <JoinNowPage
+            onAuthSuccess={(user) => {
+              register(user, user.role, handleAuthSuccess);
+            }}
+            onBackToHome={handleHomeNavigate}
+            onNavigateToLoginPage={() => setCurrentPage('login')}
+          />
+        </Suspense>
       </AuthLayout>
     );
   }
@@ -209,18 +229,20 @@ export default function AppRoutes({
         onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
         onDashboardClick={() => setCurrentPage('dashboard')}
       >
-        {currentPage === 'details' ? (
-          <CategoryDetails
-            category={activeCategory}
-            onBack={handleHomeNavigate}
-            onSubCategoryClick={(subTitle) => handleCategoryClick(subTitle, true)}
-          />
-        ) : (
-          <SubServiceDetails
-            title={activeSubService}
-            onBack={handleHomeNavigate}
-          />
-        )}
+        <Suspense fallback={<PageFallback />}>
+          {currentPage === 'details' ? (
+            <CategoryDetails
+              category={activeCategory}
+              onBack={handleHomeNavigate}
+              onSubCategoryClick={(subTitle) => handleCategoryClick(subTitle, true)}
+            />
+          ) : (
+            <SubServiceDetails
+              title={activeSubService}
+              onBack={handleHomeNavigate}
+            />
+          )}
+        </Suspense>
       </LandingLayout>
     );
   }
@@ -229,17 +251,19 @@ export default function AppRoutes({
   return (
     <CustomerLayout>
       <ErrorBoundary>
-        <CustomerDashboard 
-          key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
-          currentUser={currentUser} 
-          onLogOut={handleLogout} 
-          onJobsClick={() => setIsJobsOpen(true)}
-          onCategoryClick={handleCategoryClick}
-          isLandingPage={true}
-          hideProfile={!currentUser}
-          onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
-          onNavigateToJoinNow={() => setCurrentPage('join-now')}
-        />
+        <Suspense fallback={<PageFallback />}>
+          <CustomerDashboard 
+            key={currentUser ? (currentUser.id || currentUser.customerId || currentUser.email || 'authenticated') : 'guest'}
+            currentUser={currentUser} 
+            onLogOut={handleLogout} 
+            onJobsClick={() => setIsJobsOpen(true)}
+            onCategoryClick={handleCategoryClick}
+            isLandingPage={true}
+            hideProfile={!currentUser}
+            onAuthClick={(tab) => setCurrentPage(tab === 'login' ? 'login' : 'join-now')}
+            onNavigateToJoinNow={() => setCurrentPage('join-now')}
+          />
+        </Suspense>
       </ErrorBoundary>
     </CustomerLayout>
   );

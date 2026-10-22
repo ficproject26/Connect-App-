@@ -277,6 +277,24 @@ class DatabaseManager {
   private async createIndexes() {
     if (!this.mongoDb) return;
     try {
+      // Users & Customers Indexes
+      await this.safeCreateIndex('users', { id: 1 }, { sparse: true });
+      await this.safeCreateIndex('users', { email: 1 }, { sparse: true });
+      await this.safeCreateIndex('users', { phone: 1 }, { sparse: true });
+      await this.safeCreateIndex('users', { registrationId: 1 }, { sparse: true });
+      await this.safeCreateIndex('users', { vendorId: 1 }, { sparse: true });
+      await this.safeCreateIndex('users', { role: 1, status: 1, isActive: 1 });
+      await this.safeCreateIndex('users', { status: 1 });
+      await this.safeCreateIndex('users', { isActive: 1 });
+
+      await this.safeCreateIndex('customers', { id: 1 }, { sparse: true });
+      await this.safeCreateIndex('customers', { email: 1 }, { sparse: true });
+      await this.safeCreateIndex('customers', { phone: 1 }, { sparse: true });
+      await this.safeCreateIndex('customers', { registrationId: 1 }, { sparse: true });
+
+      await this.safeCreateIndex('admins', { email: 1 }, { sparse: true });
+      await this.safeCreateIndex('admins', { role: 1 });
+
       await this.safeCreateIndex('vendors', { id: 1 }, { unique: true, sparse: true });
       await this.safeCreateIndex('vendors', { status: 1 });
       await this.safeCreateIndex('vendors', { email: 1 });
@@ -293,23 +311,52 @@ class DatabaseManager {
       
       await this.safeCreateIndex('products', { id: 1 });
       await this.safeCreateIndex('products', { vendorId: 1 });
+      await this.safeCreateIndex('products', { vendorId: 1, isActive: 1 });
       await this.safeCreateIndex('products', { vendorStatus: 1, businessStatus: 1, isActive: 1 });
+      await this.safeCreateIndex('products', { isActive: 1, isAvailable: 1, createdAt: -1 });
       await this.safeCreateIndex('products', { mainCategory: 1, subcategory: 1, subSubcategory: 1 });
       await this.safeCreateIndex('products', { subNavbarCategory: 1 });
+      await this.safeCreateIndex('products', { category: 1 });
+      await this.safeCreateIndex('products', { createdAt: -1 });
 
       await this.safeCreateIndex('categories', { id: 1 });
       await this.safeCreateIndex('categories', { level: 1, mainCategory: 1 });
       await this.safeCreateIndex('categories', { subcategory: 1 });
       await this.safeCreateIndex('categories', { isActive: 1 });
+      await this.safeCreateIndex('categories', { sortOrder: 1, name: 1 });
 
       await this.safeCreateIndex('orders', { id: 1 }, { unique: true, sparse: true });
       await this.safeCreateIndex('orders', { order_number: 1 }, { unique: true, sparse: true });
-      await this.safeCreateIndex('orders', { vendor_id: 1 });
-      await this.safeCreateIndex('orders', { customer_id: 1 });
+      await this.safeCreateIndex('orders', { vendor_id: 1, created_at: -1 });
+      await this.safeCreateIndex('orders', { customer_id: 1, created_at: -1 });
+      await this.safeCreateIndex('orders', { customerId: 1, created_at: -1 });
+      await this.safeCreateIndex('orders', { customer_email: 1 });
+      await this.safeCreateIndex('orders', { customer_phone: 1 });
       await this.safeCreateIndex('orders', { memberId: 1 });
       await this.safeCreateIndex('orders', { type: 1 });
       await this.safeCreateIndex('orders', { status: 1 });
+      await this.safeCreateIndex('orders', { created_at: -1 });
       await this.safeCreateIndex('orders', { createdAt: -1 });
+
+      await this.safeCreateIndex('wallet_transactions', { customerId: 1, createdAt: -1 });
+      await this.safeCreateIndex('wallet_transactions', { userId: 1, createdAt: -1 });
+      await this.safeCreateIndex('wallet_transactions', { userEmail: 1, createdAt: -1 });
+      await this.safeCreateIndex('wallet_transactions', { userPhone: 1, createdAt: -1 });
+      await this.safeCreateIndex('wallet_transactions', { transactionId: 1 }, { sparse: true });
+      await this.safeCreateIndex('wallet_transactions', { createdAt: -1 });
+
+      await this.safeCreateIndex('membership_payments', { userId: 1, createdAt: -1 });
+      await this.safeCreateIndex('membership_payments', { customerId: 1, createdAt: -1 });
+      await this.safeCreateIndex('membership_payments', { paymentId: 1 }, { sparse: true });
+      await this.safeCreateIndex('membership_payments', { orderId: 1 }, { sparse: true });
+
+      await this.safeCreateIndex('membership_orders', { orderId: 1 }, { sparse: true });
+      await this.safeCreateIndex('membership_orders', { userId: 1 });
+      await this.safeCreateIndex('membership_orders', { customerId: 1 });
+
+      await this.safeCreateIndex('notifications', { userId: 1, createdAt: -1 });
+      await this.safeCreateIndex('notifications', { customerId: 1, createdAt: -1 });
+      await this.safeCreateIndex('pincodes', { code: 1 });
 
       await this.safeCreateIndex('onboarding_requests', { status: 1 });
       await this.safeCreateIndex('onboarding_requests', { createdAt: -1 });

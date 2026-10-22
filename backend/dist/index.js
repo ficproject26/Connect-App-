@@ -37,8 +37,18 @@ const PORT = process.env.PORT || 8000;
 // 1 = Trust first hop (Nginx reverse proxy), enabling express-rate-limit to correctly
 // resolve client IP from X-Forwarded-For without trusting spoofed upstream headers.
 app.set('trust proxy', true);
+const compression_1 = __importDefault(require("compression"));
 // Remove X-Powered-By header (Helmet v7+ no longer handles this — must be set on app directly)
 app.disable('x-powered-by');
+// Enable Gzip/Deflate compression for all JSON and text responses (reduces payload by 70-85%)
+app.use((0, compression_1.default)({
+    threshold: 1024,
+    filter: (req, res) => {
+        if (req.headers['x-no-compression'])
+            return false;
+        return compression_1.default.filter(req, res);
+    }
+}));
 // Enterprise CORS Protection Middleware (Restricted to Trusted Origins, no arbitrary origin reflection)
 app.use(middleware_1.corsSecurityMiddleware);
 // OWASP Security Headers (Helmet v8) & Input Sanitization
@@ -49,13 +59,14 @@ app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
 app.use(middleware_1.sanitizeInputsMiddleware);
-// Serve static uploaded files (with cross-origin resource sharing & fallback resolution)
+// Serve static uploaded files (with cross-origin resource sharing, maxAge caching & fallback resolution)
 app.use('/uploads', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.header('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
     next();
-}, express_1.default.static(path_1.default.join(process.cwd(), 'uploads')));
-app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
+}, express_1.default.static(path_1.default.join(process.cwd(), 'uploads'), { maxAge: '7d', etag: true }));
+app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads'), { maxAge: '7d', etag: true }));
 // Resilient fallback for uploaded files: check sibling vendor uploads and upstream vendor backend
 app.get('/uploads/:filename(*)', async (req, res, next) => {
     try {
@@ -134,8 +145,10 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
         const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
         if (!forceRefresh) {
             const cached = await realtime_1.cacheManager.get('cache:categories:tree');
-            if (cached)
+            if (cached) {
+                res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
                 return res.json(cached);
+            }
         }
         const mongoDb = db_1.db.getDb();
         if (mongoDb) {
@@ -156,6 +169,7 @@ app.get(['/api/public/categories', '/api/categories'], async (req, res) => {
             });
             const responseData = roots.length > 0 ? roots : all;
             await realtime_1.cacheManager.set('cache:categories:tree', responseData, 120);
+            res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
             return res.json(responseData);
         }
         return res.json([]);
@@ -232,6 +246,7 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
         if (!forceRefresh) {
             const cached = await realtime_1.cacheManager.get('cache:products:public');
             if (cached) {
+                res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
                 return res.json(cached);
             }
         }
@@ -436,6 +451,7 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
                 };
             });
             await realtime_1.cacheManager.set('cache:products:public', mappedActiveProducts, 120);
+            res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
             return res.json(mappedActiveProducts);
         }
         return res.json([]);

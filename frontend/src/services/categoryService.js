@@ -268,25 +268,20 @@ export const fetchAdminCategories = async (forceRefresh = false) => {
   }
 
   activeFetchCategoriesPromise = (async () => {
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    const isLocal = isLocalHostname(hostname);
     const urlsToTry = [
-      `${getBackendUrl()}/api/public/categories?t=${Date.now()}`,
-      ...(isLocal ? [
-        `http://localhost:8004/api/public/categories?t=${Date.now()}`,
-        `http://localhost:8001/api/public/categories?t=${Date.now()}`
-      ] : []),
-      `/api/public/categories?t=${Date.now()}`,
-      `/api/admin/categories?t=${Date.now()}`,
-      `${getAdminBackendUrl()}/api/admin/categories?t=${Date.now()}`
+      `${getBackendUrl()}/api/public/categories`,
+      '/api/public/categories',
+      '/api/admin/categories',
+      `${getAdminBackendUrl()}/api/admin/categories`
     ];
 
     const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
 
-    for (const url of uniqueUrls) {
+    for (const baseUrl of uniqueUrls) {
       try {
+        const url = forceRefresh ? `${baseUrl}?refresh=true` : baseUrl;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
         const res = await fetch(url, { signal: controller.signal }).catch(() => null);
         clearTimeout(timeoutId);
 
