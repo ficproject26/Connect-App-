@@ -3086,9 +3086,14 @@ export default function CustomerDashboard({
 
     try {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const authToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
       const orderRes = await fetch(`${baseBackend}/api/membership/create-order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        },
+        credentials: 'include',
         body: JSON.stringify({
           planKey: planKey,
           userId: targetUserId,
@@ -13663,11 +13668,16 @@ wishlistProducts.forEach(item => addToCart(item));
                           let saveSuccess = false;
                           let updatedUserObj = null;
 
+                          const authToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
                           for (const url of [...new Set(endpoints)]) {
                             try {
                               const res = await fetch(url, {
                                 method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+                                },
+                                credentials: 'include',
                                 body: JSON.stringify({
                                   userId: currentUser?.id || userTarget,
                                   customerId: currentUser?.customerId || activeCustomerId,
@@ -13770,7 +13780,11 @@ wishlistProducts.forEach(item => addToCart(item));
                                         for (const url of [...new Set(endpoints)]) {
                                           fetch(url, {
                                             method: 'PUT',
-                                            headers: { 'Content-Type': 'application/json' },
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              ...((typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) ? { 'Authorization': `Bearer ${localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken')}` } : {})
+                                            },
+                                            credentials: 'include',
                                             body: JSON.stringify({ userId: userTarget, avatar: compressedBase64 })
                                           }).catch(() => {});
                                         }
@@ -13800,7 +13814,11 @@ wishlistProducts.forEach(item => addToCart(item));
                                       for (const url of [...new Set(endpoints)]) {
                                         fetch(url, {
                                           method: 'PUT',
-                                          headers: { 'Content-Type': 'application/json' },
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            ...((typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) ? { 'Authorization': `Bearer ${localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken')}` } : {})
+                                          },
+                                          credentials: 'include',
                                           body: JSON.stringify({ userId: userTarget, avatar: '' })
                                         }).catch(() => {});
                                       }
@@ -17523,7 +17541,11 @@ wishlistProducts.forEach(item => addToCart(item));
                           try {
                             const res = await fetch(url, {
                               method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...((typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) ? { 'Authorization': `Bearer ${localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken')}` } : {})
+                              },
+                              credentials: 'include',
                               body: JSON.stringify(orderPayload)
                             });
                             if (res.ok) {

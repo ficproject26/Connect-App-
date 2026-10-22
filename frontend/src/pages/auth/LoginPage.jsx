@@ -146,11 +146,12 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
       // Successful DB authentication
       setIsSubmitting(false);
       setSuccess(true);
-      if (data.token || data.accessToken) {
-        localStorage.setItem('connect_token', data.token || data.accessToken);
+      const jwtToken = data.token || data.accessToken || '';
+      if (jwtToken) {
+        localStorage.setItem('connect_token', jwtToken);
       }
       const loggedUser = data.user || { email: email.trim(), role: 'customer' };
-      login({ ...loggedUser, _isExplicitAuth: true }, 'customer', (finalUser) => {
+      login({ ...loggedUser, token: jwtToken, accessToken: jwtToken, _isExplicitAuth: true }, 'customer', (finalUser) => {
         setTimeout(() => {
           setSuccess(false);
           if (onAuthSuccess) onAuthSuccess(finalUser);
@@ -259,11 +260,12 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
 
       // Successful OTP Verification
       setSuccess(true);
-      if (data.token || data.accessToken) {
-        localStorage.setItem('connect_token', data.token || data.accessToken);
+      const jwtToken = data.token || data.accessToken || '';
+      if (jwtToken) {
+        localStorage.setItem('connect_token', jwtToken);
       }
       const verifiedUser = data.user || { phone: otpTarget.trim(), role: 'customer' };
-      login({ ...verifiedUser, _isExplicitAuth: true }, 'customer', (finalUser) => {
+      login({ ...verifiedUser, token: jwtToken, accessToken: jwtToken, _isExplicitAuth: true }, 'customer', (finalUser) => {
         setTimeout(() => {
           setSuccess(false);
           if (onAuthSuccess) onAuthSuccess(finalUser);

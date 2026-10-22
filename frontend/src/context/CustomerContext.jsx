@@ -133,9 +133,17 @@ export function CustomerProvider({ children }) {
       const queryParam = `?${params.toString()}`;
 
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const authToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
+      const authHeaders = {
+        'Accept': 'application/json',
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      };
 
       // 1. Fetch live balance from DB
-      const balRes = await fetch(`${baseBackend}/api/wallet/balance${queryParam}`);
+      const balRes = await fetch(`${baseBackend}/api/wallet/balance${queryParam}`, {
+        headers: authHeaders,
+        credentials: 'include'
+      });
       if (balRes.status === 429) {
         console.warn('Wallet balance API rate-limited (429), cooling down.');
         lastWalletFetchTimeRef.current = Date.now() + 15000;
@@ -149,7 +157,10 @@ export function CustomerProvider({ children }) {
       }
 
       // 2. Fetch live transactions from DB strictly for this customer
-      const txnRes = await fetch(`${baseBackend}/api/wallet/transactions${queryParam}`);
+      const txnRes = await fetch(`${baseBackend}/api/wallet/transactions${queryParam}`, {
+        headers: authHeaders,
+        credentials: 'include'
+      });
       if (txnRes.status === 429) {
         console.warn('Wallet transactions API rate-limited (429), cooling down.');
         lastWalletFetchTimeRef.current = Date.now() + 15000;

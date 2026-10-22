@@ -482,6 +482,7 @@ export const apiFetch = async (endpoint, options = {}) => {
         ...authHeader,
         ...(options.headers || {})
       },
+      credentials: 'include',
       ...options
     });
     

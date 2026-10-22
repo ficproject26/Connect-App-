@@ -44,9 +44,9 @@ class SecurityManager {
     async comparePassword(plaintext, hash) {
         return await bcryptjs_1.default.compare(plaintext, hash);
     }
-    // 2. JWT Access Token Generation (15 Min Expiry, HS256 Pinned)
+    // 2. JWT Access Token Generation (7 Days Expiry, HS256 Pinned)
     generateAccessToken(payload) {
-        return jsonwebtoken_1.default.sign(payload, JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
+        return jsonwebtoken_1.default.sign(payload, JWT_SECRET, { expiresIn: '7d', algorithm: 'HS256' });
     }
     // 3. JWT Refresh Token Generation (7 Days Expiry, HS256 Pinned)
     generateRefreshToken(payload) {

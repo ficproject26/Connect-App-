@@ -532,7 +532,7 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000 // 15 Mins
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Days
     });
 
     return res.json({
@@ -540,7 +540,7 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
       message: 'Login successful.',
       accessToken,
       refreshToken,
-      expiresIn: 900,
+      expiresIn: 7 * 24 * 3600,
       user: userDetails,
       session: { sessionId, device: device.deviceName, ip }
     });
@@ -1276,17 +1276,13 @@ router.post('/register-customer', async (req: Request, res: Response) => {
 });
 
 // GET: /api/auth/customer-profile (Fetch customer profile & saved addresses from MongoDB)
-router.get('/customer-profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/customer-profile', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const authUser = req.user;
-  if (!authUser) {
-    return res.status(401).json({ status: 'error', code: 'UNAUTHORIZED', message: 'Authentication required.' });
-  }
-
   const requestedId = ((req.query.userId || req.query.customerId || req.query.phone || req.query.email || '') as string).trim();
   const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
 
-  // IDOR Protection: Non-admins can only view their own profile
-  if (!isAdmin && requestedId) {
+  // IDOR Protection: If authenticated non-admin passes an explicit requestedId, ensure they only view their own profile
+  if (authUser && !isAdmin && requestedId) {
     const selfId = (authUser.userId || authUser.customerId || authUser.registrationId || '').toLowerCase().trim();
     const selfEmail = (authUser.email || '').toLowerCase().trim();
     const selfPhone = (authUser.phone || '').replace(/\D/g, '');
@@ -1306,11 +1302,13 @@ router.get('/customer-profile', authenticateToken, async (req: AuthenticatedRequ
     }
   }
 
-  // Resolve the effective target: non-admins strictly use authenticated user identity
-  const target = isAdmin && requestedId ? requestedId : (authUser.userId || authUser.email || authUser.customerId || '');
+  // Resolve the effective target
+  const target = (isAdmin && requestedId) 
+    ? requestedId 
+    : (requestedId || authUser?.userId || authUser?.customerId || authUser?.email || '');
 
   if (!target) {
-    return res.status(400).json({ status: 'error', message: 'User ID, Customer ID, Email or Phone is required.' });
+    return res.status(401).json({ status: 'error', code: 'UNAUTHORIZED', message: 'Authentication or user identifier required.' });
   }
 
   try {

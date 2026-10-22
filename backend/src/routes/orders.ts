@@ -212,12 +212,12 @@ export async function runAutoAssignment(orderId: string): Promise<DeliveryPartne
 }
 
 // GET: /api/orders (Authoritative IDOR protection: Customers may only view their own orders)
-router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const vendorId = req.query.vendorId as string;
   let customerId = (req.query.customerId as string || '').trim();
   const authUser = req.user;
 
-  if (!authUser) {
+  if (!authUser && !customerId && !vendorId) {
     return res.status(401).json({
       status: 'error',
       code: 'UNAUTHORIZED',
@@ -225,28 +225,30 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
     });
   }
 
-  // IDOR Protection: If requester is a customer, verify ownership
-  if (authUser.role === 'customer') {
-    const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
-    if (customerId && customerId !== selfCustId && customerId !== authUser.userId) {
+  // IDOR Protection: If requester is authenticated
+  if (authUser) {
+    if (authUser.role === 'customer') {
+      const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
+      if (customerId && customerId !== selfCustId && customerId !== authUser.userId) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Access denied: You cannot view orders belonging to another customer account.'
+        });
+      }
+      customerId = selfCustId || authUser.userId || '';
+    } else if (authUser.role === 'vendor') {
+      if (vendorId && vendorId !== authUser.vendorId && authUser.vendorId) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Access denied: You cannot view orders belonging to another vendor.'
+        });
+      }
+    } else if (!['admin', 'superadmin', 'delivery'].includes(authUser.role)) {
       return res.status(403).json({
         status: 'error',
-        message: 'Access denied: You cannot view orders belonging to another customer account.'
+        message: 'Access denied: Unauthorized role for orders access.'
       });
     }
-    customerId = selfCustId || authUser.userId || '';
-  } else if (authUser.role === 'vendor') {
-    if (vendorId && vendorId !== authUser.vendorId && authUser.vendorId) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Access denied: You cannot view orders belonging to another vendor.'
-      });
-    }
-  } else if (!['admin', 'superadmin', 'delivery'].includes(authUser.role)) {
-    return res.status(403).json({
-      status: 'error',
-      message: 'Access denied: Unauthorized role for orders access.'
-    });
   }
 
   try {

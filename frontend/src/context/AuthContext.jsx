@@ -112,8 +112,11 @@ export function AuthProvider({ children }) {
           }];
         }
         u.addresses = deduplicateAddresses(u.addresses || []);
-        const tokenToSave = u.token || `token_${u.customerId || Date.now()}`;
-        if (!localStorage.getItem('connect_token')) {
+        const existingStoredToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
+        const tokenToSave = (existingStoredToken && !existingStoredToken.startsWith('token_'))
+          ? existingStoredToken
+          : (u.token || u.accessToken || existingStoredToken || `token_${u.customerId || Date.now()}`);
+        if (!localStorage.getItem('connect_token') || (localStorage.getItem('connect_token').startsWith('token_') && tokenToSave && !tokenToSave.startsWith('token_'))) {
           localStorage.setItem('connect_token', tokenToSave);
         }
         localStorage.setItem('connect_current_user', JSON.stringify(u));
@@ -189,7 +192,8 @@ export function AuthProvider({ children }) {
           ? inputUser.registrationId
           : getOrGenerateCustomerId(inputUser));
 
-    const userToken = inputUser.token || `token_${custId}`;
+    const existingStoredToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
+    const userToken = inputUser.token || inputUser.accessToken || (existingStoredToken && !existingStoredToken.startsWith('token_') ? existingStoredToken : null) || existingStoredToken || `token_${custId}`;
 
     const finalAddresses = deduplicateAddresses(initialAddresses);
 
@@ -275,7 +279,8 @@ export function AuthProvider({ children }) {
       : (formData.registrationId && isValidCustomerId(formData.registrationId)
           ? formData.registrationId
           : getOrGenerateCustomerId(formData.email || formData.phone || displayName));
-    const userToken = formData.token || `token_${custId}`;
+    const existingStoredToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
+    const userToken = formData.token || formData.accessToken || (existingStoredToken && !existingStoredToken.startsWith('token_') ? existingStoredToken : null) || existingStoredToken || `token_${custId}`;
 
     const user = {
       name: displayName || 'Connect Member',
