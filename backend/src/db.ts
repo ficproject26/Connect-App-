@@ -212,7 +212,7 @@ class DatabaseManager {
   constructor() {}
 
   public async connect() {
-    const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-app:Connect123@cluster0.fzj1k5l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+    const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-App:Dhanush123@cluster0.riukwbj.mongodb.net/?retryWrites=true&w=majority';
 
     console.log(`[DB]: Attempting connection to MongoDB...`);
     let attempts = 0;
