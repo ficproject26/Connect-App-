@@ -58,28 +58,59 @@ const isThirdPartyNoise = (val) => {
       if (val.filename) str += ' ' + String(val.filename);
     } catch (e) {}
   }
+  const lower = str.toLowerCase();
   return (
-    str.includes('A listener indicated an asynchronous response') ||
-    str.includes('message channel closed') ||
-    str.includes('runtime.lastError') ||
-    str.includes('unsafe-eval') ||
-    str.includes('Evaluating a string as JavaScript') ||
-    str.includes('violates the following Content Security Policy directive') ||
-    str.includes('chrome-extension://') ||
-    str.includes('chrome-extension:') ||
-    str.includes('content.js') ||
-    str.includes('wasm-unsafe-eval') ||
-    str.includes('inline-speculation-rules') ||
-    str.includes('The action has been blocked') ||
-    str.includes('feature_collector') ||
-    str.includes('using deprecated parameters') ||
-    str.includes('initialization function') ||
-    str.includes('pass a single object instead') ||
-    str.includes('ERR_NETWORK_IO_SUSPENDED') ||
-    str.includes('NETWORK_IO_SUSPENDED') ||
-    str.includes('WebSocket')
+    lower.includes('a listener indicated an asynchronous response') ||
+    lower.includes('message channel closed') ||
+    lower.includes('runtime.lasterror') ||
+    lower.includes('unsafe-eval') ||
+    lower.includes('evaluating a string as javascript') ||
+    lower.includes('violates the following content security policy directive') ||
+    lower.includes('chrome-extension://') ||
+    lower.includes('chrome-extension:') ||
+    lower.includes('content.js') ||
+    lower.includes('wasm-unsafe-eval') ||
+    lower.includes('inline-speculation-rules') ||
+    lower.includes('the action has been blocked') ||
+    lower.includes('feature_collector') ||
+    lower.includes('deprecated parameters') ||
+    lower.includes('initialization function') ||
+    lower.includes('pass a single object instead') ||
+    lower.includes('wasm-bindgen') ||
+    lower.includes('err_network_io_suspended') ||
+    lower.includes('network_io_suspended') ||
+    lower.includes('websocket')
   );
 };
+
+const filterConsole = (origFn) => {
+  return function (...args) {
+    try {
+      const stack = ((new Error().stack || '') + '').toLowerCase();
+      if (
+        stack.includes('feature_collector') ||
+        stack.includes('runtime.lasterror') ||
+        stack.includes('chrome-extension://') ||
+        stack.includes('content.js')
+      ) {
+        return;
+      }
+      const combined = args.map(a => {
+        if (!a) return '';
+        if (typeof a === 'string') return a;
+        try { return JSON.stringify(a) || String(a); } catch { return String(a); }
+      }).join(' ');
+      if (isThirdPartyNoise(combined) || args.some(a => isThirdPartyNoise(a))) return;
+    } catch (e) {}
+    origFn.apply(console, args);
+  };
+};
+
+console.error = filterConsole(console.error);
+console.warn = filterConsole(console.warn);
+console.info = filterConsole(console.info);
+console.log = filterConsole(console.log);
+console.debug = filterConsole(console.debug);
 
 window.addEventListener('unhandledrejection', (event) => {
   if (isThirdPartyNoise(event) || isThirdPartyNoise(event.reason)) {

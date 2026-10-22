@@ -34,7 +34,7 @@ class DatabaseManager {
         this.memoryDb = DEFAULT_MOCK_DATA;
     }
     async connect() {
-        const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-app:Connect123@cluster0.fzj1k5l.mongodb.net/connect_db?retryWrites=true&w=majority&appName=Cluster0';
+        const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-app:Connect123@cluster0.fzj1k5l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
         console.log(`[DB]: Attempting connection to MongoDB...`);
         let attempts = 0;
         const maxAttempts = 3;
@@ -47,7 +47,16 @@ class DatabaseManager {
                     family: 4
                 });
                 await this.mongoClient.connect();
-                const dbName = this.mongoClient.db().databaseName || 'connect_db';
+                let dbName = process.env.DB_NAME || this.mongoClient.db().databaseName || 'test';
+                if (dbName === 'connect_db') {
+                    // If connect_db is empty but test has live production categories/users, use test
+                    const testCatCount = await this.mongoClient.db('test').collection('categories').countDocuments().catch(() => 0);
+                    const currCatCount = await this.mongoClient.db('connect_db').collection('categories').countDocuments().catch(() => 0);
+                    if (currCatCount === 0 && testCatCount > 0) {
+                        console.log(`[DB]: Detected active production data in 'test' database (${testCatCount} categories). Switching target DB to 'test'.`);
+                        dbName = 'test';
+                    }
+                }
                 this.mongoDb = this.mongoClient.db(dbName);
                 console.log(`[DB]: Connected to MongoDB successfully. Database: ${dbName}`);
                 // Setup collections and indexes

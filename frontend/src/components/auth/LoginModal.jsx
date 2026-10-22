@@ -84,6 +84,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
       return;
     }
 
+    if (isSubmitting) return;
     if (!email.trim() || !password) {
       setErrorMsg('Please enter both email/phone and password.');
       return;
@@ -117,8 +118,11 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess, onNavigate
           setErrorMsg(data.message || 'Your account is inactive or suspended. Please contact support.');
         } else if (res.status === 429 || data.code === 'RATE_LIMIT_EXCEEDED') {
           setErrorMsg(data.message || 'Too many attempts. Please try again later.');
+        } else if (data.notRegistered || data.code === 'ACCOUNT_NOT_FOUND') {
+          setIsNotRegistered(true);
+          setErrorMsg(data.message || 'Please register first to access the Customer website.');
         } else {
-          setErrorMsg('Invalid email/mobile number or password. Please check your credentials and try again.');
+          setErrorMsg(data.message || 'Invalid email/mobile number or password. Please check your credentials and try again.');
         }
         return;
       }

@@ -32,43 +32,44 @@
 
         const isIgnorableNoise = (item) => {
           if (!item) return false;
-          const str = extractText(item);
+          const str = extractText(item).toLowerCase();
           return (
-            str.includes('A listener indicated an asynchronous response') ||
+            str.includes('a listener indicated an asynchronous response') ||
             str.includes('message channel closed') ||
-            str.includes('runtime.lastError') ||
+            str.includes('runtime.lasterror') ||
             str.includes('unsafe-eval') ||
-            str.includes('Evaluating a string as JavaScript') ||
-            str.includes('violates the following Content Security Policy directive') ||
+            str.includes('evaluating a string as javascript') ||
+            str.includes('violates the following content security policy directive') ||
             str.includes('chrome-extension://') ||
             str.includes('chrome-extension:') ||
             str.includes('content.js') ||
             str.includes('wasm-unsafe-eval') ||
             str.includes('inline-speculation-rules') ||
-            str.includes('The action has been blocked') ||
+            str.includes('the action has been blocked') ||
             str.includes('feature_collector') ||
-            str.includes('using deprecated parameters') ||
+            str.includes('deprecated parameters') ||
             str.includes('initialization function') ||
             str.includes('pass a single object instead') ||
+            str.includes('wasm-bindgen') ||
             str.includes('preloaded using link preload') ||
             str.includes('preload but not used') ||
-            str.includes('ERR_NETWORK_IO_SUSPENDED') ||
-            str.includes('NETWORK_IO_SUSPENDED') ||
-            str.includes('ERR_CONNECTION_REFUSED') ||
-            str.includes('WebSocket connection to') ||
-            str.includes('WebSocket is closed before the connection is established') ||
+            str.includes('err_network_io_suspended') ||
+            str.includes('network_io_suspended') ||
+            str.includes('err_connection_refused') ||
+            str.includes('websocket connection to') ||
+            str.includes('websocket is closed before the connection is established') ||
             str.includes('closed before the connection is established') ||
-            str.includes('ERR_NAME_NOT_RESOLVED')
+            str.includes('err_name_not_resolved')
           );
         };
 
         const filterMethod = (origFn) => {
           return function (...args) {
             try {
-              const stack = (new Error().stack || '') + '';
+              const stack = ((new Error().stack || '') + '').toLowerCase();
               if (
                 stack.includes('feature_collector') ||
-                stack.includes('runtime.lastError') ||
+                stack.includes('runtime.lasterror') ||
                 stack.includes('chrome-extension://') ||
                 stack.includes('content.js')
               ) {
@@ -85,6 +86,7 @@
         console.warn = filterMethod(console.warn);
         console.info = filterMethod(console.info);
         console.log = filterMethod(console.log);
+        console.debug = filterMethod(console.debug);
 
         // Global onerror handler to suppress console noise at native level
         const origOnError = window.onerror;

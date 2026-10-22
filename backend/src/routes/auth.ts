@@ -118,7 +118,24 @@ const findCustomerInMongo = async (identifier: string) => {
       orConds.push({ phone: new RegExp(cleanDigits + '$') });
     }
 
-    return await mongoDb.collection('users').findOne({ $or: orConds });
+    let user = await mongoDb.collection('users').findOne({ $or: orConds });
+    if (!user) {
+      user = await mongoDb.collection('customers').findOne({ $or: orConds });
+      if (user) {
+        // Auto-sync into users collection so all authentication lookups stay unified
+        try {
+          const userClone: any = { ...user };
+          delete userClone._id;
+          await mongoDb.collection('users').updateOne(
+            { _id: user._id },
+            { $set: userClone },
+            { upsert: true }
+          ).catch(() => {});
+        } catch (syncErr) {}
+      }
+    }
+
+    return user;
   } catch (err) {
     console.error("MongoDB customer lookup error:", err);
     return null;
@@ -365,8 +382,8 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
       const dbUser = await findCustomerInMongo(identifier);
 
       if (!dbUser) {
+        const failedInfo = securityManager.recordFailedLogin(identifier, ip, device.deviceName);
         if (password) {
-          const failedInfo = securityManager.recordFailedLogin(identifier, ip, device.deviceName);
           return res.status(401).json({
             status: 'error',
             code: 'INVALID_CREDENTIALS',
@@ -375,12 +392,14 @@ router.post('/login', authRateLimiter, async (req: Request, res: Response) => {
             requireCaptcha: failedInfo.requireCaptcha
           });
         }
-        return res.status(404).json({
+        return res.status(401).json({
           status: 'error',
           notRegistered: true,
           code: 'ACCOUNT_NOT_FOUND',
           message: 'Please register first to access the Customer website.',
-          msg: 'Please register first to access the Customer website.'
+          msg: 'Please register first to access the Customer website.',
+          attempts: failedInfo.attempts,
+          requireCaptcha: failedInfo.requireCaptcha
         });
       }
 
