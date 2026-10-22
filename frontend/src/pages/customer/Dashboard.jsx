@@ -7393,20 +7393,40 @@ export default function CustomerDashboard({
 
 
   const renderTopCategoriesGrid = () => {
-    const defaultCategories = [
-      { id: 'Products', title: 'Products', count: '3,200+ Items', icon: ShoppingBag, color: 'text-red-500 bg-red-50 border-red-150' },
-      { id: 'Services', title: 'Services', count: '1,200+ Services', icon: Settings, color: 'text-blue-500 bg-blue-50 border-blue-150' },
-      { id: 'Daily Needs', title: 'Daily Needs', count: '1,800+ Items', icon: Truck, color: 'text-emerald-500 bg-emerald-50 border-emerald-150' },
-      { id: 'Food', title: 'Food', count: '2,500+ Options', icon: Utensils, color: 'text-orange-500 bg-orange-50 border-orange-150' },
-      { id: 'Stay', title: 'Stay', count: '800+ Hotels', icon: BedDouble, color: 'text-purple-500 bg-purple-50 border-purple-150' },
-      { id: 'Travel', title: 'Travel', count: '1,000+ Trips', icon: Plane, color: 'text-sky-500 bg-sky-50 border-sky-150' },
-      { id: 'Jobs', title: 'Jobs', count: '2,000+ Jobs', icon: Briefcase, color: 'text-amber-500 bg-amber-50 border-amber-150' }
+    const canonicalCategories = [
+      { id: 'Products', title: 'Products', icon: ShoppingBag, color: 'text-red-500 bg-red-50 border-red-150' },
+      { id: 'Services', title: 'Services', icon: Settings, color: 'text-blue-500 bg-blue-50 border-blue-150' },
+      { id: 'Daily Needs', title: 'Daily Needs', icon: Truck, color: 'text-emerald-500 bg-emerald-50 border-emerald-150' },
+      { id: 'Food', title: 'Food', icon: Utensils, color: 'text-orange-500 bg-orange-50 border-orange-150' },
+      { id: 'Stay', title: 'Stay', icon: BedDouble, color: 'text-purple-500 bg-purple-50 border-purple-150' },
+      { id: 'Travel', title: 'Travel', icon: Plane, color: 'text-sky-500 bg-sky-50 border-sky-150' },
+      { id: 'Jobs', title: 'Jobs', icon: Briefcase, color: 'text-amber-500 bg-amber-50 border-amber-150' }
     ];
 
-    const categories = defaultCategories.filter(cat => 
+    const displayCategories = canonicalCategories.filter(cat => 
       subNavbarCategories.some(sub => normalizeMainCatName(sub) === normalizeMainCatName(cat.id))
     );
-    const displayCategories = categories.length > 0 ? categories : defaultCategories;
+    const finalCategories = displayCategories.length > 0 ? displayCategories : canonicalCategories;
+
+    const getLiveCountLabel = (catId) => {
+      const norm = normalizeMainCatName(catId);
+      const liveCount = (products || []).filter(p => {
+        if (!p) return false;
+        const pNorm = normalizeMainCatName(p.subNavbarCategory || p.mainCategory || p.category || p.tag || '');
+        return pNorm === norm;
+      }).length;
+
+      if (liveCount > 0) {
+        const unit = norm === 'services' ? (liveCount === 1 ? 'Service' : 'Services')
+          : norm === 'food' ? (liveCount === 1 ? 'Option' : 'Options')
+          : norm === 'stay' ? (liveCount === 1 ? 'Hotel' : 'Hotels')
+          : norm === 'travel' ? (liveCount === 1 ? 'Trip' : 'Trips')
+          : norm === 'jobs' ? (liveCount === 1 ? 'Job' : 'Jobs')
+          : (liveCount === 1 ? 'Item' : 'Items');
+        return `${liveCount.toLocaleString()} ${unit}`;
+      }
+      return '';
+    };
 
     return (
       <div className="space-y-4 text-left w-full">
@@ -7415,8 +7435,9 @@ export default function CustomerDashboard({
         </div>
 
         <div className="grid grid-cols-2 min-[480px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
-          {displayCategories.map((cat) => {
+          {finalCategories.map((cat) => {
             const Icon = cat.icon;
+            const liveCount = getLiveCountLabel(cat.id);
             return (
               <div 
                 key={cat.id} 
@@ -7433,7 +7454,9 @@ export default function CustomerDashboard({
                   <Icon className={`w-5.5 h-5.5 ${cat.color.split(' ')[0]}`} />
                 </div>
                 <span className="text-xs font-black text-slate-900 dark:text-white block leading-tight">{cat.title}</span>
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 block mt-1 leading-none">{cat.count}</span>
+                {liveCount ? (
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 block mt-1 leading-none">{liveCount}</span>
+                ) : null}
               </div>
             );
           })}
@@ -11556,10 +11579,10 @@ export default function CustomerDashboard({
           <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight text-left">More Savings Across Connect Ecosystem</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
             {[
-              { name: "Products", desc: "Save More on 3200+ Products", icon: ShoppingBag, bg: "from-rose-400/10 to-pink-500/10 hover:border-rose-400", activeTab: "Products" },
-              { name: "Services", desc: "Save More on 100+ Services", icon: Sparkles, bg: "from-purple-400/10 to-pink-500/10 hover:border-purple-400", activeTab: "Services" },
-              { name: "Food", desc: "Save More on 1000+ Restaurants", icon: Utensils, bg: "from-amber-400/10 to-orange-500/10 hover:border-amber-400", activeTab: "Food" },
-              { name: "Stay", desc: "Save More on 5000+ Hotels", icon: BedDouble, bg: "from-blue-400/10 to-indigo-500/10 hover:border-blue-400", activeTab: "Stay" },
+              { name: "Products", desc: "Save More on Products & Deals", icon: ShoppingBag, bg: "from-rose-400/10 to-pink-500/10 hover:border-rose-400", activeTab: "Products" },
+              { name: "Services", desc: "Save More on Professional Services", icon: Sparkles, bg: "from-purple-400/10 to-pink-500/10 hover:border-purple-400", activeTab: "Services" },
+              { name: "Food", desc: "Save More on Dining & Food", icon: Utensils, bg: "from-amber-400/10 to-orange-500/10 hover:border-amber-400", activeTab: "Food" },
+              { name: "Stay", desc: "Save More on Hotels & Stays", icon: BedDouble, bg: "from-blue-400/10 to-indigo-500/10 hover:border-blue-400", activeTab: "Stay" },
               { name: "Travel", desc: "Save More on Flights, Buses & Cabs", icon: Plane, bg: "from-cyan-400/10 to-teal-500/10 hover:border-cyan-400", activeTab: "Travel" },
               { name: "Daily Needs", desc: "Save More on Groceries & Essentials", icon: ShoppingBag, bg: "from-emerald-400/10 to-teal-500/10 hover:border-emerald-400", activeTab: "Daily Needs" }
             ].filter(item => item.activeTab !== activeTab).slice(0, 5).map((e, idx) => {
