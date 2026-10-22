@@ -34,7 +34,7 @@ class DatabaseManager {
         this.memoryDb = DEFAULT_MOCK_DATA;
     }
     async connect() {
-        const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-App:Dhanush123@cluster0.riukwbj.mongodb.net/?retryWrites=true&w=majority';
+        const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-App:Dhanush123@cluster0.riukwbj.mongodb.net/connect_db?retryWrites=true&w=majority';
         console.log(`[DB]: Attempting connection to MongoDB...`);
         let attempts = 0;
         const maxAttempts = 3;
