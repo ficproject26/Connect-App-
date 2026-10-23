@@ -446,6 +446,7 @@ function logVendorSyncThrottled(msg) {
 // POST: /api/orders
 router.post('/', async (req, res) => {
     const { vendor_id, customer_id, customerId, customer_email, customer_name, customer_phone, customer_address, product_details, amount, customer_latitude, customer_longitude, type, appointmentDate, appointmentTimeSlot, doctorName, tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items, experience, candidateEducation, memberId, boardingPoint, droppingPoint, adults, children, guestDetails, checkInDate, checkInTime, checkOutDate, checkOutTime, guestList, vehicleDetails, roomsCount, nightsCount, specialRequests, paymentMethod, payment_method, paymentStatus, payment_status, transactionId, paidAt, paymentId } = req.body;
+    const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
     const isTravelOrStayBooking = type === 'Travel' || type === 'Stay' || type === 'Travel Ticket' || type === 'Hotel Stay' ||
         (typeof type === 'string' && (type.toLowerCase().includes('travel') ||
             type.toLowerCase().includes('stay') ||
@@ -455,6 +456,7 @@ router.post('/', async (req, res) => {
             type.toLowerCase().includes('tour') ||
             type.toLowerCase().includes('flight'))) ||
         Boolean(checkInDate && checkOutDate) ||
+        Boolean(firstItem?.checkInDate && firstItem?.checkOutDate) ||
         Boolean(boardingPoint || droppingPoint);
     const isServiceBooking = type === 'Services' || type === 'Service' ||
         (typeof type === 'string' && (type.toLowerCase().includes('service')));
@@ -486,17 +488,37 @@ router.post('/', async (req, res) => {
         const resolvedCustId = (customer_id || customerId || memberId || req.body.user_id || '').trim();
         const resolvedEmail = (customer_email || candidateEmail || '').trim();
         // Authoritative check-in validation for stays & appointments
-        if (checkInDate && checkInTime) {
+        const parseDateToYMD = (val) => {
+            if (!val)
+                return null;
+            const s = String(val).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s))
+                return s;
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+            return null;
+        };
+        const effectiveCheckInDate = checkInDate || req.body.check_in_date || firstItem?.checkInDate || firstItem?.bookingDate || appointmentDate;
+        const effectiveCheckOutDate = checkOutDate || req.body.check_out_date || firstItem?.checkOutDate;
+        const effectiveCheckInTime = checkInTime || req.body.check_in_time || firstItem?.checkInTime || appointmentTimeSlot;
+        const effectiveCheckOutTime = checkOutTime || req.body.check_out_time || firstItem?.checkOutTime;
+        if (effectiveCheckInDate && effectiveCheckInTime) {
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
-            if (checkInDate < todayStr) {
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const checkInYMD = parseDateToYMD(effectiveCheckInDate);
+            if (checkInYMD && checkInYMD < todayStr) {
                 return res.status(400).json({
                     status: 'error',
                     message: 'Check-in date cannot be in the past.'
                 });
             }
-            if (checkInDate === todayStr) {
-                const match = String(checkInTime).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+            if (checkInYMD === todayStr) {
+                const match = String(effectiveCheckInTime).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
                 if (match) {
                     let h = parseInt(match[1], 10);
                     const m = parseInt(match[2], 10);
@@ -550,7 +572,6 @@ router.post('/', async (req, res) => {
         if (isNaN(numChildren) || numChildren < 0)
             numChildren = 0;
         const mongoDb = db_1.db.getDb();
-        const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
         const targetProdId = firstItem?.productId || firstItem?.id || req.body.productId;
         // Validate stock and availability for products in items
         if (mongoDb && Array.isArray(items) && items.length > 0) {
@@ -597,9 +618,12 @@ router.post('/', async (req, res) => {
             catch (e) { }
             travelProduct = await mongoDb.collection('products').findOne({ $or: queries });
         }
+        let effectiveStayNights = 1;
         const isStayOrder = type === 'Stay' || type === 'Hotel Stay' ||
             (typeof type === 'string' && (type.toLowerCase().includes('stay') || type.toLowerCase().includes('hotel') || type.toLowerCase().includes('resort'))) ||
-            Boolean(checkInDate && checkOutDate);
+            Boolean(effectiveCheckInDate && effectiveCheckOutDate) ||
+            (travelProduct && (travelProduct.mainCategory === 'Stay' || travelProduct.subNavbarCategory === 'Stay')) ||
+            (firstItem && (firstItem.type === 'Stay' || firstItem.mainCategory === 'Stay' || firstItem.subNavbarCategory === 'Stay'));
         if (isStayOrder) {
             const totalGuests = numAdults + numChildren;
             const guests = Array.isArray(guestDetails) && guestDetails.length > 0
@@ -630,6 +654,55 @@ router.post('/', async (req, res) => {
                         status: 'error',
                         message: `Guest ${i + 1} requires a valid 12-digit Aadhaar number.`
                     });
+                }
+            }
+            // Calculate stay duration in nights accurately
+            let calculatedNights = Number(nightsCount || req.body.numberOfNights || firstItem?.nights || 0);
+            if ((!calculatedNights || calculatedNights <= 0) && effectiveCheckInDate && effectiveCheckOutDate) {
+                const sD = new Date(effectiveCheckInDate);
+                const eD = new Date(effectiveCheckOutDate);
+                if (!isNaN(sD.getTime()) && !isNaN(eD.getTime())) {
+                    calculatedNights = Math.max(1, Math.ceil((eD.getTime() - sD.getTime()) / 86400000));
+                }
+            }
+            effectiveStayNights = (!calculatedNights || calculatedNights <= 0) ? 1 : calculatedNights;
+            // Authoritative stay pricing recalculation
+            if (travelProduct) {
+                const stayPricingType = String(travelProduct.pricingType || travelProduct.pricePer || '').toLowerCase();
+                const baseRate = typeof travelProduct.price === 'number' ? travelProduct.price : (parseFloat(travelProduct.price) || 0);
+                const adultRate = typeof travelProduct.adultPrice === 'number' && travelProduct.adultPrice > 0 ? travelProduct.adultPrice : baseRate;
+                const childRate = typeof travelProduct.childPrice === 'number' ? travelProduct.childPrice : 0;
+                let expectedStayTotal = 0;
+                if (stayPricingType.includes('room')) {
+                    const rooms = Math.max(1, Number(roomsCount || req.body.numberOfRooms || 1));
+                    const extraGuests = Math.max(0, (numAdults + numChildren) - Number(travelProduct.baseGuests || 2));
+                    const extraFee = Number(travelProduct.extraGuestFee || travelProduct.extraPersonFee || 500);
+                    expectedStayTotal = ((rooms * baseRate) + (extraGuests * extraFee)) * effectiveStayNights;
+                }
+                else {
+                    expectedStayTotal = ((numAdults * adultRate) + (numChildren * childRate)) * effectiveStayNights;
+                }
+                if (expectedStayTotal > 0) {
+                    finalOrderAmount = expectedStayTotal;
+                }
+            }
+            else if (firstItem) {
+                const stayPricingType = String(firstItem.pricingType || firstItem.pricePer || '').toLowerCase();
+                const baseRate = Number(firstItem.basePrice || firstItem.price || 0);
+                const adultRate = Number(firstItem.adultPrice || baseRate);
+                const childRate = Number(firstItem.childPrice || 0);
+                let expectedStayTotal = 0;
+                if (stayPricingType.includes('room')) {
+                    const rooms = Math.max(1, Number(roomsCount || firstItem.roomsCount || 1));
+                    const extraGuests = Math.max(0, (numAdults + numChildren) - Number(firstItem.baseGuests || 2));
+                    const extraFee = Number(firstItem.extraGuestFee || firstItem.extraPersonFee || 500);
+                    expectedStayTotal = ((rooms * baseRate) + (extraGuests * extraFee)) * effectiveStayNights;
+                }
+                else {
+                    expectedStayTotal = ((numAdults * adultRate) + (numChildren * childRate)) * effectiveStayNights;
+                }
+                if (expectedStayTotal > 0) {
+                    finalOrderAmount = expectedStayTotal;
                 }
             }
         }
@@ -786,12 +859,12 @@ router.post('/', async (req, res) => {
             children: numChildren,
             guestDetails: Array.isArray(guestDetails) ? guestDetails : (Array.isArray(guestList) ? guestList : undefined),
             guestList: Array.isArray(guestList) ? guestList : (Array.isArray(guestDetails) ? guestDetails : undefined),
-            checkInDate: checkInDate || req.body.check_in_date || appointmentDate,
-            checkInTime: checkInTime || req.body.check_in_time,
-            checkOutDate: checkOutDate || req.body.check_out_date,
-            checkOutTime: checkOutTime || req.body.check_out_time,
-            roomsCount: roomsCount || req.body.numberOfRooms,
-            nightsCount: nightsCount || req.body.numberOfNights,
+            checkInDate: effectiveCheckInDate,
+            checkInTime: effectiveCheckInTime,
+            checkOutDate: effectiveCheckOutDate,
+            checkOutTime: effectiveCheckOutTime,
+            roomsCount: roomsCount || req.body.numberOfRooms || 1,
+            nightsCount: isStayOrder ? effectiveStayNights : (nightsCount || req.body.numberOfNights),
             vehicleDetails: vehicleDetails || null,
             specialRequests: specialRequests || req.body.notes || null,
             items: items || []

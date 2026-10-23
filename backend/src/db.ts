@@ -104,6 +104,12 @@ export interface Order {
   children?: number;
   guestDetails?: any[];
   items?: any[];
+  checkInDate?: string;
+  checkInTime?: string;
+  checkOutDate?: string;
+  checkOutTime?: string;
+  nightsCount?: number;
+  roomsCount?: number;
   vendorId?: string;
   memberId?: string;
   memberName?: string;

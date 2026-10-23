@@ -1164,12 +1164,18 @@ export function getAuthoritativeSlotAvailability(timeStr, dateStr, item = null) 
     }
   }
 
-  // Daily room changeover / housekeeping inspection period (1:00 PM - 2:00 PM)
-  if (hours === 13) {
-    return { isAvailable: false, status: 'Not Available', reason: 'Housekeeping changeover & room inspection period' };
+  // Check vendor product specific blockedTimeSlots configuration
+  if (Array.isArray(item?.blockedTimeSlots) && item.blockedTimeSlots.length > 0) {
+    const isBlocked = item.blockedTimeSlots.some(s => {
+      const sTime = typeof s === 'string' ? s : (s?.time || s?.slot);
+      return sTime && sTime.toLowerCase().trim() === timeStr.toLowerCase().trim();
+    });
+    if (isBlocked) {
+      return { isAvailable: false, status: 'Not Available', reason: 'Slot blocked by hotel property' };
+    }
   }
 
-  // 05:00 PM and other standard check-in hours are fully available!
+  // Standard check-in hours within operating window (07:00 AM - 11:00 PM) are available unless specifically blocked
   return { isAvailable: true, status: 'Available', reason: '' };
 }
 
@@ -2147,8 +2153,22 @@ export default function CustomerDashboard({
     try {
       const s = new Date(stayCheckInDate), e = new Date(stayCheckOutDate); 
       const nights = (!isNaN(s.getTime()) && !isNaN(e.getTime()) && Math.ceil((e - s) / 86400000) > 0) ? Math.ceil((e - s) / 86400000) : 1;
-      const basePrice = selectedProduct.price || 20000;
-      const totalPrice = basePrice * nights;
+      const numAdults = Math.max(1, Number(adultCount || 1));
+      const numChildren = Math.max(0, Number(childCount || 0));
+      const basePrice = Number(selectedProduct.price || 20000);
+      const stayAdultRate = Number(selectedProduct.adultPrice || basePrice);
+      const stayChildRate = Number(selectedProduct.childPrice != null ? selectedProduct.childPrice : 0);
+      const stayPricingType = String(selectedProduct.pricingType || selectedProduct.pricePer || '').toLowerCase();
+
+      let totalPrice = 0;
+      if (stayPricingType.includes('room')) {
+        const rooms = Math.max(1, Number(stayRoomsCount || 1));
+        const extraGuests = Math.max(0, (numAdults + numChildren) - Number(selectedProduct.baseGuests || 2));
+        const extraGuestFeeStay = Number(selectedProduct.extraGuestFee || selectedProduct.extraPersonFee || 500);
+        totalPrice = ((rooms * basePrice) + (extraGuests * extraGuestFeeStay)) * nights;
+      } else {
+        totalPrice = ((numAdults * stayAdultRate) + (numChildren * stayChildRate)) * nights;
+      }
       const orderRef = 'HTL-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
 
       const orderPayload = {
@@ -2158,7 +2178,7 @@ export default function CustomerDashboard({
         customer_phone: profilePhone || currentUser?.phone || '',
         customer_email: profileEmail || currentUser?.email || '',
         customer_address: `${selectedProduct.name}, ${selectedProduct.city || selectedProduct.vendorCity || 'Bangalore'}`,
-        product_details: `Stay Reservation: ${selectedProduct.name} (Standard Room, ${nights} night${nights > 1 ? 's' : ''})`,
+        product_details: `Stay Reservation: ${selectedProduct.name} (Standard Room, ${nights} night${nights > 1 ? 's' : ''}, ${numAdults} Adult${numAdults > 1 ? 's' : ''}${numChildren > 0 ? `, ${numChildren} Child${numChildren > 1 ? 'ren' : ''}` : ''})`,
         amount: totalPrice,
         totalAmount: totalPrice,
         finalAmount: totalPrice,
@@ -2170,15 +2190,31 @@ export default function CustomerDashboard({
         items: [{
           productId: selectedProduct.id || selectedProduct._id,
           name: selectedProduct.name,
-          price: basePrice,
-          quantity: 1
+          price: totalPrice,
+          basePrice: stayAdultRate,
+          adultPrice: stayAdultRate,
+          childPrice: stayChildRate,
+          quantity: 1,
+          nights: nights,
+          checkInDate: stayCheckInDate,
+          checkOutDate: stayCheckOutDate,
+          checkInTime: checkInTime || '12:00 PM',
+          checkOutTime: checkOutTime || '11:00 AM',
+          adults: numAdults,
+          children: numChildren
         }],
         type: 'Stay',
         appointmentDate: stayCheckInDate,
-        appointmentTimeSlot: '12:00 PM',
+        appointmentTimeSlot: checkInTime || '12:00 PM',
         checkInDate: stayCheckInDate,
+        checkInTime: checkInTime || '12:00 PM',
         checkOutDate: stayCheckOutDate,
+        checkOutTime: checkOutTime || '11:00 AM',
         nights: nights,
+        nightsCount: nights,
+        roomsCount: stayRoomsCount || 1,
+        adults: numAdults,
+        children: numChildren,
         roomType: 'Standard Room'
       };
 
@@ -4581,13 +4617,29 @@ export default function CustomerDashboard({
               productId: item.id || item._id,
               name: item.name || item.title,
               price: item.price || 0,
-              quantity: item.quantity || 1
+              basePrice: item.basePrice || item.price || 0,
+              adultPrice: item.adultPrice,
+              childPrice: item.childPrice,
+              quantity: item.quantity || 1,
+              nights: item.nights || 1,
+              checkInDate: item.checkInDate,
+              checkInTime: item.checkInTime,
+              checkOutDate: item.checkOutDate,
+              checkOutTime: item.checkOutTime,
+              adults: item.adults,
+              children: item.children
             }],
             type: item.subNavbarCategory || item.tag || item.category || 'Product',
             boardingPoint: item.boardingPoint || item.boarding_point || undefined,
             droppingPoint: item.droppingPoint || item.dropping_point || undefined,
             appointmentDate: item.bookingDate || item.checkInDate,
             appointmentTimeSlot: item.bookingTime || item.checkInTime,
+            checkInDate: item.checkInDate,
+            checkInTime: item.checkInTime,
+            checkOutDate: item.checkOutDate,
+            checkOutTime: item.checkOutTime,
+            nightsCount: item.nights || 1,
+            roomsCount: item.roomsCount || 1,
             adults: item.adults,
             children: item.children,
             guestDetails: item.guestDetails
@@ -12851,6 +12903,36 @@ wishlistProducts.forEach(item => addToCart(item));
                                     </p>
                                   </div>
                                 )}
+                                {(() => {
+                                  const isStayBooking = (trackingOrder.type || '').toLowerCase().includes('stay') || 
+                                    (trackingOrder.type || '').toLowerCase().includes('hotel') ||
+                                    (trackingOrder.subNavbarCategory || '').toLowerCase() === 'stay' ||
+                                    (trackingOrder.mainCategory || '').toLowerCase() === 'stay' ||
+                                    Boolean(trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate);
+                                  const trackingCheckInDate = trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.appointmentDate || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate || '';
+                                  const trackingCheckInTime = trackingOrder.checkInTime || trackingOrder.check_in_time || trackingOrder.appointmentTimeSlot || trackingOrder.items?.[0]?.checkInTime || trackingOrder.items?.[0]?.bookingTime || '';
+                                  const trackingCheckOutDate = trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkOutDate || '';
+                                  const trackingCheckOutTime = trackingOrder.checkOutTime || trackingOrder.check_out_time || trackingOrder.items?.[0]?.checkOutTime || '';
+                                  const trackingNights = trackingOrder.nightsCount || trackingOrder.nights || trackingOrder.numberOfNights || trackingOrder.items?.[0]?.nights || (trackingCheckInDate && trackingCheckOutDate ? Math.max(1, Math.ceil((new Date(trackingCheckOutDate) - new Date(trackingCheckInDate)) / 86400000)) : null);
+
+                                  if (!isStayBooking) return null;
+                                  return (
+                                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
+                                      <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Stay Schedule:</p>
+                                      <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                        📅 Check-In: <strong className="text-slate-900 dark:text-white">{trackingCheckInDate || 'Not specified'} {trackingCheckInTime ? `at ${trackingCheckInTime}` : ''}</strong>
+                                      </p>
+                                      <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                        📅 Check-Out: <strong className="text-slate-900 dark:text-white">{trackingCheckOutDate || 'Not specified'} {trackingCheckOutTime ? `at ${trackingCheckOutTime}` : ''}</strong>
+                                      </p>
+                                      {trackingNights && (
+                                        <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                          🌙 Duration: <strong className="text-slate-900 dark:text-white">{trackingNights} {trackingNights === 1 ? 'Night' : 'Nights'}</strong>
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                             
@@ -12882,38 +12964,86 @@ wishlistProducts.forEach(item => addToCart(item));
                           </div>
 
                           {/* Booking Progress Timeline */}
-                          <div className="bg-white dark:bg-slate-900 p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
-                            <div className="flex items-center justify-between mb-4">
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 text-left font-sans">Booking Timeline</h4>
-                              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                                trackingOrder.status === 'Cancelled'
-                                  ? 'bg-rose-500/10 text-rose-500 border-rose-500/25'
-                                  : ['Delivered', 'Completed'].includes(trackingOrder.status)
-                                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25'
-                                  : 'bg-blue-500/10 text-blue-500 border-blue-500/25'
-                              }`}>
-                                {trackingOrder.status || 'Active'}
-                              </span>
-                            </div>
-                            {(() => {
-                              const steps = ['Booking Placed', 'Confirmed', 'Checked In / Active', 'Completed'];
-                              const statusMap = {
-                                'Order Received': 0,
-                                'Preparing': 1,
-                                'Ready For Pickup': 1,
-                                'Assigned To Delivery Partner': 1,
-                                'Delivery Partner Accepted': 1,
-                                'Picked Up': 2,
-                                'Out For Delivery': 2,
-                                'Near Customer': 2,
-                                'Delivered': 3,
-                                'Completed': 3
-                              };
-                              const isCancelled = trackingOrder.status === 'Cancelled';
-                              const currentIdx = statusMap[trackingOrder.status] || 0;
-                              const progressPercent = steps.length > 1 ? (Math.min(currentIdx, steps.length - 1) / (steps.length - 1)) * 100 : 0;
+                          {(() => {
+                            const isStayBooking = (trackingOrder.type || '').toLowerCase().includes('stay') || 
+                              (trackingOrder.type || '').toLowerCase().includes('hotel') ||
+                              (trackingOrder.subNavbarCategory || '').toLowerCase() === 'stay' ||
+                              (trackingOrder.mainCategory || '').toLowerCase() === 'stay' ||
+                              Boolean(trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate);
+                            const trackingCheckInDate = trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.appointmentDate || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate || '';
+                            const trackingCheckInTime = trackingOrder.checkInTime || trackingOrder.check_in_time || trackingOrder.appointmentTimeSlot || trackingOrder.items?.[0]?.checkInTime || trackingOrder.items?.[0]?.bookingTime || '';
+                            const trackingCheckOutDate = trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkOutDate || '';
+                            const trackingCheckOutTime = trackingOrder.checkOutTime || trackingOrder.check_out_time || trackingOrder.items?.[0]?.checkOutTime || '';
 
-                              return (
+                            const steps = isStayBooking ? [
+                              {
+                                name: 'Booking Received',
+                                date: trackingOrder.created_at ? new Date(trackingOrder.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+                                time: ''
+                              },
+                              {
+                                name: 'Confirmed',
+                                date: '',
+                                time: ''
+                              },
+                              {
+                                name: 'Check-In',
+                                date: trackingCheckInDate,
+                                time: trackingCheckInTime
+                              },
+                              {
+                                name: 'Check-Out',
+                                date: trackingCheckOutDate,
+                                time: trackingCheckOutTime
+                              }
+                            ] : [
+                              { name: 'Booking Placed', date: '', time: '' },
+                              { name: 'Confirmed', date: '', time: '' },
+                              { name: 'Checked In / Active', date: '', time: '' },
+                              { name: 'Completed', date: '', time: '' }
+                            ];
+
+                            const statusMap = {
+                              'Order Received': 0,
+                              'Booking Received': 0,
+                              'Pending': 0,
+                              'Preparing': 1,
+                              'Ready For Pickup': 1,
+                              'Assigned To Delivery Partner': 1,
+                              'Delivery Partner Accepted': 1,
+                              'Confirmed': 1,
+                              'Picked Up': 2,
+                              'Out For Delivery': 2,
+                              'Near Customer': 2,
+                              'Checked In': 2,
+                              'Checked In / Active': 2,
+                              'Delivered': 3,
+                              'Completed': 3,
+                              'Checked Out': 3
+                            };
+                            const isCancelled = trackingOrder.status === 'Cancelled';
+                            const currentIdx = statusMap[trackingOrder.status] ?? 0;
+                            const progressPercent = steps.length > 1 ? (Math.min(currentIdx, steps.length - 1) / (steps.length - 1)) * 100 : 0;
+
+                            const statusBadgeLabel = isStayBooking 
+                              ? (trackingOrder.status === 'Order Received' ? 'Booking Received' : (trackingOrder.status || 'Booking Received'))
+                              : (trackingOrder.status || 'Active');
+
+                            return (
+                              <div className="bg-white dark:bg-slate-900 p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 text-left font-sans">Booking Timeline</h4>
+                                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                                    trackingOrder.status === 'Cancelled'
+                                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/25'
+                                      : ['Delivered', 'Completed'].includes(trackingOrder.status)
+                                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25'
+                                      : 'bg-blue-500/10 text-blue-500 border-blue-500/25'
+                                  }`}>
+                                    {statusBadgeLabel}
+                                  </span>
+                                </div>
+
                                 <div className="relative w-full py-2">
                                   <div 
                                     className="absolute top-[22px] pointer-events-none"
@@ -12956,16 +13086,21 @@ wishlistProducts.forEach(item => addToCart(item));
                                               ? 'text-emerald-600 dark:text-emerald-400'
                                               : 'text-slate-400 dark:text-slate-500'
                                           }`}>
-                                            {step}
+                                            {step.name}
                                           </span>
+                                          {(step.date || step.time) && (
+                                            <span className="text-[7.5px] sm:text-[8px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 leading-tight text-center block">
+                                              {step.date}{step.time ? ` (${step.time})` : ''}
+                                            </span>
+                                          )}
                                         </div>
                                       );
                                     })}
                                   </div>
                                 </div>
-                              );
-                            })()}
-                          </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       ) : (
                         /* Live Tracking UI */
@@ -14152,6 +14287,27 @@ wishlistProducts.forEach(item => addToCart(item));
           (activeScheduleModalItem?.category || '').toLowerCase().includes('tour');
         const basePrice = Number(activeScheduleModalItem.price || 0);
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
+        const numAdults = Math.max(1, Number(adultCount || 1));
+        const numChildren = Math.max(0, Number(childCount || 0));
+
+        // Stay pricing calculation: follows hotel property pricing rules (per person / per room)
+        const stayPricingType = String(activeScheduleModalItem.pricingType || activeScheduleModalItem.pricePer || '').toLowerCase();
+        const stayAdultRate = Number(activeScheduleModalItem.adultPrice || basePrice || 0);
+        const stayChildRate = Number(
+          activeScheduleModalItem.childPrice != null && activeScheduleModalItem.childPrice !== '' && !isNaN(Number(activeScheduleModalItem.childPrice))
+            ? activeScheduleModalItem.childPrice
+            : 0
+        );
+
+        let stayTotalPrice = 0;
+        if (stayPricingType.includes('room')) {
+          const rooms = Math.max(1, Number(stayRoomsCount || 1));
+          const extraGuests = Math.max(0, (numAdults + numChildren) - Number(activeScheduleModalItem.baseGuests || 2));
+          const extraFee = Number(activeScheduleModalItem.extraGuestFee || activeScheduleModalItem.extraPersonFee || 500);
+          stayTotalPrice = ((rooms * basePrice) + (extraGuests * extraFee)) * diffNights;
+        } else {
+          stayTotalPrice = ((numAdults * stayAdultRate) + (numChildren * stayChildRate)) * diffNights;
+        }
 
         // Travel fare calculation: vendor configured unit fare * adults + vendor child fare * children
         const vendorFare = basePrice;
@@ -14160,12 +14316,10 @@ wishlistProducts.forEach(item => addToCart(item));
             ? activeScheduleModalItem.childPrice
             : vendorFare
         );
-        const numAdults = Math.max(1, Number(adultCount || 1));
-        const numChildren = Math.max(0, Number(childCount || 0));
         const travelTotalPrice = (numAdults * vendorFare) + (numChildren * vendorChildFare);
 
         const extraGuestFee = (isStayItem || isTravelItem) ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
-        const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
+        const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? stayTotalPrice : (basePrice + extraGuestFee);
         const { boardingPoints: vendorBoardingPoints, droppingPoints: vendorDroppingPoints } = extractVendorTravelPoints(activeScheduleModalItem);
         const isDaySlot = checkInTime?.includes('AM') || checkInTime === '09:00 AM' || checkInTime === '10:00 AM' || checkInTime === '11:00 AM';
         const currentStayMode = stayMode || (isDaySlot ? 'Day Option' : 'Night Option');
@@ -14792,12 +14946,26 @@ wishlistProducts.forEach(item => addToCart(item));
                                 <span className="text-sm font-black text-blue-600 dark:text-blue-400">₹{totalPrice.toLocaleString()}</span>
                               </div>
                             </div>
+                          ) : isStayItem ? (
+                            <div className="space-y-1 mt-1">
+                              <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                <span>Adults ({numAdults} × ₹{stayAdultRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
+                                <span className="font-bold text-slate-900 dark:text-white">₹{(numAdults * stayAdultRate * diffNights).toLocaleString()}</span>
+                              </div>
+                              {numChildren > 0 && stayChildRate > 0 && (
+                                <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                  <span>Children ({numChildren} × ₹{stayChildRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * stayChildRate * diffNights).toLocaleString()}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                                <span>Total Booking:</span>
+                                <span className="text-sm font-black text-blue-600 dark:text-blue-400">₹{totalPrice.toLocaleString()}</span>
+                              </div>
+                            </div>
                           ) : (
                             <div>
                               <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
-                              {isStayItem && diffNights > 1 && (
-                                <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
-                              )}
                             </div>
                           )}
                         </div>
@@ -14868,9 +15036,12 @@ wishlistProducts.forEach(item => addToCart(item));
                       const itemToCart = {
                         ...activeScheduleModalItem,
                         price: totalPrice,
-                        basePrice: basePrice,
+                        basePrice: isStayItem ? stayAdultRate : basePrice,
+                        adultPrice: stayAdultRate,
+                        childPrice: stayChildRate,
                         extraGuestFee: extraGuestFee,
                         nights: isStayItem ? diffNights : 1,
+                        roomsCount: stayRoomsCount || 1,
                         bookingDate: formatDateFromYYYYMMDD(stayCheckInDate),
                         checkInDate: stayCheckInDate,
                         checkOutDate: isTravelItem ? undefined : stayCheckOutDate,
@@ -14942,6 +15113,27 @@ wishlistProducts.forEach(item => addToCart(item));
           (activeBookNowModalItem?.category || '').toLowerCase().includes('tour');
         const basePrice = Number(activeBookNowModalItem.price || 0);
         const diffNights = Math.max(1, Math.ceil((new Date(stayCheckOutDate) - new Date(stayCheckInDate)) / 86400000));
+        const numAdults = Math.max(1, Number(adultCount || 1));
+        const numChildren = Math.max(0, Number(childCount || 0));
+
+        // Stay pricing calculation: follows hotel property pricing rules (per person / per room)
+        const stayPricingType = String(activeBookNowModalItem.pricingType || activeBookNowModalItem.pricePer || '').toLowerCase();
+        const stayAdultRate = Number(activeBookNowModalItem.adultPrice || basePrice || 0);
+        const stayChildRate = Number(
+          activeBookNowModalItem.childPrice != null && activeBookNowModalItem.childPrice !== '' && !isNaN(Number(activeBookNowModalItem.childPrice))
+            ? activeBookNowModalItem.childPrice
+            : 0
+        );
+
+        let stayTotalPrice = 0;
+        if (stayPricingType.includes('room')) {
+          const rooms = Math.max(1, Number(stayRoomsCount || 1));
+          const extraGuests = Math.max(0, (numAdults + numChildren) - Number(activeBookNowModalItem.baseGuests || 2));
+          const extraFee = Number(activeBookNowModalItem.extraGuestFee || activeBookNowModalItem.extraPersonFee || 500);
+          stayTotalPrice = ((rooms * basePrice) + (extraGuests * extraFee)) * diffNights;
+        } else {
+          stayTotalPrice = ((numAdults * stayAdultRate) + (numChildren * stayChildRate)) * diffNights;
+        }
 
         // Travel fare calculation: vendor configured unit fare * adults + vendor child fare * children
         const vendorFare = basePrice;
@@ -14950,12 +15142,10 @@ wishlistProducts.forEach(item => addToCart(item));
             ? activeBookNowModalItem.childPrice
             : vendorFare
         );
-        const numAdults = Math.max(1, Number(adultCount || 1));
-        const numChildren = Math.max(0, Number(childCount || 0));
         const travelTotalPrice = (numAdults * vendorFare) + (numChildren * vendorChildFare);
 
         const extraGuestFee = (isStayItem || isTravelItem) ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
-        const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? basePrice * diffNights : (basePrice + extraGuestFee);
+        const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? stayTotalPrice : (basePrice + extraGuestFee);
         const { boardingPoints: vendorBoardingPoints, droppingPoints: vendorDroppingPoints } = extractVendorTravelPoints(activeBookNowModalItem);
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in text-slate-800 dark:text-slate-200">
@@ -15470,12 +15660,26 @@ wishlistProducts.forEach(item => addToCart(item));
                                 <span className="text-sm font-black text-blue-600 dark:text-blue-400">₹{totalPrice.toLocaleString()}</span>
                               </div>
                             </div>
+                          ) : isStayItem ? (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                <span>Adults ({numAdults} × ₹{stayAdultRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
+                                <span className="font-bold text-slate-900 dark:text-white">₹{(numAdults * stayAdultRate * diffNights).toLocaleString()}</span>
+                              </div>
+                              {numChildren > 0 && stayChildRate > 0 && (
+                                <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                                  <span>Children ({numChildren} × ₹{stayChildRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * stayChildRate * diffNights).toLocaleString()}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                                <span>Total Booking:</span>
+                                <span className="text-sm font-black text-blue-600 dark:text-blue-400">₹{totalPrice.toLocaleString()}</span>
+                              </div>
+                            </div>
                           ) : (
                             <div>
                               <span className="font-black text-slate-900 dark:text-white text-sm">₹{totalPrice.toLocaleString()}</span>
-                              {isStayItem && diffNights > 1 && (
-                                <span className="text-[9px] font-bold text-slate-400 block leading-none mt-0.5">(₹{basePrice.toLocaleString()} × {diffNights} nights)</span>
-                              )}
                             </div>
                           )}
                         </div>
@@ -15547,9 +15751,12 @@ wishlistProducts.forEach(item => addToCart(item));
                         const itemToCart = {
                           ...activeBookNowModalItem,
                           price: totalPrice,
-                          basePrice: basePrice,
+                          basePrice: isStayItem ? stayAdultRate : basePrice,
+                          adultPrice: stayAdultRate,
+                          childPrice: stayChildRate,
                           extraGuestFee: extraGuestFee,
                           nights: isStayItem ? diffNights : 1,
+                          roomsCount: stayRoomsCount || 1,
                           bookingDate: formatDateFromYYYYMMDD(stayCheckInDate),
                           checkInDate: stayCheckInDate,
                           checkOutDate: isTravelItem ? undefined : stayCheckOutDate,
