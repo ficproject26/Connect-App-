@@ -212,7 +212,10 @@ class DatabaseManager {
   constructor() {}
 
   public async connect() {
-    const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) || 'mongodb+srv://Connect-App:Dhanush123@cluster0.riukwbj.mongodb.net/connect_db?retryWrites=true&w=majority';
+    const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null);
+    if (!connStr) {
+      throw new Error('MONGODB_URI environment variable is not defined.');
+    }
 
     console.log(`[DB]: Attempting connection to MongoDB...`);
     let attempts = 0;
@@ -228,18 +231,9 @@ class DatabaseManager {
         });
         await this.mongoClient.connect();
         
-        let dbName = process.env.DB_NAME || this.mongoClient.db().databaseName || 'test';
-        if (dbName === 'connect_db') {
-          // If connect_db is empty but test has live production categories/users, use test
-          const testCatCount = await this.mongoClient.db('test').collection('categories').countDocuments().catch(() => 0);
-          const currCatCount = await this.mongoClient.db('connect_db').collection('categories').countDocuments().catch(() => 0);
-          if (currCatCount === 0 && testCatCount > 0) {
-            console.log(`[DB]: Detected active production data in 'test' database (${testCatCount} categories). Switching target DB to 'test'.`);
-            dbName = 'test';
-          }
-        }
-        this.mongoDb = this.mongoClient.db(dbName);
-        console.log(`[DB]: Connected to MongoDB successfully. Database: ${dbName}`);
+        const targetDbName = process.env.DB_NAME || (connStr.match(/mongodb(?:\+srv)?:\/\/[^\/]+\/([^?]+)/) ? connStr.match(/mongodb(?:\+srv)?:\/\/[^\/]+\/([^?]+)/)![1] : undefined);
+        this.mongoDb = this.mongoClient.db(targetDbName);
+        console.log(`[DB]: Connected to MongoDB successfully. Database: ${targetDbName}`);
         
         // Setup collections and indexes
         await this.createIndexes();
@@ -395,14 +389,7 @@ class DatabaseManager {
     try {
       const vendorCount = await this.mongoDb.collection('vendors').countDocuments();
       if (vendorCount === 0) {
-        console.log(`[DB]: MongoDB is empty. Seeding default data...`);
-        await this.mongoDb.collection('vendors').insertMany(DEFAULT_MOCK_DATA.vendors);
-        await this.mongoDb.collection('delivery_partners').insertMany(DEFAULT_MOCK_DATA.delivery_partners);
-        await this.mongoDb.collection('orders').insertMany(DEFAULT_MOCK_DATA.orders);
-        await this.mongoDb.collection('delivery_status_history').insertMany(DEFAULT_MOCK_DATA.delivery_status_history);
-        await this.mongoDb.collection('delivery_earnings').insertMany(DEFAULT_MOCK_DATA.delivery_earnings);
-        await this.mongoDb.collection('delivery_ratings').insertMany(DEFAULT_MOCK_DATA.delivery_ratings);
-        console.log(`[DB]: Default data seeded successfully.`);
+        console.log('[DB]: Database connected. Ready for operational data.');
       }
     } catch (err: any) {
       console.error(`[DB]: Seeding failed: ${err.message}`);

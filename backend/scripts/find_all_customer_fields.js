@@ -1,5 +1,5 @@
 const { MongoClient } = require('mongodb');
-const uri = process.env.MONGODB_URI || 'mongodb+srv://Connect-App:Dhanush123@cluster0.riukwbj.mongodb.net/connect_db?retryWrites=true&w=majority';
+const uri = process.env.MONGODB_URI ;
 
 async function run() {
   const client = new MongoClient(uri, { connectTimeoutMS: 10000 });

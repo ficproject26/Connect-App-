@@ -840,25 +840,28 @@ initRealtimeInfrastructure(server).catch(err => {
   console.error('[Realtime]: Infrastructure initialization issue:', err);
 });
 
-// Bind server immediately to 0.0.0.0 on PORT for Render cloud port scanner detection
-server.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`[Server]: Connect App Backend running on 0.0.0.0:${PORT} with DevSecOps Security`);
-});
-
-server.on('error', (err: any) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`[Server FATAL]: Port ${PORT} is already in use by another process. Please check 'sudo lsof -i :${PORT}' or ensure previous PM2 process gracefully shut down.`);
-    process.exit(1);
-  } else {
-    console.error('[Server Error]:', err);
-  }
-});
-
-// Connect to Database asynchronously
-db.connect()
-  .then(() => {
+async function startApp() {
+  try {
+    console.log('[Server]: Connecting to MongoDB Atlas single source of truth...');
+    await db.connect();
     console.log('[Server]: Database connection initialized and ready.');
-  })
-  .catch((err) => {
-    console.error('[Server]: Database connection issue during startup:', err.message);
-  });
+
+    server.listen(Number(PORT), '0.0.0.0', () => {
+      console.log(`[Server]: Connect App Backend running on 0.0.0.0:${PORT} with DevSecOps Security`);
+    });
+
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[Server FATAL]: Port ${PORT} is already in use by another process. Please check 'sudo lsof -i :${PORT}' or ensure previous PM2 process gracefully shut down.`);
+        process.exit(1);
+      } else {
+        console.error('[Server Error]:', err);
+      }
+    });
+  } catch (err: any) {
+    console.error('[Server FATAL]: Database connection failed during startup:', err.message);
+    process.exit(1);
+  }
+}
+
+startApp();
