@@ -1526,7 +1526,14 @@ export default function CustomerDashboard({
   const [stayRoomsCount, setStayRoomsCount] = useState(1);
   const [stayGuestsCount, setStayGuestsCount] = useState(2);
   const [travelDetailsTab, setTravelDetailsTab] = useState('Overview');
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('connect_customer_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [sidebarActiveCat, setSidebarActiveCat] = useState('ALL');
   const [dbCategories, setDbCategories] = useState([]);
   const hasInitialUrlSynced = useRef(false);
@@ -1573,13 +1580,15 @@ export default function CustomerDashboard({
         const currentSub = childParam || selectedSubNavbarCategory;
 
         if (!currentState.tab) {
-          window.history.replaceState({ ...currentState, tab: activeTab, subCategory: currentSub, secondLevel: subParam || sidebarActiveCat }, '');
+          window.history.replaceState({ ...currentState, tab: activeTab, subCategory: currentSub, secondLevel: subParam || sidebarActiveCat }, '', window.location.href);
         } else if (currentState.tab !== activeTab || currentState.subCategory !== currentSub) {
-          window.history.pushState({ ...currentState, tab: activeTab, subCategory: currentSub, secondLevel: subParam || sidebarActiveCat }, '');
+          window.history.pushState({ ...currentState, tab: activeTab, subCategory: currentSub, secondLevel: subParam || sidebarActiveCat }, '', window.location.href);
         }
       }
     } catch (e) {}
   }, [activeTab, selectedSubNavbarCategory, sidebarActiveCat]);
+
+  const initialUrlProductRef = useRef(typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('product') || new URLSearchParams(window.location.search).get('productId')) : null);
 
   // Initial URL parameters sync for direct link navigation (runs only once on mount to avoid resetting activeTab on focus/refresh)
   useEffect(() => {
@@ -1887,8 +1896,16 @@ export default function CustomerDashboard({
                   membershipStatus: dbUser.membershipStatus || 'ACTIVE',
                   membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : (currentUser?.membershipHistory || []),
                   addresses: deduplicateAddresses(dbUser.addresses || currentUser?.addresses || []),
+                  favorites: Array.isArray(dbUser.favorites) ? dbUser.favorites : (currentUser?.favorites || []),
                   role: 'customer'
                 }, 'customer');
+                if (Array.isArray(dbUser.favorites) && dbUser.favorites.length > 0) {
+                  setFavorites(prev => {
+                    const merged = Array.from(new Set([...prev, ...dbUser.favorites]));
+                    try { localStorage.setItem('connect_customer_favorites', JSON.stringify(merged)); } catch (e) {}
+                    return merged;
+                  });
+                }
               }
               return;
             }
@@ -2533,20 +2550,17 @@ export default function CustomerDashboard({
   const hasLoadedUrlProductRef = useRef(false);
   useEffect(() => {
     if (hasLoadedUrlProductRef.current || !Array.isArray(products) || products.length === 0) return;
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const prodParam = params.get('product') || params.get('productId');
-      if (prodParam) {
-        const match = products.find(p => String(p.id) === String(prodParam) || String(p._id) === String(prodParam) || (p.name && p.name.toLowerCase() === prodParam.toLowerCase()));
-        if (match) {
-          setSelectedProduct(match);
-          const canonicalTab = getCanonicalTabName(match);
-          if (canonicalTab) {
-            setActiveTab(canonicalTab);
-            setSelectedSubNavbarCategory(canonicalTab);
-          }
-          hasLoadedUrlProductRef.current = true;
+    const prodParam = initialUrlProductRef.current || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('product') || new URLSearchParams(window.location.search).get('productId')) : null);
+    if (prodParam) {
+      const match = products.find(p => String(p.id) === String(prodParam) || String(p._id) === String(prodParam) || (p.name && p.name.toLowerCase() === String(prodParam).toLowerCase()));
+      if (match) {
+        setSelectedProduct(match);
+        const canonicalTab = getCanonicalTabName(match);
+        if (canonicalTab) {
+          setActiveTab(canonicalTab);
+          setSelectedSubNavbarCategory(canonicalTab);
         }
+        hasLoadedUrlProductRef.current = true;
       }
     }
   }, [products]);
@@ -3286,9 +3300,13 @@ export default function CustomerDashboard({
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const dummyPaymentId = `pay_mem_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
 
+      const authToken = localStorage.getItem('connect_token') || localStorage.getItem('token') || '';
       const verifyRes = await fetch(`${baseBackend}/api/membership/verify-payment`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({
           razorpay_order_id: orderData.order_id,
           razorpay_payment_id: dummyPaymentId,
@@ -3708,17 +3726,44 @@ export default function CustomerDashboard({
   const handleOpenJobApplication = (jobId) => {
     setAppliedJobId(jobId);
     setJobSubmitSuccess(false);
-    setApplicantName(currentUser?.name || profileName || '');
-    setApplicantEmail(currentUser?.email || profileEmail || '');
-    setApplicantPhone(currentUser?.phone ? String(currentUser.phone).replace(/\D/g, '').slice(-10) : (profilePhone ? String(profilePhone).replace(/\D/g, '').slice(-10) : ''));
-    setApplicantLocation('');
-    setApplicantCurrentCompany('');
-    setApplicantExperience('Fresher');
-    setApplicantNoticePeriod('Immediate');
-    setApplicantLinkedIn(currentUser?.linkedin || '');
-    setApplicantPortfolio(currentUser?.portfolio || '');
-    setResumeFile(null);
-    setApplicantCoverLetter('');
+
+    const draftKey = `connect_job_draft_${jobId}`;
+    let savedDraft = null;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) savedDraft = JSON.parse(raw);
+    } catch (e) {}
+
+    if (savedDraft) {
+      setApplicantName(savedDraft.name || currentUser?.name || profileName || '');
+      setApplicantEmail(savedDraft.email || currentUser?.email || profileEmail || '');
+      setApplicantPhone(savedDraft.phone || (currentUser?.phone ? String(currentUser.phone).replace(/\D/g, '').slice(-10) : (profilePhone ? String(profilePhone).replace(/\D/g, '').slice(-10) : '')));
+      setApplicantLocation(savedDraft.location || '');
+      setApplicantCurrentCompany(savedDraft.currentCompany || '');
+      setApplicantExperience(savedDraft.experience || 'Fresher');
+      setApplicantNoticePeriod(savedDraft.noticePeriod || 'Immediate');
+      setApplicantLinkedIn(savedDraft.linkedIn || currentUser?.linkedin || '');
+      setApplicantPortfolio(savedDraft.portfolio || currentUser?.portfolio || '');
+      setApplicantCoverLetter(savedDraft.coverLetter || '');
+      if (savedDraft.resumeFile) {
+        setResumeFile(savedDraft.resumeFile);
+      } else {
+        setResumeFile(null);
+      }
+      triggerNotification("Restored saved job draft.", "info");
+    } else {
+      setApplicantName(currentUser?.name || profileName || '');
+      setApplicantEmail(currentUser?.email || profileEmail || '');
+      setApplicantPhone(currentUser?.phone ? String(currentUser.phone).replace(/\D/g, '').slice(-10) : (profilePhone ? String(profilePhone).replace(/\D/g, '').slice(-10) : ''));
+      setApplicantLocation('');
+      setApplicantCurrentCompany('');
+      setApplicantExperience('Fresher');
+      setApplicantNoticePeriod('Immediate');
+      setApplicantLinkedIn(currentUser?.linkedin || '');
+      setApplicantPortfolio(currentUser?.portfolio || '');
+      setResumeFile(null);
+      setApplicantCoverLetter('');
+    }
   };
 
   // When activeTab changes to Jobs, always show Jobs listing page first
@@ -3828,6 +3873,9 @@ export default function CustomerDashboard({
       });
 
       if (res && (res.status === 'success' || res.id || res.order_number)) {
+        try {
+          localStorage.removeItem(`connect_job_draft_${jobId}`);
+        } catch (e) {}
         setJobSubmitSuccess(true);
         triggerNotification(`Application for ${jobTitle} submitted successfully!`);
         loadCustomerOrders();
@@ -4299,9 +4347,17 @@ export default function CustomerDashboard({
       return null;
     }
 
-    const city = (addressForm.city || (dbDistricts.length > 0 ? dbDistricts[0] : '')).trim();
+    const city = (addressForm.city || '').trim();
+    if (!city) {
+      triggerNotification("Please enter or select your City / District.", "error");
+      return null;
+    }
     const locality = (addressForm.locality || '').trim() || city || streetAddress.split(',')[0] || 'Locality';
-    const state = (addressForm.state || (IndianStates.length > 0 ? IndianStates[0] : '')).trim();
+    const state = (addressForm.state || '').trim();
+    if (!state) {
+      triggerNotification("Please select your State.", "error");
+      return null;
+    }
 
     const addressPayload = {
       ...addressForm,
@@ -4452,11 +4508,11 @@ export default function CustomerDashboard({
     }
   };
 
-  const handleProceedFromAddressToPayment = () => {
+  const handleProceedFromAddressToPayment = async () => {
     let chosenAddr = null;
 
     if (isAddingAddress || (addressForm.address.trim() && addressForm.pincode.trim())) {
-      chosenAddr = handleSaveAddress();
+      chosenAddr = await handleSaveAddress();
       if (!chosenAddr && isAddingAddress) {
         return;
       }
@@ -4687,15 +4743,20 @@ export default function CustomerDashboard({
       setOrderSuccess(true);
       setIsRazorpayModalOpen(false);
       setRazorpayProcessing(false);
-      if (isLastOrderBooking) {
-        triggerNotification("Booking Successful! Your reservation details have been generated.");
-      } else if (methodName === 'Connect Wallet') {
-        triggerNotification("Wallet payment successful & Order placed!");
-      } else if (methodName === 'Cash on Delivery') {
-        triggerNotification("Order placed with Cash on Delivery!");
-      } else {
-        triggerNotification("Payment authorized & Order placed successfully!");
+      const selectedCartItemsList = cart.filter(item => selectedCartItems.includes(item.id));
+      const firstOrderItem = selectedCartItemsList[0];
+      const orderTab = (activeTab || firstOrderItem?.mainCategory || firstOrderItem?.subNavbarCategory || '').toLowerCase();
+      let orderSuccessMsg = "Order placed successfully!";
+      if (orderTab.includes('stay') || isStayItem) {
+        orderSuccessMsg = "Stay reservation confirmed successfully!";
+      } else if (orderTab.includes('travel') || isTravelItem) {
+        orderSuccessMsg = "Travel booking confirmed successfully!";
+      } else if (orderTab.includes('service') || isServiceItem) {
+        orderSuccessMsg = "Service booked successfully!";
+      } else if (orderTab.includes('food')) {
+        orderSuccessMsg = "Food order placed successfully!";
       }
+      triggerNotification(orderSuccessMsg, "success");
       loadCustomerOrders(true);
     } catch (err) {
       console.error("Order processing error:", err);
@@ -4717,8 +4778,8 @@ export default function CustomerDashboard({
               type="button"
               onClick={() => {
                 setAddressForm({
-                  name: profileName || '',
-                  phone: profilePhone.replace('+91', '').trim() || '',
+                  name: '',
+                  phone: '',
                   pincode: '',
                   locality: '',
                   address: '',
@@ -5149,9 +5210,27 @@ export default function CustomerDashboard({
   };
 
   const toggleFavorite = (id) => {
-    setFavorites(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
+      try {
+        localStorage.setItem('connect_customer_favorites', JSON.stringify(next));
+      } catch (e) {}
+
+      const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+      if (userTarget) {
+        const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+        const token = localStorage.getItem('connect_token') || '';
+        fetch(`${baseBackend}/api/auth/customer-profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ userId: userTarget, favorites: next })
+        }).catch(() => {});
+      }
+      return next;
+    });
     triggerNotification("Updated your wishlist!");
   };
 
@@ -5589,7 +5668,14 @@ export default function CustomerDashboard({
           );
 
         const matchesLocType = selectedLocTypes.length === 0 ||
-          selectedLocTypes.some(loc => (product.city || product.vendorCity || product.locationType)?.toLowerCase() === loc.toLowerCase());
+          selectedLocTypes.some(loc => {
+            const prodCity = (product.city || product.vendorCity || product.location || product.locationType || '').toLowerCase().trim();
+            const target = loc.toLowerCase().trim();
+            if (target === 'bangalore' || target === 'bengaluru') {
+              return prodCity.includes('bangalore') || prodCity.includes('bengaluru') || !prodCity;
+            }
+            return prodCity.includes(target);
+          });
 
         const matchesRatingFilter = selectedRating === null || 
           product.rating >= selectedRating;
@@ -7301,6 +7387,21 @@ export default function CustomerDashboard({
         <div 
           onMouseEnter={() => setIsHeroBannerHovered(true)}
           onMouseLeave={() => setIsHeroBannerHovered(false)}
+          onTouchStart={(e) => {
+            if (e.touches && e.touches[0]) {
+              window.__bannerTouchStartX = e.touches[0].clientX;
+            }
+          }}
+          onTouchEnd={(e) => {
+            if (e.changedTouches && e.changedTouches[0] && typeof window.__bannerTouchStartX === 'number') {
+              const diff = window.__bannerTouchStartX - e.changedTouches[0].clientX;
+              if (diff > 35) {
+                nextSlide(e);
+              } else if (diff < -35) {
+                prevSlide(e);
+              }
+            }
+          }}
           className="flex-grow flex flex-col items-center justify-center relative w-full max-w-[550px] min-h-[250px] sm:h-[340px] shrink-0 mt-4 md:mt-0 select-none group/slider"
         >
           {isBannersLoading && totalSlides === 0 ? (
@@ -7337,7 +7438,7 @@ export default function CustomerDashboard({
                 <button 
                   type="button"
                   onClick={prevSlide}
-                  className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+                  className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-80 md:opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
                   aria-label="Previous Slide"
                 >
                   <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-white" />
@@ -7349,7 +7450,7 @@ export default function CustomerDashboard({
                 <button 
                   type="button"
                   onClick={nextSlide}
-                  className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
+                  className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md transition-all opacity-80 md:opacity-0 group-hover/slider:opacity-100 cursor-pointer border border-white/20 shadow-md hover:scale-110"
                   aria-label="Next Slide"
                 >
                   <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-white" />
@@ -9075,6 +9176,24 @@ export default function CustomerDashboard({
                                       <button
                                         type="button"
                                         onClick={() => {
+                                          const jobTargetId = appliedJobId || selectedJob?.id || 'default';
+                                          const draftData = {
+                                            name: applicantName,
+                                            email: applicantEmail,
+                                            phone: applicantPhone,
+                                            location: applicantLocation,
+                                            currentCompany: applicantCurrentCompany,
+                                            experience: applicantExperience,
+                                            noticePeriod: applicantNoticePeriod,
+                                            linkedIn: applicantLinkedIn,
+                                            portfolio: applicantPortfolio,
+                                            coverLetter: applicantCoverLetter,
+                                            resumeFile: resumeFile ? { name: resumeFile.name, size: resumeFile.size, url: resumeFile.url } : null,
+                                            savedAt: new Date().toISOString()
+                                          };
+                                          try {
+                                            localStorage.setItem(`connect_job_draft_${jobTargetId}`, JSON.stringify(draftData));
+                                          } catch (e) {}
                                           triggerNotification("Job application saved as draft.");
                                           handleBackToOpenings();
                                         }}
@@ -9267,7 +9386,15 @@ export default function CustomerDashboard({
                         return (
                           <div 
                             key={job.id} 
-                            onClick={() => handleOpenJobApplication(job.id)}
+                            onClick={() => {
+                              if (appliedOrder) {
+                                setIsProfileModalOpen(true);
+                                setActiveProfileTab('myjobs');
+                                setTrackingOrder(appliedOrder);
+                              } else {
+                                handleOpenJobApplication(job.id);
+                              }
+                            }}
                             className="p-5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-xs hover:shadow-md hover:border-amber-400/40 transition-all duration-300 flex flex-col justify-between gap-5 group/job text-left text-slate-800 dark:text-slate-200 cursor-pointer"
                           >
                             <div className="space-y-3">
@@ -9590,7 +9717,7 @@ export default function CustomerDashboard({
                                         onClick={(e) => { 
                                           e.stopPropagation(); 
                                           setIsProfileModalOpen(true);
-                                          setActiveProfileTab('orders');
+                                          setActiveProfileTab('myjobs');
                                           setTrackingOrder(appliedOrder);
                                         }} 
                                         className="w-full py-2.5 bg-transparent border border-blue-600 hover:bg-blue-600/5 text-blue-600 font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center leading-none h-8.5 sm:h-9 animate-fade-in"
@@ -9655,6 +9782,8 @@ export default function CustomerDashboard({
                           if (activeTab === 'Food') return "No food items are available in the selected location.";
                           return "No items are available in the selected location.";
                         }
+                        if (activeTab === 'Travel') return "No travel options match your filter criteria.";
+                        if (activeTab === 'Stay') return "No stay options match your filter criteria.";
                         return "No items match your filter criteria";
                       })()}
                     </h3>
@@ -9704,9 +9833,15 @@ export default function CustomerDashboard({
             <button onClick={() => { setSelectedProduct(null); const t = (activeTab && activeTab !== 'Home') ? activeTab : getCanonicalTabName(selectedProduct); setActiveTab(t); setSelectedSubNavbarCategory(t); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Home</button>
-            <span>&gt;</span><button onClick={() => { setSelectedProduct(null); setActiveTab('Stay'); setSelectedSubNavbarCategory('Stay'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Stays</button>
-            <span>&gt;</span><span>{selectedProduct.category || 'Luxury Hotels'}</span><span>&gt;</span>
-            <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">Hotel {selectedProduct.name}</span>
+            <span>&gt;</span><button onClick={() => { setSelectedProduct(null); setActiveTab('Stay'); setSelectedSubNavbarCategory('Stay'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Stay</button>
+            {selectedProduct.category && (
+              <>
+                <span>&gt;</span>
+                <span className="truncate max-w-[150px]">{selectedProduct.category}</span>
+              </>
+            )}
+            <span>&gt;</span>
+            <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={() => handleShareProduct(selectedProduct)} className="flex items-center gap-1.5 hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none text-xs font-bold"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.636-2.318m0 7.152l-4.636-2.318M21 12a3 3 0 11-6 0 3 3 0 016 0zm-12 6a3 3 0 11-6 0 3 3 0 016 0zm0-12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Share</button>
@@ -9892,8 +10027,14 @@ export default function CustomerDashboard({
             <button onClick={() => { setSelectedProduct(null); const t = (activeTab && activeTab !== 'Home') ? activeTab : getCanonicalTabName(selectedProduct); setActiveTab(t); setSelectedSubNavbarCategory(t); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200"><ArrowLeft className="w-3.5 h-3.5 text-amber-500" /> Back</button>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Home</button>
-            <span>&gt;</span><button onClick={() => { setSelectedProduct(null); setActiveTab('Services'); setSelectedSubNavbarCategory('Services'); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Services</button>
-            <span>&gt;</span><span>{selectedProduct.category || 'Fitness & Wellness'}</span><span>&gt;</span>
+            <span>&gt;</span><button onClick={() => { const canTab = getCanonicalTabName(selectedProduct) || 'Services'; setSelectedProduct(null); setActiveTab(canTab); setSelectedSubNavbarCategory(canTab); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">{getCanonicalTabName(selectedProduct) || 'Services'}</button>
+            {selectedProduct.category && (
+              <>
+                <span>&gt;</span>
+                <span className="truncate max-w-[150px]">{selectedProduct.category}</span>
+              </>
+            )}
+            <span>&gt;</span>
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
           <div className="flex items-center gap-4">
@@ -9916,8 +10057,12 @@ export default function CustomerDashboard({
               )}
               <button onClick={() => toggleFavorite(selectedProduct.id)} className="absolute right-3 top-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center shadow-md cursor-pointer border-none"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} /></button>
               <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
-              <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
-              <button onClick={() => { const n = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1; setActiveProductImage(thumbnails[n]); setActiveThumbnailIndex(n); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronRight className="w-4 h-4 text-slate-700" /></button>
+              {thumbnails.length > 1 && (
+                <>
+                  <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
+                  <button onClick={() => { const n = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1; setActiveProductImage(thumbnails[n]); setActiveThumbnailIndex(n); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronRight className="w-4 h-4 text-slate-700" /></button>
+                </>
+              )}
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar">{thumbnails.slice(0, 8).map((t, i) => (<button key={i} onClick={() => { setActiveProductImage(t); setActiveThumbnailIndex(i); }} className={`w-14 h-10 rounded-lg border-2 overflow-hidden shrink-0 cursor-pointer ${activeThumbnailIndex === i ? 'border-amber-400 shadow-md' : 'border-slate-200 dark:border-slate-800'}`}><img src={t} alt="" className="w-full h-full object-cover" /></button>))}</div>
 
@@ -10125,32 +10270,34 @@ export default function CustomerDashboard({
                   />
                 )}
 
-                {/* Left/Right nav arrows */}
-                <button 
-                  onClick={() => {
-                    const prevIdx = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1;
-                    setActiveProductImage(thumbnails[prevIdx]);
-                    setActiveThumbnailIndex(prevIdx);
-                  }}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center cursor-pointer border-none"
-                >
-                  <ChevronLeft className="w-4.5 h-4.5" />
-                </button>
-                <button 
-                  onClick={() => {
-                    const nextIdx = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1;
-                    setActiveProductImage(thumbnails[nextIdx]);
-                    setActiveThumbnailIndex(nextIdx);
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center cursor-pointer border-none"
-                >
-                  <ChevronRight className="w-4.5 h-4.5" />
-                </button>
-
-                {/* Image counter index */}
-                <span className="absolute bottom-3.5 left-3.5 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full select-none">
-                  {activeThumbnailIndex + 1} / {thumbnails.length}
-                </span>
+                {/* Left/Right nav arrows & counter - Only when multiple images exist */}
+                {thumbnails.length > 1 && (
+                  <>
+                    <button 
+                      onClick={() => {
+                        const prevIdx = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1;
+                        setActiveProductImage(thumbnails[prevIdx]);
+                        setActiveThumbnailIndex(prevIdx);
+                      }}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center cursor-pointer border-none"
+                    >
+                      <ChevronLeft className="w-4.5 h-4.5" />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const nextIdx = activeThumbnailIndex === thumbnails.length - 1 ? 0 : activeThumbnailIndex + 1;
+                        setActiveProductImage(thumbnails[nextIdx]);
+                        setActiveThumbnailIndex(nextIdx);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center cursor-pointer border-none"
+                    >
+                      <ChevronRight className="w-4.5 h-4.5" />
+                    </button>
+                    <span className="absolute bottom-3.5 left-3.5 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full select-none">
+                      {activeThumbnailIndex + 1} / {thumbnails.length}
+                    </span>
+                  </>
+                )}
                 
                 {/* Heart wishlist button */}
                 <button 
@@ -11371,170 +11518,6 @@ export default function CustomerDashboard({
                 return null;
               })()}
 
-              {/* Product Configuration Options for Electronics (Phones, Laptops, Tablets) - Issue 22 */}
-              {(() => {
-                const normCat = normalizeMainCatName(selectedProduct?.subNavbarCategory || selectedProduct?.mainCategory || selectedProduct?.category || selectedProduct?.tag || '');
-                const nameLower = (selectedProduct?.name || '').toLowerCase();
-                const isPhoneOrLaptop = normCat === 'products' && (
-                  nameLower.includes('phone') || nameLower.includes('mobile') || nameLower.includes('laptop') || 
-                  nameLower.includes('notebook') || nameLower.includes('macbook') || nameLower.includes('tablet') || 
-                  nameLower.includes('ipad') || (selectedProduct?.category || '').toLowerCase().includes('electronic')
-                );
-
-                if (!isPhoneOrLaptop) return null;
-
-                const storageOptions = ['128GB', '256GB', '512GB', '1TB'];
-                const ramOptions = nameLower.includes('laptop') || nameLower.includes('macbook') ? ['8GB RAM', '16GB RAM', '32GB RAM'] : ['6GB RAM', '8GB RAM', '12GB RAM'];
-                const colorOptions = ['Phantom Black', 'Silver Frost', 'Midnight Blue'];
-
-                return (
-                  <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 rounded-2xl p-4 mb-3.5 text-left space-y-3.5">
-                    <span className="text-[11px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider block">
-                      ⚙️ Select Device Configuration
-                    </span>
-
-                    {/* Storage Variant */}
-                    <div>
-                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Storage Capacity</span>
-                      <div className="flex flex-wrap gap-2">
-                        {storageOptions.map(st => (
-                          <button
-                            key={st}
-                            type="button"
-                            onClick={() => setSelectedStorage(st)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
-                              selectedStorage === st
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-blue-400'
-                            }`}
-                          >
-                            {st}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* RAM Variant */}
-                    <div>
-                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Memory (RAM)</span>
-                      <div className="flex flex-wrap gap-2">
-                        {ramOptions.map(r => (
-                          <button
-                            key={r}
-                            type="button"
-                            onClick={() => setSelectedRam(r)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
-                              selectedRam === r
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-blue-400'
-                            }`}
-                          >
-                            {r}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Color Variant */}
-                    <div>
-                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Color Finish</span>
-                      <div className="flex flex-wrap gap-2">
-                        {colorOptions.map(c => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => setSelectedColor(c)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
-                              selectedColor === c
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-blue-400'
-                            }`}
-                          >
-                            {c}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Daily Needs / Grocery Customization (Pack Size, Weight, Flavour) - Issue 23 */}
-              {(() => {
-                const normCat = normalizeMainCatName(selectedProduct?.subNavbarCategory || selectedProduct?.mainCategory || selectedProduct?.category || selectedProduct?.tag || '');
-                const isDailyNeeds = normCat === 'daily needs' || (selectedProduct?.subNavbarCategory || '').toLowerCase().includes('daily') || (selectedProduct?.category || '').toLowerCase().includes('grocery');
-
-                if (!isDailyNeeds) return null;
-
-                const nameLower = (selectedProduct?.name || '').toLowerCase();
-                const isLiquid = nameLower.includes('milk') || nameLower.includes('oil') || nameLower.includes('juice') || nameLower.includes('water') || nameLower.includes('ghee');
-                const isPackPiece = nameLower.includes('soap') || nameLower.includes('brush') || nameLower.includes('shampoo') || nameLower.includes('paste');
-                const packSizes = isPackPiece 
-                  ? ['1 pc', 'Pack of 3', 'Family Pack (5 pcs)']
-                  : isLiquid 
-                    ? ['500 ml', '1 Litre', '2 Litre', '5 Litre'] 
-                    : ['250g', '500g', '1 kg', '2 kg', '5 kg'];
-                
-                const flavours = Array.isArray(selectedProduct.flavors) && selectedProduct.flavors.length > 0
-                  ? selectedProduct.flavors
-                  : Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0
-                    ? selectedProduct.variants
-                    : ((nameLower.includes('tea') || nameLower.includes('juice') || nameLower.includes('biscuit') || nameLower.includes('snack') || nameLower.includes('shake') || nameLower.includes('ice cream') || (nameLower.includes('milk') && !nameLower.includes('cow') && !nameLower.includes('packet')))
-                      ? ['Regular', 'Cardamom / Elaichi', 'Chocolate', 'Strawberry']
-                      : null);
-
-                return (
-                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-4 mb-3.5 text-left space-y-3.5">
-                    <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
-                      🍃 Product Customization & Pack Options
-                    </span>
-
-                    {/* Pack / Weight Size */}
-                    <div>
-                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Pack Size / Weight</span>
-                      <div className="flex flex-wrap gap-2">
-                        {packSizes.map(ps => (
-                          <button
-                            key={ps}
-                            type="button"
-                            onClick={() => setSelectedPackSize(ps)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
-                              selectedPackSize === ps
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                            }`}
-                          >
-                            {ps}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Flavour / Variety */}
-                    {flavours && flavours.length > 0 && (
-                      <div>
-                        <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Select Flavour / Variety</span>
-                        <div className="flex flex-wrap gap-2">
-                          {flavours.map(f => (
-                            <button
-                              key={f}
-                              type="button"
-                              onClick={() => setSelectedVariant(f)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
-                                selectedVariant === f
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400'
-                              }`}
-                            >
-                              {f}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
             </div>
 
             {/* Description & Action buttons */}
@@ -11991,7 +11974,7 @@ export default function CustomerDashboard({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#030712] text-slate-800 dark:text-slate-200 font-sans antialiased flex flex-col transition-colors duration-300">
       {/* -------------------- SLEEK TOAST NOTIFICATIONS -------------------- */}
-      <div className="fixed top-4 sm:top-6 inset-x-3 sm:inset-x-auto sm:right-6 z-[9999] flex flex-col gap-2.5 sm:gap-3 pointer-events-none sm:max-w-sm w-auto sm:w-full">
+      <div className="fixed top-4 sm:top-6 inset-x-3 sm:inset-x-auto sm:right-6 z-[999999] flex flex-col gap-2.5 sm:gap-3 pointer-events-none sm:max-w-sm w-auto sm:w-full">
         {toasts.map((t) => {
           const isError = t.type === 'error' || (t.text || '').toLowerCase().includes('failed') || (t.text || '').toLowerCase().includes('error') || (t.text || '').toLowerCase().includes('denied') || (t.text || '').toLowerCase().includes('insufficient');
           const isSuccess = t.type === 'success' || (t.text || '').toLowerCase().includes('success') || (t.text || '').toLowerCase().includes('added') || (t.text || '').toLowerCase().includes('saved') || (t.text || '').toLowerCase().includes('placed') || (t.text || '').toLowerCase().includes('congratulations');
@@ -13467,13 +13450,23 @@ wishlistProducts.forEach(item => addToCart(item));
                                 <button 
                                   onClick={() => {
                                     setIsProfileModalOpen(false);
-                                    setActiveTab('Home');
+                                    if (activeProfileTab === 'myjobs') {
+                                      setActiveTab('Jobs');
+                                    } else if (activeProfileTab === 'bookings') {
+                                      setActiveTab('Stay');
+                                    } else {
+                                      setActiveTab('Products');
+                                    }
                                     setSelectedSubNavbarCategory('All');
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                   }}
                                   className="mt-6 px-6 py-3 bg-[#FFC107] hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-1.5 border-none"
                                 >
-                                  <ShoppingCart className="w-4 h-4 text-slate-950" />
+                                  {activeProfileTab === 'myjobs' ? (
+                                    <Briefcase className="w-4 h-4 text-slate-950" />
+                                  ) : (
+                                    <ShoppingCart className="w-4 h-4 text-slate-950" />
+                                  )}
                                   <span>
                                     {activeProfileTab === 'orders' ? 'Explore Deals' : activeProfileTab === 'bookings' ? 'Explore Stays & Services' : 'Explore Jobs'}
                                   </span>
@@ -13855,9 +13848,9 @@ wishlistProducts.forEach(item => addToCart(item));
 
                             setProfilePassword('');
                             setProfileConfirmPassword('');
-                            triggerNotification("Profile saved in database successfully!");
+                            triggerNotification("Profile updated successfully!");
                           } else {
-                            triggerNotification("Failed to save profile in database.", "error");
+                            triggerNotification("Failed to update profile.", "error");
                           }
                         } finally {
                           setIsSavingProfile(false);
@@ -13926,7 +13919,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       }
 
                                       login({ ...currentUser, avatar: compressedBase64, photo: compressedBase64 }, 'customer');
-                                      triggerNotification("Profile photo uploaded & saved in DB!");
+                                      triggerNotification("Profile photo updated successfully!");
                                     }
                                   }}
                                 />
@@ -13959,7 +13952,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       }
                                     }
                                     login({ ...currentUser, avatar: '', photo: '' }, 'customer');
-                                    triggerNotification("Profile photo removed from DB");
+                                    triggerNotification("Profile photo removed successfully!");
                                   }}
                                   className="px-2.5 py-1 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:underline bg-transparent border-none cursor-pointer"
                                 >
@@ -13997,10 +13990,6 @@ wishlistProducts.forEach(item => addToCart(item));
                             value={profilePhone}
                             onChange={(e) => {
                               const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
-                              if (raw && !/^[6-9]/.test(raw)) {
-                                triggerNotification("Mobile number must start with 6, 7, 8, or 9.", "warning");
-                                return;
-                              }
                               setProfilePhone(raw);
                             }}
                             placeholder="Enter 10-digit mobile number (starts with 6, 7, 8, or 9)"
@@ -14071,7 +14060,6 @@ wishlistProducts.forEach(item => addToCart(item));
                             setSettingsNotify(prev => {
                               const next = !prev;
                               try { localStorage.setItem('connect_customer_settings_notify', JSON.stringify(next)); } catch (e) {}
-                              triggerNotification(`Email notifications ${next ? 'enabled' : 'disabled'}`);
                               return next;
                             });
                           }}
@@ -14094,7 +14082,6 @@ wishlistProducts.forEach(item => addToCart(item));
                             setSettingsSMS(prev => {
                               const next = !prev;
                               try { localStorage.setItem('connect_customer_settings_sms', JSON.stringify(next)); } catch (e) {}
-                              triggerNotification(`SMS tracking alerts ${next ? 'enabled' : 'disabled'}`);
                               return next;
                             });
                           }}
@@ -14117,7 +14104,6 @@ wishlistProducts.forEach(item => addToCart(item));
                             setSettingsSecurity(prev => {
                               const next = !prev;
                               try { localStorage.setItem('connect_customer_settings_security', JSON.stringify(next)); } catch (e) {}
-                              triggerNotification(`Two-factor authentication ${next ? 'enabled' : 'disabled'}`);
                               return next;
                             });
                           }}
@@ -15009,8 +14995,8 @@ wishlistProducts.forEach(item => addToCart(item));
                             triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
                             return;
                           }
-                          if (gIdx === 0 && (!gPhone || gPhone.length !== 10)) {
-                            triggerNotification("Please enter a valid 10-digit mobile number for primary guest / traveler.", "error");
+                          if (!gPhone || gPhone.length !== 10) {
+                            triggerNotification(`Please enter a valid 10-digit mobile number for ${gLabel}.`, "error");
                             return;
                           }
                         }
@@ -15724,8 +15710,8 @@ wishlistProducts.forEach(item => addToCart(item));
                               triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
                               return;
                             }
-                            if (gIdx === 0 && (!gPhone || gPhone.length !== 10)) {
-                              triggerNotification("Please enter a valid 10-digit mobile number for primary guest / traveler.", "error");
+                            if (!gPhone || gPhone.length !== 10) {
+                              triggerNotification(`Please enter a valid 10-digit mobile number for ${gLabel}.`, "error");
                               return;
                             }
                           }
@@ -16148,8 +16134,8 @@ wishlistProducts.forEach(item => addToCart(item));
                     type="button"
                     onClick={() => {
                       setAddressForm({
-                        name: profileName || currentUser?.name || '',
-                        phone: (profilePhone || currentUser?.phone || '').replace('+91', '').trim(),
+                        name: '',
+                        phone: '',
                         pincode: '',
                         locality: '',
                         address: '',
@@ -16307,8 +16293,8 @@ wishlistProducts.forEach(item => addToCart(item));
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        handleSaveAddress();
+                      onClick={async () => {
+                        await handleSaveAddress();
                       }}
                       className="px-5 py-2 bg-amber-400 hover:bg-amber-500 text-[#0b1e36] font-extrabold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer shadow-xs border-none"
                     >
@@ -16327,8 +16313,8 @@ wishlistProducts.forEach(item => addToCart(item));
                         type="button"
                         onClick={() => {
                           setAddressForm({
-                            name: profileName || currentUser?.name || '',
-                            phone: (profilePhone || currentUser?.phone || '').replace('+91', '').trim(),
+                            name: '',
+                            phone: '',
                             pincode: '',
                             locality: '',
                             address: '',
@@ -16974,13 +16960,6 @@ wishlistProducts.forEach(item => addToCart(item));
                     })()}
                   </div>
 
-                  {/* Inline Modal Payment Error Alert (Bug 8) */}
-                  {paymentUpiError && (
-                    <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-bold animate-fade-in text-left">
-                      <XCircle className="w-4 h-4 shrink-0 text-rose-500" />
-                      <span className="flex-1 leading-snug">{paymentUpiError}</span>
-                    </div>
-                  )}
 
                   {/* Pay Button */}
                   {razorpayPayMethod === 'wallet' ? (() => {
@@ -18073,7 +18052,18 @@ wishlistProducts.forEach(item => addToCart(item));
           <div onClick={() => setShareModalProduct(null)} className="absolute inset-0" />
           <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden flex flex-col z-10 animate-scale-up p-6 text-left space-y-4">
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">Share Product</h3>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                {(() => {
+                  const main = (shareModalProduct?.mainCategory || shareModalProduct?.subNavbarCategory || shareModalProduct?.tag || activeTab || '').toLowerCase();
+                  if (main.includes('stay') || shareModalProduct?.hotelType || shareModalProduct?.roomTypes) return 'Share Stay';
+                  if (main.includes('travel') || shareModalProduct?.vehicleType || shareModalProduct?.travelType) return 'Share Travel';
+                  if (main.includes('job') || shareModalProduct?.jobType || shareModalProduct?.salary) return 'Share Job';
+                  if (main.includes('service')) return 'Share Service';
+                  if (main.includes('food')) return 'Share Food';
+                  if (main.includes('daily')) return 'Share Daily Needs';
+                  return 'Share Product';
+                })()}
+              </h3>
               <button 
                 onClick={() => setShareModalProduct(null)} 
                 className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer border-none bg-transparent"

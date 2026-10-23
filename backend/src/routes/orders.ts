@@ -553,6 +553,47 @@ router.post('/', async (req: Request, res: Response) => {
     const resolvedCustId = (customer_id || customerId || memberId || req.body.user_id || '').trim();
     const resolvedEmail = (customer_email || candidateEmail || '').trim();
 
+    if (isJobType) {
+      const jobId = firstItem?.id || firstItem?._id || firstItem?.productId || req.body.job_id || req.body.productId;
+      const mongoDb = db.getDb();
+      if (mongoDb && (jobId || firstItem?.name)) {
+        const custFilter: any[] = [];
+        if (resolvedCustId) custFilter.push({ customer_id: resolvedCustId }, { customerId: resolvedCustId });
+        if (resolvedEmail) custFilter.push({ customer_email: resolvedEmail }, { candidateEmail: resolvedEmail });
+        if (customer_phone) custFilter.push({ customer_phone: customer_phone });
+
+        if (custFilter.length > 0) {
+          const itemMatch: any[] = [];
+          if (jobId) {
+            itemMatch.push(
+              { 'items.id': jobId },
+              { 'items._id': jobId },
+              { 'items.productId': jobId },
+              { productId: jobId }
+            );
+          }
+          if (firstItem?.name) {
+            itemMatch.push({ 'items.name': firstItem.name }, { productName: firstItem.name });
+          }
+
+          const existingJobOrder = await mongoDb.collection('orders').findOne({
+            type: { $in: ['Job', 'Jobs'] },
+            $or: custFilter,
+            $and: [{ $or: itemMatch }],
+            status: { $nin: ['Cancelled', 'Rejected'] }
+          });
+
+          if (existingJobOrder) {
+            return res.status(409).json({
+              status: 'error',
+              code: 'JOB_ALREADY_APPLIED',
+              message: 'You have already applied for this position. Check your applications in My Jobs.'
+            });
+          }
+        }
+      }
+    }
+
     // Authoritative check-in validation for stays & appointments
     const parseDateToYMD = (val: any): string | null => {
       if (!val) return null;

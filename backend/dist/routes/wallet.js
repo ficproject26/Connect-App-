@@ -205,7 +205,7 @@ router.get('/transactions', middleware_1.optionalAuthenticateToken, async (req, 
     }
 });
 // 3. POST: /api/wallet/recharge/create-order (Create Razorpay order with paymentRateLimiter)
-router.post('/recharge/create-order', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'admin'), middleware_1.paymentRateLimiter, async (req, res) => {
+router.post('/recharge/create-order', middleware_1.optionalAuthenticateToken, middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { amount, userId, customerId, email, phone } = req.body;
         const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
@@ -308,7 +308,7 @@ router.post('/recharge/create-order', middleware_1.authenticateToken, (0, middle
     }
 });
 // 4. POST: /api/wallet/recharge/verify (Verify signature & credit wallet atomically with paymentRateLimiter)
-router.post('/recharge/verify', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'admin'), middleware_1.paymentRateLimiter, async (req, res) => {
+router.post('/recharge/verify', middleware_1.optionalAuthenticateToken, middleware_1.paymentRateLimiter, async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId, customerId, email, phone } = req.body;
         const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
@@ -354,7 +354,9 @@ router.post('/recharge/verify', middleware_1.authenticateToken, (0, middleware_1
         const generatedSignature = crypto_1.default.createHmac('sha256', keySecret).update(textToVerify).digest('hex');
         const isSignatureValid = (generatedSignature === razorpay_signature);
         // In production, test orders are strictly prohibited
-        const isTestOrder = process.env.NODE_ENV !== 'production' && (razorpay_order_id.startsWith('order_test_') || razorpay_payment_id.startsWith('pay_test_'));
+        const isTestOrder = process.env.NODE_ENV !== 'production' && (razorpay_order_id.startsWith('order_test_') ||
+            razorpay_payment_id.startsWith('pay_test_') ||
+            String(razorpay_signature || '').startsWith('sim_'));
         if (!isSignatureValid && !isTestOrder) {
             return res.status(400).json({
                 success: false,

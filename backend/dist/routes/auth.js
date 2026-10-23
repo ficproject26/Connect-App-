@@ -1105,22 +1105,92 @@ router.post('/register-customer', async (req, res) => {
                 type: 'Home',
                 isRegistrationAddress: true
             }] : [];
-        if (mongoDb && (cleanEmail || cleanPhone)) {
-            const existing = await mongoDb.collection('users').findOne({
-                $or: [
-                    ...(cleanEmail ? [{ email: cleanEmail }] : []),
-                    ...(cleanPhone ? [{ phone: cleanPhone }, { phone: `+91${cleanPhone}` }, { phone: `91${cleanPhone}` }] : [])
-                ]
-            });
-            if (existing) {
-                // SECURITY FIX: Never silently update an existing user's credentials via registration.
-                // This prevented account takeover where an attacker could overwrite another user's
-                // password, Aadhaar, or PAN simply by knowing their email/phone.
-                return res.status(409).json({
-                    status: 'error',
-                    code: 'ACCOUNT_EXISTS',
-                    message: 'An account with this email or mobile number already exists. Please log in instead.'
+        if (mongoDb) {
+            if (cleanEmail) {
+                const existingEmail = await mongoDb.collection('users').findOne({ email: cleanEmail });
+                if (existingEmail) {
+                    return res.status(409).json({
+                        status: 'error',
+                        code: 'EMAIL_EXISTS',
+                        message: 'This email address is already registered. Please use a different email address.'
+                    });
+                }
+            }
+            if (cleanPhone) {
+                const existingPhone = await mongoDb.collection('users').findOne({
+                    $or: [
+                        { phone: cleanPhone },
+                        { phone: `+91${cleanPhone}` },
+                        { phone: `91${cleanPhone}` }
+                    ]
                 });
+                if (existingPhone) {
+                    return res.status(409).json({
+                        status: 'error',
+                        code: 'PHONE_EXISTS',
+                        message: 'This mobile number is already registered. Please use a different mobile number.'
+                    });
+                }
+            }
+            if (aadhaarNumber) {
+                const cleanAadhaar = String(aadhaarNumber).trim();
+                let aadhaarMatch = await mongoDb.collection('users').findOne({
+                    $or: [{ aadhaar: cleanAadhaar }, { aadhaarNumber: cleanAadhaar }]
+                });
+                if (!aadhaarMatch) {
+                    const usersWithAadhaar = await mongoDb.collection('users').find({
+                        aadhaar: { $exists: true, $ne: '' }
+                    }).project({ _id: 1, aadhaar: 1 }).toArray();
+                    for (const u of usersWithAadhaar) {
+                        if (u.aadhaar && typeof u.aadhaar === 'string') {
+                            try {
+                                const dec = u.aadhaar.startsWith('v1:') ? securityManager_1.securityManager.decryptAES256GCM(u.aadhaar) : u.aadhaar;
+                                if (dec === cleanAadhaar) {
+                                    aadhaarMatch = u;
+                                    break;
+                                }
+                            }
+                            catch (_) { }
+                        }
+                    }
+                }
+                if (aadhaarMatch) {
+                    return res.status(409).json({
+                        status: 'error',
+                        code: 'AADHAAR_EXISTS',
+                        message: 'This Aadhaar card number is already registered. Please use a different Aadhaar card number.'
+                    });
+                }
+            }
+            if (panNumber) {
+                const cleanPan = String(panNumber).trim().toUpperCase();
+                let panMatch = await mongoDb.collection('users').findOne({
+                    $or: [{ pan: cleanPan }, { panNumber: cleanPan }]
+                });
+                if (!panMatch) {
+                    const usersWithPan = await mongoDb.collection('users').find({
+                        pan: { $exists: true, $ne: '' }
+                    }).project({ _id: 1, pan: 1 }).toArray();
+                    for (const u of usersWithPan) {
+                        if (u.pan && typeof u.pan === 'string') {
+                            try {
+                                const dec = u.pan.startsWith('v1:') ? securityManager_1.securityManager.decryptAES256GCM(u.pan) : u.pan;
+                                if (dec === cleanPan) {
+                                    panMatch = u;
+                                    break;
+                                }
+                            }
+                            catch (_) { }
+                        }
+                    }
+                }
+                if (panMatch) {
+                    return res.status(409).json({
+                        status: 'error',
+                        code: 'PAN_EXISTS',
+                        message: 'This PAN card number is already registered. Please use a different PAN card number.'
+                    });
+                }
             }
         }
         const createdUser = {
@@ -1316,6 +1386,7 @@ router.get('/customer-profile', middleware_1.optionalAuthenticateToken, async (r
                 membershipStatus: safeProfile.membershipStatus || (safeProfile.membershipTier && safeProfile.membershipTier !== 'None' ? 'ACTIVE' : 'INACTIVE'),
                 membershipHistory: Array.isArray(safeProfile.membershipHistory) ? safeProfile.membershipHistory : [],
                 walletBalance: typeof safeProfile.walletBalance === 'number' ? Math.max(0, safeProfile.walletBalance) : 0.00,
+                favorites: Array.isArray(safeProfile.favorites) ? safeProfile.favorites : [],
                 addresses: profileAddresses
             }
         });
@@ -1335,9 +1406,21 @@ router.put('/customer-profile', middleware_1.authenticateToken, async (req, res)
     // IDOR & Privilege Escalation Protection:
     // Non-admins cannot modify another user's profile, nor escalate privileges
     if (!isAdmin) {
-        const selfId = (authUser.userId || authUser.customerId || authUser.registrationId || '').toLowerCase().trim();
+        const allowedIds = [
+            authUser.userId,
+            authUser.customerId,
+            authUser.registrationId,
+            authUser.id,
+            authUser._id,
+            authUser.customer_id,
+            authUser.phone,
+            authUser.email
+        ].filter(Boolean).map((s) => String(s).toLowerCase().trim());
         const selfEmail = (authUser.email || '').toLowerCase().trim();
-        if (userId && String(userId).toLowerCase().trim() !== selfId) {
+        if (userId && !allowedIds.includes(String(userId).toLowerCase().trim())) {
+            return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot update another user account.' });
+        }
+        if (customerId && !allowedIds.includes(String(customerId).toLowerCase().trim())) {
             return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot update another user account.' });
         }
         if (email && email.toLowerCase().trim() !== selfEmail) {
@@ -1398,6 +1481,9 @@ router.put('/customer-profile', middleware_1.authenticateToken, async (req, res)
                 return res.status(400).json({ status: 'error', code: 'INVALID_PASSWORD', message: passCheck.message });
             }
             updateFields.password = await bcryptjs_1.default.hash(password, 10);
+        }
+        if (req.body.favorites !== undefined && Array.isArray(req.body.favorites)) {
+            updateFields.favorites = req.body.favorites;
         }
         const filter = buildCustomerMongoFilter(target);
         await mongoDb.collection('users').updateOne(filter, { $set: updateFields });

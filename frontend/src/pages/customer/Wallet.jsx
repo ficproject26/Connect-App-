@@ -136,9 +136,13 @@ export default function Wallet() {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const targetUser = currentUser?.id || currentUser?.customerId || localStorage.getItem('connect_customer_id') || localStorage.getItem('connect_user_id') || '';
 
+      const authToken = localStorage.getItem('connect_token') || localStorage.getItem('token') || '';
       const orderRes = await fetch(`${baseBackend}/api/wallet/recharge/create-order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({
           amount: amt,
           userId: targetUser,
@@ -194,9 +198,13 @@ export default function Wallet() {
           },
           handler: async function (response) {
             try {
+              const authToken = localStorage.getItem('connect_token') || localStorage.getItem('token') || '';
               const verifyRes = await fetch(`${baseBackend}/api/wallet/recharge/verify`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+                },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
@@ -297,9 +305,13 @@ export default function Wallet() {
       const dummyPaymentId = `pay_test_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
       const targetUser = currentUser?.id || currentUser?.customerId || localStorage.getItem('connect_customer_id') || localStorage.getItem('connect_user_id') || '';
 
+      const authToken = localStorage.getItem('connect_token') || localStorage.getItem('token') || '';
       const verifyRes = await fetch(`${baseBackend}/api/wallet/recharge/verify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({
           razorpay_order_id: razorpayOrderData.order_id,
           razorpay_payment_id: dummyPaymentId,
