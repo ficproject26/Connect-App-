@@ -34,7 +34,10 @@ class DatabaseManager {
         this.memoryDb = DEFAULT_MOCK_DATA;
     }
     async connect() {
-        const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null) ;
+        const connStr = process.env.MONGODB_URI || (process.env.DATABASE_URL?.startsWith('mongodb') ? process.env.DATABASE_URL : null);
+        if (!connStr) {
+            throw new Error('MONGODB_URI environment variable is not defined.');
+        }
         console.log(`[DB]: Attempting connection to MongoDB...`);
         let attempts = 0;
         const maxAttempts = 3;
@@ -193,14 +196,7 @@ class DatabaseManager {
         try {
             const vendorCount = await this.mongoDb.collection('vendors').countDocuments();
             if (vendorCount === 0) {
-                console.log(`[DB]: MongoDB is empty. Seeding default data...`);
-                await this.mongoDb.collection('vendors').insertMany(DEFAULT_MOCK_DATA.vendors);
-                await this.mongoDb.collection('delivery_partners').insertMany(DEFAULT_MOCK_DATA.delivery_partners);
-                await this.mongoDb.collection('orders').insertMany(DEFAULT_MOCK_DATA.orders);
-                await this.mongoDb.collection('delivery_status_history').insertMany(DEFAULT_MOCK_DATA.delivery_status_history);
-                await this.mongoDb.collection('delivery_earnings').insertMany(DEFAULT_MOCK_DATA.delivery_earnings);
-                await this.mongoDb.collection('delivery_ratings').insertMany(DEFAULT_MOCK_DATA.delivery_ratings);
-                console.log(`[DB]: Default data seeded successfully.`);
+                console.log('[DB]: Database connected. Ready for operational data.');
             }
         }
         catch (err) {
