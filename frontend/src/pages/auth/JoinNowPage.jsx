@@ -45,9 +45,59 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
   // Touched state trackers for real-time validation UI
   const [touched, setTouched] = useState({});
+  const [duplicateErrors, setDuplicateErrors] = useState({});
+  const duplicateTimeoutRef = useRef({});
+
+  const checkFieldDuplicate = async (field, value) => {
+    if (!value || typeof value !== 'string' || value.trim().length === 0) {
+      setDuplicateErrors(prev => {
+        const copy = { ...prev };
+        delete copy[field];
+        return copy;
+      });
+      return;
+    }
+
+    try {
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const res = await fetch(`${baseBackend}/api/auth/check-duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field, value: value.trim() })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data && data.exists) {
+        setDuplicateErrors(prev => ({ ...prev, [field]: data.message }));
+      } else {
+        setDuplicateErrors(prev => {
+          const copy = { ...prev };
+          delete copy[field];
+          return copy;
+        });
+      }
+    } catch (_) {}
+  };
+
+  const scheduleDuplicateCheck = (field, value, delay = 400) => {
+    if (duplicateTimeoutRef.current[field]) {
+      clearTimeout(duplicateTimeoutRef.current[field]);
+    }
+    duplicateTimeoutRef.current[field] = setTimeout(() => {
+      checkFieldDuplicate(field, value);
+    }, delay);
+  };
 
   const handleBlur = (field) => {
     setTouched(prev => ({ ...prev, [field]: true }));
+    if (field === 'email' && email.includes('@') && email.includes('.')) {
+      checkFieldDuplicate('email', email);
+    } else if (field === 'phoneNumber' && phoneNumber.replace(/\D/g, '').length === 10) {
+      checkFieldDuplicate('phone', phoneNumber);
+    } else if (field === 'aadhaarNumber' && aadhaarNumber.replace(/\D/g, '').length === 12) {
+      checkFieldDuplicate('aadhaar', aadhaarNumber);
+    } else if (field === 'panNumber' && panNumber.trim().length === 10) {
+      checkFieldDuplicate('pan', panNumber);
+    }
   };
 
   // Field validation evaluations
@@ -79,7 +129,9 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
 
   // Overall form validity boolean
   const isFormValid = useMemo(() => {
+    const hasDuplicates = Object.keys(duplicateErrors).length > 0;
     return (
+      !hasDuplicates &&
       nameVal.isValid &&
       phoneVal.isValid &&
       emailVal.isValid &&
@@ -92,31 +144,51 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
       confirmPassVal.isValid &&
       agreeTerms
     );
-  }, [nameVal, phoneVal, emailVal, aadhaarVal, panVal, addressVal, cityVal, pincodeVal, passwordVal, confirmPassVal, agreeTerms]);
+  }, [nameVal, phoneVal, emailVal, aadhaarVal, panVal, addressVal, cityVal, pincodeVal, passwordVal, confirmPassVal, agreeTerms, duplicateErrors]);
 
   // Field Input Sanitizers and Formatters with Immediate Validation
   const handlePhoneChange = (e) => {
     const val = sanitizeMobileInput(e.target.value);
     setPhoneNumber(val);
     setTouched(prev => ({ ...prev, phoneNumber: true }));
+    if (val.length === 10) {
+      scheduleDuplicateCheck('phone', val, 300);
+    } else {
+      setDuplicateErrors(prev => { const c = { ...prev }; delete c.phone; return c; });
+    }
   };
 
   const handleEmailChange = (e) => {
     const val = e.target.value;
     setEmail(val);
     setTouched(prev => ({ ...prev, email: true }));
+    if (val.includes('@') && val.includes('.') && val.length > 5) {
+      scheduleDuplicateCheck('email', val, 500);
+    } else {
+      setDuplicateErrors(prev => { const c = { ...prev }; delete c.email; return c; });
+    }
   };
 
   const handleAadhaarChange = (e) => {
     const val = sanitizeAadhaarInput(e.target.value);
     setAadhaarNumber(val);
     setTouched(prev => ({ ...prev, aadhaarNumber: true }));
+    if (val.length === 12) {
+      scheduleDuplicateCheck('aadhaar', val, 300);
+    } else {
+      setDuplicateErrors(prev => { const c = { ...prev }; delete c.aadhaar; return c; });
+    }
   };
 
   const handlePanChange = (e) => {
     const val = formatPanInput(e.target.value);
     setPanNumber(val);
     setTouched(prev => ({ ...prev, panNumber: true }));
+    if (val.length === 10) {
+      scheduleDuplicateCheck('pan', val, 300);
+    } else {
+      setDuplicateErrors(prev => { const c = { ...prev }; delete c.pan; return c; });
+    }
   };
 
   const handlePincodeChange = async (e) => {
@@ -367,6 +439,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     {(touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid && (
                       <p className="text-[10px] font-bold text-rose-500 mt-1">{phoneVal.error}</p>
                     )}
+                    {duplicateErrors.phone && (
+                      <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1 animate-fade-in">
+                        <AlertCircle className="w-3 h-3 shrink-0" />
+                        <span>{duplicateErrors.phone}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -405,6 +483,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                   </div>
                   {(touched.email || email.length > 0) && !emailVal.isValid && (
                     <p className="text-[10px] font-bold text-rose-500 mt-1">{emailVal.error}</p>
+                  )}
+                  {duplicateErrors.email && (
+                    <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1 animate-fade-in">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      <span>{duplicateErrors.email}</span>
+                    </p>
                   )}
                 </div>
 
@@ -452,6 +536,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     {touched.aadhaarNumber && !aadhaarVal.isValid && (
                       <p className="text-[10px] font-bold text-rose-500 mt-1">{aadhaarVal.error}</p>
                     )}
+                    {duplicateErrors.aadhaar && (
+                      <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1 animate-fade-in">
+                        <AlertCircle className="w-3 h-3 shrink-0" />
+                        <span>{duplicateErrors.aadhaar}</span>
+                      </p>
+                    )}
                   </div>
 
                   {/* PAN Card Number */}
@@ -494,6 +584,12 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     </div>
                     {touched.panNumber && !panVal.isValid && (
                       <p className="text-[10px] font-bold text-rose-500 mt-1">{panVal.error}</p>
+                    )}
+                    {duplicateErrors.pan && (
+                      <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1 animate-fade-in">
+                        <AlertCircle className="w-3 h-3 shrink-0" />
+                        <span>{duplicateErrors.pan}</span>
+                      </p>
                     )}
                   </div>
                 </div>

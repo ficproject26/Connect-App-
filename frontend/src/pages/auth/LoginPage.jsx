@@ -366,17 +366,19 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
         return;
       }
 
-      setForgotSuccess(t('passwordResetSuccess', currentLang));
+      setForgotSuccess("Password Changed Successfully!");
       setEmail(idClean);
+      setOtpSuccessMsg("Password Changed Successfully! Please log in with your new password.");
       setTimeout(() => {
         setIsForgotPasswordOpen(false);
         setForgotStep(1);
+        setForgotIdentifier('');
         setForgotOtp('');
         setForgotNewPassword('');
         setForgotConfirmPassword('');
         setForgotSuccess('');
         setErrorMsg('');
-      }, 2000);
+      }, 1500);
 
     } catch (err) {
       setForgotLoading(false);
@@ -517,6 +519,13 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                       </button>
                     )}
                   </div>
+                </div>
+              )}
+              {/* Success Banner */}
+              {otpSuccessMsg && (
+                <div className="mb-3.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2.5 animate-fade-in text-left">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+                  <span>{otpSuccessMsg}</span>
                 </div>
               )}
 
@@ -1111,7 +1120,15 @@ export default function LoginPage({ onAuthSuccess, onBackToHome, onNavigateToJoi
                 <div className="flex gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => { setForgotStep(1); setForgotError(''); setForgotSuccess(''); }}
+                    onClick={() => {
+                      setForgotStep(1);
+                      setForgotIdentifier('');
+                      setForgotOtp('');
+                      setForgotNewPassword('');
+                      setForgotConfirmPassword('');
+                      setForgotError('');
+                      setForgotSuccess('');
+                    }}
                     className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs rounded-xl transition-all cursor-pointer border-none flex items-center justify-center gap-1"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />

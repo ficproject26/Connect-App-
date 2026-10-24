@@ -45,6 +45,12 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState(() => {
     try {
       const path = (typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+|\/+$/g, '') : '').toLowerCase();
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const hasProductParam = search.includes('product=') || search.includes('productId=');
+      if (hasProductParam || path === 'dashboard') {
+        return 'dashboard';
+      }
+
       const user = localStorage.getItem('connect_current_user');
       const protectedPages = [
         'dashboard', 'profile', 'orders', 'bookings', 'jobs', 'myjobs',

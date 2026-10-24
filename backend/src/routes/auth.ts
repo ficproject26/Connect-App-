@@ -845,6 +845,9 @@ router.post(['/forgot-password/send-otp', '/forgot-password-otp', '/forgot-passw
           });
         }
         isSimulated = !!smsRes.simulated;
+      } else {
+        // Target is an email address (e.g. Gmail)
+        isSimulated = true;
       }
 
       securityManager.logEvent({
@@ -1344,6 +1347,128 @@ router.post('/register-customer', async (req: Request, res: Response) => {
   } catch (error: any) {
     return res.status(500).json({ status: 'error', message: error.message });
   }
+});
+
+// POST: /api/auth/check-duplicate & /api/auth/check-registration-duplicate (Real-time duplicate validation)
+router.post(['/check-duplicate', '/check-registration-duplicate'], async (req: Request, res: Response) => {
+  const { field, value, email, phone, aadhaar, pan } = req.body;
+  const mongoDb = db.getDb();
+  if (!mongoDb) {
+    return res.status(503).json({ status: 'error', message: 'Database temporarily unavailable' });
+  }
+
+  const checkField = field || (email ? 'email' : phone ? 'phone' : aadhaar ? 'aadhaar' : pan ? 'pan' : '');
+  const checkValue = String(value || email || phone || aadhaar || pan || '').trim();
+
+  if (!checkField || !checkValue) {
+    return res.status(400).json({ status: 'error', message: 'Field name and value are required.' });
+  }
+
+  if (checkField === 'email') {
+    const cleanEmail = checkValue.toLowerCase();
+    const existing = await mongoDb.collection('users').findOne({ email: cleanEmail });
+    if (existing) {
+      return res.json({
+        status: 'error',
+        exists: true,
+        code: 'EMAIL_EXISTS',
+        message: 'This email address is already registered. Please use a different email address.'
+      });
+    }
+    return res.json({ status: 'success', exists: false, message: 'Email address is available.' });
+  }
+
+  if (checkField === 'phone' || checkField === 'mobile') {
+    const cleanPhone = checkValue.replace(/\D/g, '').slice(-10);
+    if (cleanPhone.length === 10) {
+      const existing = await mongoDb.collection('users').findOne({
+        $or: [
+          { phone: cleanPhone },
+          { phone: `+91${cleanPhone}` },
+          { phone: `91${cleanPhone}` }
+        ]
+      });
+      if (existing) {
+        return res.json({
+          status: 'error',
+          exists: true,
+          code: 'PHONE_EXISTS',
+          message: 'This mobile number is already registered. Please use a different mobile number.'
+        });
+      }
+    }
+    return res.json({ status: 'success', exists: false, message: 'Mobile number is available.' });
+  }
+
+  if (checkField === 'aadhaar' || checkField === 'aadhaarNumber') {
+    const cleanAadhaar = checkValue.replace(/\D/g, '');
+    if (cleanAadhaar.length === 12) {
+      let match: any = await mongoDb.collection('users').findOne({
+        $or: [{ aadhaar: cleanAadhaar }, { aadhaarNumber: cleanAadhaar }]
+      });
+      if (!match) {
+        const usersWithAadhaar = await mongoDb.collection('users').find({
+          aadhaar: { $exists: true, $ne: '' }
+        }).project({ _id: 1, aadhaar: 1 }).toArray();
+        for (const u of usersWithAadhaar) {
+          if (u.aadhaar && typeof u.aadhaar === 'string') {
+            try {
+              const dec = u.aadhaar.startsWith('v1:') ? securityManager.decryptAES256GCM(u.aadhaar) : u.aadhaar;
+              if (dec === cleanAadhaar) {
+                match = u;
+                break;
+              }
+            } catch (_) {}
+          }
+        }
+      }
+      if (match) {
+        return res.json({
+          status: 'error',
+          exists: true,
+          code: 'AADHAAR_EXISTS',
+          message: 'This Aadhaar card number is already registered. Please use a different Aadhaar card number.'
+        });
+      }
+    }
+    return res.json({ status: 'success', exists: false, message: 'Aadhaar card number is available.' });
+  }
+
+  if (checkField === 'pan' || checkField === 'panNumber') {
+    const cleanPan = checkValue.toUpperCase().trim();
+    if (cleanPan.length === 10) {
+      let match: any = await mongoDb.collection('users').findOne({
+        $or: [{ pan: cleanPan }, { panNumber: cleanPan }]
+      });
+      if (!match) {
+        const usersWithPan = await mongoDb.collection('users').find({
+          pan: { $exists: true, $ne: '' }
+        }).project({ _id: 1, pan: 1 }).toArray();
+        for (const u of usersWithPan) {
+          if (u.pan && typeof u.pan === 'string') {
+            try {
+              const dec = u.pan.startsWith('v1:') ? securityManager.decryptAES256GCM(u.pan) : u.pan;
+              if (dec === cleanPan) {
+                match = u;
+                break;
+              }
+            } catch (_) {}
+          }
+        }
+      }
+      if (match) {
+        return res.json({
+          status: 'error',
+          exists: true,
+          code: 'PAN_EXISTS',
+          message: 'This PAN card number is already registered. Please use a different PAN card number.'
+        });
+      }
+    }
+    return res.json({ status: 'success', exists: false, message: 'PAN card number is available.' });
+  }
+
+  return res.json({ status: 'success', exists: false });
 });
 
 // GET: /api/auth/customer-profile (Fetch customer profile & saved addresses from MongoDB)

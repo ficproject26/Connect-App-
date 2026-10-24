@@ -2448,29 +2448,36 @@ export default function CustomerDashboard({
 
   const [selectedTimeWindow, setSelectedTimeWindow] = useState('All Time');
 
-  const ordersForActiveTab = useMemo(() => {
-    const isPhysicalOrder = (o) => {
-      const typeLower = (o.type || '').toLowerCase();
-      if (['booking', 'stay', 'travel', 'services', 'service', 'job', 'jobs', 'appointment', 'doctor', 'hospital'].includes(typeLower)) {
-        return false;
-      }
-      const details = (o.product_details || o.name || '').toLowerCase();
-      const bookingKeywords = ['hotel', 'stay', 'flight', 'bus', 'doctor', 'hospital', 'consultation', 'cleaning', 'plumbing', 'repair', 'job opening', 'full time'];
-      if (bookingKeywords.some(k => details.includes(k))) return false;
-      return true;
-    };
+  const isBookingOrder = (o) => {
+    if (!o) return false;
+    const typeLower = (o.type || '').toLowerCase();
+    const nameLower = (o.name || o.product_details || o.items?.[0]?.name || '').toLowerCase();
+    const catLower = (o.category || o.mainCategory || o.subNavbarCategory || o.items?.[0]?.category || '').toLowerCase();
 
-    if (activeProfileTab === 'orders') {
-      return customerOrders.filter(o => isPhysicalOrder(o));
+    // If order has booking specific fields, it is 100% a booking
+    if (
+      o.checkInDate || o.check_in_date || o.checkInTime || o.checkOutDate || 
+      o.appointmentDate || o.departureDate || o.travelDate || o.boardingPoint || 
+      o.droppingPoint || o.roomsCount || (o.guestDetails && o.guestDetails.length > 0) ||
+      o.items?.[0]?.checkInDate || o.items?.[0]?.nights
+    ) {
+      return true;
     }
-    if (activeProfileTab === 'bookings') {
-      return customerOrders.filter(o => {
-        const typeLower = (o.type || '').toLowerCase();
-        if (typeLower === 'job' || typeLower === 'jobs') return false;
-        if (typeLower === 'booking' || ['stay', 'travel', 'services', 'service', 'appointment', 'hospital', 'doctor'].includes(typeLower)) return !isPhysicalOrder(o);
-        return !isPhysicalOrder(o);
-      });
+
+    // Keywords that identify a booking (hotels, stays, villas, resorts, travel, services)
+    const bookingKeywords = [
+      'booking', 'stay', 'travel', 'services', 'service', 'appointment', 'hotel', 'villa', 'resort', 'homestay',
+      'cottage', 'room', 'bus', 'flight', 'tour', 'trip', 'taxi', 'cab', 'ticket', 'plumb', 'electric', 'clean',
+      'mechanic', 'salon', 'doctor', 'hospital', 'consultation'
+    ];
+
+    if (bookingKeywords.some(k => typeLower.includes(k) || nameLower.includes(k) || catLower.includes(k))) {
+      return true;
     }
+    return false;
+  };
+
+  const ordersForActiveTab = useMemo(() => {
     if (activeProfileTab === 'myjobs') {
       return customerOrders.filter(o => {
         if (!o) return false;
@@ -2480,6 +2487,23 @@ export default function CustomerDashboard({
         return false;
       });
     }
+
+    if (activeProfileTab === 'bookings') {
+      return customerOrders.filter(o => {
+        const typeLower = (o.type || '').toLowerCase();
+        if (typeLower === 'job' || typeLower === 'jobs') return false;
+        return isBookingOrder(o);
+      });
+    }
+
+    if (activeProfileTab === 'orders') {
+      return customerOrders.filter(o => {
+        const typeLower = (o.type || '').toLowerCase();
+        if (typeLower === 'job' || typeLower === 'jobs') return false;
+        return !isBookingOrder(o);
+      });
+    }
+
     return customerOrders;
   }, [customerOrders, activeProfileTab]);
 
@@ -2521,11 +2545,13 @@ export default function CustomerDashboard({
   const [selectedProduct, setSelectedProduct] = useState(null);
   const mainScrollRef = useRef(null);
   const prevSubNavCategoryRef = useRef(selectedSubNavbarCategory);
+  const prevActiveTabRef = useRef(activeTab);
 
   useEffect(() => {
     if (selectedProduct) {
       const pTab = getCanonicalTabName(selectedProduct);
-      const isNavigatingAway = pTab !== activeTab || (prevSubNavCategoryRef.current !== selectedSubNavbarCategory && selectedSubNavbarCategory !== pTab);
+      // User explicitly changed tabs away from the product's tab
+      const isNavigatingAway = prevActiveTabRef.current === pTab && activeTab !== pTab;
       if (isNavigatingAway) {
         setSelectedProduct(null);
         if (mainScrollRef.current) {
@@ -2533,8 +2559,9 @@ export default function CustomerDashboard({
         }
       }
     }
+    prevActiveTabRef.current = activeTab;
     prevSubNavCategoryRef.current = selectedSubNavbarCategory;
-  }, [activeTab, selectedSubNavbarCategory]);
+  }, [activeTab, selectedSubNavbarCategory, selectedProduct]);
 
   const [activeProductImage, setActiveProductImage] = useState(null);
   const [activeThumbnailIndex, setActiveThumbnailIndex] = useState(0);
@@ -2881,11 +2908,13 @@ export default function CustomerDashboard({
 
   const submitRating = async (e) => {
     e.preventDefault();
-    if (!ratingOrder) return;
+    const targetOrder = ratingOrder || trackingOrder;
+    if (!targetOrder) return;
 
     try {
       const partnerId = trackingPartner?.id || 'dp1';
-      const res = await apiFetch(`/orders/${ratingOrder.id}/rate`, {
+      const orderIdTarget = targetOrder.id || targetOrder._id || targetOrder.order_number;
+      const res = await apiFetch(`/orders/${orderIdTarget}/rate`, {
         method: 'POST',
         body: JSON.stringify({
           rating: ratingValue,
@@ -2895,7 +2924,7 @@ export default function CustomerDashboard({
         })
       });
 
-      if (res.status === 'success') {
+      if (res && (res.status === 'success' || res.data || res.id)) {
         setRatingSuccess(true);
         triggerNotification('Thank you for rating your delivery experience!');
         setTimeout(() => {
@@ -2905,10 +2934,13 @@ export default function CustomerDashboard({
           setRatingComment('');
           setRatingValue(5);
           loadCustomerOrders(true);
-        }, 2500);
+        }, 2000);
+      } else {
+        triggerNotification(res?.message || 'Failed to submit rating. Please try again.', 'error');
       }
     } catch (e) {
       console.error('Failed to submit rating:', e);
+      triggerNotification('Failed to submit rating. Please try again.', 'error');
     }
   };
 
@@ -3736,24 +3768,50 @@ export default function CustomerDashboard({
     if (currentUser?.phone) setApplicantPhone(currentUser.phone);
   }, [currentUser, profileName, profileEmail]);
 
-  // Reset transient job-specific form state when switching between jobs (Issue 12B)
+  // Reset transient job-specific form state when switching between jobs, preserving drafts if present (Bug K)
   const prevAppliedJobIdRef = useRef(appliedJobId);
   useEffect(() => {
     if (appliedJobId && appliedJobId !== prevAppliedJobIdRef.current) {
       prevAppliedJobIdRef.current = appliedJobId;
       setJobSubmitSuccess(false);
-      setApplicantLocation('');
-      setApplicantCurrentCompany('');
-      setApplicantExperience('Fresher');
-      setApplicantNoticePeriod('Immediate');
-      setApplicantLinkedIn(currentUser?.linkedin || '');
-      setApplicantPortfolio(currentUser?.portfolio || '');
-      setResumeFile(null);
-      setApplicantCoverLetter('');
+
+      const draftKey = `connect_job_draft_${appliedJobId}`;
+      let savedDraft = null;
+      try {
+        const raw = localStorage.getItem(draftKey);
+        if (raw) savedDraft = JSON.parse(raw);
+      } catch (e) {}
+
+      if (savedDraft) {
+        setApplicantName(savedDraft.name || currentUser?.name || profileName || '');
+        setApplicantEmail(savedDraft.email || currentUser?.email || profileEmail || '');
+        setApplicantPhone(savedDraft.phone || (currentUser?.phone ? String(currentUser.phone).replace(/\D/g, '').slice(-10) : (profilePhone ? String(profilePhone).replace(/\D/g, '').slice(-10) : '')));
+        setApplicantLocation(savedDraft.location || '');
+        setApplicantCurrentCompany(savedDraft.currentCompany || '');
+        setApplicantExperience(savedDraft.experience || 'Fresher');
+        setApplicantNoticePeriod(savedDraft.noticePeriod || 'Immediate');
+        setApplicantLinkedIn(savedDraft.linkedIn || currentUser?.linkedin || '');
+        setApplicantPortfolio(savedDraft.portfolio || currentUser?.portfolio || '');
+        setApplicantCoverLetter(savedDraft.coverLetter || '');
+        if (savedDraft.resumeFile) {
+          setResumeFile(savedDraft.resumeFile);
+        } else {
+          setResumeFile(null);
+        }
+      } else {
+        setApplicantLocation('');
+        setApplicantCurrentCompany('');
+        setApplicantExperience('Fresher');
+        setApplicantNoticePeriod('Immediate');
+        setApplicantLinkedIn(currentUser?.linkedin || '');
+        setApplicantPortfolio(currentUser?.portfolio || '');
+        setResumeFile(null);
+        setApplicantCoverLetter('');
+      }
     } else if (!appliedJobId) {
       prevAppliedJobIdRef.current = null;
     }
-  }, [appliedJobId, currentUser]);
+  }, [appliedJobId, currentUser, profileName, profileEmail, profilePhone]);
 
   const handleOpenJobApplication = (jobId) => {
     setAppliedJobId(jobId);
@@ -3839,6 +3897,24 @@ export default function CustomerDashboard({
 
   const handleJobSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (!applicantName || !applicantName.trim()) {
+      triggerNotification('Please enter your full name.', 'error');
+      return;
+    }
+    const cleanName = applicantName.trim();
+    if (/\d/.test(cleanName) || !/^[A-Za-z\s.'-]+$/.test(cleanName) || cleanName.length < 2) {
+      triggerNotification('Please enter a valid candidate name (letters and spaces only, no numbers).', 'error');
+      return;
+    }
+    if (!applicantEmail || !applicantEmail.trim()) {
+      triggerNotification('Please enter your email address.', 'error');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(applicantEmail.trim())) {
+      triggerNotification('Please enter a valid email address (e.g. name@example.com).', 'error');
+      return;
+    }
     if (!resumeFile) {
       triggerNotification('Please upload your resume before submitting your job application.', 'error');
       return;
@@ -8692,15 +8768,6 @@ export default function CustomerDashboard({
                       <option key={st} value={st}>{st}</option>
                     ))}
                   </select>
-                  <select
-                    value={selectedLocTypes[0] || ""}
-                    onChange={(e) => setSelectedLocTypes(e.target.value ? [e.target.value] : [])}
-                    className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
-                  >
-                    <option value="">All Locations</option>
-                    <option value="Bangalore">Bangalore</option>
-                    <option value="Online">Online / Remote</option>
-                  </select>
                 </>
               )}
 
@@ -9035,8 +9102,8 @@ export default function CustomerDashboard({
                                           type="text"
                                           required
                                           value={applicantName}
-                                          onChange={(e) => setApplicantName(e.target.value)}
-                                          placeholder="Enter your full name"
+                                          onChange={(e) => setApplicantName(e.target.value.replace(/[^a-zA-Z\s.'-]/g, ''))}
+                                          placeholder="Enter your full name (letters only)"
                                           className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-400 font-medium"
                                         />
                                       </div>
@@ -9924,10 +9991,24 @@ export default function CustomerDashboard({
   };
 
 
+  // Helper to extract clean string image URLs from strings or objects
+  const extractCleanUrl = (img) => {
+    if (!img) return '';
+    if (typeof img === 'string') return img.trim();
+    if (typeof img === 'object') {
+      return img.url || img.src || img.image || img.uri || '';
+    }
+    return '';
+  };
+
   // 12. DETAILED PRODUCT DESCRIPTION PAGE VIEW
   const renderStayDetailsPage = () => {
     const rawThumbs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
-    const thumbnails = Array.from(new Set(rawThumbs.filter(Boolean)));
+    const thumbnails = Array.from(new Set(rawThumbs.map(extractCleanUrl).filter(url => url && typeof url === 'string')));
+    if (thumbnails.length === 0 && selectedProduct.image) {
+      const fb = extractCleanUrl(selectedProduct.image);
+      if (fb) thumbnails.push(fb);
+    }
     const isFavorited = favorites.includes(selectedProduct.id);
     const formatDate = (dateStr) => { if (!dateStr) return ''; const d = new Date(dateStr); if (isNaN(d.getTime())) return dateStr; const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${wd[d.getDay()]}, ${d.getDate()} ${mn[d.getMonth()]} ${d.getFullYear()}`; };
     const getNightsCount = () => { const s = new Date(stayCheckInDate), e = new Date(stayCheckOutDate); if (isNaN(s.getTime()) || isNaN(e.getTime())) return 1; const diff = Math.ceil((e - s) / 86400000); return diff > 0 ? diff : 1; };
@@ -9988,10 +10069,20 @@ export default function CustomerDashboard({
                   <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Job Position</span>
                 </div>
               ) : (
-                <img src={activeProductImage || selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                <img 
+                  src={extractCleanUrl(activeProductImage) || extractCleanUrl(selectedProduct.image) || "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"} 
+                  alt={selectedProduct.name} 
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800";
+                  }}
+                  className="w-full h-full object-cover" 
+                />
               )}
               <button onClick={() => toggleFavorite(selectedProduct.id)} className="absolute right-3 top-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 flex items-center justify-center shadow-md cursor-pointer border-none"><Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} /></button>
-              <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
+              {thumbnails.length > 1 && (
+                <span className="absolute bottom-3 left-3 bg-black/60 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full">{activeThumbnailIndex + 1} / {thumbnails.length}</span>
+              )}
               {thumbnails.length > 1 && (
                 <>
                   <button onClick={() => { const p = activeThumbnailIndex === 0 ? thumbnails.length - 1 : activeThumbnailIndex - 1; setActiveProductImage(thumbnails[p]); setActiveThumbnailIndex(p); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center cursor-pointer border-none shadow"><ChevronLeft className="w-4 h-4 text-slate-700" /></button>
@@ -9999,7 +10090,7 @@ export default function CustomerDashboard({
                 </>
               )}
             </div>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar">{thumbnails.slice(0, 8).map((t, i) => (<button key={i} onClick={() => { setActiveProductImage(t); setActiveThumbnailIndex(i); }} className={`w-14 h-10 rounded-lg border-2 overflow-hidden shrink-0 cursor-pointer ${activeThumbnailIndex === i ? 'border-amber-400 shadow-md' : 'border-slate-200 dark:border-slate-800'}`}><img src={t} alt="" className="w-full h-full object-cover" /></button>))}</div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">{thumbnails.slice(0, 8).map((t, i) => (<button key={i} onClick={() => { setActiveProductImage(t); setActiveThumbnailIndex(i); }} className={`w-14 h-10 rounded-lg border-2 overflow-hidden shrink-0 cursor-pointer ${activeThumbnailIndex === i ? 'border-amber-400 shadow-md' : 'border-slate-200 dark:border-slate-800'}`}><img src={t} alt="" onError={(e) => { e.target.onerror = null; e.target.src = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"; }} className="w-full h-full object-cover" /></button>))}</div>
 
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-6 text-left">
               <div className="text-center shrink-0"><div className="flex items-center gap-1 text-amber-500 font-black text-lg"><Star className="w-5 h-5 fill-amber-500" /> {selectedProduct.rating || '4.5'}</div><span className="text-[10px] text-slate-400 font-bold">/5</span><span className="text-[9px] text-slate-400 font-bold block">({selectedProduct.reviews || 120} Reviews)</span></div>
@@ -10329,7 +10420,11 @@ export default function CustomerDashboard({
     if (!selectedProduct) return null;
 
     const rawThumbs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
-    const thumbnails = Array.from(new Set(rawThumbs.filter(Boolean)));
+    const thumbnails = Array.from(new Set(rawThumbs.map(extractCleanUrl).filter(url => url && typeof url === 'string')));
+    if (thumbnails.length === 0 && selectedProduct.image) {
+      const fb = extractCleanUrl(selectedProduct.image);
+      if (fb) thumbnails.push(fb);
+    }
 
     const isFavorited = favorites.includes(selectedProduct.id);
 
@@ -10393,7 +10488,7 @@ export default function CustomerDashboard({
                         : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
                     }`}
                   >
-                    <img src={thumb} alt="" className="w-full h-full object-cover" />
+                    <img src={thumb} alt="" onError={(e) => { e.target.onerror = null; e.target.src = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"; }} className="w-full h-full object-cover" />
                   </button>
                 ))}
                 {thumbnails.length > 5 && (
@@ -10413,8 +10508,12 @@ export default function CustomerDashboard({
                   </div>
                 ) : (
                   <img 
-                    src={activeProductImage || selectedProduct.image} 
+                    src={extractCleanUrl(activeProductImage) || extractCleanUrl(selectedProduct.image) || "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"} 
                     alt={selectedProduct.name} 
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800";
+                    }}
                     className="w-full h-full object-cover"
                   />
                 )}
@@ -10883,7 +10982,11 @@ export default function CustomerDashboard({
 
     // Gallery images
     const rawThumbs = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image];
-    const thumbnails = Array.from(new Set(rawThumbs.filter(Boolean)));
+    const thumbnails = Array.from(new Set(rawThumbs.map(extractCleanUrl).filter(url => url && typeof url === 'string')));
+    if (thumbnails.length === 0 && selectedProduct.image) {
+      const fb = extractCleanUrl(selectedProduct.image);
+      if (fb) thumbnails.push(fb);
+    }
 
     // Helper to check if a service is medical/hospital vs general service (AC repairs, etc.)
     const isMedicalService = (product) => {
@@ -11351,6 +11454,7 @@ export default function CustomerDashboard({
                       <img 
                         src={thumb} 
                         alt="" 
+                        onError={(e) => { e.target.onerror = null; e.target.src = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"; }}
                         className={`w-full h-full object-cover ${
                           idx === 1 ? 'contrast-125 saturate-125' :
                           idx === 2 ? 'hue-rotate-15' :
@@ -11378,8 +11482,12 @@ export default function CustomerDashboard({
                   </div>
                 ) : (
                   <img 
-                    src={activeProductImage || selectedProduct.image} 
+                    src={extractCleanUrl(activeProductImage) || extractCleanUrl(selectedProduct.image) || "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"} 
                     alt={selectedProduct.name} 
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800";
+                    }}
                     className={`w-full h-full object-cover transition-all duration-300 ${
                       activeThumbnailIndex === 1 ? 'contrast-125 saturate-125' :
                       activeThumbnailIndex === 2 ? 'hue-rotate-15' :
@@ -13819,14 +13927,18 @@ wishlistProducts.forEach(item => addToCart(item));
                             ) : (
                               <div className="space-y-3">
                                 {filteredCustomerOrders.map(ord => {
+                                  const isFailed = ord.status === 'Payment Failed' || ord.status === 'Failed' || ord.paymentStatus === 'Failed' || ord.payment_status === 'Failed';
                                   const statusBadgeStyle = 
-                                    ord.status === 'Delivered' || ord.status === 'Completed'
+                                    isFailed
+                                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                                      : ord.status === 'Delivered' || ord.status === 'Completed'
                                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                                       : ord.status === 'Cancelled'
                                       ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
                                       : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
 
                                   const statusText = 
+                                    isFailed ? 'Payment Failed' :
                                     ord.type === 'Job' || ord.type === 'Jobs' ? (
                                       ord.status === 'Order Received' ? 'Under Preview' :
                                       ord.status === 'Preparing' ? 'Resume Screening' :
@@ -13920,16 +14032,17 @@ wishlistProducts.forEach(item => addToCart(item));
                                                     Track Live
                                                   </button>
                                                 )}
-                                                {['Delivered'].includes(ord.status) && (
+                                                {['Delivered', 'Completed'].includes(ord.status) && (
                                                   <button 
                                                     type="button"
                                                     onClick={() => {
                                                       setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
                                                       setTrackingOrder(ord);
+                                                      setRatingOrder(ord);
                                                     }} 
                                                     className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[9.5px] font-black uppercase rounded-lg border border-emerald-500/30 cursor-pointer shadow-3xs"
                                                   >
-                                                    Rate Partner ★
+                                                    {ord.rating ? `Rated ★ ${ord.rating}` : 'Rate Order ★'}
                                                   </button>
                                                 )}
                                               </>
@@ -14941,78 +15054,107 @@ wishlistProducts.forEach(item => addToCart(item));
                             <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block text-left">
                               Guest Information Details ({adultCount + childCount} Guest{adultCount + childCount > 1 ? 's' : ''})
                             </span>
-                            {Array.from({ length: adultCount + childCount }).map((_, idx) => (
-                              <div key={`modal1-guest-${idx}`} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-left shadow-2xs">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
-                                  </span>
-                                  {idx === 0 && (
-                                    <span className="text-[8.5px] bg-amber-400/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-amber-400/30">
-                                      Main Contact
+                            {Array.from({ length: adultCount + childCount }).map((_, idx) => {
+                              const isChild = idx >= adultCount;
+                              return (
+                                <div key={`modal1-guest-${idx}`} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-left shadow-2xs">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                      <span>{idx === 0 ? 'Primary Guest (Guest 1)' : isChild ? `Child ${idx - adultCount + 1}` : `Adult ${idx + 1}`}</span>
                                     </span>
-                                  )}
+                                    {idx === 0 && (
+                                      <span className="text-[8.5px] bg-amber-400/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-amber-400/30">
+                                        Main Contact
+                                      </span>
+                                    )}
+                                    {isChild && (
+                                      <span className="text-[8.5px] bg-blue-400/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-blue-400/30">
+                                        Child Guest
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className={`grid grid-cols-1 ${isChild ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-2.5 items-end`}>
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Full Name *</label>
+                                      <input 
+                                        type="text" 
+                                        required
+                                        value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
+                                        onChange={(e) => {
+                                          const val = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
+                                          setGuestList(prev => {
+                                            const updated = [...prev];
+                                            updated[idx] = { ...(updated[idx] || {}), name: val };
+                                            return updated;
+                                          });
+                                        }}
+                                        placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : isChild ? `Child ${idx - adultCount + 1} Name` : `Guest ${idx + 1} Full Name`}
+                                        className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
+                                      />
+                                    </div>
+                                    {isChild && (
+                                      <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Child Age (Years) *</label>
+                                        <select
+                                          value={guestList[idx]?.age || '5'}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setGuestList(prev => {
+                                              const updated = [...prev];
+                                              updated[idx] = { ...(updated[idx] || {}), age: val };
+                                              return updated;
+                                            });
+                                          }}
+                                          className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all cursor-pointer font-bold"
+                                        >
+                                          {Array.from({ length: 17 }).map((_, aIdx) => (
+                                            <option key={aIdx + 1} value={aIdx + 1}>{aIdx + 1} Year{aIdx > 0 ? 's' : ''} Old</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aadhaar Card No {isChild ? '(Optional)' : '*'}</label>
+                                      <input 
+                                        type="text" 
+                                        required={!isChild}
+                                        maxLength={12}
+                                        value={guestList[idx]?.aadhaar || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                                          setGuestList(prev => {
+                                            const updated = [...prev];
+                                            updated[idx] = { ...(updated[idx] || {}), aadhaar: val };
+                                            return updated;
+                                          });
+                                        }}
+                                        placeholder={isChild ? "Aadhaar (Optional)" : "12-Digit Aadhaar No"}
+                                        className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
+                                      />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Number {isChild ? '(Optional)' : '*'}</label>
+                                      <input 
+                                        type="tel" 
+                                        required={!isChild}
+                                        maxLength={10}
+                                        value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : (isChild ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : ''))}
+                                        onChange={(e) => {
+                                          const val = sanitizeMobileInput(e.target.value);
+                                          setGuestList(prev => {
+                                            const updated = [...prev];
+                                            updated[idx] = { ...(updated[idx] || {}), phone: val };
+                                            return updated;
+                                          });
+                                        }}
+                                        placeholder={isChild ? "Guardian Mobile" : "10-Digit Mobile No"}
+                                        className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
-                                  <div className="flex flex-col gap-1">
-                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Full Name *</label>
-                                    <input 
-                                      type="text" 
-                                      required
-                                      value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
-                                      onChange={(e) => {
-                                        const val = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
-                                        setGuestList(prev => {
-                                          const updated = [...prev];
-                                          updated[idx] = { ...(updated[idx] || {}), name: val };
-                                          return updated;
-                                        });
-                                      }}
-                                      placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : `Guest ${idx + 1} Full Name`}
-                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
-                                    />
-                                  </div>
-                                  <div className="flex flex-col gap-1">
-                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aadhaar Card No *</label>
-                                    <input 
-                                      type="text" 
-                                      required
-                                      maxLength={12}
-                                      value={guestList[idx]?.aadhaar || ''}
-                                      onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 12);
-                                        setGuestList(prev => {
-                                          const updated = [...prev];
-                                          updated[idx] = { ...(updated[idx] || {}), aadhaar: val };
-                                          return updated;
-                                        });
-                                      }}
-                                      placeholder="12-Digit Aadhaar No"
-                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
-                                    />
-                                  </div>
-                                  <div className="flex flex-col gap-1">
-                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Number *</label>
-                                    <input 
-                                      type="tel" 
-                                      required
-                                      maxLength={10}
-                                      value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : '')}
-                                      onChange={(e) => {
-                                        const val = sanitizeMobileInput(e.target.value);
-                                        setGuestList(prev => {
-                                          const updated = [...prev];
-                                          updated[idx] = { ...(updated[idx] || {}), phone: val };
-                                          return updated;
-                                        });
-                                      }}
-                                      placeholder="10-Digit Mobile No"
-                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -15673,78 +15815,107 @@ wishlistProducts.forEach(item => addToCart(item));
                             <span className="text-[9.5px] font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider block text-left">
                               Guest Information Details ({adultCount + childCount} Guest{adultCount + childCount > 1 ? 's' : ''})
                             </span>
-                            {Array.from({ length: adultCount + childCount }).map((_, idx) => (
-                              <div key={`modal2-guest-${idx}`} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-left shadow-2xs">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>{idx === 0 ? 'Primary Guest (Guest 1)' : `Guest ${idx + 1}`}</span>
-                                  </span>
-                                  {idx === 0 && (
-                                    <span className="text-[8.5px] bg-amber-400/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-amber-400/30">
-                                      Main Contact
+                            {Array.from({ length: adultCount + childCount }).map((_, idx) => {
+                              const isChild = idx >= adultCount;
+                              return (
+                                <div key={`modal2-guest-${idx}`} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-left shadow-2xs">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                      <span>{idx === 0 ? 'Primary Guest (Guest 1)' : isChild ? `Child ${idx - adultCount + 1}` : `Adult ${idx + 1}`}</span>
                                     </span>
-                                  )}
+                                    {idx === 0 && (
+                                      <span className="text-[8.5px] bg-amber-400/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-amber-400/30">
+                                        Main Contact
+                                      </span>
+                                    )}
+                                    {isChild && (
+                                      <span className="text-[8.5px] bg-blue-400/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md font-extrabold tracking-wider uppercase border border-blue-400/30">
+                                        Child Guest
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className={`grid grid-cols-1 ${isChild ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-2.5 items-end`}>
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Full Name *</label>
+                                      <input 
+                                        type="text" 
+                                        required
+                                        value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
+                                        onChange={(e) => {
+                                          const val = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
+                                          setGuestList(prev => {
+                                            const updated = [...prev];
+                                            updated[idx] = { ...(updated[idx] || {}), name: val };
+                                            return updated;
+                                          });
+                                        }}
+                                        placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : isChild ? `Child ${idx - adultCount + 1} Name` : `Guest ${idx + 1} Full Name`}
+                                        className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
+                                      />
+                                    </div>
+                                    {isChild && (
+                                      <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Child Age (Years) *</label>
+                                        <select
+                                          value={guestList[idx]?.age || '5'}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setGuestList(prev => {
+                                              const updated = [...prev];
+                                              updated[idx] = { ...(updated[idx] || {}), age: val };
+                                              return updated;
+                                            });
+                                          }}
+                                          className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all cursor-pointer font-bold"
+                                        >
+                                          {Array.from({ length: 17 }).map((_, aIdx) => (
+                                            <option key={aIdx + 1} value={aIdx + 1}>{aIdx + 1} Year{aIdx > 0 ? 's' : ''} Old</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aadhaar Card No {isChild ? '(Optional)' : '*'}</label>
+                                      <input 
+                                        type="text" 
+                                        required={!isChild}
+                                        maxLength={12}
+                                        value={guestList[idx]?.aadhaar || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                                          setGuestList(prev => {
+                                            const updated = [...prev];
+                                            updated[idx] = { ...(updated[idx] || {}), aadhaar: val };
+                                            return updated;
+                                          });
+                                        }}
+                                        placeholder={isChild ? "Aadhaar (Optional)" : "12-Digit Aadhaar No"}
+                                        className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
+                                      />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Number {isChild ? '(Optional)' : '*'}</label>
+                                      <input 
+                                        type="tel" 
+                                        required={!isChild}
+                                        maxLength={10}
+                                        value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : (isChild ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : ''))}
+                                        onChange={(e) => {
+                                          const val = sanitizeMobileInput(e.target.value);
+                                          setGuestList(prev => {
+                                            const updated = [...prev];
+                                            updated[idx] = { ...(updated[idx] || {}), phone: val };
+                                            return updated;
+                                          });
+                                        }}
+                                        placeholder={isChild ? "Guardian Mobile" : "10-Digit Mobile No"}
+                                        className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
-                                  <div className="flex flex-col gap-1">
-                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Full Name *</label>
-                                    <input 
-                                      type="text" 
-                                      required
-                                      value={guestList[idx]?.name || (idx === 0 ? (profileName || currentUser?.name || '') : '')}
-                                      onChange={(e) => {
-                                        const val = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
-                                        setGuestList(prev => {
-                                          const updated = [...prev];
-                                          updated[idx] = { ...(updated[idx] || {}), name: val };
-                                          return updated;
-                                        });
-                                      }}
-                                      placeholder={idx === 0 ? (profileName || "Primary Guest Full Name") : `Guest ${idx + 1} Full Name`}
-                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
-                                    />
-                                  </div>
-                                  <div className="flex flex-col gap-1">
-                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aadhaar Card No *</label>
-                                    <input 
-                                      type="text" 
-                                      required
-                                      maxLength={12}
-                                      value={guestList[idx]?.aadhaar || ''}
-                                      onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, '').slice(0, 12);
-                                        setGuestList(prev => {
-                                          const updated = [...prev];
-                                          updated[idx] = { ...(updated[idx] || {}), aadhaar: val };
-                                          return updated;
-                                        });
-                                      }}
-                                      placeholder="12-Digit Aadhaar No"
-                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
-                                    />
-                                  </div>
-                                  <div className="flex flex-col gap-1">
-                                    <label className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone Number *</label>
-                                    <input 
-                                      type="tel" 
-                                      required
-                                      maxLength={10}
-                                      value={guestList[idx]?.phone || (idx === 0 ? (profilePhone.replace(/\D/g, '').slice(-10) || '') : '')}
-                                      onChange={(e) => {
-                                        const val = sanitizeMobileInput(e.target.value);
-                                        setGuestList(prev => {
-                                          const updated = [...prev];
-                                          updated[idx] = { ...(updated[idx] || {}), phone: val };
-                                          return updated;
-                                        });
-                                      }}
-                                      placeholder="10-Digit Mobile No"
-                                      className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -17786,10 +17957,11 @@ wishlistProducts.forEach(item => addToCart(item));
                   <a
                     href="tel:18001234567"
                     onClick={() => triggerNotification("Calling Connect Helpline: +91 1800-123-4567...")}
-                    className="w-full py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all no-underline shadow-sm leading-tight text-center"
+                    className="w-full min-h-[44px] py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl flex flex-wrap sm:flex-nowrap items-center justify-center gap-1.5 transition-all no-underline shadow-sm leading-tight text-center"
                   >
                     <Phone className="w-4 h-4 shrink-0" />
-                    <span className="break-words">Direct Call Helpline (+91 1800-123-4567)</span>
+                    <span>Direct Call Helpline:</span>
+                    <span className="whitespace-nowrap font-black text-emerald-100">(+91 1800-123-4567)</span>
                   </a>
                 </>
               )}
@@ -18320,6 +18492,15 @@ wishlistProducts.forEach(item => addToCart(item));
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-black text-slate-900 dark:text-white">
                 {(() => {
+                  const canonicalTab = getCanonicalTabName(shareModalProduct);
+                  if (canonicalTab === 'Stay') return 'Share Stay';
+                  if (canonicalTab === 'Travel') return 'Share Travel';
+                  if (canonicalTab === 'Jobs') return 'Share Job';
+                  if (canonicalTab === 'Services') return 'Share Service';
+                  if (canonicalTab === 'Food') return 'Share Food';
+                  if (canonicalTab === 'Daily Needs') return 'Share Daily Needs';
+                  if (canonicalTab === 'Products') return 'Share Product';
+
                   const main = (shareModalProduct?.mainCategory || shareModalProduct?.subNavbarCategory || shareModalProduct?.tag || activeTab || '').toLowerCase();
                   if (main.includes('stay') || shareModalProduct?.hotelType || shareModalProduct?.roomTypes) return 'Share Stay';
                   if (main.includes('travel') || shareModalProduct?.vehicleType || shareModalProduct?.travelType) return 'Share Travel';
@@ -18340,7 +18521,12 @@ wishlistProducts.forEach(item => addToCart(item));
 
             <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
               {shareModalProduct.image && (
-                <img src={shareModalProduct.image} alt={shareModalProduct.name} className="w-12 h-12 object-cover rounded-xl shrink-0" />
+                <img 
+                  src={extractCleanUrl(shareModalProduct.image) || "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"} 
+                  alt={shareModalProduct.name} 
+                  onError={(e) => { e.target.onerror = null; e.target.src = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800"; }}
+                  className="w-12 h-12 object-cover rounded-xl shrink-0" 
+                />
               )}
               <div className="min-w-0">
                 <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{shareModalProduct.name}</h4>
@@ -18351,8 +18537,8 @@ wishlistProducts.forEach(item => addToCart(item));
             {(() => {
               const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.ficapp.in';
               const pId = shareModalProduct.id || shareModalProduct._id || '';
-              const tab = shareModalProduct.mainCategory || shareModalProduct.subNavbarCategory || shareModalProduct.category || activeTab || 'Products';
-              const canonicalShareUrl = `${origin}/?tab=${encodeURIComponent(tab)}&product=${encodeURIComponent(pId)}`;
+              const tab = getCanonicalTabName(shareModalProduct) || shareModalProduct.mainCategory || shareModalProduct.subNavbarCategory || shareModalProduct.category || activeTab || 'Products';
+              const canonicalShareUrl = `${origin}/dashboard?tab=${encodeURIComponent(tab)}&product=${encodeURIComponent(pId)}`;
               const shareMessage = `Check out ${shareModalProduct.name} on Connect: ${canonicalShareUrl}`;
 
               return (

@@ -7,8 +7,10 @@ import { paymentRateLimiter, authenticateToken, optionalAuthenticateToken, Authe
 
 const router = Router();
 
-function resolveWalletTarget(req: AuthenticatedRequest, requested?: any): { target: any; isOwner: boolean } {
+async function resolveWalletTarget(req: AuthenticatedRequest, requested?: any): Promise<{ target: any; isOwner: boolean }> {
   const authUser = req.user;
+  const mongoDb = db.getDb();
+
   if (!authUser) {
     const reqCust = String(requested?.customerId || requested?.userId || requested?.id || '').trim();
     const reqEmail = String(requested?.email || '').toLowerCase().trim();
@@ -26,28 +28,73 @@ function resolveWalletTarget(req: AuthenticatedRequest, requested?: any): { targ
     }
     return { target: null, isOwner: false };
   }
-  const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
-  const selfCustId = (authUser.customerId || authUser.userId || authUser.registrationId || '').toLowerCase().trim();
-  const selfEmail = (authUser.email || '').toLowerCase().trim();
-  const selfPhone = (authUser.phone || '').replace(/\D/g, '');
 
+  const isAdmin = authUser.role === 'admin' || authUser.role === 'superadmin';
   if (isAdmin) {
     return { target: requested || { userId: authUser.userId, email: authUser.email }, isOwner: true };
   }
+
+  // Find user in DB to gather all aliases for this authenticated customer
+  let dbUser: any = null;
+  if (mongoDb) {
+    const orClauses: any[] = [];
+    if (authUser.userId) {
+      orClauses.push({ id: authUser.userId }, { customerId: authUser.userId });
+      if (ObjectId.isValid(authUser.userId)) orClauses.push({ _id: new ObjectId(authUser.userId) });
+    }
+    if (authUser.customerId) {
+      orClauses.push({ customerId: authUser.customerId }, { id: authUser.customerId });
+    }
+    if (authUser.email) {
+      orClauses.push({ email: authUser.email.toLowerCase().trim() });
+    }
+    if (authUser.phone) {
+      orClauses.push({ phone: authUser.phone.replace(/\D/g, '') });
+    }
+    if (orClauses.length > 0) {
+      dbUser = await mongoDb.collection('users').findOne({ $or: orClauses });
+      if (!dbUser) {
+        dbUser = await mongoDb.collection('customers').findOne({ $or: orClauses });
+      }
+    }
+  }
+
+  const allowedCustIds = new Set<string>();
+  const allowedEmails = new Set<string>();
+  const allowedPhones = new Set<string>();
+
+  [authUser.userId, authUser.customerId, authUser.registrationId, dbUser?._id?.toString(), dbUser?.id, dbUser?.customerId, dbUser?.registrationId]
+    .filter(Boolean)
+    .forEach(v => allowedCustIds.add(String(v).toLowerCase().trim()));
+
+  [authUser.email, dbUser?.email]
+    .filter(Boolean)
+    .forEach(v => allowedEmails.add(String(v).toLowerCase().trim()));
+
+  [authUser.phone, dbUser?.phone]
+    .filter(Boolean)
+    .forEach(v => {
+      const p = String(v).replace(/\D/g, '');
+      if (p) {
+        allowedPhones.add(p);
+        if (p.length > 10) allowedPhones.add(p.slice(-10));
+      }
+    });
 
   // IDOR Protection: If non-admin attempts to target another customer's wallet
   if (requested) {
     const reqCust = String(requested.customerId || requested.userId || requested.id || '').toLowerCase().trim();
     const reqEmail = String(requested.email || '').toLowerCase().trim();
-    const reqPhone = String(requested.phone || '').replace(/\D/g, '');
+    const rawReqPhone = String(requested.phone || '').replace(/\D/g, '');
+    const reqPhone = rawReqPhone.length > 10 ? rawReqPhone.slice(-10) : rawReqPhone;
 
-    if (reqCust && reqCust !== selfCustId && reqCust !== (authUser.userId || '').toLowerCase().trim()) {
+    if (reqCust && allowedCustIds.size > 0 && !allowedCustIds.has(reqCust)) {
       return { target: null, isOwner: false };
     }
-    if (reqEmail && reqEmail !== selfEmail) {
+    if (reqEmail && allowedEmails.size > 0 && !allowedEmails.has(reqEmail)) {
       return { target: null, isOwner: false };
     }
-    if (reqPhone && selfPhone && reqPhone !== selfPhone) {
+    if (reqPhone && allowedPhones.size > 0 && !allowedPhones.has(reqPhone)) {
       return { target: null, isOwner: false };
     }
   }
@@ -55,10 +102,10 @@ function resolveWalletTarget(req: AuthenticatedRequest, requested?: any): { targ
   // Non-admins strictly resolve to their authenticated identity
   return {
     target: {
-      userId: authUser.userId,
-      customerId: authUser.customerId || authUser.registrationId,
-      email: authUser.email,
-      phone: authUser.phone
+      userId: dbUser?.id || dbUser?._id?.toString() || authUser.userId,
+      customerId: dbUser?.customerId || authUser.customerId || authUser.registrationId || requested?.customerId,
+      email: dbUser?.email || authUser.email,
+      phone: dbUser?.phone || authUser.phone
     },
     isOwner: true
   };
@@ -107,7 +154,7 @@ const buildUserLookupFilter = (target: any): any => {
 router.get('/balance', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId, customerId, email, phone } = req.query;
-    const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+    const { target, isOwner } = await resolveWalletTarget(req, { userId, customerId, email, phone });
     if (!isOwner || !target) {
       return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot view another customer\'s wallet.' });
     }
@@ -140,7 +187,7 @@ router.get('/balance', optionalAuthenticateToken, async (req: AuthenticatedReque
 router.get('/transactions', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId, customerId, email, phone, limit = 50 } = req.query;
-    const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+    const { target, isOwner } = await resolveWalletTarget(req, { userId, customerId, email, phone });
     if (!isOwner || !target) {
       return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot view another customer\'s wallet transactions.' });
     }
@@ -219,7 +266,7 @@ router.get('/transactions', optionalAuthenticateToken, async (req: Authenticated
 router.post('/recharge/create-order', optionalAuthenticateToken, paymentRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { amount, userId, customerId, email, phone } = req.body;
-    const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+    const { target, isOwner } = await resolveWalletTarget(req, { userId, customerId, email, phone });
     if (!isOwner || !target) {
       return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot recharge another customer\'s wallet.' });
     }
@@ -253,20 +300,6 @@ router.post('/recharge/create-order', optionalAuthenticateToken, paymentRateLimi
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    if (!keyId || !keySecret) {
-      console.error('[Razorpay Error]: RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET environment variable is missing.');
-      return res.status(503).json({
-        success: false,
-        code: 'PAYMENT_CONFIG_MISSING',
-        error: 'Razorpay payment gateway credentials are not configured on this server.'
-      });
-    }
-
-    const razorpay = new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret
-    });
-
     const amountInPaise = Math.round(numAmount * 100);
     const receiptId = `rcpt_wal_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -284,23 +317,44 @@ router.post('/recharge/create-order', optionalAuthenticateToken, paymentRateLimi
 
     let razorpayOrderId = '';
     let isTestMode = false;
-    try {
-      const order = await razorpay.orders.create(orderOptions);
-      razorpayOrderId = order.id;
-    } catch (sdkErr: any) {
-      const errMsg = sdkErr?.error?.description || sdkErr?.message || 'Razorpay order creation failed';
-      console.error('[Razorpay Error]: Wallet recharge order creation failed:', errMsg);
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(502).json({
+
+    if (!keyId || !keySecret) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[Razorpay Warning]: Gateway keys not set in dev, generating simulated dev order');
+        isTestMode = true;
+        razorpayOrderId = `order_test_wal_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+      } else {
+        console.error('[Razorpay Error]: RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET environment variable is missing.');
+        return res.status(503).json({
           success: false,
-          code: 'PAYMENT_GATEWAY_ERROR',
-          error: `Razorpay rejected recharge order: ${errMsg}`
+          code: 'PAYMENT_CONFIG_MISSING',
+          error: 'Razorpay payment gateway credentials are not configured on this server.'
         });
       }
-      // Non-production sandbox fallback only
-      console.warn('[Razorpay Warning]: Using dev sandbox order fallback for wallet in non-production environment');
-      isTestMode = true;
-      razorpayOrderId = `order_test_wal_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+    } else {
+      const razorpay = new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret
+      });
+
+      try {
+        const order = await razorpay.orders.create(orderOptions);
+        razorpayOrderId = order.id;
+      } catch (sdkErr: any) {
+        const errMsg = sdkErr?.error?.description || sdkErr?.message || 'Razorpay order creation failed';
+        console.error('[Razorpay Error]: Wallet recharge order creation failed:', errMsg);
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(502).json({
+            success: false,
+            code: 'PAYMENT_GATEWAY_ERROR',
+            error: `Razorpay rejected recharge order: ${errMsg}`
+          });
+        }
+        // Non-production sandbox fallback only
+        console.warn('[Razorpay Warning]: Using dev sandbox order fallback for wallet in non-production environment');
+        isTestMode = true;
+        razorpayOrderId = `order_test_wal_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+      }
     }
 
     // Save pending recharge order to guard against tampering and verify exact amount
@@ -342,7 +396,7 @@ router.post('/recharge/verify', optionalAuthenticateToken, paymentRateLimiter, a
       phone
     } = req.body;
 
-    const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+    const { target, isOwner } = await resolveWalletTarget(req, { userId, customerId, email, phone });
     if (!isOwner || !target) {
       return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot verify payment for another customer\'s wallet.' });
     }
@@ -513,7 +567,7 @@ router.post('/recharge/verify', optionalAuthenticateToken, paymentRateLimiter, a
 router.post('/pay', authenticateToken, enforceRoleAndApproval('customer', 'admin'), paymentRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { amount, orderId, orderDetails, userId, customerId, email, phone } = req.body;
-    const { target, isOwner } = resolveWalletTarget(req, { userId, customerId, email, phone });
+    const { target, isOwner } = await resolveWalletTarget(req, { userId, customerId, email, phone });
     if (!isOwner || !target) {
       return res.status(403).json({ success: false, code: 'FORBIDDEN_IDOR', error: 'Access denied: You cannot make payments from another customer\'s wallet.' });
     }

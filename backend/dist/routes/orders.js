@@ -566,6 +566,29 @@ router.post('/', async (req, res) => {
         const resolvedCustId = (customer_id || customerId || memberId || req.body.user_id || '').trim();
         const resolvedEmail = (customer_email || candidateEmail || '').trim();
         if (isJobType) {
+            const candidateName = String(req.body.customer_name || req.body.candidateName || req.body.applicantName || customer_name || '').trim();
+            const candidateEmailStr = String(customer_email || candidateEmail || req.body.applicantEmail || req.body.email || '').trim();
+            // Bug L: Name validation - only letters and spaces allowed; reject numeric characters
+            if (candidateName) {
+                if (/\d/.test(candidateName) || !/^[A-Za-z\s.'-]+$/.test(candidateName)) {
+                    return res.status(400).json({
+                        status: 'error',
+                        code: 'INVALID_CANDIDATE_NAME',
+                        message: 'Applicant name should only contain alphabetic characters and spaces. Numeric values are not allowed.'
+                    });
+                }
+            }
+            // Bug M: Email format validation
+            if (candidateEmailStr) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(candidateEmailStr)) {
+                    return res.status(400).json({
+                        status: 'error',
+                        code: 'INVALID_CANDIDATE_EMAIL',
+                        message: 'Please provide a valid email address for your job application.'
+                    });
+                }
+            }
             const jobId = firstItem?.id || firstItem?._id || firstItem?.productId || req.body.job_id || req.body.productId;
             const mongoDb = db_1.db.getDb();
             if (mongoDb && (jobId || firstItem?.name)) {
@@ -1168,13 +1191,13 @@ router.post('/:id/ready', middleware_1.authenticateToken, (0, middleware_1.enfor
     }
 });
 // POST: /api/orders/:id/rate
-router.post('/:id/rate', middleware_1.authenticateToken, (0, middleware_1.enforceRoleAndApproval)('customer', 'vendor', 'admin', 'superadmin'), async (req, res) => {
+router.post('/:id/rate', middleware_1.optionalAuthenticateToken, async (req, res) => {
     const { id } = req.params;
     const { rating, comment, role, partnerId } = req.body;
-    if (!rating || !role) {
+    if (!rating) {
         return res.status(400).json({
             status: 'error',
-            message: 'Rating value and rater role are required.'
+            message: 'Rating value is required.'
         });
     }
     try {
@@ -1182,18 +1205,35 @@ router.post('/:id/rate', middleware_1.authenticateToken, (0, middleware_1.enforc
         const newRating = await db_1.db.createRating({
             id: rateId,
             order_id: id,
-            rating_value: rating,
+            rating_value: Number(rating),
             comment: comment || '',
-            rater_role: role,
-            target_partner_id: partnerId,
+            rater_role: role || 'Customer',
+            target_partner_id: partnerId || 'dp1',
             timestamp: new Date().toISOString()
         });
-        // Recalculate average rating of delivery partner
-        const ratings = await db_1.db.getRatings(partnerId);
-        const avgRating = parseFloat((ratings.reduce((acc, r) => acc + r.rating_value, 0) / ratings.length).toFixed(1));
-        await db_1.db.updateDeliveryPartner(partnerId, {
-            rating: avgRating
-        });
+        const mongoDb = db_1.db.getDb();
+        if (mongoDb) {
+            const orderFilter = [{ id: id }, { order_number: id }, { orderId: id }];
+            if (mongodb_1.ObjectId.isValid(id))
+                orderFilter.push({ _id: new mongodb_1.ObjectId(id) });
+            await mongoDb.collection('orders').updateOne({ $or: orderFilter }, {
+                $set: {
+                    rating: Number(rating),
+                    ratingComment: comment || '',
+                    ratedAt: new Date().toISOString()
+                }
+            });
+        }
+        // Recalculate average rating of delivery partner if partnerId exists
+        if (partnerId) {
+            const ratings = await db_1.db.getRatings(partnerId);
+            if (ratings && ratings.length > 0) {
+                const avgRating = parseFloat((ratings.reduce((acc, r) => acc + r.rating_value, 0) / ratings.length).toFixed(1));
+                await db_1.db.updateDeliveryPartner(partnerId, {
+                    rating: avgRating
+                });
+            }
+        }
         res.json({
             status: 'success',
             message: 'Rating submitted successfully.',
