@@ -1,3 +1,4 @@
+import { uploadToS3 } from '../s3';
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { ObjectId } from 'mongodb';
@@ -1502,54 +1503,87 @@ router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequ
   const { userId, customerId, phone, email, name, avatar, photo, password } = req.body;
   const isAdmin = authUser?.role === 'admin' || authUser?.role === 'superadmin';
 
-  // IDOR & Privilege Escalation Protection:
-  // Non-admins cannot modify another user's profile, nor escalate privileges
-  if (!isAdmin) {
-    const allowedIds = [
-      authUser.userId,
-      authUser.customerId,
-      authUser.registrationId,
-      authUser.id,
-      authUser._id,
-      authUser.customer_id,
-      authUser.phone,
-      authUser.email
-    ].filter(Boolean).map((s: any) => String(s).toLowerCase().trim());
-    const selfEmail = (authUser.email || '').toLowerCase().trim();
-
-    if (userId && !allowedIds.includes(String(userId).toLowerCase().trim())) {
-      return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot update another user account.' });
-    }
-    if (customerId && !allowedIds.includes(String(customerId).toLowerCase().trim())) {
-      return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot update another user account.' });
-    }
-    if (email && email.toLowerCase().trim() !== selfEmail) {
-      return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot change email to another account identity.' });
-    }
-
-    // Strip protected fields to prevent privilege escalation
-    delete req.body.role;
-    delete req.body.status;
-    delete req.body.approvalStatus;
-    delete req.body.isActive;
-    delete req.body.active;
-    delete req.body.walletBalance;
-    delete req.body.membershipTier;
-    delete req.body.membershipStatus;
-    delete req.body.id;
-    delete req.body._id;
-    delete req.body.customerId;
-    delete req.body.registrationId;
-
-    req.body.userId = authUser.userId;
-    req.body.email = authUser.email;
-  }
-  const target = req.body;
-
   try {
     const mongoDb = db.getDb();
     if (!mongoDb) {
       return res.status(503).json({ status: 'error', message: 'Database not connected' });
+    }
+
+    // Resolve authoritative customer document from DB for the authenticated caller
+    let callerDbDoc: any = null;
+    const callerFilter = buildCustomerMongoFilter({
+      userId: authUser.userId,
+      email: authUser.email,
+      customerId: authUser.customerId,
+      id: authUser.userId
+    });
+    callerDbDoc = await mongoDb.collection('users').findOne(callerFilter);
+    if (!callerDbDoc) {
+      callerDbDoc = await mongoDb.collection('customers').findOne(callerFilter);
+    }
+
+    // IDOR & Privilege Escalation Protection:
+    // Non-admins cannot modify another user's profile, nor escalate privileges
+    if (!isAdmin) {
+      const allowedIds = [
+        authUser.userId,
+        authUser.customerId,
+        authUser.registrationId,
+        authUser.id,
+        authUser._id,
+        authUser.customer_id,
+        authUser.phone,
+        authUser.email
+      ].filter(Boolean).map((s: any) => String(s).toLowerCase().trim());
+
+      if (callerDbDoc) {
+        [
+          callerDbDoc._id,
+          callerDbDoc.id,
+          callerDbDoc.customerId,
+          callerDbDoc.registrationId,
+          callerDbDoc.email,
+          callerDbDoc.phone
+        ].filter(Boolean).forEach((s: any) => {
+          allowedIds.push(String(s).toLowerCase().trim());
+        });
+      }
+
+      if (userId && !allowedIds.includes(String(userId).toLowerCase().trim())) {
+        return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot update another user account.' });
+      }
+      if (customerId && !allowedIds.includes(String(customerId).toLowerCase().trim())) {
+        return res.status(403).json({ status: 'error', code: 'FORBIDDEN_IDOR', message: 'Access denied: Cannot update another user account.' });
+      }
+
+      // Check if new email is already claimed by a different user
+      const selfEmail = (callerDbDoc?.email || authUser.email || '').toLowerCase().trim();
+      if (email && email.toLowerCase().trim() !== selfEmail) {
+        const queryTargetId = callerDbDoc?._id || callerDbDoc?.id || authUser.userId;
+        const existingEmailUser = await mongoDb.collection('users').findOne({
+          email: email.toLowerCase().trim(),
+          _id: { $ne: queryTargetId }
+        });
+        if (existingEmailUser) {
+          return res.status(400).json({ status: 'error', code: 'EMAIL_IN_USE', message: 'This email is already in use by another account.' });
+        }
+      }
+
+      // Strip protected fields to prevent privilege escalation
+      delete req.body.role;
+      delete req.body.status;
+      delete req.body.approvalStatus;
+      delete req.body.isActive;
+      delete req.body.active;
+      delete req.body.walletBalance;
+      delete req.body.membershipTier;
+      delete req.body.membershipStatus;
+      delete req.body.id;
+      delete req.body._id;
+      delete req.body.customerId;
+      delete req.body.registrationId;
+
+      req.body.userId = callerDbDoc?.id || callerDbDoc?._id?.toString() || authUser.userId;
     }
 
     const updateFields: any = { updatedAt: new Date().toISOString() };
@@ -1574,8 +1608,18 @@ router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequ
       }
       updateFields.phone = phone.replace(/\D/g, '');
     }
-    const newAvatar = avatar !== undefined ? avatar : photo;
+    let newAvatar = avatar !== undefined ? avatar : photo;
     if (newAvatar !== undefined) {
+      if (typeof newAvatar === 'string' && newAvatar.startsWith('data:')) {
+        try {
+          const s3Res = await uploadToS3(newAvatar, 'customers', 'avatar.jpg');
+          if (s3Res && s3Res.success && s3Res.url) {
+            newAvatar = s3Res.url;
+          }
+        } catch (uploadErr: any) {
+          console.error('[Customer Avatar S3 Upload Warning]:', uploadErr?.message);
+        }
+      }
       updateFields.avatar = newAvatar;
       updateFields.photo = newAvatar;
     }
@@ -1590,7 +1634,9 @@ router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequ
       updateFields.favorites = req.body.favorites;
     }
 
-    const filter = buildCustomerMongoFilter(target);
+    const filter = callerDbDoc?._id 
+      ? { _id: callerDbDoc._id }
+      : buildCustomerMongoFilter(callerDbDoc || req.body);
 
     await mongoDb.collection('users').updateOne(filter, { $set: updateFields });
     await mongoDb.collection('customers').updateOne(filter, { $set: updateFields }).catch(() => {});

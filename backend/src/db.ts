@@ -532,31 +532,38 @@ class DatabaseManager {
   }
 
   // 3. Orders Repo
-  public async getOrders(vendorId?: string, customerId?: string): Promise<Order[]> {
+  public async getOrders(vendorId?: string, customerId?: string | string[]): Promise<Order[]> {
     if (this.mongoDb) {
       const query: any = {};
       if (vendorId) query.vendor_id = vendorId;
       if (customerId) {
-        const cleanCustId = String(customerId).trim();
-        const cleanLower = cleanCustId.toLowerCase();
-        const cleanDigits = cleanCustId.replace(/\D/g, '');
+        const idList = (Array.isArray(customerId) ? customerId : [customerId]).map(s => String(s).trim()).filter(Boolean);
+        if (idList.length > 0) {
+          const orList: any[] = [];
+          idList.forEach(rawId => {
+            const cleanCustId = String(rawId).trim();
+            const cleanLower = cleanCustId.toLowerCase();
+            const cleanDigits = cleanCustId.replace(/\D/g, '');
 
-        const orList: any[] = [
-          { customer_id: cleanCustId },
-          { customerId: cleanCustId },
-          { memberId: cleanCustId },
-          { user_id: cleanCustId },
-          { customer_email: cleanLower },
-          { candidateEmail: cleanLower }
-        ];
+            orList.push(
+              { customer_id: cleanCustId },
+              { customerId: cleanCustId },
+              { memberId: cleanCustId },
+              { user_id: cleanCustId },
+              { customer_email: cleanLower },
+              { candidateEmail: cleanLower }
+            );
 
-        if (cleanDigits && cleanDigits.length >= 7) {
-          orList.push({ customer_phone: cleanDigits });
-          orList.push({ customer_phone: `+91${cleanDigits}` });
-          orList.push({ customer_phone: `91${cleanDigits}` });
+            if (cleanDigits && cleanDigits.length >= 7) {
+              orList.push(
+                { customer_phone: cleanDigits },
+                { customer_phone: `+91${cleanDigits}` },
+                { customer_phone: `91${cleanDigits}` }
+              );
+            }
+          });
+          query.$or = orList;
         }
-
-        query.$or = orList;
       }
       return this.mongoDb.collection<Order>('orders')
         .find(query, { projection: { _id: 0 } })
@@ -566,15 +573,18 @@ class DatabaseManager {
     let res = this.memoryDb.orders;
     if (vendorId) res = res.filter(o => o.vendor_id === vendorId);
     if (customerId) {
-      const cleanCustId = String(customerId).trim().toLowerCase();
+      const idList = (Array.isArray(customerId) ? customerId : [customerId]).map(s => String(s).trim().toLowerCase()).filter(Boolean);
       res = res.filter(o => 
-        String((o as any).customer_id || '').toLowerCase() === cleanCustId ||
-        String((o as any).customerId || '').toLowerCase() === cleanCustId ||
-        String((o as any).user_id || '').toLowerCase() === cleanCustId ||
-        String(o.memberId || '').toLowerCase() === cleanCustId ||
-        String(o.candidateEmail || '').toLowerCase() === cleanCustId ||
-        String(o.customer_email || '').toLowerCase() === cleanCustId ||
-        String(o.customer_phone || '').replace(/\D/g, '') === cleanCustId.replace(/\D/g, '')
+        idList.includes(String((o as any).customer_id || '').toLowerCase()) ||
+        idList.includes(String((o as any).customerId || '').toLowerCase()) ||
+        idList.includes(String((o as any).user_id || '').toLowerCase()) ||
+        idList.includes(String(o.memberId || '').toLowerCase()) ||
+        idList.includes(String(o.candidateEmail || '').toLowerCase()) ||
+        idList.includes(String(o.customer_email || '').toLowerCase()) ||
+        idList.some(id => {
+          const digits = id.replace(/\D/g, '');
+          return digits.length >= 7 && String(o.customer_phone || '').replace(/\D/g, '') === digits;
+        })
       );
     }
     return res.sort((a,b) => b.id.localeCompare(a.id));

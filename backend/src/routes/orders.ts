@@ -1,3 +1,4 @@
+import { uploadToS3 } from '../s3';
 import { Router, Request, Response } from 'express';
 import { db, Order, DeliveryPartner, DeliveryAssignment } from '../db';
 import { socketManager } from '../socket';
@@ -226,16 +227,73 @@ router.get('/', optionalAuthenticateToken, async (req: AuthenticatedRequest, res
   }
 
   // IDOR Protection: If requester is authenticated
+  let targetCustomerIds: string | string[] = customerId;
   if (authUser) {
     if (authUser.role === 'customer') {
-      const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
-      if (customerId && customerId !== selfCustId && customerId !== authUser.userId) {
+      const allowedIds = [
+        authUser.userId,
+        authUser.customerId,
+        authUser.registrationId,
+        authUser.id,
+        authUser._id,
+        authUser.customer_id,
+        authUser.phone,
+        authUser.email
+      ].filter(Boolean).map((s: any) => String(s).toLowerCase().trim());
+
+      const mongoDb = db.getDb();
+      let userDbDoc: any = null;
+      if (mongoDb) {
+        const userOrConditions: any[] = [
+          { id: authUser.userId },
+          { _id: authUser.userId },
+          { email: (authUser.email || '').toLowerCase().trim() },
+          { customerId: authUser.customerId || authUser.userId }
+        ];
+        if (ObjectId.isValid(authUser.userId)) {
+          try {
+            userOrConditions.push({ _id: new ObjectId(authUser.userId) });
+          } catch (e) {}
+        }
+        userDbDoc = await mongoDb.collection('users').findOne({ $or: userOrConditions } as any);
+        if (!userDbDoc) {
+          userDbDoc = await mongoDb.collection('customers').findOne({ $or: userOrConditions } as any);
+        }
+      }
+
+      if (userDbDoc) {
+        [
+          userDbDoc._id,
+          userDbDoc.id,
+          userDbDoc.customerId,
+          userDbDoc.registrationId,
+          userDbDoc.email,
+          userDbDoc.phone
+        ].filter(Boolean).forEach((v: any) => {
+          allowedIds.push(String(v).toLowerCase().trim());
+        });
+      }
+
+      if (customerId && !allowedIds.includes(customerId.toLowerCase().trim())) {
         return res.status(403).json({
           status: 'error',
           message: 'Access denied: You cannot view orders belonging to another customer account.'
         });
       }
-      customerId = selfCustId || authUser.userId || '';
+
+      const searchCustIds = [
+        customerId,
+        userDbDoc?.customerId,
+        userDbDoc?.registrationId,
+        userDbDoc?.id,
+        userDbDoc?._id?.toString(),
+        userDbDoc?.email,
+        authUser.customerId,
+        authUser.userId,
+        authUser.email
+      ].filter(Boolean) as string[];
+
+      targetCustomerIds = Array.from(new Set(searchCustIds));
     } else if (authUser.role === 'vendor') {
       if (vendorId && vendorId !== authUser.vendorId && authUser.vendorId) {
         return res.status(403).json({
@@ -252,7 +310,7 @@ router.get('/', optionalAuthenticateToken, async (req: AuthenticatedRequest, res
   }
 
   try {
-    const orders = await db.getOrders(vendorId, customerId);
+    const orders = await db.getOrders(vendorId, targetCustomerIds);
     res.json({
       status: 'success',
       data: orders
@@ -489,7 +547,7 @@ function logVendorSyncThrottled(msg: string) {
 
 // POST: /api/orders
 router.post('/', async (req: Request, res: Response) => {
-  const {
+  let {
     vendor_id, customer_id, customerId, customer_email, customer_name, customer_phone, customer_address,
     product_details, amount, customer_latitude, customer_longitude,
     type, appointmentDate, appointmentTimeSlot, doctorName,
@@ -499,6 +557,30 @@ router.post('/', async (req: Request, res: Response) => {
     checkInDate, checkInTime, checkOutDate, checkOutTime, guestList, vehicleDetails, roomsCount, nightsCount, specialRequests,
     paymentMethod, payment_method, paymentStatus, payment_status, transactionId, paidAt, paymentId
   } = req.body;
+
+  // Upload candidate resume to AWS S3 if provided as base64 data URI
+  if (candidateResume && typeof candidateResume === 'string' && candidateResume.startsWith('data:')) {
+    try {
+      const s3Res = await uploadToS3(candidateResume, 'resumes', 'candidate_resume.pdf');
+      if (s3Res && s3Res.success && s3Res.url) {
+        candidateResume = s3Res.url;
+      }
+    } catch (uploadErr: any) {
+      console.error('[Candidate Resume S3 Upload Warning]:', uploadErr?.message);
+    }
+  }
+
+  // Upload prescription document to AWS S3 if provided as base64 data URI
+  if (prescriptionUrl && typeof prescriptionUrl === 'string' && prescriptionUrl.startsWith('data:')) {
+    try {
+      const s3Res = await uploadToS3(prescriptionUrl, 'prescriptions', 'prescription.jpg');
+      if (s3Res && s3Res.success && s3Res.url) {
+        prescriptionUrl = s3Res.url;
+      }
+    } catch (uploadErr: any) {
+      console.error('[Prescription S3 Upload Warning]:', uploadErr?.message);
+    }
+  }
 
   const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
 
@@ -946,9 +1028,8 @@ router.post('/', async (req: Request, res: Response) => {
       product_details: product_details || travelProduct?.name || 'Generic Connect Item',
       amount: finalOrderAmount,
       totalAmount: finalOrderAmount,
-      finalAmount: finalOrderAmount,
-      status: 'Order Received',
-      type: type || 'Order',
+      status: isJobType ? (req.body.status || 'APPLICATION RECEIVED') : (req.body.status || 'Order Received'),
+      type: type || (isJobType ? 'Job' : 'Order'),
       paymentMethod: resolvedPaymentMethod,
       payment_method: resolvedPaymentMethod,
       paymentStatus: resolvedPaymentStatus,
@@ -957,6 +1038,8 @@ router.post('/', async (req: Request, res: Response) => {
       ...(resolvedPaidAt && { paidAt: resolvedPaidAt }),
       appointmentDate,
       appointmentTimeSlot,
+      appointmentType: req.body.appointmentType || req.body.serviceType,
+      serviceType: req.body.serviceType || req.body.appointmentType,
       doctorName,
       tableNumber,
       roomNumber,

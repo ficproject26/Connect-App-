@@ -1456,13 +1456,43 @@ export default function CustomerDashboard({
   }, [activeScheduleModalItem, activeBookNowModalItem]);
 
 
+  const getServiceAppointmentType = useCallback((item) => {
+    if (!item) return 'On-Site Visit';
+    const subNav = (item.subNavbarCategory || item.mainCategory || '').toLowerCase();
+    if (subNav.includes('stay')) {
+      return item.roomType || item.subcategory || item.subCategory || 'Standard Room';
+    }
+    if (subNav.includes('travel')) {
+      return item.travelType || item.vehicleType || item.subcategory || 'Private Tour';
+    }
+    const explicitType = item.appointmentType || item.serviceType || item.consultationType;
+    if (explicitType && typeof explicitType === 'string' && explicitType.trim()) {
+      const lower = explicitType.toLowerCase();
+      if (lower.includes('video') || lower.includes('tele') || lower.includes('online') || lower.includes('virtual')) {
+        return 'Video Consultation';
+      }
+      if (lower.includes('on-site') || lower.includes('onsite') || lower.includes('in-person') || lower.includes('home')) {
+        return 'On-Site Visit';
+      }
+      return explicitType.trim();
+    }
+    const supportsVideo = item.supportsVideoConsultation || item.isVideoConsultation || item.consultationEnabled;
+    if (supportsVideo) return 'Video Consultation';
+
+    const combined = ((item.name || '') + ' ' + (item.category || '') + ' ' + (item.subcategory || '') + ' ' + (item.tag || '')).toLowerCase();
+    if (combined.includes('video consult') || combined.includes('teleconsult') || combined.includes('online doctor') || combined.includes('online consult')) {
+      return 'Video Consultation';
+    }
+    return 'On-Site Visit';
+  }, []);
+
   const todayObj = new Date();
   const tomorrowObj = new Date();
   tomorrowObj.setDate(todayObj.getDate() + 1);
 
   const [selectedModalDate, setSelectedModalDate] = useState(() => getFormattedModalDate(todayObj));
   const [selectedModalTime, setSelectedModalTime] = useState('11:00 AM');
-  const [selectedModalType, setSelectedModalType] = useState('Video Consultation');
+  const [selectedModalType, setSelectedModalType] = useState('On-Site Visit');
   const [selectedTimeOfDayTab, setSelectedTimeOfDayTab] = useState('Morning');
   const [currentMonthIndex, setCurrentMonthIndex] = useState(todayObj.getMonth());
   const [currentYear, setCurrentYear] = useState(todayObj.getFullYear());
@@ -2463,7 +2493,7 @@ export default function CustomerDashboard({
       const status = (o.status || '').toLowerCase();
       const tab = selectedOrdersTab.toLowerCase();
       if (tab === 'processing' || tab === 'upcoming' || tab === 'under review') {
-        return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'confirmed', 'upcoming', 'processing', 'under review', 'under preview'].includes(status);
+        return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'confirmed', 'upcoming', 'processing', 'under review', 'under preview', 'application received', 'applied'].includes(status);
       }
       if (tab === 'in transit' || tab === 'shortlisted') {
         return ['out for delivery', 'delivery partner accepted', 'picked up', 'near customer', 'shortlisted', 'interview scheduled'].includes(status);
@@ -2490,18 +2520,20 @@ export default function CustomerDashboard({
   // Product Detail Modal State
   const [selectedProduct, setSelectedProduct] = useState(null);
   const mainScrollRef = useRef(null);
+  const prevSubNavCategoryRef = useRef(selectedSubNavbarCategory);
 
   useEffect(() => {
     if (selectedProduct) {
       const pTab = getCanonicalTabName(selectedProduct);
-      if (pTab === activeTab) {
-        return;
+      const isNavigatingAway = pTab !== activeTab || (prevSubNavCategoryRef.current !== selectedSubNavbarCategory && selectedSubNavbarCategory !== pTab);
+      if (isNavigatingAway) {
+        setSelectedProduct(null);
+        if (mainScrollRef.current) {
+          mainScrollRef.current.scrollTop = 0;
+        }
       }
     }
-    setSelectedProduct(null);
-    if (mainScrollRef.current) {
-      mainScrollRef.current.scrollTop = 0;
-    }
+    prevSubNavCategoryRef.current = selectedSubNavbarCategory;
   }, [activeTab, selectedSubNavbarCategory]);
 
   const [activeProductImage, setActiveProductImage] = useState(null);
@@ -3864,7 +3896,7 @@ export default function CustomerDashboard({
             price: 0,
             quantity: 1
           }],
-          candidateResume: applicantResume || (resumeFile ? resumeFile.name : 'Dhanush_Resume.pdf'),
+          candidateResume: resumeFile?.dataUrl || applicantResume || (resumeFile ? resumeFile.name : 'Dhanush_Resume.pdf'),
           experience: applicantExperience || 'Fresher',
           candidateEducation: 'Graduate',
           applicationDate: new Date().toISOString(),
@@ -4745,23 +4777,34 @@ export default function CustomerDashboard({
       setRazorpayProcessing(false);
       const selectedCartItemsList = cart.filter(item => selectedCartItems.includes(item.id));
       const firstOrderItem = selectedCartItemsList[0];
-      const orderTab = (activeTab || firstOrderItem?.mainCategory || firstOrderItem?.subNavbarCategory || '').toLowerCase();
+      const orderTab = (activeTab || firstOrderItem?.mainCategory || firstOrderItem?.subNavbarCategory || firstOrderItem?.category || '').toLowerCase();
+      const firstItemCat = ((firstOrderItem?.mainCategory || firstOrderItem?.subNavbarCategory || firstOrderItem?.category || '') + ' ' + (firstOrderItem?.type || '')).toLowerCase();
+
+      const isStayOrderType = orderTab.includes('stay') || firstItemCat.includes('stay') || firstItemCat.includes('hotel') || firstItemCat.includes('resort');
+      const isTravelOrderType = orderTab.includes('travel') || firstItemCat.includes('travel') || firstItemCat.includes('bus') || firstItemCat.includes('cab');
+      const isServiceOrderType = orderTab.includes('service') || firstItemCat.includes('service');
+      const isFoodOrderType = orderTab.includes('food') || firstItemCat.includes('food') || firstItemCat.includes('dining') || firstItemCat.includes('restaurant');
+      const isDailyNeedsOrderType = orderTab.includes('daily') || firstItemCat.includes('daily');
+
       let orderSuccessMsg = "Order placed successfully!";
-      if (orderTab.includes('stay') || isStayItem) {
+      if (isStayOrderType) {
         orderSuccessMsg = "Stay reservation confirmed successfully!";
-      } else if (orderTab.includes('travel') || isTravelItem) {
+      } else if (isTravelOrderType) {
         orderSuccessMsg = "Travel booking confirmed successfully!";
-      } else if (orderTab.includes('service') || isServiceItem) {
+      } else if (isServiceOrderType) {
         orderSuccessMsg = "Service booked successfully!";
-      } else if (orderTab.includes('food')) {
+      } else if (isFoodOrderType) {
         orderSuccessMsg = "Food order placed successfully!";
+      } else if (isDailyNeedsOrderType) {
+        orderSuccessMsg = "Daily Needs order placed successfully!";
       }
       triggerNotification(orderSuccessMsg, "success");
       loadCustomerOrders(true);
     } catch (err) {
       console.error("Order processing error:", err);
       setRazorpayProcessing(false);
-      triggerNotification("Failed to authorize payment. Please try again.", "error");
+      const errMsg = err?.message || "Failed to authorize payment. Please try again.";
+      triggerNotification(errMsg, "error");
     }
   };
 
@@ -6669,6 +6712,28 @@ export default function CustomerDashboard({
                 onChange={(e) => {
                   const val = e.target.value;
                   setSidebarActiveCat(val);
+                  setActiveTab(currentMainCategory);
+                  setSelectedSubNavbarCategory(val === 'ALL' ? currentMainCategory : val);
+                  setSelectedCategories(val === 'ALL' ? [] : [val]);
+                  setSelectedProduct(null);
+                  setIsDropdownOpen(false);
+                  setHoveredLink(null);
+                  if (typeof window !== 'undefined') {
+                    try {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', currentMainCategory);
+                      if (val && val !== 'ALL') url.searchParams.set('sub', val);
+                      else url.searchParams.delete('sub');
+                      url.searchParams.delete('child');
+                      url.searchParams.delete('product');
+                      url.searchParams.delete('productId');
+                      window.history.pushState({ tab: currentMainCategory, secondLevel: val }, '', url.pathname + url.search + url.hash);
+                    } catch (e) {}
+                  }
+                  setTimeout(() => {
+                    const el = document.getElementById('products-section') || document.getElementById('catalog-grid');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
                 }}
                 className="w-full appearance-none bg-slate-50 dark:bg-slate-800/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-2xl py-3 pl-4 pr-10 text-xs font-black uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-400/50 shadow-2xs transition-all cursor-pointer"
               >
@@ -6697,6 +6762,28 @@ export default function CustomerDashboard({
                 type="button"
                 onClick={() => {
                   setSidebarActiveCat('ALL');
+                  setActiveTab(currentMainCategory);
+                  setSelectedSubNavbarCategory(currentMainCategory);
+                  setSelectedCategories([]);
+                  setSearchQuery('');
+                  setSelectedProduct(null);
+                  setIsDropdownOpen(false);
+                  setHoveredLink(null);
+                  if (typeof window !== 'undefined') {
+                    try {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', currentMainCategory);
+                      url.searchParams.delete('sub');
+                      url.searchParams.delete('child');
+                      url.searchParams.delete('product');
+                      url.searchParams.delete('productId');
+                      window.history.pushState({ tab: currentMainCategory }, '', url.pathname + url.search + url.hash);
+                    } catch (e) {}
+                  }
+                  setTimeout(() => {
+                    const el = document.getElementById('products-section') || document.getElementById('catalog-grid');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
                 }}
                 onMouseEnter={() => {
                   setSidebarActiveCat('ALL');
@@ -6720,6 +6807,28 @@ export default function CustomerDashboard({
                     type="button"
                     onClick={() => {
                       setSidebarActiveCat(catKey);
+                      setActiveTab(currentMainCategory);
+                      setSelectedSubNavbarCategory(catKey);
+                      setSelectedCategories([catKey]);
+                      setSearchQuery('');
+                      setSelectedProduct(null);
+                      setIsDropdownOpen(false);
+                      setHoveredLink(null);
+                      if (typeof window !== 'undefined') {
+                        try {
+                          const url = new URL(window.location.href);
+                          url.searchParams.set('tab', currentMainCategory);
+                          url.searchParams.set('sub', catKey);
+                          url.searchParams.delete('child');
+                          url.searchParams.delete('product');
+                          url.searchParams.delete('productId');
+                          window.history.pushState({ tab: currentMainCategory, secondLevel: catKey }, '', url.pathname + url.search + url.hash);
+                        } catch (e) {}
+                      }
+                      setTimeout(() => {
+                        const el = document.getElementById('products-section') || document.getElementById('catalog-grid');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
                     }}
                     onMouseEnter={() => {
                       setSidebarActiveCat(catKey);
@@ -6763,6 +6872,8 @@ export default function CustomerDashboard({
                       setSelectedSubNavbarCategory(childTitle);
                       setSelectedCategories([childTitle]);
                       setSearchQuery('');
+                      setSelectedProduct(null);
+                      setIsDropdownOpen(false);
                       setHoveredLink(null);
 
                       if (typeof window !== 'undefined') {
@@ -6775,6 +6886,8 @@ export default function CustomerDashboard({
                             url.searchParams.delete('sub');
                           }
                           url.searchParams.set('child', childTitle);
+                          url.searchParams.delete('product');
+                          url.searchParams.delete('productId');
                           if (childId) {
                             url.searchParams.set('categoryId', childId.toString());
                           } else {
@@ -9137,13 +9250,18 @@ export default function CustomerDashboard({
                                               if (e.target.files && e.target.files[0]) {
                                                 const file = e.target.files[0];
                                                 const fileUrl = URL.createObjectURL(file);
-                                                setResumeFile({
-                                                  name: file.name,
-                                                  size: `${(file.size / 1024).toFixed(0)} KB`,
-                                                  rawFile: file,
-                                                  type: file.type || 'application/pdf',
-                                                  url: fileUrl
-                                                });
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                  setResumeFile({
+                                                    name: file.name,
+                                                    size: `${(file.size / 1024).toFixed(0)} KB`,
+                                                    rawFile: file,
+                                                    type: file.type || 'application/pdf',
+                                                    dataUrl: reader.result,
+                                                    url: fileUrl
+                                                  });
+                                                };
+                                                reader.readAsDataURL(file);
                                                 triggerNotification(`Resume "${file.name}" uploaded successfully.`);
                                               }
                                             }}
@@ -9695,7 +9813,7 @@ export default function CustomerDashboard({
                                           setActiveBookNowModalItem(product);
                                           setSelectedModalDate('Wednesday, 21 May 2025');
                                           setSelectedModalTime('11:00 AM');
-                                          setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                                          setSelectedModalType(product.subNavbarCategory === 'Stay' ? 'Standard Room' : (product.subNavbarCategory === 'Travel' ? 'Private Tour' : getServiceAppointmentType(product)));
                                           setSelectedTimeOfDayTab('Morning');
                                         }
                                       }} 
@@ -9837,7 +9955,17 @@ export default function CustomerDashboard({
             {selectedProduct.category && (
               <>
                 <span>&gt;</span>
-                <span className="truncate max-w-[150px]">{selectedProduct.category}</span>
+                <button
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setActiveTab('Stay');
+                    setSelectedSubNavbarCategory('Stay');
+                    setSelectedCategories([selectedProduct.category]);
+                  }}
+                  className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[150px]"
+                >
+                  {selectedProduct.category}
+                </button>
               </>
             )}
             <span>&gt;</span>
@@ -10031,7 +10159,18 @@ export default function CustomerDashboard({
             {selectedProduct.category && (
               <>
                 <span>&gt;</span>
-                <span className="truncate max-w-[150px]">{selectedProduct.category}</span>
+                <button
+                  onClick={() => {
+                    const canTab = getCanonicalTabName(selectedProduct) || 'Services';
+                    setSelectedProduct(null);
+                    setActiveTab(canTab);
+                    setSelectedSubNavbarCategory(canTab);
+                    setSelectedCategories([selectedProduct.category]);
+                  }}
+                  className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[150px]"
+                >
+                  {selectedProduct.category}
+                </button>
               </>
             )}
             <span>&gt;</span>
@@ -10209,7 +10348,17 @@ export default function CustomerDashboard({
               setSelectedSubNavbarCategory('Travel'); 
             }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Travel</button>
             <span>&gt;</span>
-            <span className="hover:text-amber-505 transition-colors">{selectedProduct.category}</span>
+            <button
+              onClick={() => {
+                setSelectedProduct(null);
+                setActiveTab('Travel');
+                setSelectedSubNavbarCategory('Travel');
+                setSelectedCategories([selectedProduct.category]);
+              }}
+              className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-semibold text-slate-500 dark:text-slate-400"
+            >
+              {selectedProduct.category}
+            </button>
             <span>&gt;</span>
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
@@ -11150,7 +11299,18 @@ export default function CustomerDashboard({
             {selectedProduct.category && selectedProduct.category.toLowerCase().trim() !== (selectedProduct.name || '').toLowerCase().trim() && (
               <>
                 <span>&gt;</span>
-                <span className="hover:text-amber-500 transition-colors">{selectedProduct.category}</span>
+                <button
+                  onClick={() => {
+                    const mainCat = selectedProduct.subNavbarCategory || selectedProduct.mainCategory || 'Products';
+                    setSelectedProduct(null);
+                    setActiveTab(mainCat);
+                    setSelectedSubNavbarCategory(mainCat);
+                    setSelectedCategories([selectedProduct.category]);
+                  }}
+                  className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-semibold text-slate-500 dark:text-slate-400"
+                >
+                  {selectedProduct.category}
+                </button>
               </>
             )}
             <span>&gt;</span>
@@ -11578,7 +11738,7 @@ export default function CustomerDashboard({
                           setActiveBookNowModalItem(selectedProduct);
                           setSelectedModalDate('Wednesday, 21 May 2025');
                           setSelectedModalTime('11:00 AM');
-                          setSelectedModalType(selectedProduct.subNavbarCategory === 'Stay' ? 'Standard Room' : (selectedProduct.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                          setSelectedModalType(selectedProduct.subNavbarCategory === 'Stay' ? 'Standard Room' : (selectedProduct.subNavbarCategory === 'Travel' ? 'Private Tour' : getServiceAppointmentType(selectedProduct)));
                           setSelectedTimeOfDayTab('Morning');
                         } else {
                           addToCart(selectedProduct);
@@ -11786,7 +11946,7 @@ export default function CustomerDashboard({
                                     setActiveBookNowModalItem(prod);
                                     setSelectedModalDate('Wednesday, 21 May 2025');
                                     setSelectedModalTime('11:00 AM');
-                                    setSelectedModalType(prod.subNavbarCategory === 'Stay' ? 'Standard Room' : (prod.subNavbarCategory === 'Travel' ? 'Private Tour' : 'Video Consultation'));
+                                    setSelectedModalType(prod.subNavbarCategory === 'Stay' ? 'Standard Room' : (prod.subNavbarCategory === 'Travel' ? 'Private Tour' : getServiceAppointmentType(prod)));
                                     setSelectedTimeOfDayTab('Morning');
                                   }
                                 }} 
@@ -12875,46 +13035,96 @@ wishlistProducts.forEach(item => addToCart(item));
                                     ))}
                                   </div>
                                 )}
-                                {(['Travel', 'travel'].includes(trackingOrder.type) || (trackingOrder.subNavbarCategory || '').toLowerCase() === 'travel' || trackingOrder.boardingPoint || trackingOrder.droppingPoint || trackingOrder.boarding_point || trackingOrder.dropping_point) && (
-                                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
-                                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Travel Route Points:</p>
-                                    <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
-                                      📍 Boarding Point: <strong className="text-slate-900 dark:text-white">{formatTravelPointDisplay(trackingOrder.boardingPoint || trackingOrder.boarding_point) || 'Not provided'}</strong>
-                                    </p>
-                                    <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
-                                      🏁 Dropping Point: <strong className="text-slate-900 dark:text-white">{formatTravelPointDisplay(trackingOrder.droppingPoint || trackingOrder.dropping_point) || 'Not provided'}</strong>
-                                    </p>
-                                  </div>
-                                )}
                                 {(() => {
-                                  const isStayBooking = (trackingOrder.type || '').toLowerCase().includes('stay') || 
-                                    (trackingOrder.type || '').toLowerCase().includes('hotel') ||
-                                    (trackingOrder.subNavbarCategory || '').toLowerCase() === 'stay' ||
-                                    (trackingOrder.mainCategory || '').toLowerCase() === 'stay' ||
-                                    Boolean(trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate);
+                                  const orderTypeStr = (trackingOrder.type || '').toLowerCase();
+                                  const orderMainCat = (trackingOrder.mainCategory || trackingOrder.subNavbarCategory || trackingOrder.items?.[0]?.mainCategory || trackingOrder.items?.[0]?.subNavbarCategory || '').toLowerCase();
+                                  const orderProdDetails = (trackingOrder.product_details || trackingOrder.items?.[0]?.name || '').toLowerCase();
+
+                                  const isTravelBooking = orderTypeStr.includes('travel') || orderMainCat.includes('travel') ||
+                                    orderTypeStr.includes('bus') || orderProdDetails.includes('bus') ||
+                                    Boolean(trackingOrder.boardingPoint || trackingOrder.boarding_point || trackingOrder.droppingPoint || trackingOrder.dropping_point);
+
+                                  const isServiceBooking = !isTravelBooking && (
+                                    orderTypeStr.includes('service') || orderMainCat.includes('service') ||
+                                    Boolean(trackingOrder.appointmentDate || trackingOrder.appointmentTimeSlot || trackingOrder.appointment_date || trackingOrder.technicianId || trackingOrder.technicianName) ||
+                                    orderProdDetails.includes('electrician') || orderProdDetails.includes('lineman') || orderProdDetails.includes('plumber') || orderProdDetails.includes('cleaning') || orderProdDetails.includes('repair')
+                                  );
+
+                                  const isStayBooking = !isTravelBooking && !isServiceBooking && (
+                                    orderTypeStr.includes('stay') || orderTypeStr.includes('hotel') || orderTypeStr.includes('resort') || orderTypeStr.includes('villa') ||
+                                    orderMainCat.includes('stay')
+                                  );
+
                                   const trackingCheckInDate = trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.appointmentDate || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate || '';
                                   const trackingCheckInTime = trackingOrder.checkInTime || trackingOrder.check_in_time || trackingOrder.appointmentTimeSlot || trackingOrder.items?.[0]?.checkInTime || trackingOrder.items?.[0]?.bookingTime || '';
                                   const trackingCheckOutDate = trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkOutDate || '';
                                   const trackingCheckOutTime = trackingOrder.checkOutTime || trackingOrder.check_out_time || trackingOrder.items?.[0]?.checkOutTime || '';
                                   const trackingNights = trackingOrder.nightsCount || trackingOrder.nights || trackingOrder.numberOfNights || trackingOrder.items?.[0]?.nights || (trackingCheckInDate && trackingCheckOutDate ? Math.max(1, Math.ceil((new Date(trackingCheckOutDate) - new Date(trackingCheckInDate)) / 86400000)) : null);
 
-                                  if (!isStayBooking) return null;
-                                  return (
-                                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
-                                      <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Stay Schedule:</p>
-                                      <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
-                                        📅 Check-In: <strong className="text-slate-900 dark:text-white">{trackingCheckInDate || 'Not specified'} {trackingCheckInTime ? `at ${trackingCheckInTime}` : ''}</strong>
-                                      </p>
-                                      <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
-                                        📅 Check-Out: <strong className="text-slate-900 dark:text-white">{trackingCheckOutDate || 'Not specified'} {trackingCheckOutTime ? `at ${trackingCheckOutTime}` : ''}</strong>
-                                      </p>
-                                      {trackingNights && (
+                                  if (isTravelBooking) {
+                                    return (
+                                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
+                                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Travel Route Points:</p>
                                         <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
-                                          🌙 Duration: <strong className="text-slate-900 dark:text-white">{trackingNights} {trackingNights === 1 ? 'Night' : 'Nights'}</strong>
+                                          📍 Boarding Point: <strong className="text-slate-900 dark:text-white">{formatTravelPointDisplay(trackingOrder.boardingPoint || trackingOrder.boarding_point) || 'Not provided'}</strong>
                                         </p>
-                                      )}
-                                    </div>
-                                  );
+                                        <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                          🏁 Dropping Point: <strong className="text-slate-900 dark:text-white">{formatTravelPointDisplay(trackingOrder.droppingPoint || trackingOrder.dropping_point) || 'Not provided'}</strong>
+                                        </p>
+                                        {trackingCheckInDate && (
+                                          <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                            📅 Travel Date: <strong className="text-slate-900 dark:text-white">{trackingCheckInDate} {trackingCheckInTime ? `at ${trackingCheckInTime}` : ''}</strong>
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+
+                                  if (isServiceBooking) {
+                                    const apptDate = trackingOrder.appointmentDate || trackingOrder.checkInDate || trackingOrder.check_in_date || trackingCheckInDate;
+                                    const apptTime = trackingOrder.appointmentTimeSlot || trackingOrder.checkInTime || trackingOrder.check_in_time || trackingCheckInTime;
+                                    const apptType = trackingOrder.appointmentType || trackingOrder.serviceType || 'On-Site Visit';
+                                    return (
+                                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
+                                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Service Schedule:</p>
+                                        <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                          📅 Appointment: <strong className="text-slate-900 dark:text-white">{apptDate ? `${apptDate} ${apptTime ? `at ${apptTime}` : ''}` : 'Scheduled slot'}</strong>
+                                        </p>
+                                        <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                          📍 Service Type: <strong className="text-slate-900 dark:text-white">{apptType}</strong>
+                                        </p>
+                                        {trackingOrder.customer_address && (
+                                          <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                            🏠 Service Location: <strong className="text-slate-900 dark:text-white">{trackingOrder.customer_address}</strong>
+                                          </p>
+                                        )}
+                                        <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                          👨‍🔧 Technician: <strong className="text-slate-900 dark:text-white">{trackingOrder.technicianName || trackingOrder.deliveryPartnerName || 'Will be assigned prior to appointment'}</strong>
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (isStayBooking) {
+                                    return (
+                                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-left">
+                                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Stay Schedule:</p>
+                                        <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                          📅 Check-In: <strong className="text-slate-900 dark:text-white">{trackingCheckInDate || 'Not specified'} {trackingCheckInTime ? `at ${trackingCheckInTime}` : ''}</strong>
+                                        </p>
+                                        <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                          📅 Check-Out: <strong className="text-slate-900 dark:text-white">{trackingCheckOutDate || 'Not specified'} {trackingCheckOutTime ? `at ${trackingCheckOutTime}` : ''}</strong>
+                                        </p>
+                                        {trackingNights && (
+                                          <p className="text-[10.5px] font-semibold text-slate-700 dark:text-slate-300">
+                                            🌙 Duration: <strong className="text-slate-900 dark:text-white">{trackingNights} {trackingNights === 1 ? 'Night' : 'Nights'}</strong>
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+
+                                  return null;
                                 })()}
                               </div>
                             </div>
@@ -12948,11 +13158,25 @@ wishlistProducts.forEach(item => addToCart(item));
 
                           {/* Booking Progress Timeline */}
                           {(() => {
-                            const isStayBooking = (trackingOrder.type || '').toLowerCase().includes('stay') || 
-                              (trackingOrder.type || '').toLowerCase().includes('hotel') ||
-                              (trackingOrder.subNavbarCategory || '').toLowerCase() === 'stay' ||
-                              (trackingOrder.mainCategory || '').toLowerCase() === 'stay' ||
-                              Boolean(trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate);
+                            const orderTypeStr = (trackingOrder.type || '').toLowerCase();
+                            const orderMainCat = (trackingOrder.mainCategory || trackingOrder.subNavbarCategory || trackingOrder.items?.[0]?.mainCategory || trackingOrder.items?.[0]?.subNavbarCategory || '').toLowerCase();
+                            const orderProdDetails = (trackingOrder.product_details || trackingOrder.items?.[0]?.name || '').toLowerCase();
+
+                            const isTravelBooking = orderTypeStr.includes('travel') || orderMainCat.includes('travel') ||
+                              orderTypeStr.includes('bus') || orderProdDetails.includes('bus') ||
+                              Boolean(trackingOrder.boardingPoint || trackingOrder.boarding_point || trackingOrder.droppingPoint || trackingOrder.dropping_point);
+
+                            const isServiceBooking = !isTravelBooking && (
+                              orderTypeStr.includes('service') || orderMainCat.includes('service') ||
+                              Boolean(trackingOrder.appointmentDate || trackingOrder.appointmentTimeSlot || trackingOrder.appointment_date || trackingOrder.technicianId || trackingOrder.technicianName) ||
+                              orderProdDetails.includes('electrician') || orderProdDetails.includes('lineman') || orderProdDetails.includes('plumber') || orderProdDetails.includes('cleaning') || orderProdDetails.includes('repair')
+                            );
+
+                            const isStayBooking = !isTravelBooking && !isServiceBooking && (
+                              orderTypeStr.includes('stay') || orderTypeStr.includes('hotel') || orderTypeStr.includes('resort') || orderTypeStr.includes('villa') ||
+                              orderMainCat.includes('stay')
+                            );
+
                             const trackingCheckInDate = trackingOrder.checkInDate || trackingOrder.check_in_date || trackingOrder.appointmentDate || trackingOrder.items?.[0]?.checkInDate || trackingOrder.items?.[0]?.bookingDate || '';
                             const trackingCheckInTime = trackingOrder.checkInTime || trackingOrder.check_in_time || trackingOrder.appointmentTimeSlot || trackingOrder.items?.[0]?.checkInTime || trackingOrder.items?.[0]?.bookingTime || '';
                             const trackingCheckOutDate = trackingOrder.checkOutDate || trackingOrder.check_out_date || trackingOrder.items?.[0]?.checkOutDate || '';
@@ -12979,10 +13203,52 @@ wishlistProducts.forEach(item => addToCart(item));
                                 date: trackingCheckOutDate,
                                 time: trackingCheckOutTime
                               }
+                            ] : isTravelBooking ? [
+                              {
+                                name: 'Ticket Booked',
+                                date: trackingOrder.created_at ? new Date(trackingOrder.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+                                time: ''
+                              },
+                              {
+                                name: 'Seat Confirmed',
+                                date: '',
+                                time: ''
+                              },
+                              {
+                                name: 'Boarding / In Transit',
+                                date: trackingCheckInDate,
+                                time: trackingCheckInTime
+                              },
+                              {
+                                name: 'Trip Completed',
+                                date: '',
+                                time: ''
+                              }
+                            ] : isServiceBooking ? [
+                              {
+                                name: 'Booking Received',
+                                date: trackingOrder.created_at ? new Date(trackingOrder.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+                                time: ''
+                              },
+                              {
+                                name: 'Technician Assigned',
+                                date: '',
+                                time: ''
+                              },
+                              {
+                                name: 'Service In-Progress',
+                                date: trackingCheckInDate,
+                                time: trackingCheckInTime
+                              },
+                              {
+                                name: 'Service Completed',
+                                date: '',
+                                time: ''
+                              }
                             ] : [
                               { name: 'Booking Placed', date: '', time: '' },
                               { name: 'Confirmed', date: '', time: '' },
-                              { name: 'Checked In / Active', date: '', time: '' },
+                              { name: 'Active', date: '', time: '' },
                               { name: 'Completed', date: '', time: '' }
                             ];
 
@@ -14906,7 +15172,7 @@ wishlistProducts.forEach(item => addToCart(item));
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block leading-none mb-1">Type</span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                            {isStayItem ? (activeScheduleModalItem?.roomType || activeScheduleModalItem?.subcategory || activeScheduleModalItem?.subCategory || activeScheduleModalItem?.name || selectedModalType || 'Luxury Room') : selectedModalType}
+                            {isStayItem ? (activeScheduleModalItem?.roomType || activeScheduleModalItem?.subcategory || activeScheduleModalItem?.subCategory || activeScheduleModalItem?.name || selectedModalType || 'Luxury Room') : (selectedModalType || getServiceAppointmentType(activeScheduleModalItem))}
                           </span>
                         </div>
                       </div>
@@ -15622,7 +15888,7 @@ wishlistProducts.forEach(item => addToCart(item));
                       <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-855/30 pb-2">
                         <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1.5"><svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Type</span>
                         <span className="font-extrabold text-slate-900 dark:text-slate-200">
-                          {isStayItem ? (activeBookNowModalItem?.roomType || activeBookNowModalItem?.subcategory || activeBookNowModalItem?.subCategory || activeBookNowModalItem?.name || selectedModalType || 'Luxury Room') : selectedModalType}
+                          {isStayItem ? (activeBookNowModalItem?.roomType || activeBookNowModalItem?.subcategory || activeBookNowModalItem?.subCategory || activeBookNowModalItem?.name || selectedModalType || 'Luxury Room') : (selectedModalType || getServiceAppointmentType(activeBookNowModalItem))}
                         </span>
                       </div>
 

@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.extractVendorTravelPoints = extractVendorTravelPoints;
 exports.runAutoAssignment = runAutoAssignment;
+const s3_1 = require("../s3");
 const express_1 = require("express");
 const db_1 = require("../db");
 const socket_1 = require("../socket");
@@ -194,16 +195,69 @@ router.get('/', middleware_1.optionalAuthenticateToken, async (req, res) => {
         });
     }
     // IDOR Protection: If requester is authenticated
+    let targetCustomerIds = customerId;
     if (authUser) {
         if (authUser.role === 'customer') {
-            const selfCustId = authUser.customerId || authUser.userId || authUser.registrationId;
-            if (customerId && customerId !== selfCustId && customerId !== authUser.userId) {
+            const allowedIds = [
+                authUser.userId,
+                authUser.customerId,
+                authUser.registrationId,
+                authUser.id,
+                authUser._id,
+                authUser.customer_id,
+                authUser.phone,
+                authUser.email
+            ].filter(Boolean).map((s) => String(s).toLowerCase().trim());
+            const mongoDb = db_1.db.getDb();
+            let userDbDoc = null;
+            if (mongoDb) {
+                const userOrConditions = [
+                    { id: authUser.userId },
+                    { _id: authUser.userId },
+                    { email: (authUser.email || '').toLowerCase().trim() },
+                    { customerId: authUser.customerId || authUser.userId }
+                ];
+                if (mongodb_1.ObjectId.isValid(authUser.userId)) {
+                    try {
+                        userOrConditions.push({ _id: new mongodb_1.ObjectId(authUser.userId) });
+                    }
+                    catch (e) { }
+                }
+                userDbDoc = await mongoDb.collection('users').findOne({ $or: userOrConditions });
+                if (!userDbDoc) {
+                    userDbDoc = await mongoDb.collection('customers').findOne({ $or: userOrConditions });
+                }
+            }
+            if (userDbDoc) {
+                [
+                    userDbDoc._id,
+                    userDbDoc.id,
+                    userDbDoc.customerId,
+                    userDbDoc.registrationId,
+                    userDbDoc.email,
+                    userDbDoc.phone
+                ].filter(Boolean).forEach((v) => {
+                    allowedIds.push(String(v).toLowerCase().trim());
+                });
+            }
+            if (customerId && !allowedIds.includes(customerId.toLowerCase().trim())) {
                 return res.status(403).json({
                     status: 'error',
                     message: 'Access denied: You cannot view orders belonging to another customer account.'
                 });
             }
-            customerId = selfCustId || authUser.userId || '';
+            const searchCustIds = [
+                customerId,
+                userDbDoc?.customerId,
+                userDbDoc?.registrationId,
+                userDbDoc?.id,
+                userDbDoc?._id?.toString(),
+                userDbDoc?.email,
+                authUser.customerId,
+                authUser.userId,
+                authUser.email
+            ].filter(Boolean);
+            targetCustomerIds = Array.from(new Set(searchCustIds));
         }
         else if (authUser.role === 'vendor') {
             if (vendorId && vendorId !== authUser.vendorId && authUser.vendorId) {
@@ -221,7 +275,7 @@ router.get('/', middleware_1.optionalAuthenticateToken, async (req, res) => {
         }
     }
     try {
-        const orders = await db_1.db.getOrders(vendorId, customerId);
+        const orders = await db_1.db.getOrders(vendorId, targetCustomerIds);
         res.json({
             status: 'success',
             data: orders
@@ -445,7 +499,31 @@ function logVendorSyncThrottled(msg) {
 }
 // POST: /api/orders
 router.post('/', async (req, res) => {
-    const { vendor_id, customer_id, customerId, customer_email, customer_name, customer_phone, customer_address, product_details, amount, customer_latitude, customer_longitude, type, appointmentDate, appointmentTimeSlot, doctorName, tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items, experience, candidateEducation, memberId, boardingPoint, droppingPoint, adults, children, guestDetails, checkInDate, checkInTime, checkOutDate, checkOutTime, guestList, vehicleDetails, roomsCount, nightsCount, specialRequests, paymentMethod, payment_method, paymentStatus, payment_status, transactionId, paidAt, paymentId } = req.body;
+    let { vendor_id, customer_id, customerId, customer_email, customer_name, customer_phone, customer_address, product_details, amount, customer_latitude, customer_longitude, type, appointmentDate, appointmentTimeSlot, doctorName, tableNumber, roomNumber, prescriptionUrl, candidateEmail, candidateResume, items, experience, candidateEducation, memberId, boardingPoint, droppingPoint, adults, children, guestDetails, checkInDate, checkInTime, checkOutDate, checkOutTime, guestList, vehicleDetails, roomsCount, nightsCount, specialRequests, paymentMethod, payment_method, paymentStatus, payment_status, transactionId, paidAt, paymentId } = req.body;
+    // Upload candidate resume to AWS S3 if provided as base64 data URI
+    if (candidateResume && typeof candidateResume === 'string' && candidateResume.startsWith('data:')) {
+        try {
+            const s3Res = await (0, s3_1.uploadToS3)(candidateResume, 'resumes', 'candidate_resume.pdf');
+            if (s3Res && s3Res.success && s3Res.url) {
+                candidateResume = s3Res.url;
+            }
+        }
+        catch (uploadErr) {
+            console.error('[Candidate Resume S3 Upload Warning]:', uploadErr?.message);
+        }
+    }
+    // Upload prescription document to AWS S3 if provided as base64 data URI
+    if (prescriptionUrl && typeof prescriptionUrl === 'string' && prescriptionUrl.startsWith('data:')) {
+        try {
+            const s3Res = await (0, s3_1.uploadToS3)(prescriptionUrl, 'prescriptions', 'prescription.jpg');
+            if (s3Res && s3Res.success && s3Res.url) {
+                prescriptionUrl = s3Res.url;
+            }
+        }
+        catch (uploadErr) {
+            console.error('[Prescription S3 Upload Warning]:', uploadErr?.message);
+        }
+    }
     const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : null;
     const isTravelOrStayBooking = type === 'Travel' || type === 'Stay' || type === 'Travel Ticket' || type === 'Hotel Stay' ||
         (typeof type === 'string' && (type.toLowerCase().includes('travel') ||
@@ -869,9 +947,8 @@ router.post('/', async (req, res) => {
             product_details: product_details || travelProduct?.name || 'Generic Connect Item',
             amount: finalOrderAmount,
             totalAmount: finalOrderAmount,
-            finalAmount: finalOrderAmount,
-            status: 'Order Received',
-            type: type || 'Order',
+            status: isJobType ? (req.body.status || 'APPLICATION RECEIVED') : (req.body.status || 'Order Received'),
+            type: type || (isJobType ? 'Job' : 'Order'),
             paymentMethod: resolvedPaymentMethod,
             payment_method: resolvedPaymentMethod,
             paymentStatus: resolvedPaymentStatus,
@@ -880,6 +957,8 @@ router.post('/', async (req, res) => {
             ...(resolvedPaidAt && { paidAt: resolvedPaidAt }),
             appointmentDate,
             appointmentTimeSlot,
+            appointmentType: req.body.appointmentType || req.body.serviceType,
+            serviceType: req.body.serviceType || req.body.appointmentType,
             doctorName,
             tableNumber,
             roomNumber,

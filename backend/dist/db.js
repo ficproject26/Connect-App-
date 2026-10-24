@@ -325,23 +325,20 @@ class DatabaseManager {
             if (vendorId)
                 query.vendor_id = vendorId;
             if (customerId) {
-                const cleanCustId = String(customerId).trim();
-                const cleanLower = cleanCustId.toLowerCase();
-                const cleanDigits = cleanCustId.replace(/\D/g, '');
-                const orList = [
-                    { customer_id: cleanCustId },
-                    { customerId: cleanCustId },
-                    { memberId: cleanCustId },
-                    { user_id: cleanCustId },
-                    { customer_email: cleanLower },
-                    { candidateEmail: cleanLower }
-                ];
-                if (cleanDigits && cleanDigits.length >= 7) {
-                    orList.push({ customer_phone: cleanDigits });
-                    orList.push({ customer_phone: `+91${cleanDigits}` });
-                    orList.push({ customer_phone: `91${cleanDigits}` });
+                const idList = (Array.isArray(customerId) ? customerId : [customerId]).map(s => String(s).trim()).filter(Boolean);
+                if (idList.length > 0) {
+                    const orList = [];
+                    idList.forEach(rawId => {
+                        const cleanCustId = String(rawId).trim();
+                        const cleanLower = cleanCustId.toLowerCase();
+                        const cleanDigits = cleanCustId.replace(/\D/g, '');
+                        orList.push({ customer_id: cleanCustId }, { customerId: cleanCustId }, { memberId: cleanCustId }, { user_id: cleanCustId }, { customer_email: cleanLower }, { candidateEmail: cleanLower });
+                        if (cleanDigits && cleanDigits.length >= 7) {
+                            orList.push({ customer_phone: cleanDigits }, { customer_phone: `+91${cleanDigits}` }, { customer_phone: `91${cleanDigits}` });
+                        }
+                    });
+                    query.$or = orList;
                 }
-                query.$or = orList;
             }
             return this.mongoDb.collection('orders')
                 .find(query, { projection: { _id: 0 } })
@@ -352,14 +349,17 @@ class DatabaseManager {
         if (vendorId)
             res = res.filter(o => o.vendor_id === vendorId);
         if (customerId) {
-            const cleanCustId = String(customerId).trim().toLowerCase();
-            res = res.filter(o => String(o.customer_id || '').toLowerCase() === cleanCustId ||
-                String(o.customerId || '').toLowerCase() === cleanCustId ||
-                String(o.user_id || '').toLowerCase() === cleanCustId ||
-                String(o.memberId || '').toLowerCase() === cleanCustId ||
-                String(o.candidateEmail || '').toLowerCase() === cleanCustId ||
-                String(o.customer_email || '').toLowerCase() === cleanCustId ||
-                String(o.customer_phone || '').replace(/\D/g, '') === cleanCustId.replace(/\D/g, ''));
+            const idList = (Array.isArray(customerId) ? customerId : [customerId]).map(s => String(s).trim().toLowerCase()).filter(Boolean);
+            res = res.filter(o => idList.includes(String(o.customer_id || '').toLowerCase()) ||
+                idList.includes(String(o.customerId || '').toLowerCase()) ||
+                idList.includes(String(o.user_id || '').toLowerCase()) ||
+                idList.includes(String(o.memberId || '').toLowerCase()) ||
+                idList.includes(String(o.candidateEmail || '').toLowerCase()) ||
+                idList.includes(String(o.customer_email || '').toLowerCase()) ||
+                idList.some(id => {
+                    const digits = id.replace(/\D/g, '');
+                    return digits.length >= 7 && String(o.customer_phone || '').replace(/\D/g, '') === digits;
+                }));
         }
         return res.sort((a, b) => b.id.localeCompare(a.id));
     }
