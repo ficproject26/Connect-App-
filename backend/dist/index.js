@@ -494,7 +494,7 @@ app.get(['/api/media/s3/:key(*)', '/api/uploads/s3/:key(*)'], async (req, res) =
         const rawKey = req.params.key || req.params[0] || '';
         const cleanKey = decodeURIComponent(rawKey).replace(/^\/+/, '');
         // Directory traversal & safe character validation
-        if (!cleanKey || cleanKey.includes('..') || !/^[a-zA-Z0-9_\-\/.]+\.(jpg|jpeg|png|webp|gif|avif|pdf|svg)$/i.test(cleanKey)) {
+        if (!cleanKey || cleanKey.includes('..') || !/^[a-zA-Z0-9_\-\/.]+\.(jpg|jpeg|png|webp|gif|avif|pdf|svg|webm|mp3|wav|m4a|ogg|aac|doc|docx|xls|xlsx|csv|txt)$/i.test(cleanKey)) {
             return res.status(400).json({ error: 'Invalid or disallowed media key.' });
         }
         // Access policy: Separate public product/catalog images from private sensitive documents
@@ -527,7 +527,8 @@ app.get(['/api/media/s3/:key(*)', '/api/uploads/s3/:key(*)'], async (req, res) =
                 return res.status(304).end();
             }
         }
-        res.setHeader('Content-Type', streamRes.contentType || 'image/jpeg');
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Content-Type', streamRes.contentType || 'application/octet-stream');
         if (streamRes.contentLength) {
             res.setHeader('Content-Length', streamRes.contentLength.toString());
         }
