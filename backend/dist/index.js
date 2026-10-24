@@ -20,6 +20,7 @@ const territory_1 = __importDefault(require("./routes/territory"));
 const db_1 = require("./db");
 const middleware_1 = require("./security/middleware");
 const s3_1 = require("./s3");
+const securityManager_1 = require("./security/securityManager");
 const mongodb_1 = require("mongodb");
 const realtime_1 = require("./realtime");
 // Load environmental variables
@@ -400,7 +401,8 @@ app.get(['/api/public/products', '/api/products'], async (req, res) => {
                 if (u.includes('localhost:8002/uploads/') || u.includes('127.0.0.1:8002/uploads/')) {
                     u = u.replace(/https?:\/\/(localhost|127\.0\.0\.1):8002\/uploads\//i, `${process.env.BACKEND_URL || 'https://api.ficapp.in'}/uploads/`);
                 }
-                return u;
+                // Normalize S3 objects to permanent durable URLs & preserve Cloudinary permanent CDN URLs
+                return (0, s3_1.resolveDurableImageUrl)(u);
             };
             const mappedActiveProducts = activeProducts.map((p) => {
                 let primaryImg = normalizeVendorImageUrl(!isDeadUrl(p.imageUrl) ? p.imageUrl : (!isDeadUrl(p.image) ? p.image : ''));
@@ -477,12 +479,67 @@ app.post(['/api/upload', '/api/products/upload-image', '/api/admin/upload'], mid
             success: true,
             url: uploadRes.secure_url,
             secure_url: uploadRes.secure_url,
+            key: uploadRes.key || uploadRes.publicId,
             publicId: uploadRes.publicId
         });
     }
     catch (err) {
         console.error("Error in upload route:", err);
         res.status(500).json({ success: false, error: err.message || 'Server error' });
+    }
+});
+// Durable S3 Media Viewing Endpoint with Folder-Level Authorization & HTTP Caching
+app.get(['/api/media/s3/:key(*)', '/api/uploads/s3/:key(*)'], async (req, res) => {
+    try {
+        const rawKey = req.params.key || req.params[0] || '';
+        const cleanKey = decodeURIComponent(rawKey).replace(/^\/+/, '');
+        // Directory traversal & safe character validation
+        if (!cleanKey || cleanKey.includes('..') || !/^[a-zA-Z0-9_\-\/.]+\.(jpg|jpeg|png|webp|gif|avif|pdf|svg)$/i.test(cleanKey)) {
+            return res.status(400).json({ error: 'Invalid or disallowed media key.' });
+        }
+        // Access policy: Separate public product/catalog images from private sensitive documents
+        const isSensitiveDocument = /^(kyc|aadhaar|pan|passbooks|admin_docs|documents|resumes)\//i.test(cleanKey);
+        if (isSensitiveDocument) {
+            const authHeader = req.headers['authorization'] || req.headers['x-auth-token'];
+            const token = typeof authHeader === 'string' && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+            if (!token) {
+                return res.status(401).json({ error: 'Authentication required to access private document.' });
+            }
+            try {
+                const payload = securityManager_1.securityManager.verifyAccessToken(token);
+                if (!payload) {
+                    return res.status(403).json({ error: 'Invalid or expired access token.' });
+                }
+            }
+            catch {
+                return res.status(403).json({ error: 'Authentication failed.' });
+            }
+        }
+        // Stream S3 object
+        const streamRes = await (0, s3_1.getObjectStream)(cleanKey);
+        if (!streamRes.success || !streamRes.body) {
+            return res.status(404).json({ error: streamRes.error || 'Media object not found.' });
+        }
+        // HTTP Caching & ETag validation (304 Not Modified)
+        if (streamRes.etag) {
+            res.setHeader('ETag', streamRes.etag);
+            if (req.headers['if-none-match'] === streamRes.etag) {
+                return res.status(304).end();
+            }
+        }
+        res.setHeader('Content-Type', streamRes.contentType || 'image/jpeg');
+        if (streamRes.contentLength) {
+            res.setHeader('Content-Length', streamRes.contentLength.toString());
+        }
+        res.setHeader('Cache-Control', isSensitiveDocument ? 'private, no-cache, no-store' : 'public, max-age=86400, stale-while-revalidate=604800');
+        const readable = streamRes.body;
+        readable.pipe(res);
+    }
+    catch (err) {
+        console.error('[Media S3 Stream Error]:', err.message);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to retrieve media.' });
+        }
     }
 });
 // Single Product Fetch Endpoint
@@ -508,13 +565,24 @@ app.get(['/api/products/:id', '/api/public/products/:id'], async (req, res) => {
         if (!primaryImg && Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
             primaryImg = product.imageUrls[0] || '';
         }
+        primaryImg = (0, s3_1.resolveDurableImageUrl)(primaryImg);
+        const resolvedImages = Array.isArray(product.images)
+            ? product.images.map((img) => {
+                const u = typeof img === 'string' ? img : (img?.url || img?.secure_url || '');
+                const clean = (0, s3_1.resolveDurableImageUrl)(u);
+                return clean ? { url: clean, key: (0, s3_1.extractS3Key)(u) || undefined } : null;
+            }).filter(Boolean)
+            : (primaryImg ? [{ url: primaryImg }] : []);
+        const resolvedImageUrls = Array.isArray(product.imageUrls)
+            ? product.imageUrls.map((u) => (0, s3_1.resolveDurableImageUrl)(u)).filter(Boolean)
+            : (primaryImg ? [primaryImg] : []);
         return res.json({
             ...product,
             id: product.id || product._id?.toString(),
             imageUrl: primaryImg,
             image: primaryImg,
-            images: Array.isArray(product.images) ? product.images : (primaryImg ? [{ url: primaryImg }] : []),
-            imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : (primaryImg ? [primaryImg] : [])
+            images: resolvedImages,
+            imageUrls: resolvedImageUrls
         });
     }
     catch (err) {

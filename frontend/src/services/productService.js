@@ -167,11 +167,34 @@ const extractRawImage = (p) => {
   if (typeof p.coverImage === 'string') allCandidates.push(p.coverImage);
   if (typeof p.bannerImage === 'string') allCandidates.push(p.bannerImage);
 
-  // 1. Cloudinary CDN permanent URLs take absolute first priority
-  const cloudinaryCandidate = allCandidates.find(u => typeof u === 'string' && u.startsWith('https://res.cloudinary.com/'));
-  if (cloudinaryCandidate) return cloudinaryCandidate.trim();
+  // 1. Explicit primary fields take first priority (imageUrl, image, imageURL, secure_url)
+  // Ensures newly uploaded S3 images or edited products are NOT overridden by stale candidates
+  const primaryFieldCandidates = [p.imageUrl, p.image, p.imageURL, p.secure_url, p.imgUrl]
+    .filter(u => typeof u === 'string' && !isDeadImageUrl(u));
+  if (primaryFieldCandidates.length > 0) {
+    return primaryFieldCandidates[0].trim();
+  }
 
-  // 2. Next: any valid non-dead URL
+  // 2. Product images array
+  if (Array.isArray(p.images) && p.images.length > 0) {
+    for (const img of p.images) {
+      const u = typeof img === 'string' ? img : (img?.secure_url || img?.url || img?.src || img?.path || img?.imageUrl || '');
+      if (u && typeof u === 'string' && !isDeadImageUrl(u)) {
+        return u.trim();
+      }
+    }
+  }
+
+  // 3. Product imageUrls array
+  if (Array.isArray(p.imageUrls) && p.imageUrls.length > 0) {
+    for (const u of p.imageUrls) {
+      if (u && typeof u === 'string' && !isDeadImageUrl(u)) {
+        return u.trim();
+      }
+    }
+  }
+
+  // 4. Any remaining valid candidate (Cloudinary, S3, or external)
   const validCandidate = allCandidates.find(u => typeof u === 'string' && !isDeadImageUrl(u));
   if (validCandidate) return validCandidate.trim();
 
@@ -286,7 +309,29 @@ export const sanitizeImageUrl = (imgUrl, pContext = null) => {
     return cleanPath;
   }
 
+  // Canonical backend media S3 endpoint
+  if (url.includes('/api/media/s3/') || url.includes('/api/uploads/s3/')) {
+    const cleanPath = url.substring(url.indexOf('/api/'));
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+    if (baseBackend && !url.startsWith('http')) {
+      return `${baseBackend.replace(/\/+$/, '')}${cleanPath}`;
+    }
+    return url;
+  }
+
+  // Raw S3 object key passed directly (e.g. products/1729...jpg)
+  if (/^[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|webp|gif|avif|pdf|svg)$/i.test(url)) {
+    const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : 'https://api.ficapp.in';
+    return `${baseBackend.replace(/\/+$/, '')}/api/media/s3/${url.replace(/^\/+/, '')}`;
+  }
+
+  // Permanent Cloudinary CDN URLs - fully preserved
   if (url.startsWith('https://res.cloudinary.com/')) {
+    return url;
+  }
+
+  // CloudFront & S3 URLs
+  if (url.includes('.cloudfront.net') || url.includes('.amazonaws.com')) {
     return url;
   }
 

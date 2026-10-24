@@ -59,15 +59,19 @@ const cspDirectives = {
   // Styles: self + Google Fonts
   styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
 
-  // Images: self + Cloudinary CDN (product/vendor images) + map tiles + Unsplash (placeholder images)
+  // Images: self + Cloudinary CDN (product/vendor images) + AWS S3 + CloudFront + map tiles + Unsplash (placeholder images)
   imgSrc: [
     "'self'",
     'data:',
     'blob:',
-    'https://*.amazonaws.com', 'https://*.s3.amazonaws.com',       // Cloudinary CDN served images
-    'https://*.s3.ap-south-1.amazonaws.com',          // Cloudinary subdomains
-    'https://images.unsplash.com',       // Demo/placeholder images
-    'https://*.openstreetmap.org',        // Map tiles
+    'https://res.cloudinary.com',
+    'https://*.cloudinary.com',
+    'https://*.amazonaws.com',
+    'https://*.s3.amazonaws.com',
+    'https://*.s3.ap-south-1.amazonaws.com',
+    'https://*.cloudfront.net',
+    'https://images.unsplash.com',
+    'https://*.openstreetmap.org',
     'https://tile.openstreetmap.org',
   ],
 

@@ -5,14 +5,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadToCloudinary = void 0;
 exports.getS3Client = getS3Client;
+exports.extractS3Key = extractS3Key;
+exports.getDurableImageUrl = getDurableImageUrl;
+exports.resolveDurableImageUrl = resolveDurableImageUrl;
 exports.getPresignedViewUrl = getPresignedViewUrl;
+exports.getObjectStream = getObjectStream;
 exports.uploadToS3 = uploadToS3;
 exports.isPersistentImageUrl = isPersistentImageUrl;
 const crypto_1 = __importDefault(require("crypto"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
+// Ensure backend .env is loaded regardless of current working directory
 dotenv_1.default.config();
+dotenv_1.default.config({ path: path_1.default.join(__dirname, '../.env') });
+dotenv_1.default.config({ path: path_1.default.join(__dirname, '../../.env') });
 const AWS_REGION = process.env.AWS_REGION || '';
 const AWS_S3_BUCKET = process.env.AWS_S3_BUCKET || '';
 if (!AWS_REGION || !AWS_S3_BUCKET) {
@@ -30,34 +38,185 @@ function getS3Client() {
     }
     return s3ClientInstance;
 }
+const presignedUrlCache = new Map();
+// Clean expired cache entries every 10 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [k, entry] of presignedUrlCache.entries()) {
+        if (entry.expiresAt <= now) {
+            presignedUrlCache.delete(k);
+        }
+    }
+}, 10 * 60 * 1000).unref?.();
+/**
+ * Extracts a clean S3 object key (e.g. "products/1729...jpg") from a key or URL.
+ */
+function extractS3Key(urlOrKey) {
+    if (!urlOrKey || typeof urlOrKey !== 'string')
+        return null;
+    const trimmed = urlOrKey.trim();
+    // Exclude non-S3 sources
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.startsWith('https://res.cloudinary.com/')) {
+        return null;
+    }
+    // 1. Matches canonical backend media endpoint: /api/media/s3/{key}
+    const mediaMatch = trimmed.match(/\/api\/(?:media|uploads)\/s3\/([^?#]+)/i);
+    if (mediaMatch && mediaMatch[1]) {
+        return decodeURIComponent(mediaMatch[1]).replace(/^\/+/, '');
+    }
+    // 2. Matches CloudFront domain if configured
+    const cfDomain = (process.env.AWS_CLOUDFRONT_URL || process.env.CLOUDFRONT_URL || '').replace(/https?:\/\//i, '').replace(/\/+$/, '');
+    if (cfDomain && trimmed.includes(cfDomain)) {
+        try {
+            const parsed = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+            return decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
+        }
+        catch {
+            // Fallback
+        }
+    }
+    // 3. Matches standard AWS S3 URLs (path-style or virtual-hosted-style, signed or unsigned)
+    if (trimmed.includes('amazonaws.com')) {
+        try {
+            const parsed = new URL(trimmed);
+            let p = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
+            const parts = p.split('/');
+            // If path-style URL includes bucket name in first path segment, strip it
+            if (parts.length > 1 && ['products', 'vendor_uploads', 'admin_uploads', 'connect_uploads', 'kyc', 'documents', 'banners', 'categories', 'general', 'profiles', 'thumbnails'].includes(parts[1])) {
+                p = parts.slice(1).join('/');
+            }
+            return p;
+        }
+        catch {
+            const match = trimmed.match(/amazonaws\.com\/([^?#]+)/);
+            if (match && match[1]) {
+                return decodeURIComponent(match[1]).replace(/^\/+/, '');
+            }
+        }
+    }
+    // 4. Raw key format: folder/filename.ext
+    if (/^[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|webp|gif|avif|pdf|svg)$/i.test(trimmed)) {
+        return trimmed;
+    }
+    return null;
+}
+/**
+ * Returns the permanent, durable viewing URL for an S3 object key.
+ * Prefers CloudFront CDN URL if configured, otherwise returns canonical backend media endpoint.
+ */
+function getDurableImageUrl(objectKey) {
+    if (!objectKey)
+        return '';
+    const cleanKey = objectKey.replace(/^\/+/, '');
+    const cloudfrontDomain = process.env.AWS_CLOUDFRONT_URL || process.env.CLOUDFRONT_URL;
+    if (cloudfrontDomain) {
+        const cfBase = cloudfrontDomain.startsWith('http') ? cloudfrontDomain : `https://${cloudfrontDomain}`;
+        return `${cfBase.replace(/\/+$/, '')}/${cleanKey}`;
+    }
+    const backendBase = process.env.BACKEND_URL || 'https://api.ficapp.in';
+    return `${backendBase.replace(/\/+$/, '')}/api/media/s3/${cleanKey}`;
+}
+/**
+ * Resolves any stored image reference (Cloudinary, S3 pre-signed, S3 key, local, Unsplash)
+ * into a durable, permanent URL.
+ * - Cloudinary URLs are 100% preserved and never modified.
+ * - Expired or expiring S3 pre-signed URLs are converted into durable canonical media URLs.
+ * - Local uploads and external CDNs are preserved untouched.
+ */
+function resolveDurableImageUrl(input) {
+    if (!input || typeof input !== 'string')
+        return '';
+    const trimmed = input.trim();
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined')
+        return '';
+    // 1. Cloudinary URLs are permanent CDN links - NEVER touch or break them!
+    if (trimmed.startsWith('https://res.cloudinary.com/')) {
+        return trimmed;
+    }
+    // 2. Data or Blob URIs
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+        return trimmed;
+    }
+    // 3. Local upload references
+    if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
+        return trimmed;
+    }
+    // 4. Already durable canonical backend media URL
+    if (trimmed.includes('/api/media/s3/')) {
+        return trimmed;
+    }
+    // 5. CloudFront URL
+    const cfDomain = (process.env.AWS_CLOUDFRONT_URL || process.env.CLOUDFRONT_URL || '').replace(/https?:\/\//i, '').replace(/\/+$/, '');
+    if (cfDomain && trimmed.includes(cfDomain)) {
+        return trimmed;
+    }
+    // 6. S3 Pre-signed URL or S3 URL (expired or fresh) or Raw S3 Key
+    const key = extractS3Key(trimmed);
+    if (key) {
+        return getDurableImageUrl(key);
+    }
+    // 7. Other valid HTTP/HTTPS URLs (Unsplash placeholders, external CDNs)
+    return trimmed;
+}
+/**
+ * Generates an authenticated pre-signed URL with caching to eliminate redundant AWS requests.
+ */
 async function getPresignedViewUrl(key, expiresIn = 3600) {
     if (!key || typeof key !== 'string')
         return '';
+    const cleanKey = extractS3Key(key) || key.replace(/^\/+/, '');
+    const cacheKey = `${cleanKey}:${expiresIn}`;
+    const cached = presignedUrlCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now() + 60000) {
+        return cached.url;
+    }
     const bucket = process.env.AWS_S3_BUCKET;
     const client = getS3Client();
-    if (key.startsWith('http://') || key.startsWith('https://')) {
-        if (key.includes('X-Amz-Signature') || key.includes('X-Amz-Credential')) {
-            return key;
-        }
-        const match = key.match(/amazonaws\.com\/(.+)$/);
-        if (match && match[1]) {
-            key = decodeURIComponent(match[1]);
-        }
-        else {
-            return key;
-        }
-    }
-    const cleanKey = key.replace(/^\/+/, '');
     const command = new client_s3_1.GetObjectCommand({
         Bucket: bucket,
         Key: cleanKey
     });
-    return await (0, s3_request_presigner_1.getSignedUrl)(client, command, { expiresIn });
+    const signedUrl = await (0, s3_request_presigner_1.getSignedUrl)(client, command, { expiresIn });
+    presignedUrlCache.set(cacheKey, {
+        url: signedUrl,
+        expiresAt: Date.now() + (expiresIn - 60) * 1000
+    });
+    return signedUrl;
 }
-async function uploadToS3(fileInput, folder = 'products') {
+/**
+ * Streams an S3 object directly for the backend media endpoint.
+ */
+async function getObjectStream(key) {
     try {
         const bucket = process.env.AWS_S3_BUCKET;
         const client = getS3Client();
+        const cleanKey = key.replace(/^\/+/, '');
+        const command = new client_s3_1.GetObjectCommand({
+            Bucket: bucket,
+            Key: cleanKey
+        });
+        const response = await client.send(command);
+        return {
+            success: true,
+            body: response.Body,
+            contentType: response.ContentType || 'image/jpeg',
+            contentLength: response.ContentLength,
+            etag: response.ETag
+        };
+    }
+    catch (err) {
+        return {
+            success: false,
+            error: err.name === 'NoSuchKey' ? 'Object not found in S3 bucket' : (err.message || 'Failed to fetch object from S3')
+        };
+    }
+}
+/**
+ * Uploads a base64 image data URI, remote URL, or binary buffer to AWS S3.
+ * Returns a permanent, durable viewing URL and the clean S3 object key.
+ */
+async function uploadToS3(fileInput, folder = 'products') {
+    try {
         let fileBuffer;
         let mimeType = 'image/jpeg';
         let extension = 'jpg';
@@ -66,9 +225,24 @@ async function uploadToS3(fileInput, folder = 'products') {
         }
         else if (typeof fileInput === 'string') {
             const trimmed = fileInput.trim();
-            if (trimmed.includes('amazonaws.com') && (trimmed.includes('X-Amz-Signature') || trimmed.includes(bucket || ''))) {
+            // If already a permanent Cloudinary URL, preserve it untouched!
+            if (trimmed.startsWith('https://res.cloudinary.com/')) {
                 return { success: true, url: trimmed, secure_url: trimmed, key: trimmed, publicId: trimmed };
             }
+            // If already a durable backend media URL, preserve it!
+            if (trimmed.includes('/api/media/s3/')) {
+                const key = extractS3Key(trimmed) || trimmed;
+                return { success: true, url: trimmed, secure_url: trimmed, key, publicId: key };
+            }
+            // If already an S3 URL or signed URL, extract key and return durable URL
+            if (trimmed.includes('amazonaws.com')) {
+                const existingKey = extractS3Key(trimmed);
+                if (existingKey) {
+                    const durableUrl = getDurableImageUrl(existingKey);
+                    return { success: true, url: durableUrl, secure_url: durableUrl, key: existingKey, publicId: existingKey };
+                }
+            }
+            // Payload size check (15MB maximum)
             if (trimmed.length > 15 * 1024 * 1024) {
                 return { success: false, url: '', secure_url: '', error: 'Payload exceeds maximum permissible upload size limit (15MB).' };
             }
@@ -88,7 +262,7 @@ async function uploadToS3(fileInput, folder = 'products') {
                     'application/pdf': 'pdf'
                 };
                 if (!ALLOWED_MIMES[mimeType]) {
-                    return { success: false, url: '', secure_url: '', error: 'MIME type ' + mimeType + ' is not permitted. Only verified image/pdf formats are accepted.' };
+                    return { success: false, url: '', secure_url: '', error: `MIME type '${mimeType}' is not permitted. Only verified image/pdf formats are accepted.` };
                 }
                 extension = ALLOWED_MIMES[mimeType];
                 fileBuffer = Buffer.from(match[2], 'base64');
@@ -134,9 +308,11 @@ async function uploadToS3(fileInput, folder = 'products') {
         else {
             return { success: false, url: '', secure_url: '', error: 'Invalid file input type.' };
         }
+        const bucket = process.env.AWS_S3_BUCKET;
+        const client = getS3Client();
         const safeFolder = /^[a-zA-Z0-9_-]{1,50}$/.test(folder) ? folder : 'products';
         const randSuffix = crypto_1.default.randomBytes(8).toString('hex');
-        const objectKey = safeFolder + '/' + Date.now() + '-' + randSuffix + '.' + extension;
+        const objectKey = `${safeFolder}/${Date.now()}-${randSuffix}.${extension}`;
         const putCommand = new client_s3_1.PutObjectCommand({
             Bucket: bucket,
             Key: objectKey,
@@ -144,15 +320,12 @@ async function uploadToS3(fileInput, folder = 'products') {
             ContentType: mimeType
         });
         await client.send(putCommand);
-        const getCommand = new client_s3_1.GetObjectCommand({
-            Bucket: bucket,
-            Key: objectKey
-        });
-        const presignedUrl = await (0, s3_request_presigner_1.getSignedUrl)(client, getCommand, { expiresIn: 604800 });
+        // Compute permanent durable URL
+        const durableUrl = getDurableImageUrl(objectKey);
         return {
             success: true,
-            url: presignedUrl,
-            secure_url: presignedUrl,
+            url: durableUrl,
+            secure_url: durableUrl,
             key: objectKey,
             publicId: objectKey
         };
@@ -167,7 +340,11 @@ async function uploadToS3(fileInput, folder = 'products') {
         };
     }
 }
+// Backward-compatibility alias
 exports.uploadToCloudinary = uploadToS3;
+/**
+ * Checks whether an image URL is a persistent CDN or durable S3 reference.
+ */
 function isPersistentImageUrl(url) {
     if (!url || typeof url !== 'string')
         return false;
