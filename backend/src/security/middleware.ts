@@ -64,8 +64,8 @@ const cspDirectives = {
     "'self'",
     'data:',
     'blob:',
-    'https://res.cloudinary.com',       // Cloudinary CDN served images
-    'https://*.cloudinary.com',          // Cloudinary subdomains
+    'https://*.amazonaws.com', 'https://*.s3.amazonaws.com',       // Cloudinary CDN served images
+    'https://*.s3.ap-south-1.amazonaws.com',          // Cloudinary subdomains
     'https://images.unsplash.com',       // Demo/placeholder images
     'https://*.openstreetmap.org',        // Map tiles
     'https://tile.openstreetmap.org',
@@ -85,7 +85,7 @@ const cspDirectives = {
     'https://*.ficapp.in',
     'wss://*.ficapp.in',
     // Cloudinary upload API (used server-side, included for completeness)
-    'https://api.cloudinary.com',
+    
     // Razorpay payment API
     'https://api.razorpay.com',
     'https://lumberjack.razorpay.com',

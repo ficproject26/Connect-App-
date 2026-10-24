@@ -19,7 +19,7 @@ const wallet_1 = __importDefault(require("./routes/wallet"));
 const territory_1 = __importDefault(require("./routes/territory"));
 const db_1 = require("./db");
 const middleware_1 = require("./security/middleware");
-const cloudinary_1 = require("./cloudinary");
+const s3_1 = require("./s3");
 const mongodb_1 = require("mongodb");
 const realtime_1 = require("./realtime");
 // Load environmental variables
@@ -469,7 +469,7 @@ app.post(['/api/upload', '/api/products/upload-image', '/api/admin/upload'], mid
         if (!rawImage) {
             return res.status(400).json({ success: false, error: 'No image data provided' });
         }
-        const uploadRes = await (0, cloudinary_1.uploadToCloudinary)(rawImage, folder || 'products');
+        const uploadRes = await (0, s3_1.uploadToS3)(rawImage, folder || 'products');
         if (!uploadRes.success || !uploadRes.secure_url) {
             return res.status(500).json({ success: false, error: uploadRes.error || 'Failed to upload image' });
         }
@@ -533,7 +533,7 @@ app.post(['/api/products', '/api/public/products', '/api/admin/products'], async
         // Process primary image if base64 data URI
         let primaryImageUrl = payload.imageUrl || payload.image || '';
         if (primaryImageUrl && typeof primaryImageUrl === 'string' && primaryImageUrl.startsWith('data:image/')) {
-            const uploadRes = await (0, cloudinary_1.uploadToCloudinary)(primaryImageUrl, 'products');
+            const uploadRes = await (0, s3_1.uploadToS3)(primaryImageUrl, 'products');
             if (uploadRes.success && uploadRes.secure_url) {
                 primaryImageUrl = uploadRes.secure_url;
             }
@@ -544,7 +544,7 @@ app.post(['/api/products', '/api/public/products', '/api/admin/products'], async
             for (const imgItem of payload.images) {
                 const rawUrl = typeof imgItem === 'string' ? imgItem : (imgItem?.url || '');
                 if (rawUrl && rawUrl.startsWith('data:image/')) {
-                    const uploadRes = await (0, cloudinary_1.uploadToCloudinary)(rawUrl, 'products');
+                    const uploadRes = await (0, s3_1.uploadToS3)(rawUrl, 'products');
                     if (uploadRes.success && uploadRes.secure_url) {
                         processedImages.push({ url: uploadRes.secure_url, publicId: uploadRes.publicId });
                     }
@@ -628,7 +628,7 @@ const handleUpdateProduct = async (req, res) => {
         }
         // If new image is base64, upload to Cloudinary
         if (updatedImageUrl && typeof updatedImageUrl === 'string' && updatedImageUrl.startsWith('data:image/')) {
-            const uploadRes = await (0, cloudinary_1.uploadToCloudinary)(updatedImageUrl, 'products');
+            const uploadRes = await (0, s3_1.uploadToS3)(updatedImageUrl, 'products');
             if (uploadRes.success && uploadRes.secure_url) {
                 updatedImageUrl = uploadRes.secure_url;
             }
@@ -639,7 +639,7 @@ const handleUpdateProduct = async (req, res) => {
             for (const imgItem of updatedImages) {
                 const rawUrl = typeof imgItem === 'string' ? imgItem : (imgItem?.url || '');
                 if (rawUrl && rawUrl.startsWith('data:image/')) {
-                    const uploadRes = await (0, cloudinary_1.uploadToCloudinary)(rawUrl, 'products');
+                    const uploadRes = await (0, s3_1.uploadToS3)(rawUrl, 'products');
                     if (uploadRes.success && uploadRes.secure_url) {
                         processed.push({ url: uploadRes.secure_url, publicId: uploadRes.publicId });
                     }
