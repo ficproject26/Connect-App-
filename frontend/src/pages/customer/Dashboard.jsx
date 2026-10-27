@@ -1250,6 +1250,7 @@ export default function CustomerDashboard({
     rating: null,
     sortBy: 'popularity'
   });
+  const [isTravelFilterModalOpen, setIsTravelFilterModalOpen] = useState(false);
   const [customTimeInput, setCustomTimeInput] = useState('');
   const [customCheckOutTimeInput, setCustomCheckOutTimeInput] = useState('');
   const [checkInTime, setCheckInTime] = useState('12:00 PM');
@@ -9151,91 +9152,170 @@ export default function CustomerDashboard({
           )}
           {/* Travel Tab: Dedicated Category-Aware Dynamic Filters & Search */}
           {activeTab === 'Travel' ? (
-            <TravelFilters
-              activeSubCat={sidebarActiveCat}
-              onSelectSubCat={(sub) => {
-                setSidebarActiveCat(sub);
-                setActiveTab('Travel');
-                setSelectedSubNavbarCategory(sub === 'ALL' ? 'Travel' : sub);
-                setSelectedCategories(sub === 'ALL' ? [] : [sub]);
-                setSelectedProduct(null);
-                if (typeof window !== 'undefined') {
-                  try {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('tab', 'Travel');
-                    if (sub && sub !== 'ALL') url.searchParams.set('sub', sub);
-                    else url.searchParams.delete('sub');
-                    url.searchParams.delete('child');
-                    url.searchParams.delete('product');
-                    url.searchParams.delete('productId');
-                    window.history.pushState({ tab: 'Travel', secondLevel: sub }, '', url.pathname + url.search + url.hash);
-                  } catch (e) {}
-                }
-              }}
-              selectedChildCat={
-                selectedCategories.length > 0 && selectedCategories[0] !== sidebarActiveCat && selectedCategories[0] !== 'Travel'
-                  ? selectedCategories[0]
-                  : (selectedSubNavbarCategory !== sidebarActiveCat && selectedSubNavbarCategory !== 'Travel' ? selectedSubNavbarCategory : '')
-              }
-              onSelectChildCat={(child) => {
-                if (child) {
-                  setSelectedSubNavbarCategory(child);
-                  setSelectedCategories([child]);
+            <>
+              {/* Compact Travel Filter Bar (Background) */}
+              <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex items-center justify-between gap-3.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setIsTravelFilterModalOpen(true)}
+                    className="flex items-center gap-2 text-slate-900 dark:text-white font-black text-xs bg-slate-50 dark:bg-slate-800/60 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-700/80 hover:border-amber-400/60 px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                    title="Open Travel Category & Filters"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                    <span>FILTERS</span>
+                    {Boolean(
+                      travelFilters.from ||
+                      travelFilters.to ||
+                      travelFilters.date ||
+                      travelFilters.timeSlot !== 'all' ||
+                      travelFilters.exactTime ||
+                      (travelFilters.maxPrice && travelFilters.maxPrice < travelPriceBounds.max) ||
+                      travelFilters.vehicleClass !== 'all' ||
+                      travelFilters.acPreference !== 'all' ||
+                      travelFilters.cabType !== 'all' ||
+                      travelFilters.rating !== null ||
+                      (selectedCategories.length > 0 && selectedCategories[0] !== 'Travel') ||
+                      (sidebarActiveCat && sidebarActiveCat !== 'ALL')
+                    ) && (
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    )}
+                  </button>
+
+                  {/* Active Filter Badges */}
+                  <div className="hidden sm:flex items-center gap-1.5 flex-wrap">
+                    {sidebarActiveCat && sidebarActiveCat !== 'ALL' && (
+                      <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                        {sidebarActiveCat}
+                      </span>
+                    )}
+                    {selectedCategories.length > 0 && selectedCategories[0] !== sidebarActiveCat && selectedCategories[0] !== 'Travel' && (
+                      <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                        {selectedCategories[0]}
+                      </span>
+                    )}
+                    {travelFilters.from && (
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                        From: {travelFilters.from}
+                      </span>
+                    )}
+                    {travelFilters.to && (
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                        To: {travelFilters.to}
+                      </span>
+                    )}
+                    {travelFilters.date && (
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                        Date: {travelFilters.date}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sort By on the right */}
+                <div className="flex items-center gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500 text-slate-700 cursor-pointer font-extrabold text-xs truncate"
+                  >
+                    <option value="popularity">Sort: Relevance / Popularity</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="rating-desc">Sort: Highest Rated</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Centered Popup Modal */}
+              <TravelFilters
+                isOpen={isTravelFilterModalOpen}
+                onClose={() => setIsTravelFilterModalOpen(false)}
+                activeSubCat={sidebarActiveCat}
+                onSelectSubCat={(sub) => {
+                  setSidebarActiveCat(sub);
+                  setActiveTab('Travel');
+                  setSelectedSubNavbarCategory(sub === 'ALL' ? 'Travel' : sub);
+                  setSelectedCategories(sub === 'ALL' ? [] : [sub]);
+                  setSelectedProduct(null);
                   if (typeof window !== 'undefined') {
                     try {
                       const url = new URL(window.location.href);
                       url.searchParams.set('tab', 'Travel');
-                      if (sidebarActiveCat && sidebarActiveCat !== 'ALL') url.searchParams.set('sub', sidebarActiveCat);
-                      url.searchParams.set('child', child);
+                      if (sub && sub !== 'ALL') url.searchParams.set('sub', sub);
+                      else url.searchParams.delete('sub');
+                      url.searchParams.delete('child');
                       url.searchParams.delete('product');
                       url.searchParams.delete('productId');
-                      window.history.pushState({ tab: 'Travel', secondLevel: sidebarActiveCat, childCategory: child }, '', url.pathname + url.search + url.hash);
+                      window.history.pushState({ tab: 'Travel', secondLevel: sub }, '', url.pathname + url.search + url.hash);
                     } catch (e) {}
                   }
-                } else {
-                  setSelectedSubNavbarCategory(sidebarActiveCat === 'ALL' ? 'Travel' : sidebarActiveCat);
-                  setSelectedCategories(sidebarActiveCat === 'ALL' ? [] : [sidebarActiveCat]);
-                  if (typeof window !== 'undefined') {
-                    try {
-                      const url = new URL(window.location.href);
-                      url.searchParams.delete('child');
-                      window.history.pushState({ tab: 'Travel', secondLevel: sidebarActiveCat }, '', url.pathname + url.search + url.hash);
-                    } catch (e) {}
-                  }
+                }}
+                selectedChildCat={
+                  selectedCategories.length > 0 && selectedCategories[0] !== sidebarActiveCat && selectedCategories[0] !== 'Travel'
+                    ? selectedCategories[0]
+                    : (selectedSubNavbarCategory !== sidebarActiveCat && selectedSubNavbarCategory !== 'Travel' ? selectedSubNavbarCategory : '')
                 }
-              }}
-              availableSubCategories={travelSubCategories}
-              categoryTaxonomy={travelCategoryTaxonomy}
-              travelFromOptions={travelFromOptions}
-              travelToOptions={travelToOptions}
-              priceBounds={travelPriceBounds}
-              initialFilters={travelFilters}
-              onApplyFilters={(newFilters) => {
-                setTravelFilters(newFilters);
-                if (newFilters.from !== undefined) setFromLocation(newFilters.from);
-                if (newFilters.to !== undefined) setToLocation(newFilters.to);
-                if (newFilters.rating !== undefined) setSelectedRating(newFilters.rating);
-                if (newFilters.sortBy !== undefined) setSortBy(newFilters.sortBy);
-              }}
-              onCancelFilters={() => {
-                // Keep committed travelFilters as is
-              }}
-              onResetFilters={(cleared) => {
-                setTravelFilters(cleared);
-                setFromLocation('');
-                setToLocation('');
-                setSelectedPrices([]);
-                setSelectedRating(null);
-                setSortBy('popularity');
-                setSelectedBusType('');
-                setSelectedBusClass('');
-                setSidebarActiveCat('ALL');
-                setSelectedSubNavbarCategory('Travel');
-                setSelectedCategories([]);
-              }}
-              totalResultsCount={filteredProducts.length}
-              theme={theme}
-            />
+                onSelectChildCat={(child) => {
+                  if (child) {
+                    setSelectedSubNavbarCategory(child);
+                    setSelectedCategories([child]);
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('tab', 'Travel');
+                        if (sidebarActiveCat && sidebarActiveCat !== 'ALL') url.searchParams.set('sub', sidebarActiveCat);
+                        url.searchParams.set('child', child);
+                        url.searchParams.delete('product');
+                        url.searchParams.delete('productId');
+                        window.history.pushState({ tab: 'Travel', secondLevel: sidebarActiveCat, childCategory: child }, '', url.pathname + url.search + url.hash);
+                      } catch (e) {}
+                    }
+                  } else {
+                    setSelectedSubNavbarCategory(sidebarActiveCat === 'ALL' ? 'Travel' : sidebarActiveCat);
+                    setSelectedCategories(sidebarActiveCat === 'ALL' ? [] : [sidebarActiveCat]);
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('child');
+                        window.history.pushState({ tab: 'Travel', secondLevel: sidebarActiveCat }, '', url.pathname + url.search + url.hash);
+                      } catch (e) {}
+                    }
+                  }
+                }}
+                availableSubCategories={travelSubCategories}
+                categoryTaxonomy={travelCategoryTaxonomy}
+                travelFromOptions={travelFromOptions}
+                travelToOptions={travelToOptions}
+                priceBounds={travelPriceBounds}
+                initialFilters={travelFilters}
+                onApplyFilters={(newFilters) => {
+                  setTravelFilters(newFilters);
+                  if (newFilters.from !== undefined) setFromLocation(newFilters.from);
+                  if (newFilters.to !== undefined) setToLocation(newFilters.to);
+                  if (newFilters.rating !== undefined) setSelectedRating(newFilters.rating);
+                  if (newFilters.sortBy !== undefined) setSortBy(newFilters.sortBy);
+                }}
+                onCancelFilters={() => {
+                  // Keep committed travelFilters as is
+                }}
+                onResetFilters={(cleared) => {
+                  setTravelFilters(cleared);
+                  setFromLocation('');
+                  setToLocation('');
+                  setSelectedPrices([]);
+                  setSelectedRating(null);
+                  setSortBy('popularity');
+                  setSelectedBusType('');
+                  setSelectedBusClass('');
+                  setSidebarActiveCat('ALL');
+                  setSelectedSubNavbarCategory('Travel');
+                  setSelectedCategories([]);
+                }}
+                totalResultsCount={filteredProducts.length}
+                theme={theme}
+              />
+            </>
           ) : !appliedJobId && (
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
               {/* Header Row on Mobile / Left Label on Desktop */}

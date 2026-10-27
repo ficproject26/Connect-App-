@@ -12,28 +12,38 @@ import {
   Check,
   ChevronDown,
   Sparkles,
-  ShieldCheck,
   ArrowRightLeft,
-  Navigation
+  Navigation,
+  Plane,
+  Star,
+  ArrowUpDown,
+  Coins
 } from 'lucide-react';
 import { BookingDateInput, BookingTimeInput } from '../common/BookingDateTimePicker';
 
 /**
- * TravelFilters Component
+ * TravelFilters Component (Modal Edition)
  *
- * Implements category-aware dynamic filtering and search for the Customer Website Travel page.
- * Strictly adheres to 3-tier DB hierarchy (Level 1: Travel -> Level 2: Subcategory [Bus, Cab] -> Level 3: Child Category).
+ * Implements a category-aware dynamic filtering and search experience as a
+ * centered popup modal for the Customer Website Travel page.
+ *
+ * Strictly adheres to 3-tier DB hierarchy:
+ * Level 1: Travel -> Level 2: Subcategory [Bus, Cab] -> Level 3: Child Category
  *
  * Features:
- * - Dynamic Category Selection (All, Bus, Cab, and DB child categories)
+ * - Centered responsive modal with translucent backdrop & blur
+ * - Dynamic Category Selection (All Travel, Bus, Cab, and DB child categories)
  * - Dynamic From & To location selection with route swap
  * - Calendar-based date selection
  * - Clock-based time selection and Departure time slots
  * - Budget range slider with live feedback
- * - Category-specific filters (AC/Non-AC, Sleeper/Seater for Bus; Pickup/Destination & Cab types for Cab)
- * - Apply Filters & Search, Cancel Filters, and Reset workflow
+ * - Category-specific filters (AC/Non-AC, Sleeper/Seater for Bus; Cab types for Cab)
+ * - Apply Filters & Search, Cancel Filters, Reset Filters, and Close (X) workflow
+ * - Escape key dismissal and body scroll locking
  */
 export default function TravelFilters({
+  isOpen = false,
+  onClose,
   activeSubCat = 'ALL',
   onSelectSubCat,
   selectedChildCat = '',
@@ -69,7 +79,6 @@ export default function TravelFilters({
 
   // Draft filter state (uncommitted until "Apply Filters & Search" is clicked)
   const [draft, setDraft] = useState(defaultFilters);
-  const [isExpanded, setIsExpanded] = useState(true);
 
   // Synchronize draft when initialFilters or priceBounds change externally
   useEffect(() => {
@@ -78,7 +87,30 @@ export default function TravelFilters({
       ...initialFilters,
       maxPrice: initialFilters.maxPrice !== undefined ? initialFilters.maxPrice : (prev.maxPrice || priceBounds.max)
     }));
-  }, [initialFilters, priceBounds]);
+  }, [initialFilters, priceBounds, isOpen]);
+
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  // Close on Escape key press
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, defaultFilters]);
 
   const isBusSelected = activeSubCat === 'Bus';
   const isCabSelected = activeSubCat === 'Cab';
@@ -106,19 +138,36 @@ export default function TravelFilters({
     }));
   };
 
-  // Apply Action: Commits draft filters to parent
+  // Close (X) / Dismiss action: reverts draft and closes modal
+  const handleClose = () => {
+    setDraft(defaultFilters);
+    if (typeof onCancelFilters === 'function') {
+      onCancelFilters();
+    }
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
+  // Cancel Action: Reverts draft filters back to committed filters and closes modal
+  const handleCancel = () => {
+    setDraft(defaultFilters);
+    if (typeof onCancelFilters === 'function') {
+      onCancelFilters();
+    }
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
+  // Apply Action: Commits draft filters to parent and closes modal
   const handleApply = (e) => {
     if (e) e.preventDefault();
     if (typeof onApplyFilters === 'function') {
       onApplyFilters(draft);
     }
-  };
-
-  // Cancel Action: Reverts draft filters back to committed filters
-  const handleCancel = () => {
-    setDraft(defaultFilters);
-    if (typeof onCancelFilters === 'function') {
-      onCancelFilters();
+    if (typeof onClose === 'function') {
+      onClose();
     }
   };
 
@@ -177,443 +226,469 @@ export default function TravelFilters({
     selectedChildCat
   );
 
+  // If modal is not open, do not render modal contents
+  if (!isOpen) return null;
+
   return (
-    <div className="w-full bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-sm text-slate-800 dark:text-slate-100 transition-all text-left">
-      {/* ================= 1. CATEGORY HIERARCHY SELECTOR ROW ================= */}
-      <div className="flex flex-col gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-400/15 text-amber-500 flex items-center justify-center">
-              <SlidersHorizontal className="w-4 h-4" />
+    <div
+      className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="travel-filter-modal-title"
+    >
+      <div
+        className="relative w-full max-w-4xl bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl text-slate-800 dark:text-slate-100 max-h-[92vh] overflow-y-auto scrollbar-thin my-auto text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ================= 1. MODAL HEADER ================= */}
+        <div className="flex items-center justify-between pb-5 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
+              <SlidersHorizontal className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block leading-tight">
+              <h2
+                id="travel-filter-modal-title"
+                className="text-xl sm:text-2xl font-black text-[#0b1e36] dark:text-white tracking-tight leading-tight"
+              >
                 Travel Category & Filters
-              </span>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
-                {isAllSelected ? 'All Travel Services' : isBusSelected ? 'Bus Tickets & Routes' : isCabSelected ? 'Cab & Taxi Booking' : `${activeSubCat} Travel`}
-              </h3>
+              </h2>
+              <p className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-400 mt-0.5">
+                Find the right travel option
+              </p>
             </div>
           </div>
 
-          {/* Results Badge & Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-              {totalResultsCount} {totalResultsCount === 1 ? 'Option Available' : 'Options Available'}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="md:hidden text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer bg-transparent"
-            >
-              {isExpanded ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-        </div>
-
-        {/* Level 2 Subcategory Pills (ALL, Bus, Cab) */}
-        <div className="flex items-center gap-2 flex-wrap pt-1">
           <button
             type="button"
-            onClick={() => {
-              if (typeof onSelectSubCat === 'function') onSelectSubCat('ALL');
-              if (typeof onSelectChildCat === 'function') onSelectChildCat('');
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-1.5 ${
-              isAllSelected
-                ? 'bg-[#0b1e36] text-white border-[#0b1e36] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
-                : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            onClick={handleClose}
+            aria-label="Close modal"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer border-none"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>ALL TRAVEL</span>
+            <X className="w-5 h-5 stroke-[2.4]" />
           </button>
-
-          {availableSubCategories.map((subName) => {
-            const isSubActive = !isAllSelected && activeSubCat.toLowerCase() === subName.toLowerCase();
-            const SubIcon = subName.toLowerCase().includes('bus') ? Bus : Car;
-            return (
-              <button
-                key={subName}
-                type="button"
-                onClick={() => {
-                  if (typeof onSelectSubCat === 'function') onSelectSubCat(subName);
-                  if (typeof onSelectChildCat === 'function') onSelectChildCat('');
-                }}
-                className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-1.5 ${
-                  isSubActive
-                    ? 'bg-[#0b1e36] text-white border-[#0b1e36] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
-                    : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <SubIcon className="w-3.5 h-3.5" />
-                <span>{subName}</span>
-              </button>
-            );
-          })}
         </div>
 
-        {/* Level 3 Child Category Chips (e.g. A/C Sleeper, Seater) */}
-        {currentChildCategories.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap pt-1">
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
-              {isBusSelected ? 'Bus Classes:' : isCabSelected ? 'Cab Types:' : 'Category Types:'}
-            </span>
+        {/* ================= 2. CATEGORY SELECTION ================= */}
+        <div className="py-4 space-y-3 border-b border-slate-100 dark:border-slate-800/80">
+          {/* Level 2 Subcategory Pills (All Travel, Bus, Cab) */}
+          <div className="flex items-center gap-2.5 flex-wrap">
             <button
               type="button"
               onClick={() => {
+                if (typeof onSelectSubCat === 'function') onSelectSubCat('ALL');
                 if (typeof onSelectChildCat === 'function') onSelectChildCat('');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                !selectedChildCat
-                  ? 'bg-amber-500 text-slate-950 border-amber-500 font-black shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+              className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-2 ${
+                isAllSelected
+                  ? 'bg-[#0b1e36] text-white border-[#0b1e36] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
+                  : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              All Types
+              <Plane className="w-4 h-4" />
+              <span>All Travel</span>
             </button>
-            {currentChildCategories.map((childName) => {
-              const isChildActive = selectedChildCat && selectedChildCat.toLowerCase() === childName.toLowerCase();
+
+            {availableSubCategories.map((subName) => {
+              const isSubActive = !isAllSelected && activeSubCat.toLowerCase() === subName.toLowerCase();
+              const SubIcon = subName.toLowerCase().includes('bus') ? Bus : Car;
               return (
                 <button
-                  key={childName}
+                  key={subName}
                   type="button"
                   onClick={() => {
-                    if (typeof onSelectChildCat === 'function') {
-                      onSelectChildCat(isChildActive ? '' : childName);
-                    }
+                    if (typeof onSelectSubCat === 'function') onSelectSubCat(subName);
+                    if (typeof onSelectChildCat === 'function') onSelectChildCat('');
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
-                    isChildActive
-                      ? 'bg-amber-500 text-slate-950 border-amber-500 font-black shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                  className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-2 ${
+                    isSubActive
+                      ? 'bg-[#0b1e36] text-white border-[#0b1e36] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  {isChildActive && <Check className="w-3 h-3 stroke-[3]" />}
-                  <span>{childName}</span>
+                  <SubIcon className="w-4 h-4" />
+                  <span>{subName}</span>
                 </button>
               );
             })}
           </div>
-        )}
-      </div>
 
-      {/* ================= 2. DYNAMIC FILTER CONTROLS GRID ================= */}
-      <form onSubmit={handleApply} className={`${isExpanded ? 'block' : 'hidden md:block'} pt-4 space-y-4`}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* 1. Departure / From Location */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-amber-500" />
-              <span>{isCabSelected ? 'Pickup Location' : 'From / Departure'}</span>
-            </label>
-            <div className="relative">
-              <select
-                value={draft.from}
-                onChange={(e) => updateDraft('from', e.target.value)}
-                className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8"
-              >
-                <option value="">{isCabSelected ? 'Select Pickup Point (All)' : 'From: All Locations'}</option>
-                {travelFromOptions.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* 2. Destination / To Location with Swap Button */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                <Navigation className="w-3 h-3 text-amber-500" />
-                <span>{isCabSelected ? 'Destination / Drop' : 'To / Destination'}</span>
-              </label>
-              {(draft.from || draft.to) && (
+          {/* Level 3 Child Category Chips (e.g. A/C Sleeper, Seater) */}
+          {currentChildCategories.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                Category Types
+              </span>
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
-                  onClick={handleSwapLocations}
-                  className="text-[9.5px] font-bold text-amber-500 hover:text-amber-600 flex items-center gap-0.5 cursor-pointer border-none bg-transparent p-0"
-                  title="Swap Origin and Destination"
+                  onClick={() => {
+                    if (typeof onSelectChildCat === 'function') onSelectChildCat('');
+                  }}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    !selectedChildCat
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 font-black shadow-2xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                  }`}
                 >
-                  <ArrowRightLeft className="w-2.5 h-2.5" />
-                  <span>Swap</span>
+                  All Types
                 </button>
-              )}
+                {currentChildCategories.map((childName) => {
+                  const isChildActive = selectedChildCat && selectedChildCat.toLowerCase() === childName.toLowerCase();
+                  return (
+                    <button
+                      key={childName}
+                      type="button"
+                      onClick={() => {
+                        if (typeof onSelectChildCat === 'function') {
+                          onSelectChildCat(isChildActive ? '' : childName);
+                        }
+                      }}
+                      className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                        isChildActive
+                          ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 font-black shadow-2xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                      }`}
+                    >
+                      {isChildActive && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      <span>{childName}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="relative">
-              <select
-                value={draft.to}
-                onChange={(e) => updateDraft('to', e.target.value)}
-                className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8"
-              >
-                <option value="">{isCabSelected ? 'Select Destination (All)' : 'To: All Destinations'}</option>
-                {travelToOptions.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* 3. Calendar-Based Travel Date Selection */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                <CalendarIcon className="w-3 h-3 text-amber-500" />
-                <span>Travel Date</span>
-              </label>
-              {draft.date && (
-                <button
-                  type="button"
-                  onClick={() => updateDraft('date', '')}
-                  className="text-[9.5px] font-bold text-slate-400 hover:text-red-500 cursor-pointer border-none bg-transparent p-0"
-                >
-                  Clear Date
-                </button>
-              )}
-            </div>
-            <BookingDateInput
-              label="Travel Date"
-              value={draft.date}
-              onChange={(val) => updateDraft('date', val)}
-              minDate={todayStr}
-              accentColor="amber"
-              className="w-full text-xs"
-            />
-          </div>
-
-          {/* 4. Clock-Based Departure / Pickup Time Selection */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-amber-500" />
-                <span>{isCabSelected ? 'Pickup Time' : 'Departure Time'}</span>
-              </label>
-              {draft.exactTime && (
-                <button
-                  type="button"
-                  onClick={() => updateDraft('exactTime', '')}
-                  className="text-[9.5px] font-bold text-slate-400 hover:text-red-500 cursor-pointer border-none bg-transparent p-0"
-                >
-                  Clear Time
-                </button>
-              )}
-            </div>
-            <BookingTimeInput
-              label={isCabSelected ? 'Pickup Time' : 'Departure Time'}
-              value={draft.exactTime}
-              onChange={(val) => updateDraft('exactTime', val)}
-              accentColor="amber"
-              className="w-full text-xs"
-            />
-          </div>
+          )}
         </div>
 
-        {/* ================= 3. TIME SLOTS & VEHICLE SPECIFIC CONTROLS ================= */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 pt-1 items-end">
-          {/* Departure Time Slots (Morning, Afternoon, Evening, Night) */}
-          <div className="md:col-span-6 space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
-              <Clock className="w-3 h-3 text-amber-500" />
-              <span>Timing Window</span>
-            </label>
-            <div className="grid grid-cols-5 gap-1.5">
-              {timeSlotOptions.map((slot) => {
-                const isSelected = draft.timeSlot === slot.id;
-                return (
+        {/* ================= 3. DYNAMIC FILTER CONTROLS FORM ================= */}
+        <form onSubmit={handleApply} className="py-4 space-y-4">
+          {/* Row 1: Departure, Destination, Date, Time */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
+            {/* 1. From / Departure */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-amber-500" />
+                <span>{isCabSelected ? 'Pickup Location' : 'From / Departure'}</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={draft.from}
+                  onChange={(e) => updateDraft('from', e.target.value)}
+                  className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8"
+                >
+                  <option value="">{isCabSelected ? 'Select Pickup Point (All)' : 'From: All Locations'}</option>
+                  {travelFromOptions.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* 2. Destination with Swap Button */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                  <Navigation className="w-3 h-3 text-amber-500" />
+                  <span>{isCabSelected ? 'Destination / Drop' : 'To / Destination'}</span>
+                </label>
+                {(draft.from || draft.to) && (
                   <button
-                    key={slot.id}
                     type="button"
-                    onClick={() => updateDraft('timeSlot', slot.id)}
-                    className={`py-2 px-1 text-center rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
-                      isSelected
-                        ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-extrabold shadow-2xs'
-                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                    }`}
+                    onClick={handleSwapLocations}
+                    className="text-[9.5px] font-bold text-amber-500 hover:text-amber-600 flex items-center gap-0.5 cursor-pointer border-none bg-transparent p-0"
+                    title="Swap Origin and Destination"
                   >
-                    <span className="text-[10px] font-black truncate">{slot.label}</span>
-                    <span className="text-[8px] text-slate-400 dark:text-slate-500 truncate leading-none hidden sm:block">
-                      {slot.sub}
-                    </span>
+                    <ArrowRightLeft className="w-2.5 h-2.5" />
+                    <span>Swap</span>
                   </button>
-                );
-              })}
+                )}
+              </div>
+              <div className="relative">
+                <select
+                  value={draft.to}
+                  onChange={(e) => updateDraft('to', e.target.value)}
+                  className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8"
+                >
+                  <option value="">{isCabSelected ? 'Select Destination (All)' : 'To: All Destinations'}</option>
+                  {travelToOptions.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
-          </div>
 
-          {/* Budget Range Slider */}
-          <div className="md:col-span-6 space-y-1 bg-slate-50/80 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Budget Range Slider
-              </span>
-              <span className="font-extrabold text-amber-600 dark:text-amber-400 text-xs">
-                Up to ₹{(draft.maxPrice || priceBounds.max).toLocaleString()}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 pt-1">
-              <span className="text-[10px] font-bold text-slate-400 font-mono">
-                ₹{priceBounds.min.toLocaleString()}
-              </span>
-              <input
-                type="range"
-                min={priceBounds.min}
-                max={Math.max(priceBounds.max, 2000)}
-                step={50}
-                value={draft.maxPrice || priceBounds.max}
-                onChange={(e) => updateDraft('maxPrice', Number(e.target.value))}
-                className="w-full accent-amber-500 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
+            {/* 3. Travel Date with Calendar */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                  <CalendarIcon className="w-3 h-3 text-amber-500" />
+                  <span>Travel Date</span>
+                </label>
+                {draft.date && (
+                  <button
+                    type="button"
+                    onClick={() => updateDraft('date', '')}
+                    className="text-[9.5px] font-bold text-slate-400 hover:text-red-500 cursor-pointer border-none bg-transparent p-0"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <BookingDateInput
+                label="Travel Date"
+                value={draft.date}
+                onChange={(val) => updateDraft('date', val)}
+                minDate={todayStr}
+                accentColor="amber"
+                className="w-full text-xs"
               />
-              <span className="text-[10px] font-bold text-slate-400 font-mono">
-                ₹{Math.max(priceBounds.max, 2000).toLocaleString()}
-              </span>
+            </div>
+
+            {/* 4. Departure / Pickup Time */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-amber-500" />
+                  <span>{isCabSelected ? 'Pickup Time' : 'Departure Time'}</span>
+                </label>
+                {draft.exactTime && (
+                  <button
+                    type="button"
+                    onClick={() => updateDraft('exactTime', '')}
+                    className="text-[9.5px] font-bold text-slate-400 hover:text-red-500 cursor-pointer border-none bg-transparent p-0"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <BookingTimeInput
+                label={isCabSelected ? 'Pickup Time' : 'Departure Time'}
+                value={draft.exactTime}
+                onChange={(val) => updateDraft('exactTime', val)}
+                accentColor="amber"
+                className="w-full text-xs"
+              />
             </div>
           </div>
-        </div>
 
-        {/* ================= 4. CATEGORY-SPECIFIC TOGGLES (BUS VS CAB) ================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
-          {/* Bus Specific: Sleeper vs Seater */}
-          {(!isCabSelected) && (
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Vehicle Class
+          {/* Row 2: Timing Window Chips & Budget Range Slider */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 pt-1 items-end">
+            {/* Timing Window (5 options) */}
+            <div className="md:col-span-6 space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-500" />
+                <span>Timing Window</span>
               </label>
-              <select
-                value={draft.vehicleClass}
-                onChange={(e) => updateDraft('vehicleClass', e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-              >
-                <option value="all">All Classes (Sleeper & Seater)</option>
-                <option value="sleeper">Sleeper Only</option>
-                <option value="seater">Seater Only</option>
-              </select>
+              <div className="grid grid-cols-5 gap-1.5">
+                {timeSlotOptions.map((slot) => {
+                  const isSelected = draft.timeSlot === slot.id;
+                  return (
+                    <button
+                      key={slot.id}
+                      type="button"
+                      onClick={() => updateDraft('timeSlot', slot.id)}
+                      className={`py-2 px-1 text-center rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
+                        isSelected
+                          ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-extrabold shadow-2xs'
+                          : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-[10px] font-black truncate">{slot.label}</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 truncate leading-none hidden sm:block">
+                        {slot.sub}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
 
-          {/* Bus Specific: AC vs Non-AC */}
-          {(!isCabSelected) && (
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                AC Preference
-              </label>
-              <select
-                value={draft.acPreference}
-                onChange={(e) => updateDraft('acPreference', e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-              >
-                <option value="all">All (AC & Non-AC)</option>
-                <option value="ac">AC Only</option>
-                <option value="non-ac">Non-AC Only</option>
-              </select>
+            {/* Budget Range Slider */}
+            <div className="md:col-span-6 space-y-1 bg-slate-50/80 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                  <Coins className="w-3 h-3 text-amber-500" />
+                  <span>Budget Range Slider</span>
+                </span>
+                <span className="font-extrabold text-white bg-amber-500 text-xs px-2.5 py-0.5 rounded-full shadow-xs">
+                  Up to ₹{(draft.maxPrice || priceBounds.max).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 pt-1">
+                <span className="text-[10px] font-bold text-slate-400 font-mono">
+                  ₹{priceBounds.min.toLocaleString()}
+                </span>
+                <input
+                  type="range"
+                  min={priceBounds.min}
+                  max={Math.max(priceBounds.max, 2000)}
+                  step={50}
+                  value={draft.maxPrice || priceBounds.max}
+                  onChange={(e) => updateDraft('maxPrice', Number(e.target.value))}
+                  className="w-full accent-amber-500 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
+                />
+                <span className="text-[10px] font-bold text-slate-400 font-mono">
+                  ₹{Math.max(priceBounds.max, 2000).toLocaleString()}
+                </span>
+              </div>
             </div>
-          )}
-
-          {/* Cab Specific: Cab Types (Dynamic from DB child categories if present) */}
-          {isCabSelected && (
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Cab Type
-              </label>
-              <select
-                value={draft.cabType}
-                onChange={(e) => updateDraft('cabType', e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-              >
-                <option value="all">All Cab Types</option>
-                {(currentChildCategories.length > 0 ? currentChildCategories : ['Sedan', 'SUV', 'Hatchback', 'Prime']).map((ct) => (
-                  <option key={ct} value={ct}>{ct}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Minimum Rating Filter */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Customer Rating
-            </label>
-            <select
-              value={draft.rating === null ? '' : String(draft.rating)}
-              onChange={(e) => updateDraft('rating', e.target.value ? parseFloat(e.target.value) : null)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-            >
-              <option value="">All Ratings</option>
-              <option value="4.0">4.0 ★ & Above</option>
-              <option value="4.5">4.5 ★ & Above</option>
-              <option value="4.8">4.8 ★ & Above</option>
-            </select>
           </div>
 
-          {/* Sort By Filter */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Sort By
-            </label>
-            <select
-              value={draft.sortBy}
-              onChange={(e) => updateDraft('sortBy', e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-            >
-              <option value="popularity">Relevance / Popularity</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="rating-desc">Highest Customer Rated</option>
-            </select>
-          </div>
-        </div>
-
-        {/* ================= 5. ACTION BUTTONS: APPLY, CANCEL, RESET ================= */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 flex-wrap gap-2">
-          {/* Left: Active Filters indicator & Reset */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={!hasActiveFilters}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all border ${
-                hasActiveFilters
-                  ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 cursor-pointer'
-                  : 'text-slate-400 bg-slate-50 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800 cursor-not-allowed opacity-60'
-              }`}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Filters</span>
-            </button>
-
-            {hasActiveFilters && (
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hidden sm:inline">
-                Custom filter criteria active
-              </span>
+          {/* Row 3: Vehicle Class, AC Preference, Customer Rating, Sort By */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+            {/* Bus Specific: Sleeper vs Seater */}
+            {!isCabSelected && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-sky-600 flex items-center gap-1">
+                  <Bus className="w-3 h-3 text-sky-600" />
+                  <span>Vehicle Class</span>
+                </label>
+                <select
+                  value={draft.vehicleClass}
+                  onChange={(e) => updateDraft('vehicleClass', e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="all">All Classes (Sleeper & Seater)</option>
+                  <option value="sleeper">Sleeper Only</option>
+                  <option value="seater">Seater Only</option>
+                </select>
+              </div>
             )}
+
+            {/* Bus Specific: AC vs Non-AC */}
+            {!isCabSelected && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-sky-600 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-sky-600" />
+                  <span>AC Preference</span>
+                </label>
+                <select
+                  value={draft.acPreference}
+                  onChange={(e) => updateDraft('acPreference', e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="all">All (AC & Non-AC)</option>
+                  <option value="ac">AC Only</option>
+                  <option value="non-ac">Non-AC Only</option>
+                </select>
+              </div>
+            )}
+
+            {/* Cab Specific: Cab Types */}
+            {isCabSelected && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-sky-600 flex items-center gap-1">
+                  <Car className="w-3 h-3 text-sky-600" />
+                  <span>Cab Type</span>
+                </label>
+                <select
+                  value={draft.cabType}
+                  onChange={(e) => updateDraft('cabType', e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="all">All Cab Types</option>
+                  {(currentChildCategories.length > 0 ? currentChildCategories : ['Sedan', 'SUV', 'Hatchback', 'Prime']).map((ct) => (
+                    <option key={ct} value={ct}>{ct}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Minimum Rating */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                <Star className="w-3 h-3 text-amber-500" />
+                <span>Customer Rating</span>
+              </label>
+              <select
+                value={draft.rating === null ? '' : String(draft.rating)}
+                onChange={(e) => updateDraft('rating', e.target.value ? parseFloat(e.target.value) : null)}
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+              >
+                <option value="">All Ratings</option>
+                <option value="4.0">4.0 ★ & Above</option>
+                <option value="4.5">4.5 ★ & Above</option>
+                <option value="4.8">4.8 ★ & Above</option>
+              </select>
+            </div>
+
+            {/* Sort By */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                <span>Sort By</span>
+              </label>
+              <select
+                value={draft.sortBy}
+                onChange={(e) => updateDraft('sortBy', e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
+              >
+                <option value="popularity">Relevance / Popularity</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="rating-desc">Highest Rated</option>
+              </select>
+            </div>
           </div>
 
-          {/* Right: Cancel & Apply Buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-4 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Cancel</span>
-            </button>
+          {/* ================= 4. ACTION BUTTONS: APPLY, CANCEL, RESET ================= */}
+          <div className="flex items-center justify-between pt-5 border-t border-slate-100 dark:border-slate-800/80 flex-wrap gap-2">
+            {/* Left: Reset Filters & Active Status */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={!hasActiveFilters}
+                className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl transition-all border ${
+                  hasActiveFilters
+                    ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 cursor-pointer'
+                    : 'text-slate-400 bg-slate-50 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Filters</span>
+              </button>
 
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-slate-950 bg-amber-400 hover:bg-amber-500 active:scale-98 transition-all cursor-pointer shadow-md flex items-center gap-1.5 border-none"
-            >
-              <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Apply Filters & Search</span>
-            </button>
+              {hasActiveFilters && (
+                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 hidden sm:inline">
+                  Custom filter criteria active
+                </span>
+              )}
+            </div>
+
+            {/* Right: Cancel & Apply Buttons */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border-none flex items-center gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Cancel</span>
+              </button>
+
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-amber-500 hover:bg-amber-600 active:scale-98 transition-all cursor-pointer shadow-md shadow-amber-500/20 flex items-center gap-1.5 border-none"
+              >
+                <Search className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Apply Filters & Search</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
