@@ -21,6 +21,7 @@ const DashboardSubFallback = () => (
 import { sanitizeMobileInput } from '../../utils/validation';
 import { AuthContext, getOrGenerateCustomerId, isValidCustomerId, deduplicateAddresses } from '../../context/AuthContext';
 import { BookingDateInput, BookingTimeInput } from '../../components/common/BookingDateTimePicker';
+import TravelFilters from '../../components/customer/TravelFilters';
 
 const getUserStorageKey = (user) => {
   if (!user) return 'default';
@@ -1235,6 +1236,20 @@ export default function CustomerDashboard({
   const [selectedBusClass, setSelectedBusClass] = useState('');
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
+  const [travelFilters, setTravelFilters] = useState({
+    from: '',
+    to: '',
+    date: '',
+    timeSlot: 'all',
+    exactTime: '',
+    maxPrice: null,
+    minPrice: null,
+    vehicleClass: 'all',
+    acPreference: 'all',
+    cabType: 'all',
+    rating: null,
+    sortBy: 'popularity'
+  });
   const [customTimeInput, setCustomTimeInput] = useState('');
   const [customCheckOutTimeInput, setCustomCheckOutTimeInput] = useState('');
   const [checkInTime, setCheckInTime] = useState('12:00 PM');
@@ -5727,6 +5742,20 @@ export default function CustomerDashboard({
     setSelectedBusClass('');
     setFromLocation('');
     setToLocation('');
+    setTravelFilters({
+      from: '',
+      to: '',
+      date: '',
+      timeSlot: 'all',
+      exactTime: '',
+      maxPrice: null,
+      minPrice: null,
+      vehicleClass: 'all',
+      acPreference: 'all',
+      cabType: 'all',
+      rating: null,
+      sortBy: 'popularity'
+    });
     setSelectedDailyNeedsTypes([]);
     setSelectedJobDepts([]);
     setSelectedJobTypes([]);
@@ -5885,6 +5914,40 @@ export default function CustomerDashboard({
       travelFromOptions: fromArr.length > 0 ? fromArr : ['Bangalore', 'Chennai', 'Coimbatore', 'Hyderabad', 'Kochi', 'Madurai'],
       travelToOptions: toArr.length > 0 ? toArr : ['Chennai', 'Coimbatore', 'Goa', 'Kochi', 'Madurai', 'Mysore', 'Ooty']
     };
+  }, [products]);
+
+  const travelCategoryTaxonomy = useMemo(() => {
+    const fullTree = buildActiveCategoryTree(dbCategories);
+    const travelObj = fullTree['Travel'] || { subcategories: {} };
+    const taxonomy = {};
+    if (travelObj.subcategories) {
+      Object.keys(travelObj.subcategories).forEach(subName => {
+        const subObj = travelObj.subcategories[subName];
+        if (subObj && subObj.isActive !== false) {
+          taxonomy[subName] = (subObj.childCategories || []).map(c => 
+            typeof c === 'string' ? c : (c.name || c.subSubcategory || '')
+          ).filter(Boolean);
+        }
+      });
+    }
+    return taxonomy;
+  }, [dbCategories]);
+
+  const travelSubCategories = useMemo(() => {
+    return Object.keys(travelCategoryTaxonomy).filter(Boolean);
+  }, [travelCategoryTaxonomy]);
+
+  const travelPriceBounds = useMemo(() => {
+    const travelProds = (products || []).filter(p => {
+      const cat = (p.mainCategory || p.subNavbarCategory || p.category || p.tag || '').toLowerCase();
+      return cat.includes('travel') || cat.includes('bus') || cat.includes('tour') || cat.includes('cab');
+    });
+    if (travelProds.length === 0) return { min: 0, max: 2500 };
+    const prices = travelProds.map(p => Number(p.price) || 0).filter(p => p > 0);
+    if (prices.length === 0) return { min: 0, max: 2500 };
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return { min: Math.max(0, min - 100), max: Math.max(max + 200, 2000) };
   }, [products]);
 
   // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)
@@ -6171,6 +6234,15 @@ export default function CustomerDashboard({
 
         if (!isTravel) return false;
 
+        // Level 2 Subcategory check (Bus vs Cab vs ALL)
+        const subCatFilter = sidebarActiveCat && sidebarActiveCat !== 'ALL' ? sidebarActiveCat.toLowerCase() : '';
+        if (subCatFilter) {
+          const pSubCat = (product.subcategory || '').toLowerCase();
+          const pCategory = (product.category || '').toLowerCase();
+          const matchesSub = pCategory === subCatFilter || pSubCat === subCatFilter || pCategory.includes(subCatFilter);
+          if (!matchesSub) return false;
+        }
+
         const matchesTravelType = selectedTravelTypes.length === 0 ||
           selectedTravelTypes.some(tt => 
             (product.category || '').toLowerCase().includes(tt.toLowerCase()) ||
@@ -6180,8 +6252,13 @@ export default function CustomerDashboard({
             (product.tag || '').toLowerCase().includes(tt.toLowerCase())
           );
 
+        // Price Filter: Check travelFilters.maxPrice first, then selectedPrices fallback
         let matchesPrice = true;
-        if (selectedPrices.length > 0) {
+        if (travelFilters.maxPrice !== null && travelFilters.maxPrice !== undefined) {
+          const pPrice = Number(product.price) || 0;
+          const minP = travelFilters.minPrice || 0;
+          matchesPrice = pPrice <= travelFilters.maxPrice && pPrice >= minP;
+        } else if (selectedPrices.length > 0) {
           matchesPrice = selectedPrices.some(range => {
             if (range === 'under-500') return product.price < 500;
             if (range === '500-2000') return product.price >= 500 && product.price <= 2000;
@@ -6190,8 +6267,9 @@ export default function CustomerDashboard({
           });
         }
 
-        const matchesRatingFilter = selectedRating === null || 
-          product.rating >= selectedRating;
+        const effectiveRating = travelFilters.rating !== null ? travelFilters.rating : selectedRating;
+        const matchesRatingFilter = effectiveRating === null || 
+          product.rating >= effectiveRating;
 
         const travelPts = extractVendorTravelPoints(product);
         const allDestinations = [
@@ -6217,23 +6295,133 @@ export default function CustomerDashboard({
           ...(travelPts.boardingPoints || []).map(bp => bp.name)
         ].filter(Boolean).map(s => String(s).trim().toLowerCase());
 
-        const normTo = (toLocation || '').trim().toLowerCase();
-        const matchesTo = !normTo || normTo === 'all' || allDestinations.some(dest => 
-          dest === normTo || dest.includes(normTo) || normTo.includes(dest)
+        const effectiveTo = (travelFilters.to || toLocation || '').trim().toLowerCase();
+        const matchesTo = !effectiveTo || effectiveTo === 'all' || allDestinations.some(dest => 
+          dest === effectiveTo || dest.includes(effectiveTo) || effectiveTo.includes(dest)
         );
 
-        const normFrom = (fromLocation || '').trim().toLowerCase();
-        const matchesFrom = !normFrom || normFrom === 'all' || allDepartures.some(dep => 
-          dep === normFrom || dep.includes(normFrom) || normFrom.includes(dep)
+        const effectiveFrom = (travelFilters.from || fromLocation || '').trim().toLowerCase();
+        const matchesFrom = !effectiveFrom || effectiveFrom === 'all' || allDepartures.some(dep => 
+          dep === effectiveFrom || dep.includes(effectiveFrom) || effectiveFrom.includes(dep)
         );
-        
+
+        // Date Filter Check
+        let matchesDate = true;
+        if (travelFilters.date) {
+          const reqDate = String(travelFilters.date).trim();
+          const prodDates = [
+            product.departureDate,
+            product.travelDate,
+            product.date,
+            ...(Array.isArray(product.availableDates) ? product.availableDates : [])
+          ].filter(Boolean).map(d => String(d).split('T')[0]);
+
+          if (prodDates.length > 0) {
+            matchesDate = prodDates.includes(reqDate);
+          } else {
+            const [y, m, d] = reqDate.split('-').map(Number);
+            if (y && m && d) {
+              matchesDate = !isPreviousDate(y, m - 1, d);
+            }
+          }
+        }
+
+        // Time Filter Check
+        let matchesTime = true;
+        const targetSlot = travelFilters.timeSlot || 'all';
+        const targetExact = (travelFilters.exactTime || '').trim();
+
+        if (targetSlot !== 'all' || targetExact) {
+          const allTimes = [
+            product.boardingTime,
+            product.departureTime,
+            product.busTiming,
+            ...(travelPts.boardingPoints || []).map(bp => bp.departureTime || bp.time)
+          ].filter(Boolean).map(s => String(s).trim());
+
+          const parseMinutes = (tStr) => {
+            if (!tStr) return null;
+            const m = tStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+            if (!m) return null;
+            let hrs = parseInt(m[1], 10);
+            const mins = parseInt(m[2], 10);
+            const ampm = (m[3] || '').toUpperCase();
+            if (ampm === 'PM' && hrs < 12) hrs += 12;
+            if (ampm === 'AM' && hrs === 12) hrs = 0;
+            return hrs * 60 + mins;
+          };
+
+          const itemMinutesList = allTimes.map(parseMinutes).filter(m => m !== null);
+
+          if (itemMinutesList.length > 0) {
+            if (targetSlot === 'morning') {
+              matchesTime = itemMinutesList.some(m => m >= 360 && m < 720); // 6 AM to 12 PM
+            } else if (targetSlot === 'afternoon') {
+              matchesTime = itemMinutesList.some(m => m >= 720 && m < 1020); // 12 PM to 5 PM
+            } else if (targetSlot === 'evening') {
+              matchesTime = itemMinutesList.some(m => m >= 1020 && m < 1260); // 5 PM to 9 PM
+            } else if (targetSlot === 'night') {
+              matchesTime = itemMinutesList.some(m => m >= 1260 || m < 360); // 9 PM to 6 AM
+            }
+
+            if (matchesTime && targetExact) {
+              const targetMin = parseMinutes(targetExact);
+              if (targetMin !== null) {
+                matchesTime = itemMinutesList.some(m => Math.abs(m - targetMin) <= 150);
+              }
+            }
+          }
+        }
+
+        // Vehicle Class Filter (Sleeper vs Seater)
+        let matchesVehicleClass = true;
+        const vClass = (travelFilters.vehicleClass || selectedBusType || '').toLowerCase();
+        if (vClass && vClass !== 'all') {
+          const pSub = (product.subcategory || '').toLowerCase();
+          const pDesc = (product.description || '').toLowerCase();
+          const pAmenities = (product.amenities || []).map(a => String(a).toLowerCase());
+          if (vClass === 'sleeper') {
+            matchesVehicleClass = pSub.includes('sleeper') || pDesc.includes('sleeper') || pAmenities.some(a => a.includes('sleeper'));
+          } else if (vClass === 'seater') {
+            matchesVehicleClass = pSub.includes('seater') || pDesc.includes('seater');
+          }
+        }
+
+        // AC Preference (AC vs Non-AC)
+        let matchesAcPref = true;
+        const acPref = (travelFilters.acPreference || selectedBusClass || '').toLowerCase();
+        if (acPref && acPref !== 'all') {
+          const pAmenities = (product.amenities || []).map(a => String(a).toUpperCase());
+          const pName = (product.name || '').toUpperCase();
+          const pSub = (product.subcategory || '').toUpperCase();
+          const hasAc = pAmenities.includes('AC') || pName.includes('A/C') || pName.includes('AC') || pSub.includes('A/C') || pSub.includes('AC');
+          if (acPref === 'ac') {
+            matchesAcPref = hasAc;
+          } else if (acPref === 'non-ac') {
+            matchesAcPref = !hasAc;
+          }
+        }
+
+        // Cab Type Filter
+        let matchesCabType = true;
+        const cType = (travelFilters.cabType || '').toLowerCase();
+        if (cType && cType !== 'all') {
+          const pName = (product.name || '').toLowerCase();
+          const pSub = (product.subcategory || '').toLowerCase();
+          const pDesc = (product.description || '').toLowerCase();
+          matchesCabType = pName.includes(cType) || pSub.includes(cType) || pDesc.includes(cType);
+        }
+
         const matchesBusType = !selectedBusType || 
           (product.busType && product.busType.toLowerCase() === (selectedBusType || '').toLowerCase());
 
         const matchesBusClass = !selectedBusClass || 
           (product.busClass && product.busClass.toLowerCase() === (selectedBusClass || '').toLowerCase());
 
-        return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && matchesPrice && matchesRatingFilter && matchesFrom && matchesTo && matchesBusType && matchesBusClass;
+        return matchesSearch && matchesSubNavbar && matchesLocation && matchesTravelType && 
+               matchesPrice && matchesRatingFilter && matchesFrom && matchesTo && 
+               matchesDate && matchesTime && matchesVehicleClass && matchesAcPref && matchesCabType && 
+               matchesBusType && matchesBusClass;
       }
 
       // Daily Needs Filter Checks
@@ -6351,7 +6539,7 @@ export default function CustomerDashboard({
     selectedServiceTypes, selectedLocTypes, selectedRating, selectedCuisines, selectedDistances,
     selectedFoodType, selectedAccomTypes, selectedPrices, selectedTravelTypes, fromLocation,
     toLocation, selectedBusType, selectedBusClass, selectedDailyNeedsTypes, selectedCategories,
-    selectedBrands, selectedColors, sortBy
+    selectedBrands, selectedColors, sortBy, travelFilters, sidebarActiveCat
   ]);
 
   const fallbackTabProducts = useMemo(() => {
@@ -8961,8 +9149,94 @@ export default function CustomerDashboard({
               )}
             </div>
           )}
-          {/* Horizontal Filters Bar (Collapsible on Mobile, Flex Row on Desktop) */}
-          {!appliedJobId && (
+          {/* Travel Tab: Dedicated Category-Aware Dynamic Filters & Search */}
+          {activeTab === 'Travel' ? (
+            <TravelFilters
+              activeSubCat={sidebarActiveCat}
+              onSelectSubCat={(sub) => {
+                setSidebarActiveCat(sub);
+                setActiveTab('Travel');
+                setSelectedSubNavbarCategory(sub === 'ALL' ? 'Travel' : sub);
+                setSelectedCategories(sub === 'ALL' ? [] : [sub]);
+                setSelectedProduct(null);
+                if (typeof window !== 'undefined') {
+                  try {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', 'Travel');
+                    if (sub && sub !== 'ALL') url.searchParams.set('sub', sub);
+                    else url.searchParams.delete('sub');
+                    url.searchParams.delete('child');
+                    url.searchParams.delete('product');
+                    url.searchParams.delete('productId');
+                    window.history.pushState({ tab: 'Travel', secondLevel: sub }, '', url.pathname + url.search + url.hash);
+                  } catch (e) {}
+                }
+              }}
+              selectedChildCat={
+                selectedCategories.length > 0 && selectedCategories[0] !== sidebarActiveCat && selectedCategories[0] !== 'Travel'
+                  ? selectedCategories[0]
+                  : (selectedSubNavbarCategory !== sidebarActiveCat && selectedSubNavbarCategory !== 'Travel' ? selectedSubNavbarCategory : '')
+              }
+              onSelectChildCat={(child) => {
+                if (child) {
+                  setSelectedSubNavbarCategory(child);
+                  setSelectedCategories([child]);
+                  if (typeof window !== 'undefined') {
+                    try {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', 'Travel');
+                      if (sidebarActiveCat && sidebarActiveCat !== 'ALL') url.searchParams.set('sub', sidebarActiveCat);
+                      url.searchParams.set('child', child);
+                      url.searchParams.delete('product');
+                      url.searchParams.delete('productId');
+                      window.history.pushState({ tab: 'Travel', secondLevel: sidebarActiveCat, childCategory: child }, '', url.pathname + url.search + url.hash);
+                    } catch (e) {}
+                  }
+                } else {
+                  setSelectedSubNavbarCategory(sidebarActiveCat === 'ALL' ? 'Travel' : sidebarActiveCat);
+                  setSelectedCategories(sidebarActiveCat === 'ALL' ? [] : [sidebarActiveCat]);
+                  if (typeof window !== 'undefined') {
+                    try {
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete('child');
+                      window.history.pushState({ tab: 'Travel', secondLevel: sidebarActiveCat }, '', url.pathname + url.search + url.hash);
+                    } catch (e) {}
+                  }
+                }
+              }}
+              availableSubCategories={travelSubCategories}
+              categoryTaxonomy={travelCategoryTaxonomy}
+              travelFromOptions={travelFromOptions}
+              travelToOptions={travelToOptions}
+              priceBounds={travelPriceBounds}
+              initialFilters={travelFilters}
+              onApplyFilters={(newFilters) => {
+                setTravelFilters(newFilters);
+                if (newFilters.from !== undefined) setFromLocation(newFilters.from);
+                if (newFilters.to !== undefined) setToLocation(newFilters.to);
+                if (newFilters.rating !== undefined) setSelectedRating(newFilters.rating);
+                if (newFilters.sortBy !== undefined) setSortBy(newFilters.sortBy);
+              }}
+              onCancelFilters={() => {
+                // Keep committed travelFilters as is
+              }}
+              onResetFilters={(cleared) => {
+                setTravelFilters(cleared);
+                setFromLocation('');
+                setToLocation('');
+                setSelectedPrices([]);
+                setSelectedRating(null);
+                setSortBy('popularity');
+                setSelectedBusType('');
+                setSelectedBusClass('');
+                setSidebarActiveCat('ALL');
+                setSelectedSubNavbarCategory('Travel');
+                setSelectedCategories([]);
+              }}
+              totalResultsCount={filteredProducts.length}
+              theme={theme}
+            />
+          ) : !appliedJobId && (
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
               {/* Header Row on Mobile / Left Label on Desktop */}
               <div className={`flex items-center justify-between md:justify-start gap-2 ${isMobileFiltersOpen ? 'border-b md:border-b-0 pb-2.5 md:pb-0' : ''} border-slate-100 dark:border-slate-800/60`}>
@@ -10211,18 +10485,30 @@ export default function CustomerDashboard({
                         if (selectedRating !== null) {
                           if (activeTab === 'Services') return "No Services Available for the Selected Rating";
                           if (activeTab === 'Stay') return "No Rooms Available for the Selected Rating";
-                          if (activeTab === 'Travel') return "No Travel Options Available for the Selected Rating";
+                          if (activeTab === 'Travel') {
+                            if (sidebarActiveCat === 'Cab') return "No Cabs Available for the Selected Rating";
+                            if (sidebarActiveCat === 'Bus') return "No Buses Available for the Selected Rating";
+                            return "No Travel Options Available for the Selected Rating";
+                          }
                           return "No items are available for the selected rating.";
                         }
-                        const hasLoc = (selectedLocTypes && selectedLocTypes.length > 0) || (fromLocation && fromLocation !== '') || (toLocation && toLocation !== '');
+                        const hasLoc = (selectedLocTypes && selectedLocTypes.length > 0) || (fromLocation && fromLocation !== '') || (toLocation && toLocation !== '') || (travelFilters.from || travelFilters.to);
                         if (hasLoc) {
                           if (activeTab === 'Services') return "No services are available in the selected location.";
-                          if (activeTab === 'Travel') return "No travel options are available in the selected location.";
+                          if (activeTab === 'Travel') {
+                            if (sidebarActiveCat === 'Cab') return "No cabs are currently available for this route.";
+                            if (sidebarActiveCat === 'Bus') return "No buses are currently available for this route.";
+                            return "No travel options are available in the selected location.";
+                          }
                           if (activeTab === 'Stay') return "No stays are available in the selected location.";
                           if (activeTab === 'Food') return "No food items are available in the selected location.";
                           return "No items are available in the selected location.";
                         }
-                        if (activeTab === 'Travel') return "No travel options match your filter criteria.";
+                        if (activeTab === 'Travel') {
+                          if (sidebarActiveCat === 'Cab') return "No Cabs Available currently matching your criteria.";
+                          if (sidebarActiveCat === 'Bus') return "No Buses Available matching your filter criteria.";
+                          return "No travel options match your filter criteria.";
+                        }
                         if (activeTab === 'Stay') return "No stay options match your filter criteria.";
                         return "No items match your filter criteria";
                       })()}
