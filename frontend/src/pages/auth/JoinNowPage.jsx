@@ -46,6 +46,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
   // Touched state trackers for real-time validation UI
   const [touched, setTouched] = useState({});
   const [duplicateErrors, setDuplicateErrors] = useState({});
+  const [checkingDuplicate, setCheckingDuplicate] = useState({});
   const duplicateTimeoutRef = useRef({});
 
   const checkFieldDuplicate = async (field, value) => {
@@ -59,6 +60,7 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
     }
 
     try {
+      setCheckingDuplicate(prev => ({ ...prev, [field]: true }));
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const res = await fetch(`${baseBackend}/api/auth/check-duplicate`, {
         method: 'POST',
@@ -75,7 +77,10 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
           return copy;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      setCheckingDuplicate(prev => ({ ...prev, [field]: false }));
+    }
   };
 
   const scheduleDuplicateCheck = (field, value, delay = 400) => {
@@ -408,11 +413,13 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
                         Phone Number <span className="text-rose-500">*</span>
                       </label>
-                      {(touched.phoneNumber || phoneNumber.length === 10) && phoneVal.isValid && (
+                      {checkingDuplicate.phone ? (
+                        <span className="text-amber-500 text-[10px] font-bold animate-pulse">Checking...</span>
+                      ) : (touched.phoneNumber || phoneNumber.length === 10) && phoneVal.isValid && !duplicateErrors.phone ? (
                         <span className="text-emerald-500 flex items-center gap-0.5 text-[10px] font-bold">
                           <CheckCircle2 size={12} /> Valid
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="relative">
                       <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -425,14 +432,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         onBlur={() => handleBlur('phoneNumber')}
                         placeholder="10-digit mobile number"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-8 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
-                          (touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid 
+                          ((touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid) || duplicateErrors.phone
                             ? 'border-rose-500 ring-2 ring-rose-500/20' 
-                            : (touched.phoneNumber || phoneNumber.length === 10) && phoneVal.isValid 
+                            : (touched.phoneNumber || phoneNumber.length === 10) && phoneVal.isValid && !duplicateErrors.phone
                             ? 'border-emerald-500 ring-1 ring-emerald-500/30'
                             : 'border-slate-200/80 dark:border-slate-800 focus:border-[#FFB800]'
                         }`}
                       />
-                      {(touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid && (
+                      {(((touched.phoneNumber || phoneNumber.length > 0) && !phoneVal.isValid) || duplicateErrors.phone) && (
                         <AlertCircle className="w-3.5 h-3.5 text-rose-500 absolute right-3 top-1/2 -translate-y-1/2" />
                       )}
                     </div>
@@ -454,11 +461,13 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                     <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
                       Email Address <span className="text-rose-500">*</span>
                     </label>
-                    {(touched.email || email.length > 0) && emailVal.isValid && (
+                    {checkingDuplicate.email ? (
+                      <span className="text-amber-500 text-[10px] font-bold animate-pulse">Checking...</span>
+                    ) : (touched.email || email.length > 0) && emailVal.isValid && !duplicateErrors.email ? (
                       <span className="text-emerald-500 flex items-center gap-0.5 text-[10px] font-bold">
                         <CheckCircle2 size={12} /> Valid
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="relative">
                     <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -470,14 +479,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       onBlur={() => handleBlur('email')}
                       placeholder="Enter your valid email address"
                       className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-8 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
-                        (touched.email || email.length > 0) && !emailVal.isValid 
+                        ((touched.email || email.length > 0) && !emailVal.isValid) || duplicateErrors.email
                           ? 'border-rose-500 ring-2 ring-rose-500/20' 
-                          : (touched.email || email.length > 0) && emailVal.isValid 
+                          : (touched.email || email.length > 0) && emailVal.isValid && !duplicateErrors.email
                           ? 'border-emerald-500 ring-1 ring-emerald-500/30'
                           : 'border-slate-200/80 dark:border-slate-800 focus:border-[#FFB800]'
                       }`}
                     />
-                    {(touched.email || email.length > 0) && !emailVal.isValid && (
+                    {(((touched.email || email.length > 0) && !emailVal.isValid) || duplicateErrors.email) && (
                       <AlertCircle className="w-3.5 h-3.5 text-rose-500 absolute right-3 top-1/2 -translate-y-1/2" />
                     )}
                   </div>
@@ -501,11 +510,13 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
                         Aadhaar Number <span className="text-rose-500">*</span>
                       </label>
-                      {touched.aadhaarNumber && aadhaarVal.isValid && (
+                      {checkingDuplicate.aadhaar ? (
+                        <span className="text-amber-500 text-[10px] font-bold animate-pulse">Checking...</span>
+                      ) : touched.aadhaarNumber && aadhaarVal.isValid && !duplicateErrors.aadhaar ? (
                         <span className="text-emerald-500 flex items-center gap-0.5 text-[10px] font-bold">
                           <CheckCircle2 size={12} /> Valid
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="relative">
                       <CreditCard className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -522,14 +533,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         onBlur={() => handleBlur('aadhaarNumber')}
                         placeholder="12-digit Aadhaar number"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-8 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
-                          touched.aadhaarNumber && !aadhaarVal.isValid 
+                          (touched.aadhaarNumber && !aadhaarVal.isValid) || duplicateErrors.aadhaar
                             ? 'border-rose-500 ring-2 ring-rose-500/20' 
-                            : touched.aadhaarNumber && aadhaarVal.isValid 
+                            : touched.aadhaarNumber && aadhaarVal.isValid && !duplicateErrors.aadhaar
                             ? 'border-emerald-500 ring-1 ring-emerald-500/30'
                             : 'border-slate-200/80 dark:border-slate-800 focus:border-[#FFB800]'
                         }`}
                       />
-                      {touched.aadhaarNumber && !aadhaarVal.isValid && (
+                      {((touched.aadhaarNumber && !aadhaarVal.isValid) || duplicateErrors.aadhaar) && (
                         <AlertCircle className="w-3.5 h-3.5 text-rose-500 absolute right-3 top-1/2 -translate-y-1/2" />
                       )}
                     </div>
@@ -550,11 +561,13 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                       <label className="block text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
                         PAN Number <span className="text-rose-500">*</span>
                       </label>
-                      {touched.panNumber && panVal.isValid && (
+                      {checkingDuplicate.pan ? (
+                        <span className="text-amber-500 text-[10px] font-bold animate-pulse">Checking...</span>
+                      ) : touched.panNumber && panVal.isValid && !duplicateErrors.pan ? (
                         <span className="text-emerald-500 flex items-center gap-0.5 text-[10px] font-bold">
                           <CheckCircle2 size={12} /> Valid
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="relative">
                       <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -571,14 +584,14 @@ export default function JoinNowPage({ onAuthSuccess, onBackToHome, onNavigateToL
                         onBlur={() => handleBlur('panNumber')}
                         placeholder="ABCDE1234F"
                         className={`w-full bg-slate-50/70 dark:bg-slate-900/80 border rounded-xl py-2.5 pl-9 pr-8 text-xs font-semibold uppercase text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
-                          touched.panNumber && !panVal.isValid 
+                          (touched.panNumber && !panVal.isValid) || duplicateErrors.pan
                             ? 'border-rose-500 ring-2 ring-rose-500/20' 
-                            : touched.panNumber && panVal.isValid 
+                            : touched.panNumber && panVal.isValid && !duplicateErrors.pan
                             ? 'border-emerald-500 ring-1 ring-emerald-500/30'
                             : 'border-slate-200/80 dark:border-slate-800 focus:border-[#FFB800]'
                         }`}
                       />
-                      {touched.panNumber && !panVal.isValid && (
+                      {((touched.panNumber && !panVal.isValid) || duplicateErrors.pan) && (
                         <AlertCircle className="w-3.5 h-3.5 text-rose-500 absolute right-3 top-1/2 -translate-y-1/2" />
                       )}
                     </div>

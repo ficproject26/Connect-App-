@@ -1927,16 +1927,32 @@ export default function CustomerDashboard({
                   membershipHistory: Array.isArray(dbUser.membershipHistory) ? dbUser.membershipHistory : (currentUser?.membershipHistory || []),
                   addresses: deduplicateAddresses(dbUser.addresses || currentUser?.addresses || []),
                   favorites: Array.isArray(dbUser.favorites) ? dbUser.favorites : (currentUser?.favorites || []),
+                  cart: Array.isArray(dbUser.cart) ? dbUser.cart : (currentUser?.cart || []),
                   role: 'customer'
                 }, 'customer');
-                if (Array.isArray(dbUser.favorites) && dbUser.favorites.length > 0) {
-                  setFavorites(prev => {
-                    const merged = Array.from(new Set([...prev, ...dbUser.favorites]));
-                    try { localStorage.setItem('connect_customer_favorites', JSON.stringify(merged)); } catch (e) {}
-                    return merged;
-                  });
-                }
               }
+
+              // Synchronize favorites (Wishlist) across devices
+              if (Array.isArray(dbUser.favorites)) {
+                setFavorites(prev => {
+                  const merged = Array.from(new Set([...prev, ...dbUser.favorites]));
+                  try { localStorage.setItem('connect_customer_favorites', JSON.stringify(merged)); } catch (e) {}
+                  return merged;
+                });
+              }
+
+              // Synchronize cart (Add to Cart) across devices
+              if (Array.isArray(dbUser.cart) && dbUser.cart.length > 0) {
+                setCart(prev => {
+                  const mergedMap = new Map();
+                  dbUser.cart.forEach(item => { if (item?.id) mergedMap.set(item.id, item); });
+                  prev.forEach(item => { if (item?.id) mergedMap.set(item.id, item); });
+                  const merged = Array.from(mergedMap.values());
+                  try { localStorage.setItem('connect_cart', JSON.stringify(merged)); } catch (e) {}
+                  return merged;
+                });
+              }
+              isCartInitializedRef.current = true;
               return;
             }
           }
@@ -2112,11 +2128,27 @@ export default function CustomerDashboard({
     }
   });
 
+  const isCartInitializedRef = useRef(false);
+
   useEffect(() => {
     try {
       localStorage.setItem('connect_cart', JSON.stringify(cart));
     } catch (e) {}
-  }, [cart]);
+
+    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+    if (userTarget && isCartInitializedRef.current) {
+      const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
+      const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token'))) || '';
+      fetch(`${baseBackend}/api/auth/customer-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ userId: userTarget, cart })
+      }).catch(() => {});
+    }
+  }, [cart, currentUser, activeCustomerId]);
 
   useEffect(() => {
     try {
@@ -2157,6 +2189,8 @@ export default function CustomerDashboard({
   });
 
   const [paymentUpiError, setPaymentUpiError] = useState('');
+  const [paymentCardErrors, setPaymentCardErrors] = useState({});
+  const [paymentNetBankingError, setPaymentNetBankingError] = useState('');
   const [isPayAtHotelConfirmOpen, setIsPayAtHotelConfirmOpen] = useState(false);
   const [isSubmittingPayAtHotel, setIsSubmittingPayAtHotel] = useState(false);
   const [payAtHotelSuccessData, setPayAtHotelSuccessData] = useState(null);
@@ -2302,6 +2336,11 @@ export default function CustomerDashboard({
       };
 
       setCustomerOrders(prev => [newOrderEntry, ...prev]);
+      try {
+        const raw = localStorage.getItem('connect_user_orders') || '[]';
+        const list = JSON.parse(raw);
+        localStorage.setItem('connect_user_orders', JSON.stringify([newOrderEntry, ...list.filter(o => o.id !== newOrderEntry.id && o.order_number !== newOrderEntry.order_number)]));
+      } catch (e) {}
       setIsPayAtHotelConfirmOpen(false);
       setPayAtHotelSuccessData({
         order_number: finalOrderNumber,
@@ -2608,9 +2647,12 @@ export default function CustomerDashboard({
 
   const hasLoadedUrlProductRef = useRef(false);
   useEffect(() => {
-    if (hasLoadedUrlProductRef.current || !Array.isArray(products) || products.length === 0) return;
-    const prodParam = initialUrlProductRef.current || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('product') || new URLSearchParams(window.location.search).get('productId')) : null);
-    if (prodParam) {
+    if (hasLoadedUrlProductRef.current) return;
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const prodParam = initialUrlProductRef.current || (urlParams ? (urlParams.get('product') || urlParams.get('productId')) : null);
+    if (!prodParam) return;
+
+    if (Array.isArray(products) && products.length > 0) {
       const match = products.find(p => String(p.id) === String(prodParam) || String(p._id) === String(prodParam) || (p.name && p.name.toLowerCase() === String(prodParam).toLowerCase()));
       if (match) {
         setSelectedProduct(match);
@@ -2620,8 +2662,22 @@ export default function CustomerDashboard({
           setSelectedSubNavbarCategory(canonicalTab);
         }
         hasLoadedUrlProductRef.current = true;
+        return;
       }
     }
+
+    // Direct fetch fallback for shared links
+    productService.getProductById(prodParam).then(item => {
+      if (item) {
+        setSelectedProduct(item);
+        const canonicalTab = getCanonicalTabName(item);
+        if (canonicalTab) {
+          setActiveTab(canonicalTab);
+          setSelectedSubNavbarCategory(canonicalTab);
+        }
+        hasLoadedUrlProductRef.current = true;
+      }
+    }).catch(() => {});
   }, [products]);
 
   useEffect(() => {
@@ -3935,7 +3991,7 @@ export default function CustomerDashboard({
 
       const custIdTarget = currentUser?.id || currentUser?.customerId || activeCustomerId || '';
       const custEmailTarget = applicantEmail || profileEmail || currentUser?.email || '';
-      const custPhoneTarget = profilePhone || currentUser?.phone || '';
+      const custPhoneTarget = applicantPhone || profilePhone || currentUser?.phone || '';
 
       const generatedAppId = 'APP-' + new Date().getFullYear() + '-' + String(Math.floor(100000 + Math.random() * 900000));
 
@@ -3958,8 +4014,8 @@ export default function CustomerDashboard({
           candidateName: applicantName || currentUser?.name || 'Applicant',
           customer_email: custEmailTarget,
           candidateEmail: custEmailTarget,
-          customer_phone: custPhoneTarget || '+91 98765 43210',
-          candidatePhone: custPhoneTarget || '+91 98765 43210',
+          customer_phone: custPhoneTarget,
+          candidatePhone: custPhoneTarget,
           customer_address: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
           jobLocation: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
           customer_latitude: 12.9498,
@@ -3980,13 +4036,76 @@ export default function CustomerDashboard({
         })
       });
 
-      if (res && (res.status === 'success' || res.id || res.order_number)) {
+      if (res && (res.status === 'success' || res.id || res.order_number || res.data)) {
         try {
           localStorage.removeItem(`connect_job_draft_${jobId}`);
         } catch (e) {}
+
+        const createdJobOrder = res.data && res.data.id ? res.data : {
+          id: res.id || res.order_number || generatedAppId,
+          order_number: res.order_number || res.id || generatedAppId,
+          applicationId: res.applicationId || res.id || generatedAppId,
+          jobId: jobId,
+          jobTitle: jobTitle,
+          status: 'APPLICATION RECEIVED',
+          vendor_id: vendorId,
+          vendorId: vendorId,
+          customer_id: custIdTarget,
+          customerId: custIdTarget,
+          user_id: custIdTarget,
+          memberId: custIdTarget,
+          customer_name: applicantName || currentUser?.name || 'Applicant',
+          candidateName: applicantName || currentUser?.name || 'Applicant',
+          customer_email: custEmailTarget,
+          candidateEmail: custEmailTarget,
+          customer_phone: custPhoneTarget,
+          candidatePhone: custPhoneTarget,
+          customer_address: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
+          jobLocation: applicantLocation || selectedLocation.area || 'Koramangala, Bangalore',
+          product_details: jobTitle,
+          amount: 0,
+          candidateResume: resumeFile?.dataUrl || applicantResume || (resumeFile ? resumeFile.name : 'Resume.pdf'),
+          experience: applicantExperience || 'Fresher',
+          candidateEducation: 'Graduate',
+          applicationDate: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          type: 'Job'
+        };
+
+        setCustomerOrders(prev => {
+          const exists = prev.some(o => (o.id === createdJobOrder.id || (o.jobId === jobId && (o.customerId === custIdTarget || o.customer_email === custEmailTarget))));
+          return exists ? prev : [createdJobOrder, ...prev];
+        });
+
+        try {
+          const raw = localStorage.getItem('connect_user_orders') || '[]';
+          const list = JSON.parse(raw);
+          if (!list.some(o => (o.id === createdJobOrder.id || (o.jobId === jobId && (o.customerId === custIdTarget || o.customer_email === custEmailTarget))))) {
+            list.unshift(createdJobOrder);
+            localStorage.setItem('connect_user_orders', JSON.stringify(list));
+          }
+        } catch (e) {}
+
         setJobSubmitSuccess(true);
         triggerNotification(`Application for ${jobTitle} submitted successfully!`);
-        loadCustomerOrders();
+        loadCustomerOrders(true);
+      } else if (res && (res.code === 'JOB_ALREADY_APPLIED' || res.message?.includes('already applied'))) {
+        if (res.data) {
+          const existingJobOrder = res.data;
+          setCustomerOrders(prev => {
+            const exists = prev.some(o => (o.id === existingJobOrder.id || o.jobId === jobId));
+            return exists ? prev : [existingJobOrder, ...prev];
+          });
+          try {
+            const raw = localStorage.getItem('connect_user_orders') || '[]';
+            const list = JSON.parse(raw);
+            if (!list.some(o => (o.id === existingJobOrder.id || o.jobId === jobId))) {
+              list.unshift(existingJobOrder);
+              localStorage.setItem('connect_user_orders', JSON.stringify(list));
+            }
+          } catch (e) {}
+        }
+        triggerNotification(res.message || 'You have already applied for this position.');
       } else {
         console.error('Failed to submit job application:', res);
         triggerNotification(res?.message || 'Failed to submit job application. Please try again.');
@@ -4430,17 +4549,26 @@ export default function CustomerDashboard({
   };
 
   const handleSaveAddress = async () => {
-    const name = (addressForm.name || profileName || currentUser?.name || '').trim();
+    const name = (addressForm.name || '').trim();
     if (!name) {
-      triggerNotification("Please enter a receiver name.", "error");
+      triggerNotification("Please enter receiver name.", "error");
       return null;
     }
 
-    const phoneRaw = (addressForm.phone || profilePhone || currentUser?.phone || '').replace(/\D/g, '');
+    const phoneRaw = (addressForm.phone || '').replace(/\D/g, '');
     const phone = phoneRaw.length >= 10 ? phoneRaw.slice(-10) : phoneRaw;
     if (phone.length < 10) {
       triggerNotification("Please enter a valid 10-digit mobile number.", "error");
       return null;
+    }
+
+    let altPhone = (addressForm.altPhone || '').replace(/\D/g, '');
+    if (altPhone) {
+      altPhone = altPhone.length >= 10 ? altPhone.slice(-10) : altPhone;
+      if (altPhone.length < 10) {
+        triggerNotification("Alternate mobile number must be a valid 10-digit number.", "error");
+        return null;
+      }
     }
 
     const pincode = (addressForm.pincode || '').replace(/\D/g, '').slice(0, 6);
@@ -4619,9 +4747,9 @@ export default function CustomerDashboard({
   const handleProceedFromAddressToPayment = async () => {
     let chosenAddr = null;
 
-    if (isAddingAddress || (addressForm.address.trim() && addressForm.pincode.trim())) {
+    if (isAddingAddress || (addressForm.address && addressForm.address.trim()) || (addressForm.pincode && addressForm.pincode.trim())) {
       chosenAddr = await handleSaveAddress();
-      if (!chosenAddr && isAddingAddress) {
+      if (!chosenAddr) {
         return;
       }
     }
@@ -4637,6 +4765,13 @@ export default function CustomerDashboard({
 
     if (!chosenAddr) {
       triggerNotification("Please fill in and save your delivery address to continue.", "error");
+      setIsAddingAddress(true);
+      return;
+    }
+
+    const chosenPin = (chosenAddr.pincode || '').replace(/\D/g, '').slice(0, 6);
+    if (!/^[1-9][0-9]{5}$/.test(chosenPin) || chosenPin === '100000' || chosenPin.startsWith('10')) {
+      triggerNotification("The selected delivery address has an invalid PIN code. Please provide a valid 6-digit PIN code.", "error");
       setIsAddingAddress(true);
       return;
     }
@@ -4750,11 +4885,17 @@ export default function CustomerDashboard({
 
       let anyFailed = false;
       let failureReason = '';
+      const placedOrdersList = [];
 
       for (const item of selectedCart) {
         const vendorId = item.vendorId || item.vendor_id || '3w8hhon38mqg7ni0u';
         const finalTxnId = txnId || (payStatus === 'Paid' ? ('TXN_' + Math.floor(100000 + Math.random() * 900000)) : undefined);
         const itemAmount = (item.price || 0) * (item.quantity || 1);
+
+        const isItemStay = (activeTab === 'Stay') || (item.mainCategory === 'Stay') || (item.subNavbarCategory === 'Stay') || Boolean(item.checkInDate) || (item.nights != null && item.nights > 0);
+        const isItemTravel = (activeTab === 'Travel') || (item.mainCategory === 'Travel') || (item.subNavbarCategory === 'Travel') || Boolean(item.departureDate) || Boolean(item.boardingPoint);
+        const isItemService = (activeTab === 'Services') || (item.mainCategory === 'Services') || (item.subNavbarCategory === 'Services') || Boolean(item.bookingDate && item.bookingTime);
+        const resolvedType = isItemStay ? 'Stay' : isItemTravel ? 'Travel' : isItemService ? 'Services' : (item.subNavbarCategory || item.tag || item.category || 'Product');
 
         const orderRes = await apiFetch('/orders', {
           method: 'POST',
@@ -4793,7 +4934,7 @@ export default function CustomerDashboard({
               adults: item.adults,
               children: item.children
             }],
-            type: item.subNavbarCategory || item.tag || item.category || 'Product',
+            type: resolvedType,
             boardingPoint: item.boardingPoint || item.boarding_point || undefined,
             droppingPoint: item.droppingPoint || item.dropping_point || undefined,
             appointmentDate: item.bookingDate || item.checkInDate,
@@ -4821,12 +4962,62 @@ export default function CustomerDashboard({
           failureReason = orderRes.message || 'Failed to place order';
           break;
         }
+
+        const newOrderObj = (orderRes && orderRes.data && (orderRes.data.id || orderRes.data._id)) ? orderRes.data : {
+          id: orderRes?.id || ('ORD_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
+          order_number: orderRes?.order_number || ('ORD-' + Math.floor(100000 + Math.random() * 900000)),
+          type: resolvedType,
+          status: 'Order Received',
+          amount: itemAmount,
+          totalAmount: itemAmount,
+          customer_name: chosenAddr.name || profileName || currentUser?.name || 'Customer',
+          customer_phone: chosenAddr.phone || profilePhone || currentUser?.phone || '',
+          customer_email: profileEmail || currentUser?.email || '',
+          customer_address: fullAddressString,
+          product_details: item.name || item.title || 'Item',
+          checkInDate: item.checkInDate,
+          checkInTime: item.checkInTime,
+          checkOutDate: item.checkOutDate,
+          checkOutTime: item.checkOutTime,
+          roomsCount: item.roomsCount || 1,
+          nightsCount: item.nights || 1,
+          adults: item.adults,
+          children: item.children,
+          guestDetails: item.guestDetails,
+          items: [{
+            productId: item.id || item._id,
+            name: item.name || item.title,
+            price: item.price || 0,
+            quantity: item.quantity || 1,
+            checkInDate: item.checkInDate,
+            checkOutDate: item.checkOutDate
+          }],
+          paymentMethod: methodName,
+          paymentStatus: payStatus,
+          createdAt: new Date().toISOString()
+        };
+        placedOrdersList.push(newOrderObj);
       }
 
       if (anyFailed) {
         setRazorpayProcessing(false);
         triggerNotification(failureReason || "Order placement could not be completed. Please try again.", "error");
         return;
+      }
+
+      if (placedOrdersList.length > 0) {
+        setCustomerOrders(prev => {
+          const newIds = new Set(placedOrdersList.map(p => p.id || p.order_number));
+          const filtered = prev.filter(p => !newIds.has(p.id) && !newIds.has(p.order_number));
+          return [...placedOrdersList, ...filtered];
+        });
+        try {
+          const raw = localStorage.getItem('connect_user_orders') || '[]';
+          const list = JSON.parse(raw);
+          const newIds = new Set(placedOrdersList.map(p => p.id || p.order_number));
+          const filtered = list.filter(p => !newIds.has(p.id) && !newIds.has(p.order_number));
+          localStorage.setItem('connect_user_orders', JSON.stringify([...placedOrdersList, ...filtered]));
+        } catch (e) {}
       }
 
       setIsLastOrderBooking(Boolean(isBookingOrder));
@@ -5631,6 +5822,70 @@ export default function CustomerDashboard({
   const activeProducts = useMemo(() => {
     return products.filter(p => !deletedProductIds.includes(p.id) && isRealVendorProduct(p));
   }, [products, deletedProductIds]);
+
+  const { travelFromOptions, travelToOptions } = useMemo(() => {
+    const travelProducts = (products || []).filter(p => {
+      const cat = (p.mainCategory || p.subNavbarCategory || p.category || p.tag || '').toLowerCase();
+      return cat.includes('travel') || cat.includes('bus') || cat.includes('tour') || cat.includes('cab');
+    });
+
+    const fromSet = new Set();
+    const toSet = new Set();
+
+    travelProducts.forEach(p => {
+      const travelPts = extractVendorTravelPoints(p);
+      const froms = [
+        p.fromCity,
+        p.from,
+        p.boardingPoint,
+        p.pickupPoint,
+        p.city,
+        p.vendorCity,
+        ...(travelPts.boardingPoints || []).map(bp => bp.name)
+      ];
+      froms.filter(Boolean).forEach(f => {
+        const str = String(f).trim();
+        if (str && str.length > 1 && !str.includes('{') && !str.includes('[') && !/^\d+$/.test(str)) {
+          const formatted = str.charAt(0).toUpperCase() + str.slice(1);
+          fromSet.add(formatted);
+        }
+      });
+
+      const tos = [
+        p.toCity,
+        p.to,
+        p.destination,
+        p.dropCity,
+        p.dropPoint,
+        p.droppingPoint,
+        ...(travelPts.droppingPoints || []).map(dp => dp.name)
+      ];
+      tos.filter(Boolean).forEach(t => {
+        const str = String(t).trim();
+        if (str && str.length > 1 && !str.includes('{') && !str.includes('[') && !/^\d+$/.test(str)) {
+          const formatted = str.charAt(0).toUpperCase() + str.slice(1);
+          toSet.add(formatted);
+        }
+      });
+
+      const name = (p.name || p.title || '');
+      const toMatch = name.match(/([a-zA-Z\s]+)\s+(?:to|-|->)\s+([a-zA-Z\s]+)/i);
+      if (toMatch) {
+        const f = toMatch[1].trim();
+        const t = toMatch[2].trim();
+        if (f.length >= 3 && f.length <= 25) fromSet.add(f.charAt(0).toUpperCase() + f.slice(1));
+        if (t.length >= 3 && t.length <= 25) toSet.add(t.charAt(0).toUpperCase() + t.slice(1));
+      }
+    });
+
+    const fromArr = Array.from(fromSet).sort((a, b) => a.localeCompare(b));
+    const toArr = Array.from(toSet).sort((a, b) => a.localeCompare(b));
+
+    return {
+      travelFromOptions: fromArr.length > 0 ? fromArr : ['Bangalore', 'Chennai', 'Coimbatore', 'Hyderabad', 'Kochi', 'Madurai'],
+      travelToOptions: toArr.length > 0 ? toArr : ['Chennai', 'Coimbatore', 'Goa', 'Kochi', 'Madurai', 'Mysore', 'Ooty']
+    };
+  }, [products]);
 
   // Filtered & Sorted products list (memoized to prevent heavy re-filtering on every render)
   const filteredProducts = useMemo(() => {
@@ -8693,6 +8948,19 @@ export default function CustomerDashboard({
     return (
       <div id="products-section" className="scroll-mt-6 border-t border-slate-200 dark:border-slate-800/60 pt-6 text-slate-800 dark:text-slate-200">
         <div className="flex flex-col gap-6 w-full items-stretch">
+          {activeTab !== 'Home' && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-xl px-4 py-2.5 shadow-xs">
+              <button onClick={() => { setActiveTab('Home'); setSelectedSubNavbarCategory('All'); setSelectedCategories([]); }} className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none">Home</button>
+              <span>&gt;</span>
+              <span className="font-extrabold text-slate-800 dark:text-white">{activeTab}</span>
+              {selectedCategories.length > 0 && (
+                <>
+                  <span>&gt;</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold">{selectedCategories[0]}</span>
+                </>
+              )}
+            </div>
+          )}
           {/* Horizontal Filters Bar (Collapsible on Mobile, Flex Row on Desktop) */}
           {!appliedJobId && (
             <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-3.5 sm:p-4.5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
@@ -8858,15 +9126,9 @@ export default function CustomerDashboard({
                     className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">From: All Locations</option>
-                    <option value="Bangalore">From: Bangalore</option>
-                    <option value="Chennai">From: Chennai</option>
-                    <option value="Krishnagiri">From: Krishnagiri</option>
-                    <option value="Trichy">From: Trichy</option>
-                    <option value="Coimbatore">From: Coimbatore</option>
-                    <option value="Dindigul">From: Dindigul</option>
-                    <option value="Hyderabad">From: Hyderabad</option>
-                    <option value="Mumbai">From: Mumbai</option>
-                    <option value="Delhi">From: Delhi</option>
+                    {travelFromOptions.map(city => (
+                      <option key={city} value={city}>From: {city}</option>
+                    ))}
                   </select>
                   <select
                     value={toLocation}
@@ -8874,16 +9136,9 @@ export default function CustomerDashboard({
                     className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none truncate"
                   >
                     <option value="">To: All Destinations</option>
-                    <option value="Goa">To: Goa</option>
-                    <option value="Chennai">To: Chennai</option>
-                    <option value="Madurai">To: Madurai</option>
-                    <option value="Salem">To: Salem</option>
-                    <option value="Dindigul">To: Dindigul</option>
-                    <option value="Gandhipuram">To: Gandhipuram</option>
-                    <option value="Coorg">To: Coorg</option>
-                    <option value="Ooty">To: Ooty</option>
-                    <option value="Mysore">To: Mysore</option>
-                    <option value="Kochi">To: Kochi</option>
+                    {travelToOptions.map(city => (
+                      <option key={city} value={city}>To: {city}</option>
+                    ))}
                   </select>
                   <select
                     value={selectedPrices[0] || ""}
@@ -11391,31 +11646,62 @@ export default function CustomerDashboard({
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <button onClick={() => { setSelectedProduct(null); setActiveTab('Home'); setSelectedSubNavbarCategory('All'); }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
             <span>&gt;</span>
-            <button onClick={() => { 
-              const mainCat = selectedProduct.subNavbarCategory || selectedProduct.mainCategory || 'Products';
-              setSelectedProduct(null); 
-              setActiveTab(mainCat); 
-              setSelectedSubNavbarCategory(mainCat); 
-            }} className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none">
-              {selectedProduct.subNavbarCategory || selectedProduct.mainCategory || 'Products'}
-            </button>
-            {selectedProduct.category && selectedProduct.category.toLowerCase().trim() !== (selectedProduct.name || '').toLowerCase().trim() && (
-              <>
-                <span>&gt;</span>
-                <button
-                  onClick={() => {
-                    const mainCat = selectedProduct.subNavbarCategory || selectedProduct.mainCategory || 'Products';
-                    setSelectedProduct(null);
-                    setActiveTab(mainCat);
-                    setSelectedSubNavbarCategory(mainCat);
-                    setSelectedCategories([selectedProduct.category]);
-                  }}
-                  className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-semibold text-slate-500 dark:text-slate-400"
-                >
-                  {selectedProduct.category}
-                </button>
-              </>
-            )}
+            {(() => {
+              const canonicalMain = getCanonicalTabName(selectedProduct) || 'Products';
+              const subCat = selectedProduct.subcategory || 
+                (selectedProduct.category && selectedProduct.category !== canonicalMain ? selectedProduct.category : null) ||
+                (selectedProduct.subNavbarCategory && selectedProduct.subNavbarCategory !== canonicalMain ? selectedProduct.subNavbarCategory : null);
+              const childCat = selectedProduct.subSubcategory || selectedProduct.childCategory || 
+                (selectedProduct.category && selectedProduct.category !== canonicalMain && selectedProduct.category !== subCat ? selectedProduct.category : null);
+
+              return (
+                <>
+                  <button 
+                    onClick={() => { 
+                      setSelectedProduct(null); 
+                      setActiveTab(canonicalMain); 
+                      setSelectedSubNavbarCategory(canonicalMain); 
+                      setSelectedCategories([]);
+                    }} 
+                    className="hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer bg-transparent border-none"
+                  >
+                    {canonicalMain}
+                  </button>
+                  {subCat && subCat.toLowerCase().trim() !== (selectedProduct.name || '').toLowerCase().trim() && (
+                    <>
+                      <span>&gt;</span>
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(null);
+                          setActiveTab(canonicalMain);
+                          setSelectedSubNavbarCategory(canonicalMain);
+                          setSelectedCategories([subCat]);
+                        }}
+                        className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[150px]"
+                      >
+                        {subCat}
+                      </button>
+                    </>
+                  )}
+                  {childCat && childCat !== subCat && childCat.toLowerCase().trim() !== (selectedProduct.name || '').toLowerCase().trim() && (
+                    <>
+                      <span>&gt;</span>
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(null);
+                          setActiveTab(canonicalMain);
+                          setSelectedSubNavbarCategory(canonicalMain);
+                          setSelectedCategories([childCat]);
+                        }}
+                        className="hover:text-amber-500 transition-colors cursor-pointer bg-transparent border-none p-0 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[150px]"
+                      >
+                        {childCat}
+                      </button>
+                    </>
+                  )}
+                </>
+              );
+            })()}
             <span>&gt;</span>
             <span className="text-slate-800 dark:text-white font-extrabold truncate max-w-[200px]">{selectedProduct.name}</span>
           </div>
@@ -13363,28 +13649,41 @@ wishlistProducts.forEach(item => addToCart(item));
                             const statusMap = {
                               'Order Received': 0,
                               'Booking Received': 0,
+                              'Ticket Booked': 0,
                               'Pending': 0,
+                              'Pending Confirmation': 0,
                               'Preparing': 1,
                               'Ready For Pickup': 1,
                               'Assigned To Delivery Partner': 1,
                               'Delivery Partner Accepted': 1,
                               'Confirmed': 1,
+                              'Booking Confirmed': 1,
+                              'Seat Confirmed': 1,
                               'Picked Up': 2,
                               'Out For Delivery': 2,
                               'Near Customer': 2,
                               'Checked In': 2,
                               'Checked In / Active': 2,
+                              'Boarding / In Transit': 2,
+                              'In Transit': 2,
                               'Delivered': 3,
                               'Completed': 3,
+                              'Trip Completed': 3,
                               'Checked Out': 3
                             };
                             const isCancelled = trackingOrder.status === 'Cancelled';
-                            const currentIdx = statusMap[trackingOrder.status] ?? 0;
+                            const currentIdx = statusMap[trackingOrder.status] ?? (isTravelBooking && trackingOrder.paymentStatus === 'Paid' ? 1 : 0);
                             const progressPercent = steps.length > 1 ? (Math.min(currentIdx, steps.length - 1) / (steps.length - 1)) * 100 : 0;
 
                             const statusBadgeLabel = isStayBooking 
                               ? (trackingOrder.status === 'Order Received' ? 'Booking Received' : (trackingOrder.status || 'Booking Received'))
-                              : (trackingOrder.status || 'Active');
+                              : isTravelBooking
+                                ? (trackingOrder.status === 'Order Received' || !trackingOrder.status
+                                    ? (trackingOrder.paymentStatus === 'Paid' ? 'Booking Confirmed' : 'Pending Confirmation')
+                                    : (trackingOrder.status === 'Delivered' ? 'Trip Completed' : trackingOrder.status))
+                                : isServiceBooking
+                                  ? (trackingOrder.status === 'Order Received' ? 'Booking Received' : (trackingOrder.status || 'Active'))
+                                  : (trackingOrder.status || 'Active');
 
                             return (
                               <div className="bg-white dark:bg-slate-900 p-5 border border-slate-100 dark:border-slate-800 rounded-2xl text-center shadow-xs">
@@ -13403,7 +13702,7 @@ wishlistProducts.forEach(item => addToCart(item));
 
                                 <div className="relative w-full py-2">
                                   <div 
-                                    className="absolute top-[22px] pointer-events-none"
+                                    className="absolute top-[14px] sm:top-[16px] pointer-events-none"
                                     style={{
                                       left: `${(100 / (steps.length * 2))}%`,
                                       right: `${(100 / (steps.length * 2))}%`
@@ -13521,9 +13820,10 @@ wishlistProducts.forEach(item => addToCart(item));
                               </span>
                             </div>
                             {(() => {
+                              const isFoodOrder = (trackingOrder.type === 'Food' || trackingOrder.mainCategory === 'Food' || trackingOrder.subNavbarCategory === 'Food' || trackingOrder.category === 'Food' || (trackingOrder.product_details || '').toLowerCase().includes('food') || (trackingOrder.product_details || '').toLowerCase().includes('biryani') || (trackingOrder.product_details || '').toLowerCase().includes('meal'));
                               const steps = [
-                                { id: 'placed', label: 'Order Placed' },
-                                { id: 'prep', label: 'Preparing' },
+                                { id: 'placed', label: isFoodOrder ? 'Food Ordered' : 'Order Placed' },
+                                { id: 'prep', label: isFoodOrder ? 'Ready for Food' : 'Preparing' },
                                 { id: 'ready', label: 'Ready For Pickup' },
                                 { id: 'accepted', label: 'Partner Accepted' },
                                 { id: 'out', label: 'Out For Delivery' },
@@ -13547,7 +13847,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               return (
                                 <div className="relative w-full py-2">
                                   <div 
-                                    className="absolute top-[22px] pointer-events-none"
+                                    className="absolute top-[14px] sm:top-[16px] pointer-events-none"
                                     style={{
                                       left: `${(100 / (steps.length * 2))}%`,
                                       right: `${(100 / (steps.length * 2))}%`
@@ -13592,7 +13892,7 @@ wishlistProducts.forEach(item => addToCart(item));
 
                           {/* Delivery Partner Details */}
                           {trackingPartner ? (
-                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between shadow-xs">
+                            <div className="bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                               <div className="flex items-center gap-3">
                                 <img src={trackingPartner.photo} className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-800 bg-white" />
                                 <div className="text-left">
@@ -13600,7 +13900,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                   <span className="text-[10px] text-slate-500 block mt-0.5">{trackingPartner.vehicle_type} • {trackingPartner.vehicle_number}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
                                 <a href={`tel:${trackingPartner.mobile}`} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 rounded-full border border-slate-200 dark:border-slate-800 transition-colors flex items-center justify-center">
                                   <Phone className="w-4 h-4" />
                                 </a>
@@ -14661,8 +14961,22 @@ wishlistProducts.forEach(item => addToCart(item));
         const stayChildRate = Number(
           activeScheduleModalItem.childPrice != null && activeScheduleModalItem.childPrice !== '' && !isNaN(Number(activeScheduleModalItem.childPrice))
             ? activeScheduleModalItem.childPrice
-            : 0
+            : (stayAdultRate * 0.5)
         );
+
+        let totalCalculatedStayChildFare = 0;
+        if (numChildren > 0) {
+          for (let cIdx = numAdults; cIdx < numAdults + numChildren; cIdx++) {
+            const cAge = parseInt(guestList[cIdx]?.age, 10);
+            if (isNaN(cAge) || cAge <= 5) {
+              totalCalculatedStayChildFare += 0;
+            } else if (cAge <= 12) {
+              totalCalculatedStayChildFare += Math.round((stayChildRate > 0 ? stayChildRate : stayAdultRate) * 0.5);
+            } else {
+              totalCalculatedStayChildFare += (stayChildRate > 0 ? stayChildRate : stayAdultRate);
+            }
+          }
+        }
 
         let stayTotalPrice = 0;
         if (stayPricingType.includes('room')) {
@@ -14671,17 +14985,30 @@ wishlistProducts.forEach(item => addToCart(item));
           const extraFee = Number(activeScheduleModalItem.extraGuestFee || activeScheduleModalItem.extraPersonFee || 500);
           stayTotalPrice = ((rooms * basePrice) + (extraGuests * extraFee)) * diffNights;
         } else {
-          stayTotalPrice = ((numAdults * stayAdultRate) + (numChildren * stayChildRate)) * diffNights;
+          stayTotalPrice = ((numAdults * stayAdultRate) + totalCalculatedStayChildFare) * diffNights;
         }
 
-        // Travel fare calculation: vendor configured unit fare * adults + vendor child fare * children
+        // Travel fare calculation: vendor configured unit fare * adults + age-calculated child fare
         const vendorFare = basePrice;
         const vendorChildFare = Number(
           activeScheduleModalItem.childPrice != null && activeScheduleModalItem.childPrice !== '' && !isNaN(Number(activeScheduleModalItem.childPrice))
             ? activeScheduleModalItem.childPrice
             : vendorFare
         );
-        const travelTotalPrice = (numAdults * vendorFare) + (numChildren * vendorChildFare);
+        let totalCalculatedTravelChildFare = 0;
+        if (numChildren > 0) {
+          for (let cIdx = numAdults; cIdx < numAdults + numChildren; cIdx++) {
+            const cAge = parseInt(guestList[cIdx]?.age, 10);
+            if (isNaN(cAge) || cAge <= 5) {
+              totalCalculatedTravelChildFare += 0;
+            } else if (cAge <= 12) {
+              totalCalculatedTravelChildFare += Math.round(vendorFare * 0.5);
+            } else {
+              totalCalculatedTravelChildFare += vendorChildFare;
+            }
+          }
+        }
+        const travelTotalPrice = (numAdults * vendorFare) + totalCalculatedTravelChildFare;
 
         const extraGuestFee = (isStayItem || isTravelItem) ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
         const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? stayTotalPrice : (basePrice + extraGuestFee);
@@ -15094,23 +15421,27 @@ wishlistProducts.forEach(item => addToCart(item));
                                     </div>
                                     {isChild && (
                                       <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Child Age (Years) *</label>
-                                        <select
-                                          value={guestList[idx]?.age || '5'}
+                                        <label className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Child Age (Years 1-17) *</label>
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          max={17}
+                                          value={guestList[idx]?.age !== undefined ? guestList[idx]?.age : '5'}
                                           onChange={(e) => {
-                                            const val = e.target.value;
+                                            let val = e.target.value.replace(/\D/g, '');
+                                            if (val !== '') {
+                                              const num = parseInt(val, 10);
+                                              if (num > 17) val = '17';
+                                            }
                                             setGuestList(prev => {
                                               const updated = [...prev];
                                               updated[idx] = { ...(updated[idx] || {}), age: val };
                                               return updated;
                                             });
                                           }}
-                                          className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all cursor-pointer font-bold"
-                                        >
-                                          {Array.from({ length: 17 }).map((_, aIdx) => (
-                                            <option key={aIdx + 1} value={aIdx + 1}>{aIdx + 1} Year{aIdx > 0 ? 's' : ''} Old</option>
-                                          ))}
-                                        </select>
+                                          placeholder="Age (1-17)"
+                                          className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400 font-bold"
+                                        />
                                       </div>
                                     )}
                                     <div className="flex flex-col gap-1">
@@ -15331,8 +15662,8 @@ wishlistProducts.forEach(item => addToCart(item));
                               </div>
                               {numChildren > 0 && (
                                 <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
-                                  <span>Children ({numChildren} × ₹{vendorChildFare.toLocaleString()}):</span>
-                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * vendorChildFare).toLocaleString()}</span>
+                                  <span>Children ({numChildren} Passenger{numChildren > 1 ? 's' : ''}, age-based):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{totalCalculatedTravelChildFare.toLocaleString()}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
@@ -15346,10 +15677,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                 <span>Adults ({numAdults} × ₹{stayAdultRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
                                 <span className="font-bold text-slate-900 dark:text-white">₹{(numAdults * stayAdultRate * diffNights).toLocaleString()}</span>
                               </div>
-                              {numChildren > 0 && stayChildRate > 0 && (
+                              {numChildren > 0 && (
                                 <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
-                                  <span>Children ({numChildren} × ₹{stayChildRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
-                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * stayChildRate * diffNights).toLocaleString()}</span>
+                                  <span>Children ({numChildren} Guest{numChildren > 1 ? 's' : ''}, age-based):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{(totalCalculatedStayChildFare * diffNights).toLocaleString()}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
@@ -15389,23 +15720,40 @@ wishlistProducts.forEach(item => addToCart(item));
                       if (isStayItem || isTravelItem) {
                         const totalGuestsToValidate = Math.max(1, (adultCount || 1) + (childCount || 0));
                         for (let gIdx = 0; gIdx < totalGuestsToValidate; gIdx++) {
+                          const isChildGuest = gIdx >= adultCount;
                           const gInfo = guestList[gIdx] || {};
                           const gName = (gInfo.name || (gIdx === 0 ? (profileName || currentUser?.name || '') : '')).trim();
                           const gAadhaar = (gInfo.aadhaar || '').trim();
                           const gPhone = (gInfo.phone || (gIdx === 0 ? (profilePhone || currentUser?.phone || '') : '')).replace(/\D/g, '').slice(-10);
-                          const gLabel = gIdx === 0 ? "primary guest / traveler" : `Guest / Traveler ${gIdx + 1}`;
+                          const gLabel = gIdx === 0 ? "primary guest / traveler" : isChildGuest ? `Child ${gIdx - adultCount + 1}` : `Guest / Traveler ${gIdx + 1}`;
 
                           if (!gName) {
                             triggerNotification(`Please enter full name for ${gLabel}.`, "error");
                             return;
                           }
-                          if (!gAadhaar || gAadhaar.length !== 12) {
-                            triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
-                            return;
-                          }
-                          if (!gPhone || gPhone.length !== 10) {
-                            triggerNotification(`Please enter a valid 10-digit mobile number for ${gLabel}.`, "error");
-                            return;
+                          if (isChildGuest) {
+                            const cAge = parseInt(gInfo.age, 10);
+                            if (isNaN(cAge) || cAge < 1 || cAge > 17) {
+                              triggerNotification(`Please enter a valid age between 1 and 17 for ${gLabel}.`, "error");
+                              return;
+                            }
+                            if (gAadhaar && gAadhaar.length !== 12) {
+                              triggerNotification(`Aadhaar Card number for ${gLabel} must be 12 digits if provided.`, "error");
+                              return;
+                            }
+                            if (gPhone && gPhone.length !== 10) {
+                              triggerNotification(`Mobile number for ${gLabel} must be 10 digits if provided.`, "error");
+                              return;
+                            }
+                          } else {
+                            if (!gAadhaar || gAadhaar.length !== 12) {
+                              triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
+                              return;
+                            }
+                            if (!gPhone || gPhone.length !== 10) {
+                              triggerNotification(`Please enter a valid 10-digit mobile number for ${gLabel}.`, "error");
+                              return;
+                            }
                           }
                         }
                       }
@@ -15516,8 +15864,22 @@ wishlistProducts.forEach(item => addToCart(item));
         const stayChildRate = Number(
           activeBookNowModalItem.childPrice != null && activeBookNowModalItem.childPrice !== '' && !isNaN(Number(activeBookNowModalItem.childPrice))
             ? activeBookNowModalItem.childPrice
-            : 0
+            : (stayAdultRate * 0.5)
         );
+
+        let totalCalculatedStayChildFare = 0;
+        if (numChildren > 0) {
+          for (let cIdx = numAdults; cIdx < numAdults + numChildren; cIdx++) {
+            const cAge = parseInt(guestList[cIdx]?.age, 10);
+            if (isNaN(cAge) || cAge <= 5) {
+              totalCalculatedStayChildFare += 0;
+            } else if (cAge <= 12) {
+              totalCalculatedStayChildFare += Math.round((stayChildRate > 0 ? stayChildRate : stayAdultRate) * 0.5);
+            } else {
+              totalCalculatedStayChildFare += (stayChildRate > 0 ? stayChildRate : stayAdultRate);
+            }
+          }
+        }
 
         let stayTotalPrice = 0;
         if (stayPricingType.includes('room')) {
@@ -15526,17 +15888,30 @@ wishlistProducts.forEach(item => addToCart(item));
           const extraFee = Number(activeBookNowModalItem.extraGuestFee || activeBookNowModalItem.extraPersonFee || 500);
           stayTotalPrice = ((rooms * basePrice) + (extraGuests * extraFee)) * diffNights;
         } else {
-          stayTotalPrice = ((numAdults * stayAdultRate) + (numChildren * stayChildRate)) * diffNights;
+          stayTotalPrice = ((numAdults * stayAdultRate) + totalCalculatedStayChildFare) * diffNights;
         }
 
-        // Travel fare calculation: vendor configured unit fare * adults + vendor child fare * children
+        // Travel fare calculation: vendor configured unit fare * adults + age-calculated child fare
         const vendorFare = basePrice;
         const vendorChildFare = Number(
           activeBookNowModalItem.childPrice != null && activeBookNowModalItem.childPrice !== '' && !isNaN(Number(activeBookNowModalItem.childPrice))
             ? activeBookNowModalItem.childPrice
             : vendorFare
         );
-        const travelTotalPrice = (numAdults * vendorFare) + (numChildren * vendorChildFare);
+        let totalCalculatedTravelChildFare = 0;
+        if (numChildren > 0) {
+          for (let cIdx = numAdults; cIdx < numAdults + numChildren; cIdx++) {
+            const cAge = parseInt(guestList[cIdx]?.age, 10);
+            if (isNaN(cAge) || cAge <= 5) {
+              totalCalculatedTravelChildFare += 0;
+            } else if (cAge <= 12) {
+              totalCalculatedTravelChildFare += Math.round(vendorFare * 0.5);
+            } else {
+              totalCalculatedTravelChildFare += vendorChildFare;
+            }
+          }
+        }
+        const travelTotalPrice = (numAdults * vendorFare) + totalCalculatedTravelChildFare;
 
         const extraGuestFee = (isStayItem || isTravelItem) ? 0 : (Math.max(0, adultCount - 1) * 500 + (childCount || 0) * 250);
         const totalPrice = isTravelItem ? travelTotalPrice : isStayItem ? stayTotalPrice : (basePrice + extraGuestFee);
@@ -15855,23 +16230,27 @@ wishlistProducts.forEach(item => addToCart(item));
                                     </div>
                                     {isChild && (
                                       <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Child Age (Years) *</label>
-                                        <select
-                                          value={guestList[idx]?.age || '5'}
+                                        <label className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Child Age (Years 1-17) *</label>
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          max={17}
+                                          value={guestList[idx]?.age !== undefined ? guestList[idx]?.age : '5'}
                                           onChange={(e) => {
-                                            const val = e.target.value;
+                                            let val = e.target.value.replace(/\D/g, '');
+                                            if (val !== '') {
+                                              const num = parseInt(val, 10);
+                                              if (num > 17) val = '17';
+                                            }
                                             setGuestList(prev => {
                                               const updated = [...prev];
                                               updated[idx] = { ...(updated[idx] || {}), age: val };
                                               return updated;
                                             });
                                           }}
-                                          className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all cursor-pointer font-bold"
-                                        >
-                                          {Array.from({ length: 17 }).map((_, aIdx) => (
-                                            <option key={aIdx + 1} value={aIdx + 1}>{aIdx + 1} Year{aIdx > 0 ? 's' : ''} Old</option>
-                                          ))}
-                                        </select>
+                                          placeholder="Age (1-17)"
+                                          className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all placeholder:text-slate-400 font-bold"
+                                        />
                                       </div>
                                     )}
                                     <div className="flex flex-col gap-1">
@@ -16074,8 +16453,8 @@ wishlistProducts.forEach(item => addToCart(item));
                               </div>
                               {numChildren > 0 && (
                                 <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
-                                  <span>Children ({numChildren} × ₹{vendorChildFare.toLocaleString()}):</span>
-                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * vendorChildFare).toLocaleString()}</span>
+                                  <span>Children ({numChildren} Passenger{numChildren > 1 ? 's' : ''}, age-based):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{totalCalculatedTravelChildFare.toLocaleString()}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
@@ -16089,10 +16468,10 @@ wishlistProducts.forEach(item => addToCart(item));
                                 <span>Adults ({numAdults} × ₹{stayAdultRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
                                 <span className="font-bold text-slate-900 dark:text-white">₹{(numAdults * stayAdultRate * diffNights).toLocaleString()}</span>
                               </div>
-                              {numChildren > 0 && stayChildRate > 0 && (
+                              {numChildren > 0 && (
                                 <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300">
-                                  <span>Children ({numChildren} × ₹{stayChildRate.toLocaleString()} × {diffNights} {diffNights === 1 ? 'Night' : 'Nights'}):</span>
-                                  <span className="font-bold text-slate-900 dark:text-white">₹{(numChildren * stayChildRate * diffNights).toLocaleString()}</span>
+                                  <span>Children ({numChildren} Guest{numChildren > 1 ? 's' : ''}, age-based):</span>
+                                  <span className="font-bold text-slate-900 dark:text-white">₹{(totalCalculatedStayChildFare * diffNights).toLocaleString()}</span>
                                 </div>
                               )}
                               <div className="flex justify-between text-xs font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-800">
@@ -16133,23 +16512,40 @@ wishlistProducts.forEach(item => addToCart(item));
                         if (isStayItem || isTravelItem) {
                           const totalGuestsToValidate = Math.max(1, (adultCount || 1) + (childCount || 0));
                           for (let gIdx = 0; gIdx < totalGuestsToValidate; gIdx++) {
+                            const isChildGuest = gIdx >= adultCount;
                             const gInfo = guestList[gIdx] || {};
                             const gName = (gInfo.name || (gIdx === 0 ? (profileName || currentUser?.name || '') : '')).trim();
                             const gAadhaar = (gInfo.aadhaar || '').trim();
                             const gPhone = (gInfo.phone || (gIdx === 0 ? (profilePhone || currentUser?.phone || '') : '')).replace(/\D/g, '').slice(-10);
-                            const gLabel = gIdx === 0 ? "primary guest / traveler" : `Guest / Traveler ${gIdx + 1}`;
+                            const gLabel = gIdx === 0 ? "primary guest / traveler" : isChildGuest ? `Child ${gIdx - adultCount + 1}` : `Guest / Traveler ${gIdx + 1}`;
 
                             if (!gName) {
                               triggerNotification(`Please enter full name for ${gLabel}.`, "error");
                               return;
                             }
-                            if (!gAadhaar || gAadhaar.length !== 12) {
-                              triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
-                              return;
-                            }
-                            if (!gPhone || gPhone.length !== 10) {
-                              triggerNotification(`Please enter a valid 10-digit mobile number for ${gLabel}.`, "error");
-                              return;
+                            if (isChildGuest) {
+                              const cAge = parseInt(gInfo.age, 10);
+                              if (isNaN(cAge) || cAge < 1 || cAge > 17) {
+                                triggerNotification(`Please enter a valid age between 1 and 17 for ${gLabel}.`, "error");
+                                return;
+                              }
+                              if (gAadhaar && gAadhaar.length !== 12) {
+                                triggerNotification(`Aadhaar Card number for ${gLabel} must be 12 digits if provided.`, "error");
+                                return;
+                              }
+                              if (gPhone && gPhone.length !== 10) {
+                                triggerNotification(`Mobile number for ${gLabel} must be 10 digits if provided.`, "error");
+                                return;
+                              }
+                            } else {
+                              if (!gAadhaar || gAadhaar.length !== 12) {
+                                triggerNotification(`Please enter a valid 12-digit Aadhaar Card number for ${gLabel}.`, "error");
+                                return;
+                              }
+                              if (!gPhone || gPhone.length !== 10) {
+                                triggerNotification(`Please enter a valid 10-digit mobile number for ${gLabel}.`, "error");
+                                return;
+                              }
                             }
                           }
                         }
@@ -16641,6 +17037,17 @@ wishlistProducts.forEach(item => addToCart(item));
                     </div>
 
                     <div>
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Alternate Mobile Number</label>
+                      <input
+                        type="text"
+                        placeholder="Alternate Mobile Number (Optional)"
+                        value={addressForm.altPhone || ''}
+                        onChange={(e) => setAddressForm({ ...addressForm, altPhone: sanitizeMobileInput(e.target.value) })}
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl p-2.5 focus:outline-none focus:border-amber-500 font-semibold text-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div>
                       <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Pincode *</label>
                       <input
                         type="text"
@@ -17099,7 +17506,12 @@ wishlistProducts.forEach(item => addToCart(item));
                           <button
                             key={m.id}
                             type="button"
-                            onClick={() => setRazorpayPayMethod(m.id)}
+                            onClick={() => {
+                              setRazorpayPayMethod(m.id);
+                              setPaymentUpiError('');
+                              setPaymentCardErrors({});
+                              setPaymentNetBankingError('');
+                            }}
                             className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
                               razorpayPayMethod === m.id
                                 ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
@@ -17257,7 +17669,7 @@ wishlistProducts.forEach(item => addToCart(item));
                           </div>
                         )}
                         <div>
-                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Card Number</label>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Card Number *</label>
                           <input
                             type="text"
                             maxLength={19}
@@ -17266,14 +17678,21 @@ wishlistProducts.forEach(item => addToCart(item));
                               const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
                               const formatted = raw.replace(/(.{4})/g, '$1 ').trim();
                               setPaymentCardData(prev => ({ ...prev, number: formatted }));
+                              if (paymentCardErrors.number) setPaymentCardErrors(prev => ({ ...prev, number: '' }));
                             }}
                             placeholder="4111 2222 3333 1111"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full bg-white dark:bg-slate-900 border ${paymentCardErrors.number ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 dark:border-slate-700'} rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                           />
+                          {paymentCardErrors.number && (
+                            <p className="text-[10.5px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>{paymentCardErrors.number}</span>
+                            </p>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Expiry (MM/YY)</label>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Expiry (MM/YY) *</label>
                             <input
                               type="text"
                               maxLength={5}
@@ -17282,13 +17701,20 @@ wishlistProducts.forEach(item => addToCart(item));
                                 const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
                                 const formatted = raw.length >= 3 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw;
                                 setPaymentCardData(prev => ({ ...prev, expiry: formatted }));
+                                if (paymentCardErrors.expiry) setPaymentCardErrors(prev => ({ ...prev, expiry: '' }));
                               }}
                               placeholder="12/28"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                              className={`w-full bg-white dark:bg-slate-900 border ${paymentCardErrors.expiry ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 dark:border-slate-700'} rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center`}
                             />
+                            {paymentCardErrors.expiry && (
+                              <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3 shrink-0" />
+                                <span>{paymentCardErrors.expiry}</span>
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">CVV</label>
+                            <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">CVV *</label>
                             <input
                               type="password"
                               maxLength={3}
@@ -17296,21 +17722,37 @@ wishlistProducts.forEach(item => addToCart(item));
                               onChange={(e) => {
                                 const raw = e.target.value.replace(/\D/g, '').slice(0, 3);
                                 setPaymentCardData(prev => ({ ...prev, cvv: raw }));
+                                if (paymentCardErrors.cvv) setPaymentCardErrors(prev => ({ ...prev, cvv: '' }));
                               }}
                               placeholder="123"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                              className={`w-full bg-white dark:bg-slate-900 border ${paymentCardErrors.cvv ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 dark:border-slate-700'} rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center`}
                             />
+                            {paymentCardErrors.cvv && (
+                              <p className="text-[10px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3 shrink-0" />
+                                <span>{paymentCardErrors.cvv}</span>
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div>
-                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cardholder Name</label>
+                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cardholder Name *</label>
                           <input
                             type="text"
                             value={paymentCardData.name}
-                            onChange={(e) => setPaymentCardData(prev => ({ ...prev, name: e.target.value }))}
+                            onChange={(e) => {
+                              setPaymentCardData(prev => ({ ...prev, name: e.target.value }));
+                              if (paymentCardErrors.name) setPaymentCardErrors(prev => ({ ...prev, name: '' }));
+                            }}
                             placeholder="Full Name as on Card"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full bg-white dark:bg-slate-900 border ${paymentCardErrors.name ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 dark:border-slate-700'} rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                           />
+                          {paymentCardErrors.name && (
+                            <p className="text-[10.5px] font-bold text-rose-500 mt-1 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>{paymentCardErrors.name}</span>
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 pt-1 text-xs">
                           <input
@@ -17327,7 +17769,10 @@ wishlistProducts.forEach(item => addToCart(item));
                         <div className="flex items-center justify-between pt-1">
                           <button
                             type="button"
-                            onClick={() => setPaymentCardData({ number: '4111 2222 3333 1111', expiry: '12/28', cvv: '123', name: 'Test Customer' })}
+                            onClick={() => {
+                              setPaymentCardData({ number: '4111 2222 3333 1111', expiry: '12/28', cvv: '123', name: 'Test Customer' });
+                              setPaymentCardErrors({});
+                            }}
                             className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline bg-transparent border-none cursor-pointer"
                           >
                             Fill Razorpay Test Card
@@ -17338,21 +17783,32 @@ wishlistProducts.forEach(item => addToCart(item));
                     )}
 
                     {razorpayPayMethod === 'netbanking' && (
-                      <div className="grid grid-cols-3 gap-2 text-[10px] font-extrabold">
-                        {['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Kotak', 'YES Bank'].map((b) => (
-                          <button
-                            key={b}
-                            type="button"
-                            onClick={() => setSelectedNetbank(b)}
-                            className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${
-                              selectedNetbank === b
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-extrabold shadow-3xs'
-                                : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-blue-300'
-                            }`}
-                          >
-                            {b}
-                          </button>
-                        ))}
+                      <div className="space-y-3">
+                        {paymentNetBankingError && (
+                          <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                            <span>{paymentNetBankingError}</span>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 gap-2 text-[10px] font-extrabold">
+                          {['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Kotak', 'YES Bank'].map((b) => (
+                            <button
+                              key={b}
+                              type="button"
+                              onClick={() => {
+                                setSelectedNetbank(b);
+                                setPaymentNetBankingError('');
+                              }}
+                              className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${
+                                selectedNetbank === b
+                                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-extrabold shadow-3xs'
+                                  : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-blue-300'
+                              }`}
+                            >
+                              {b}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
 
@@ -17462,34 +17918,53 @@ wishlistProducts.forEach(item => addToCart(item));
                             }
                           }
                         } else if (razorpayPayMethod === 'card') {
+                          const newCardErrors = {};
                           const cleanCard = (paymentCardData.number || '').replace(/\s/g, '');
-                          if (cleanCard.length < 15) {
-                            setPaymentUpiError('Please enter a valid 16-digit card number');
-                            return;
+                          if (!cleanCard || cleanCard.length !== 16 || !/^\d{16}$/.test(cleanCard)) {
+                            newCardErrors.number = 'Please enter a valid 16-digit card number';
                           }
+
                           if (!paymentCardData.expiry || !paymentCardData.expiry.includes('/')) {
-                            setPaymentUpiError('Please enter card expiry in MM/YY format');
-                            return;
+                            newCardErrors.expiry = 'Enter expiry as MM/YY';
+                          } else {
+                            const [mmStr, yyStr] = paymentCardData.expiry.split('/');
+                            const mm = parseInt(mmStr, 10);
+                            const yy = parseInt(yyStr, 10);
+                            const now = new Date();
+                            const curYearTwoDigit = now.getFullYear() % 100;
+                            const curMonth = now.getMonth() + 1;
+                            if (isNaN(mm) || mm < 1 || mm > 12) {
+                              newCardErrors.expiry = 'Invalid month (01-12)';
+                            } else if (isNaN(yy) || yy < curYearTwoDigit || (yy === curYearTwoDigit && mm < curMonth)) {
+                              newCardErrors.expiry = 'Card has expired';
+                            }
                           }
-                          if (!paymentCardData.cvv || paymentCardData.cvv.length !== 3) {
-                            setPaymentUpiError('Please enter a valid 3-digit CVV');
-                            return;
+
+                          if (!paymentCardData.cvv || paymentCardData.cvv.length !== 3 || !/^\d{3}$/.test(paymentCardData.cvv)) {
+                            newCardErrors.cvv = 'Enter 3-digit CVV';
                           }
+
                           if (!paymentCardData.name || !paymentCardData.name.trim()) {
-                            setPaymentUpiError('Please enter the cardholder name');
+                            newCardErrors.name = 'Please enter cardholder name';
+                          } else if (!/^[a-zA-Z\s.'-]+$/.test(paymentCardData.name.trim())) {
+                            newCardErrors.name = 'Name can contain letters and spaces only';
+                          }
+
+                          if (Object.keys(newCardErrors).length > 0) {
+                            setPaymentCardErrors(newCardErrors);
                             return;
                           }
-                          if (!/^[a-zA-Z\s]+$/.test(paymentCardData.name.trim())) {
-                            setPaymentUpiError('Cardholder name can contain letters and spaces only');
-                            return;
-                          }
+                          setPaymentCardErrors({});
                         } else if (razorpayPayMethod === 'netbanking') {
                           if (!selectedNetbank) {
-                            setPaymentUpiError('Please select a bank to proceed with Net Banking payment');
+                            setPaymentNetBankingError('Please select a bank to proceed with Net Banking payment');
                             return;
                           }
+                          setPaymentNetBankingError('');
                         }
                         setPaymentUpiError(null);
+                        setPaymentCardErrors({});
+                        setPaymentNetBankingError('');
                         setRazorpayProcessing(true);
                         const method = razorpayPayMethod === 'upi' 
                           ? (paymentUpiSubTab === 'qr_code' ? 'UPI QR' : 'UPI') 
@@ -18182,19 +18657,22 @@ wishlistProducts.forEach(item => addToCart(item));
 
                         const finalRef = createdOrder || { orderNumber: orderNum };
                         setPayAtHotelSuccessData(finalRef);
-                        setCustomerOrders(prev => [
-                          {
-                            id: finalRef._id || finalRef.id || orderNum,
-                            order_number: orderNum,
-                            amount: totalPayable,
-                            status: 'Confirmed',
-                            type: 'Stay',
-                            created_at: new Date().toISOString(),
-                            product_details: selectedProduct?.name || 'Hotel Stay',
-                            items: orderPayload.items
-                          },
-                          ...prev
-                        ]);
+                        const newEntry = {
+                          id: finalRef._id || finalRef.id || orderNum,
+                          order_number: orderNum,
+                          amount: totalPayable,
+                          status: 'Confirmed',
+                          type: 'Stay',
+                          created_at: new Date().toISOString(),
+                          product_details: selectedProduct?.name || 'Hotel Stay',
+                          items: orderPayload.items
+                        };
+                        setCustomerOrders(prev => [newEntry, ...prev]);
+                        try {
+                          const raw = localStorage.getItem('connect_user_orders') || '[]';
+                          const list = JSON.parse(raw);
+                          localStorage.setItem('connect_user_orders', JSON.stringify([newEntry, ...list.filter(o => o.id !== newEntry.id && o.order_number !== newEntry.order_number)]));
+                        } catch (e) {}
                         triggerNotification("Room reserved successfully! Pay at Hotel confirmed.");
                       } catch (err) {
                         triggerNotification("Failed to reserve room. Please try again.", "error");

@@ -684,5 +684,48 @@ export const productService = {
       console.error('Error deleting product:', err);
       return { success: false, error: err.message };
     }
+  },
+
+  getProductById: async (id) => {
+    if (!id) return null;
+    const cleanId = String(id).trim();
+
+    // 1. Check in-memory/cached products
+    const cached = productService.getCachedProducts();
+    if (Array.isArray(cached) && cached.length > 0) {
+      const match = cached.find(p => String(p.id) === cleanId || String(p._id) === cleanId || (p.name && p.name.toLowerCase() === cleanId.toLowerCase()));
+      if (match) return match;
+    }
+
+    // 2. Fetch directly from backend endpoints
+    const baseUrl = getBackendUrl();
+    const vendorUrl = getVendorBackendUrl();
+    const endpoints = [
+      `${baseUrl}/api/public/products/${encodeURIComponent(cleanId)}`,
+      `${vendorUrl}/api/public/products/${encodeURIComponent(cleanId)}`,
+      `${baseUrl}/api/products/${encodeURIComponent(cleanId)}`
+    ];
+
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep);
+        if (res.ok) {
+          const data = await res.json();
+          const raw = data?.product || data?.data || data;
+          if (raw && (raw.id || raw._id || raw.name)) {
+            return sanitizeProduct(raw);
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Fallback: try fetching all products fresh if not yet loaded
+    const res = await productService.getProducts(true);
+    if (res && res.success && Array.isArray(res.products)) {
+      const match = res.products.find(p => String(p.id) === cleanId || String(p._id) === cleanId || (p.name && p.name.toLowerCase() === cleanId.toLowerCase()));
+      if (match) return match;
+    }
+
+    return null;
   }
 };

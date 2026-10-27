@@ -668,7 +668,10 @@ router.post('/', async (req: Request, res: Response) => {
         const custFilter: any[] = [];
         if (resolvedCustId) custFilter.push({ customer_id: resolvedCustId }, { customerId: resolvedCustId });
         if (resolvedEmail) custFilter.push({ customer_email: resolvedEmail }, { candidateEmail: resolvedEmail });
-        if (customer_phone) custFilter.push({ customer_phone: customer_phone });
+        const cleanCustPhone = (customer_phone || '').replace(/\D/g, '').slice(-10);
+        if (cleanCustPhone && cleanCustPhone.length === 10 && cleanCustPhone !== '9876543210') {
+          custFilter.push({ customer_phone: customer_phone }, { customer_phone: cleanCustPhone });
+        }
 
         if (custFilter.length > 0) {
           const itemMatch: any[] = [];
@@ -695,7 +698,9 @@ router.post('/', async (req: Request, res: Response) => {
             return res.status(409).json({
               status: 'error',
               code: 'JOB_ALREADY_APPLIED',
-              message: 'You have already applied for this position. Check your applications in My Jobs.'
+              message: 'You have already applied for this position. Check your applications in My Jobs.',
+              data: existingJobOrder,
+              application: existingJobOrder
             });
           }
         }
@@ -866,11 +871,21 @@ router.post('/', async (req: Request, res: Response) => {
             message: `Guest ${i + 1} name must contain only letters and spaces.`
           });
         }
-        if (!g.aadhaar || !/^\d{12}$/.test(String(g.aadhaar).trim())) {
-          return res.status(400).json({
-            status: 'error',
-            message: `Guest ${i + 1} requires a valid 12-digit Aadhaar number.`
-          });
+        const isChildGuest = i >= numAdults;
+        if (isChildGuest) {
+          if (g.aadhaar && !/^\d{12}$/.test(String(g.aadhaar).trim())) {
+            return res.status(400).json({
+              status: 'error',
+              message: `Child ${i - numAdults + 1} Aadhaar number must be 12 digits if provided.`
+            });
+          }
+        } else {
+          if (!g.aadhaar || !/^\d{12}$/.test(String(g.aadhaar).trim())) {
+            return res.status(400).json({
+              status: 'error',
+              message: `Guest ${i + 1} requires a valid 12-digit Aadhaar number.`
+            });
+          }
         }
       }
 
@@ -893,13 +908,32 @@ router.post('/', async (req: Request, res: Response) => {
         const childRate = typeof travelProduct.childPrice === 'number' ? travelProduct.childPrice : 0;
 
         let expectedStayTotal = 0;
+        const rawGuests = Array.isArray(guestDetails) && guestDetails.length > 0 ? guestDetails : (Array.isArray(guestList) ? guestList : []);
+        let totalChildStayRate = 0;
+        if (numChildren > 0) {
+          if (rawGuests.length >= numAdults + numChildren) {
+            for (let i = numAdults; i < numAdults + numChildren; i++) {
+              const cAge = parseInt(rawGuests[i]?.age, 10);
+              if (isNaN(cAge) || cAge <= 5) {
+                totalChildStayRate += 0;
+              } else if (cAge <= 12) {
+                totalChildStayRate += Math.round((childRate > 0 ? childRate : adultRate) * 0.5);
+              } else {
+                totalChildStayRate += (childRate > 0 ? childRate : adultRate);
+              }
+            }
+          } else {
+            totalChildStayRate = numChildren * childRate;
+          }
+        }
+
         if (stayPricingType.includes('room')) {
           const rooms = Math.max(1, Number(roomsCount || req.body.numberOfRooms || 1));
           const extraGuests = Math.max(0, (numAdults + numChildren) - Number(travelProduct.baseGuests || 2));
           const extraFee = Number(travelProduct.extraGuestFee || travelProduct.extraPersonFee || 500);
           expectedStayTotal = ((rooms * baseRate) + (extraGuests * extraFee)) * effectiveStayNights;
         } else {
-          expectedStayTotal = ((numAdults * adultRate) + (numChildren * childRate)) * effectiveStayNights;
+          expectedStayTotal = ((numAdults * adultRate) + totalChildStayRate) * effectiveStayNights;
         }
 
         if (expectedStayTotal > 0) {
@@ -911,6 +945,25 @@ router.post('/', async (req: Request, res: Response) => {
         const adultRate = Number(firstItem.adultPrice || baseRate);
         const childRate = Number(firstItem.childPrice || 0);
 
+        const rawGuests = Array.isArray(guestDetails) && guestDetails.length > 0 ? guestDetails : (Array.isArray(guestList) ? guestList : []);
+        let totalChildStayRate = 0;
+        if (numChildren > 0) {
+          if (rawGuests.length >= numAdults + numChildren) {
+            for (let i = numAdults; i < numAdults + numChildren; i++) {
+              const cAge = parseInt(rawGuests[i]?.age, 10);
+              if (isNaN(cAge) || cAge <= 5) {
+                totalChildStayRate += 0;
+              } else if (cAge <= 12) {
+                totalChildStayRate += Math.round((childRate > 0 ? childRate : adultRate) * 0.5);
+              } else {
+                totalChildStayRate += (childRate > 0 ? childRate : adultRate);
+              }
+            }
+          } else {
+            totalChildStayRate = numChildren * childRate;
+          }
+        }
+
         let expectedStayTotal = 0;
         if (stayPricingType.includes('room')) {
           const rooms = Math.max(1, Number(roomsCount || firstItem.roomsCount || 1));
@@ -918,7 +971,7 @@ router.post('/', async (req: Request, res: Response) => {
           const extraFee = Number(firstItem.extraGuestFee || firstItem.extraPersonFee || 500);
           expectedStayTotal = ((rooms * baseRate) + (extraGuests * extraFee)) * effectiveStayNights;
         } else {
-          expectedStayTotal = ((numAdults * adultRate) + (numChildren * childRate)) * effectiveStayNights;
+          expectedStayTotal = ((numAdults * adultRate) + totalChildStayRate) * effectiveStayNights;
         }
 
         if (expectedStayTotal > 0) {
@@ -944,7 +997,26 @@ router.post('/', async (req: Request, res: Response) => {
         const unitFare = typeof travelProduct.price === 'number' ? travelProduct.price : (parseFloat(travelProduct.price) || 0);
         const adultFare = typeof travelProduct.adultPrice === 'number' && travelProduct.adultPrice > 0 ? travelProduct.adultPrice : unitFare;
         const childFare = typeof travelProduct.childPrice === 'number' && travelProduct.childPrice > 0 ? travelProduct.childPrice : adultFare;
-        const expectedTotalFare = (numAdults * adultFare) + (numChildren * childFare);
+        
+        const rawPassengers = Array.isArray(guestDetails) && guestDetails.length > 0 ? guestDetails : (Array.isArray(guestList) ? guestList : []);
+        let totalChildTravelFare = 0;
+        if (numChildren > 0) {
+          if (rawPassengers.length >= numAdults + numChildren) {
+            for (let i = numAdults; i < numAdults + numChildren; i++) {
+              const cAge = parseInt(rawPassengers[i]?.age, 10);
+              if (isNaN(cAge) || cAge <= 5) {
+                totalChildTravelFare += 0;
+              } else if (cAge <= 12) {
+                totalChildTravelFare += Math.round(adultFare * 0.5);
+              } else {
+                totalChildTravelFare += childFare;
+              }
+            }
+          } else {
+            totalChildTravelFare = numChildren * childFare;
+          }
+        }
+        const expectedTotalFare = (numAdults * adultFare) + totalChildTravelFare;
         
         // Strict pricing integrity: The vendor configured unit fare is the source of truth
         finalOrderAmount = expectedTotalFare;

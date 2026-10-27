@@ -1282,7 +1282,8 @@ router.post(['/check-duplicate', '/check-registration-duplicate'], async (req, r
     }
     if (checkField === 'email') {
         const cleanEmail = checkValue.toLowerCase();
-        const existing = await mongoDb.collection('users').findOne({ email: cleanEmail });
+        const existing = (await mongoDb.collection('users').findOne({ email: cleanEmail })) ||
+            (await mongoDb.collection('customers').findOne({ email: cleanEmail }));
         if (existing) {
             return res.json({
                 status: 'error',
@@ -1296,13 +1297,17 @@ router.post(['/check-duplicate', '/check-registration-duplicate'], async (req, r
     if (checkField === 'phone' || checkField === 'mobile') {
         const cleanPhone = checkValue.replace(/\D/g, '').slice(-10);
         if (cleanPhone.length === 10) {
-            const existing = await mongoDb.collection('users').findOne({
+            const phoneFilter = {
                 $or: [
                     { phone: cleanPhone },
                     { phone: `+91${cleanPhone}` },
-                    { phone: `91${cleanPhone}` }
+                    { phone: `91${cleanPhone}` },
+                    { mobile: cleanPhone },
+                    { mobile: `+91${cleanPhone}` }
                 ]
-            });
+            };
+            const existing = (await mongoDb.collection('users').findOne(phoneFilter)) ||
+                (await mongoDb.collection('customers').findOne(phoneFilter));
             if (existing) {
                 return res.json({
                     status: 'error',
@@ -1317,14 +1322,20 @@ router.post(['/check-duplicate', '/check-registration-duplicate'], async (req, r
     if (checkField === 'aadhaar' || checkField === 'aadhaarNumber') {
         const cleanAadhaar = checkValue.replace(/\D/g, '');
         if (cleanAadhaar.length === 12) {
-            let match = await mongoDb.collection('users').findOne({
+            let match = (await mongoDb.collection('users').findOne({
                 $or: [{ aadhaar: cleanAadhaar }, { aadhaarNumber: cleanAadhaar }]
-            });
+            })) || (await mongoDb.collection('customers').findOne({
+                $or: [{ aadhaar: cleanAadhaar }, { aadhaarNumber: cleanAadhaar }]
+            }));
             if (!match) {
                 const usersWithAadhaar = await mongoDb.collection('users').find({
                     aadhaar: { $exists: true, $ne: '' }
                 }).project({ _id: 1, aadhaar: 1 }).toArray();
-                for (const u of usersWithAadhaar) {
+                const customersWithAadhaar = await mongoDb.collection('customers').find({
+                    aadhaar: { $exists: true, $ne: '' }
+                }).project({ _id: 1, aadhaar: 1 }).toArray();
+                const allAadhaarDocs = [...usersWithAadhaar, ...customersWithAadhaar];
+                for (const u of allAadhaarDocs) {
                     if (u.aadhaar && typeof u.aadhaar === 'string') {
                         try {
                             const dec = u.aadhaar.startsWith('v1:') ? securityManager_1.securityManager.decryptAES256GCM(u.aadhaar) : u.aadhaar;
@@ -1351,14 +1362,20 @@ router.post(['/check-duplicate', '/check-registration-duplicate'], async (req, r
     if (checkField === 'pan' || checkField === 'panNumber') {
         const cleanPan = checkValue.toUpperCase().trim();
         if (cleanPan.length === 10) {
-            let match = await mongoDb.collection('users').findOne({
+            let match = (await mongoDb.collection('users').findOne({
                 $or: [{ pan: cleanPan }, { panNumber: cleanPan }]
-            });
+            })) || (await mongoDb.collection('customers').findOne({
+                $or: [{ pan: cleanPan }, { panNumber: cleanPan }]
+            }));
             if (!match) {
                 const usersWithPan = await mongoDb.collection('users').find({
                     pan: { $exists: true, $ne: '' }
                 }).project({ _id: 1, pan: 1 }).toArray();
-                for (const u of usersWithPan) {
+                const customersWithPan = await mongoDb.collection('customers').find({
+                    pan: { $exists: true, $ne: '' }
+                }).project({ _id: 1, pan: 1 }).toArray();
+                const allPanDocs = [...usersWithPan, ...customersWithPan];
+                for (const u of allPanDocs) {
                     if (u.pan && typeof u.pan === 'string') {
                         try {
                             const dec = u.pan.startsWith('v1:') ? securityManager_1.securityManager.decryptAES256GCM(u.pan) : u.pan;
@@ -1508,6 +1525,7 @@ router.get('/customer-profile', middleware_1.optionalAuthenticateToken, async (r
                 membershipHistory: Array.isArray(safeProfile.membershipHistory) ? safeProfile.membershipHistory : [],
                 walletBalance: typeof safeProfile.walletBalance === 'number' ? Math.max(0, safeProfile.walletBalance) : 0.00,
                 favorites: Array.isArray(safeProfile.favorites) ? safeProfile.favorites : [],
+                cart: Array.isArray(safeProfile.cart) ? safeProfile.cart : [],
                 addresses: profileAddresses
             }
         });
@@ -1646,6 +1664,9 @@ router.put('/customer-profile', middleware_1.authenticateToken, async (req, res)
         }
         if (req.body.favorites !== undefined && Array.isArray(req.body.favorites)) {
             updateFields.favorites = req.body.favorites;
+        }
+        if (req.body.cart !== undefined && Array.isArray(req.body.cart)) {
+            updateFields.cart = req.body.cart;
         }
         const filter = callerDbDoc?._id
             ? { _id: callerDbDoc._id }
