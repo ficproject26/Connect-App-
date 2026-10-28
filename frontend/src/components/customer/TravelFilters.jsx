@@ -242,19 +242,19 @@ export default function TravelFilters({
       aria-labelledby="travel-filter-modal-title"
     >
       <div
-        className="relative w-full max-w-4xl bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl text-slate-800 dark:text-slate-100 max-h-[92vh] overflow-y-auto scrollbar-thin my-auto text-left"
+        className="relative w-full max-w-4xl bg-white dark:bg-[#0b1329] border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 sm:p-8 shadow-2xl text-slate-800 dark:text-slate-100 max-h-[92vh] overflow-y-auto scrollbar-thin my-auto text-left"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ================= 1. MODAL HEADER ================= */}
         <div className="flex items-center justify-between pb-5 border-b border-slate-100 dark:border-slate-800/80">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
-              <SlidersHorizontal className="w-6 h-6 stroke-[2.2]" />
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/40 text-amber-500 flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <SlidersHorizontal className="w-6 h-6 stroke-[2.3]" />
             </div>
             <div>
               <h2
                 id="travel-filter-modal-title"
-                className="text-xl sm:text-2xl font-black text-[#0b1e36] dark:text-white tracking-tight leading-tight"
+                className="text-xl sm:text-2xl font-black text-[#0B1728] dark:text-white tracking-tight leading-tight"
               >
                 Travel Category & Filters
               </h2>
@@ -268,26 +268,26 @@ export default function TravelFilters({
             type="button"
             onClick={handleClose}
             aria-label="Close modal"
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer border-none"
+            className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer border-none shadow-2xs"
           >
             <X className="w-5 h-5 stroke-[2.4]" />
           </button>
         </div>
 
         {/* ================= 2. CATEGORY SELECTION ================= */}
-        <div className="py-4 space-y-3 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="py-4 space-y-3.5 border-b border-slate-100 dark:border-slate-800/80">
           {/* Level 2 Subcategory Pills (All Travel, Bus, Cab) */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               type="button"
               onClick={() => {
                 if (typeof onSelectSubCat === 'function') onSelectSubCat('ALL');
                 if (typeof onSelectChildCat === 'function') onSelectChildCat('');
               }}
-              className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-2xl text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-2.5 ${
                 isAllSelected
-                  ? 'bg-[#0b1e36] text-white border-[#0b1e36] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
-                  : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-[#0B1728] text-white border-[#0B1728] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
+                  : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700/80 hover:border-slate-300'
               }`}
             >
               <Plane className="w-4 h-4" />
@@ -305,10 +305,10 @@ export default function TravelFilters({
                     if (typeof onSelectSubCat === 'function') onSelectSubCat(subName);
                     if (typeof onSelectChildCat === 'function') onSelectChildCat('');
                   }}
-                  className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-2 ${
+                  className={`px-6 py-3 rounded-2xl text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-2.5 ${
                     isSubActive
-                      ? 'bg-[#0b1e36] text-white border-[#0b1e36] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-[#0B1728] text-white border-[#0B1728] dark:bg-amber-400 dark:text-[#0b1e36] dark:border-amber-400 shadow-sm'
+                      : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700/80 hover:border-slate-300'
                   }`}
                 >
                   <SubIcon className="w-4 h-4" />
@@ -320,7 +320,7 @@ export default function TravelFilters({
 
           {/* Level 3 Child Category Chips (e.g. A/C Sleeper, Seater) */}
           {currentChildCategories.length > 0 && (
-            <div className="space-y-1.5 pt-1">
+            <div className="space-y-2 pt-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                 Category Types
               </span>
@@ -330,10 +330,10 @@ export default function TravelFilters({
                   onClick={() => {
                     if (typeof onSelectChildCat === 'function') onSelectChildCat('');
                   }}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border ${
                     !selectedChildCat
-                      ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 font-black shadow-2xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-700 dark:text-amber-300 font-black shadow-2xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-transparent hover:border-slate-300'
                   }`}
                 >
                   All Types
@@ -349,10 +349,10 @@ export default function TravelFilters({
                           onSelectChildCat(isChildActive ? '' : childName);
                         }
                       }}
-                      className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                      className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
                         isChildActive
-                          ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 font-black shadow-2xs'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                          ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-700 dark:text-amber-300 font-black shadow-2xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-transparent hover:border-slate-300'
                       }`}
                     >
                       {isChildActive && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -368,18 +368,18 @@ export default function TravelFilters({
         {/* ================= 3. DYNAMIC FILTER CONTROLS FORM ================= */}
         <form onSubmit={handleApply} className="py-4 space-y-4">
           {/* Row 1: Departure, Destination, Date, Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             {/* 1. From / Departure */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-amber-500" />
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-amber-500" />
                 <span>{isCabSelected ? 'Pickup Location' : 'From / Departure'}</span>
               </label>
               <div className="relative">
                 <select
                   value={draft.from}
                   onChange={(e) => updateDraft('from', e.target.value)}
-                  className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8"
+                  className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8 shadow-2xs"
                 >
                   <option value="">{isCabSelected ? 'Select Pickup Point (All)' : 'From: All Locations'}</option>
                   {travelFromOptions.map((city) => (
@@ -393,10 +393,10 @@ export default function TravelFilters({
             </div>
 
             {/* 2. Destination with Swap Button */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                  <Navigation className="w-3 h-3 text-amber-500" />
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <Navigation className="w-3.5 h-3.5 text-amber-500" />
                   <span>{isCabSelected ? 'Destination / Drop' : 'To / Destination'}</span>
                 </label>
                 {(draft.from || draft.to) && (
@@ -415,7 +415,7 @@ export default function TravelFilters({
                 <select
                   value={draft.to}
                   onChange={(e) => updateDraft('to', e.target.value)}
-                  className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8"
+                  className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:border-amber-500 focus:outline-none transition-all truncate pr-8 shadow-2xs"
                 >
                   <option value="">{isCabSelected ? 'Select Destination (All)' : 'To: All Destinations'}</option>
                   {travelToOptions.map((city) => (
@@ -429,10 +429,10 @@ export default function TravelFilters({
             </div>
 
             {/* 3. Travel Date with Calendar */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                  <CalendarIcon className="w-3 h-3 text-amber-500" />
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <CalendarIcon className="w-3.5 h-3.5 text-amber-500" />
                   <span>Travel Date</span>
                 </label>
                 {draft.date && (
@@ -446,20 +446,20 @@ export default function TravelFilters({
                 )}
               </div>
               <BookingDateInput
-                label="Travel Date"
+                label=""
                 value={draft.date}
                 onChange={(val) => updateDraft('date', val)}
                 minDate={todayStr}
-                accentColor="amber"
+                accentColor="blue"
                 className="w-full text-xs"
               />
             </div>
 
             {/* 4. Departure / Pickup Time */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-amber-500" />
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
                   <span>{isCabSelected ? 'Pickup Time' : 'Departure Time'}</span>
                 </label>
                 {draft.exactTime && (
@@ -473,24 +473,24 @@ export default function TravelFilters({
                 )}
               </div>
               <BookingTimeInput
-                label={isCabSelected ? 'Pickup Time' : 'Departure Time'}
+                label=""
                 value={draft.exactTime}
                 onChange={(val) => updateDraft('exactTime', val)}
-                accentColor="amber"
+                accentColor="blue"
                 className="w-full text-xs"
               />
             </div>
           </div>
 
           {/* Row 2: Timing Window Chips & Budget Range Slider */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 pt-1 items-end">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-1 items-stretch">
             {/* Timing Window (5 options) */}
-            <div className="md:col-span-6 space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-amber-500" />
+            <div className="lg:col-span-6 space-y-1.5">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1.5 mb-2">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
                 <span>Timing Window</span>
               </label>
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-5 gap-2">
                 {timeSlotOptions.map((slot) => {
                   const isSelected = draft.timeSlot === slot.id;
                   return (
@@ -498,14 +498,14 @@ export default function TravelFilters({
                       key={slot.id}
                       type="button"
                       onClick={() => updateDraft('timeSlot', slot.id)}
-                      className={`py-2 px-1 text-center rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
+                      className={`py-2.5 px-1 text-center rounded-2xl border transition-all cursor-pointer flex flex-col items-center justify-center ${
                         isSelected
-                          ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-extrabold shadow-2xs'
-                          : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                          ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-400 text-amber-700 dark:text-amber-300 font-extrabold shadow-2xs'
+                          : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
                       }`}
                     >
                       <span className="text-[10px] font-black truncate">{slot.label}</span>
-                      <span className="text-[8px] text-slate-400 dark:text-slate-500 truncate leading-none hidden sm:block">
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 truncate leading-none mt-0.5 hidden sm:block">
                         {slot.sub}
                       </span>
                     </button>
@@ -515,13 +515,13 @@ export default function TravelFilters({
             </div>
 
             {/* Budget Range Slider */}
-            <div className="md:col-span-6 space-y-1 bg-slate-50/80 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            <div className="lg:col-span-6 space-y-2 bg-slate-50/70 dark:bg-slate-900/60 p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                  <Coins className="w-3 h-3 text-amber-500" />
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-amber-500" />
                   <span>Budget Range Slider</span>
                 </span>
-                <span className="font-extrabold text-white bg-amber-500 text-xs px-2.5 py-0.5 rounded-full shadow-xs">
+                <span className="font-extrabold text-white bg-[#FF9800] text-xs px-3.5 py-1 rounded-full shadow-xs">
                   Up to ₹{(draft.maxPrice || priceBounds.max).toLocaleString()}
                 </span>
               </div>
@@ -536,7 +536,7 @@ export default function TravelFilters({
                   step={50}
                   value={draft.maxPrice || priceBounds.max}
                   onChange={(e) => updateDraft('maxPrice', Number(e.target.value))}
-                  className="w-full accent-amber-500 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
+                  className="w-full accent-[#FF9800] h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
                 />
                 <span className="text-[10px] font-bold text-slate-400 font-mono">
                   ₹{Math.max(priceBounds.max, 2000).toLocaleString()}
@@ -546,114 +546,129 @@ export default function TravelFilters({
           </div>
 
           {/* Row 3: Vehicle Class, AC Preference, Customer Rating, Sort By */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
-            {/* Bus Specific: Sleeper vs Seater */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+            {/* Bus Specific / General: Vehicle Class */}
             {!isCabSelected && (
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-sky-600 flex items-center gap-1">
-                  <Bus className="w-3 h-3 text-sky-600" />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#0284C7] flex items-center gap-1.5">
+                  <Bus className="w-3.5 h-3.5 text-[#0284C7]" />
                   <span>Vehicle Class</span>
                 </label>
-                <select
-                  value={draft.vehicleClass}
-                  onChange={(e) => updateDraft('vehicleClass', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="all">All Classes (Sleeper & Seater)</option>
-                  <option value="sleeper">Sleeper Only</option>
-                  <option value="seater">Seater Only</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={draft.vehicleClass}
+                    onChange={(e) => updateDraft('vehicleClass', e.target.value)}
+                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none shadow-2xs pr-8"
+                  >
+                    <option value="all">All Classes (Sleeper & Seater)</option>
+                    <option value="sleeper">Sleeper Only</option>
+                    <option value="seater">Seater Only</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             )}
 
-            {/* Bus Specific: AC vs Non-AC */}
+            {/* Bus Specific / General: AC Preference */}
             {!isCabSelected && (
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-sky-600 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-sky-600" />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#0284C7] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
                   <span>AC Preference</span>
                 </label>
-                <select
-                  value={draft.acPreference}
-                  onChange={(e) => updateDraft('acPreference', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="all">All (AC & Non-AC)</option>
-                  <option value="ac">AC Only</option>
-                  <option value="non-ac">Non-AC Only</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={draft.acPreference}
+                    onChange={(e) => updateDraft('acPreference', e.target.value)}
+                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none shadow-2xs pr-8"
+                  >
+                    <option value="all">All (AC & Non-AC)</option>
+                    <option value="ac">AC Only</option>
+                    <option value="non-ac">Non-AC Only</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             )}
 
             {/* Cab Specific: Cab Types */}
             {isCabSelected && (
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-sky-600 flex items-center gap-1">
-                  <Car className="w-3 h-3 text-sky-600" />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#0284C7] flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-[#0284C7]" />
                   <span>Cab Type</span>
                 </label>
-                <select
-                  value={draft.cabType}
-                  onChange={(e) => updateDraft('cabType', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="all">All Cab Types</option>
-                  {(currentChildCategories.length > 0 ? currentChildCategories : ['Sedan', 'SUV', 'Hatchback', 'Prime']).map((ct) => (
-                    <option key={ct} value={ct}>{ct}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={draft.cabType}
+                    onChange={(e) => updateDraft('cabType', e.target.value)}
+                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none shadow-2xs pr-8"
+                  >
+                    <option value="all">All Cab Types</option>
+                    {(currentChildCategories.length > 0 ? currentChildCategories : ['Sedan', 'SUV', 'Hatchback', 'Prime']).map((ct) => (
+                      <option key={ct} value={ct}>{ct}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
             )}
 
             {/* Minimum Rating */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                <Star className="w-3 h-3 text-amber-500" />
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                <Star className="w-3.5 h-3.5 text-amber-500" />
                 <span>Customer Rating</span>
               </label>
-              <select
-                value={draft.rating === null ? '' : String(draft.rating)}
-                onChange={(e) => updateDraft('rating', e.target.value ? parseFloat(e.target.value) : null)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-              >
-                <option value="">All Ratings</option>
-                <option value="4.0">4.0 ★ & Above</option>
-                <option value="4.5">4.5 ★ & Above</option>
-                <option value="4.8">4.8 ★ & Above</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={draft.rating === null ? '' : String(draft.rating)}
+                  onChange={(e) => updateDraft('rating', e.target.value ? parseFloat(e.target.value) : null)}
+                  className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none shadow-2xs pr-8"
+                >
+                  <option value="">All Ratings</option>
+                  <option value="4.0">4.0 ★ & Above</option>
+                  <option value="4.5">4.5 ★ & Above</option>
+                  <option value="4.8">4.8 ★ & Above</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             {/* Sort By */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                <ArrowUpDown className="w-3 h-3 text-slate-500" />
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
                 <span>Sort By</span>
               </label>
-              <select
-                value={draft.sortBy}
-                onChange={(e) => updateDraft('sortBy', e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none"
-              >
-                <option value="popularity">Relevance / Popularity</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="rating-desc">Highest Rated</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={draft.sortBy}
+                  onChange={(e) => updateDraft('sortBy', e.target.value)}
+                  className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:border-amber-500 focus:outline-none shadow-2xs pr-8"
+                >
+                  <option value="popularity">Relevance / Popularity</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="rating-desc">Highest Rated</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 
           {/* ================= 4. ACTION BUTTONS: APPLY, CANCEL, RESET ================= */}
-          <div className="flex items-center justify-between pt-5 border-t border-slate-100 dark:border-slate-800/80 flex-wrap gap-2">
+          <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-slate-800/80 flex-wrap gap-3">
             {/* Left: Reset Filters & Active Status */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleReset}
                 disabled={!hasActiveFilters}
-                className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl transition-all border ${
+                className={`flex items-center gap-1.5 text-xs font-bold px-5 py-2.5 rounded-full transition-all border-none ${
                   hasActiveFilters
-                    ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20 cursor-pointer'
-                    : 'text-slate-400 bg-slate-50 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800 cursor-not-allowed opacity-60'
+                    ? 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 cursor-pointer shadow-2xs'
+                    : 'text-slate-400 bg-slate-100/60 cursor-not-allowed opacity-60'
                 }`}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -668,11 +683,11 @@ export default function TravelFilters({
             </div>
 
             {/* Right: Cancel & Apply Buttons */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-5 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border-none flex items-center gap-1.5"
+                className="px-6 py-2.5 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer border-none flex items-center gap-1.5 shadow-2xs"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Cancel</span>
@@ -680,9 +695,9 @@ export default function TravelFilters({
 
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-amber-500 hover:bg-amber-600 active:scale-98 transition-all cursor-pointer shadow-md shadow-amber-500/20 flex items-center gap-1.5 border-none"
+                className="px-7 py-3 rounded-full text-xs font-black uppercase tracking-wider text-white bg-[#FF9800] hover:bg-[#F57C00] active:scale-98 transition-all cursor-pointer shadow-md shadow-orange-500/25 flex items-center gap-2 border-none"
               >
-                <Search className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Search className="w-3.5 h-3.5 stroke-[2.8]" />
                 <span>Apply Filters & Search</span>
               </button>
             </div>
