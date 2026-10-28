@@ -1585,12 +1585,20 @@ export default function CustomerDashboard({
   const hasInitialUrlSynced = useRef(false);
   const [activeTab, setActiveTab] = useState(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTab = urlParams.get('tab');
+        if (urlTab) {
+          const match = ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs', 'Membership'].find(t => t.toLowerCase() === urlTab.toLowerCase());
+          if (match) return match;
+        }
+      }
       const savedTab = localStorage.getItem('connect_active_tab');
       return savedTab || 'Home';
     } catch (e) {
       return 'Home';
     }
-  }); // 'Home', 'Services', 'Products', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Offers'
+  });
 
   useEffect(() => {
     try {
@@ -1647,8 +1655,8 @@ export default function CustomerDashboard({
         const subParam = params.get('sub');
         const catIdParam = params.get('categoryId');
 
-        if (tabParam && ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs'].some(t => t.toLowerCase() === tabParam.toLowerCase())) {
-          setActiveTab(tabParam);
+        if (tabParam && ['Products', 'Services', 'Daily Needs', 'Food', 'Stay', 'Travel', 'Jobs', 'Membership'].some(t => t.toLowerCase() === tabParam.toLowerCase())) {
+          setActiveTab(tabParam.charAt(0).toUpperCase() + tabParam.slice(1));
           hasInitialUrlSynced.current = true;
         }
         if (subParam) {
@@ -7461,17 +7469,33 @@ export default function CustomerDashboard({
       {
         key: 'Silver Tier',
         name: 'Silver Tier',
+        tierTitle: 'SILVER',
+        tierSubtitle: 'CLUB',
         level: 1,
-        titleBadge: 'SILVER MEMBER',
+        titleBadge: 'SILVER CLUB',
         price: '₹8,000/month',
         discount: '10% OFF',
-        badgeColor: 'bg-slate-300 text-slate-900 border-slate-400',
-        waveGradient: 'from-slate-200 via-slate-300 to-slate-400',
-        waveText: 'text-slate-800',
-        chipBg: 'from-slate-300 to-slate-400',
-        sealBg: 'from-slate-200 via-slate-100 to-slate-300 text-slate-900 border-slate-300',
-        sealText: 'SILVER MEMBER',
-        btnBg: 'bg-slate-700 hover:bg-slate-800 text-white dark:bg-slate-300 dark:hover:bg-slate-200 dark:text-slate-950',
+        badgeColor: 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
+        cardTheme: 'silver',
+        frontGradient: 'from-[#0e1217] via-[#1a212d] to-[#0a0d13]',
+        backGradient: 'from-[#10151d] via-[#161d28] to-[#0b0e14]',
+        borderColor: 'border-slate-400/40',
+        glowColor: 'shadow-slate-500/10',
+        accentColor: '#E2E8F0',
+        crownColor: 'text-slate-300',
+        ribbonColors: {
+          stop1: '#94A3B8',
+          stop2: '#F1F5F9',
+          stop3: '#475569'
+        },
+        tagline: 'ONE CITY ONE CARD',
+        btnBg: 'bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-800 hover:to-black text-white dark:from-slate-200 dark:to-slate-300 dark:hover:from-white dark:hover:to-slate-200 dark:text-slate-950 font-black',
+        perksRow: [
+          { icon: Percent, label: 'Discounts', sub: 'Flat 10% Off' },
+          { icon: Truck, label: 'Delivery', sub: 'Priority Dispatch' },
+          { icon: Sparkles, label: 'Rewards', sub: '1.2x Points' },
+          { icon: Headphones, label: 'Support', sub: 'Standard Help' }
+        ],
         benefits: [
           'Flat 10% Off on all Products and Daily Needs',
           'Standard priority order packaging & delivery',
@@ -7482,17 +7506,34 @@ export default function CustomerDashboard({
       {
         key: 'Gold Elite',
         name: 'Gold Elite',
+        tierTitle: 'GOLD',
+        tierSubtitle: 'CLUB',
         level: 2,
-        titleBadge: 'PREMIUM MEMBER',
+        titleBadge: 'GOLD CLUB',
         price: '₹15,000/month',
         discount: '20% OFF',
-        badgeColor: 'bg-amber-400 text-[#0b1e36] border-amber-300',
-        waveGradient: 'from-[#fef08a] via-[#eab308] to-[#ca8a04]',
-        waveText: 'text-[#422006]',
-        chipBg: 'from-amber-300 to-amber-500',
-        sealBg: 'from-amber-300 via-yellow-100 to-amber-500 text-[#422006] border-amber-300',
-        sealText: 'PREMIUM MEMBER',
-        btnBg: 'bg-amber-500 hover:bg-amber-600 text-[#0b1e36] font-extrabold',
+        badgeColor: 'bg-amber-400/20 text-amber-700 dark:text-amber-300 border-amber-400/40',
+        cardTheme: 'gold',
+        frontGradient: 'from-[#0f0b04] via-[#1d1506] to-[#080602]',
+        backGradient: 'from-[#120d04] via-[#181206] to-[#0a0702]',
+        borderColor: 'border-amber-400/50',
+        glowColor: 'shadow-amber-500/15',
+        accentColor: '#FBBF24',
+        crownColor: 'text-amber-400',
+        ribbonColors: {
+          stop1: '#B45309',
+          stop2: '#FDE68A',
+          stop3: '#78350F'
+        },
+        tagline: 'ONE CITY ONE CARD',
+        btnBg: 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-600 hover:to-amber-500 text-[#0b1e36] font-black',
+        perksRow: [
+          { icon: Percent, label: 'Discounts', sub: 'Up to 20% Off' },
+          { icon: Gift, label: 'Offers', sub: 'Dining & Stays' },
+          { icon: Truck, label: 'Shipping', sub: 'Express' },
+          { icon: Sparkles, label: 'Points', sub: '2.0x Points' },
+          { icon: Crown, label: 'Hotline', sub: 'Gold Line' }
+        ],
         benefits: [
           'Flat 15% discount on partner Stay bookings',
           'Flat 10% off restaurant bills & food vouchers',
@@ -7504,17 +7545,34 @@ export default function CustomerDashboard({
       {
         key: 'Diamond Prestige',
         name: 'Diamond Prestige',
+        tierTitle: 'DIAMOND',
+        tierSubtitle: 'CLUB',
         level: 3,
-        titleBadge: 'DIAMOND MEMBER',
+        titleBadge: 'DIAMOND CLUB',
         price: '₹35,000/month',
         discount: '30% OFF',
-        badgeColor: 'bg-cyan-400 text-cyan-950 border-cyan-300',
-        waveGradient: 'from-cyan-200 via-cyan-400 to-sky-600',
-        waveText: 'text-cyan-950',
-        chipBg: 'from-cyan-300 to-sky-500',
-        sealBg: 'from-cyan-200 via-sky-100 to-cyan-400 text-cyan-950 border-cyan-300',
-        sealText: 'DIAMOND MEMBER',
-        btnBg: 'bg-cyan-400 hover:bg-cyan-500 text-cyan-950 font-black',
+        badgeColor: 'bg-purple-400/20 text-purple-700 dark:text-purple-300 border-purple-400/40',
+        cardTheme: 'diamond',
+        frontGradient: 'from-[#0b0517] via-[#190a36] to-[#070310]',
+        backGradient: 'from-[#0e061e] via-[#150930] to-[#080212]',
+        borderColor: 'border-purple-400/50',
+        glowColor: 'shadow-purple-500/20',
+        accentColor: '#C084FC',
+        crownColor: 'text-purple-400',
+        ribbonColors: {
+          stop1: '#6B21A8',
+          stop2: '#E9D5FF',
+          stop3: '#3B0764'
+        },
+        tagline: 'ONE CITY ONE CARD',
+        btnBg: 'bg-gradient-to-r from-purple-600 via-violet-500 to-fuchsia-600 hover:from-purple-700 hover:to-violet-600 text-white font-black',
+        perksRow: [
+          { icon: Percent, label: 'Discounts', sub: 'Flat 30% Off' },
+          { icon: Plane, label: 'Lounge', sub: 'Global Airport' },
+          { icon: Utensils, label: 'Dining', sub: '20% Off' },
+          { icon: Sparkles, label: 'Rewards', sub: '3.0x Points' },
+          { icon: Crown, label: 'Concierge', sub: '24/7 Dedicated' }
+        ],
         benefits: [
           'Complimentary global airport VIP lounge access',
           'Flat 25% discount on stays and private pool villas',
@@ -7537,7 +7595,7 @@ export default function CustomerDashboard({
             Forge India Connect Memberships
           </h2>
           <p className="text-xs md:text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Compare all 3 Membership Privilege Cards (Silver, Gold, Diamond). Tap any card to flip and view security details.
+            Compare all 3 Membership Privilege Cards (Silver, Gold, Diamond). Tap any card to flip and view privileges & benefits.
           </p>
         </div>
 
@@ -7560,153 +7618,201 @@ export default function CustomerDashboard({
                 <div className="space-y-4">
                   <div
                     onClick={() => setFlippedCardKey(isFlipped ? null : tier.key)}
-                    className="relative w-full min-h-[225px] sm:min-h-[240px] md:aspect-[1.58/1] rounded-2xl cursor-pointer select-none group-hover:scale-[1.02] transition-transform duration-300 shadow-2xl"
-                    style={{ perspective: '1000px' }}
+                    className="relative w-full aspect-[1.65/1] min-h-[225px] sm:min-h-[240px] rounded-2xl md:rounded-3xl cursor-pointer select-none group-hover:scale-[1.02] transition-transform duration-300 shadow-2xl"
+                    style={{ perspective: '1200px' }}
                   >
                     <div
-                      className="absolute inset-0 w-full h-full rounded-2xl transition-transform duration-700"
+                      className="absolute inset-0 w-full h-full rounded-2xl md:rounded-3xl transition-transform duration-700"
                       style={{
                         transformStyle: 'preserve-3d',
                         transform: isFlipped ? 'rotateY(180deg)' : 'none'
                       }}
                     >
-                      {/* FRONT FACE (Matching Reference Image) */}
+                      {/* FRONT FACE (Matching Approved Reference Image) */}
                       <div
-                        className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden bg-[#061328] text-white flex flex-col justify-between p-4 border border-white/10 shadow-2xl"
+                        className={`absolute inset-0 w-full h-full rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br ${tier.frontGradient} text-white flex flex-col justify-between p-4 sm:p-5 border ${tier.borderColor} shadow-2xl`}
                         style={{ backfaceVisibility: 'hidden' }}
                       >
-                        {/* Metallic Curve Top Wave */}
-                        <div 
-                          className={`absolute top-0 right-0 w-[58%] h-[55%] bg-gradient-to-br ${tier.waveGradient} rounded-bl-[100px] shadow-lg flex flex-col justify-center items-end pr-4 pt-3 pointer-events-none z-10`}
-                        >
-                          <span className={`text-[9px] font-black uppercase tracking-widest leading-none ${tier.waveText}`}>
-                            MEMBERSHIP CARD
-                          </span>
-                          <span className={`text-[6px] font-bold uppercase tracking-wider mt-1 opacity-90 ${tier.waveText}`}>
-                            CONNECT MORE, SAVE MORE
-                          </span>
+                        {/* Fluid Wave Ribbon Background SVG */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                          <svg className="absolute w-full h-full" viewBox="0 0 380 230" preserveAspectRatio="none" fill="none">
+                            <defs>
+                              <linearGradient id={`frontWave-${tier.cardTheme}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor={tier.ribbonColors.stop1} stopOpacity="0.45" />
+                                <stop offset="50%" stopColor={tier.ribbonColors.stop2} stopOpacity="0.35" />
+                                <stop offset="100%" stopColor={tier.ribbonColors.stop3} stopOpacity="0.1" />
+                              </linearGradient>
+                              <linearGradient id={`frontGleam-${tier.cardTheme}`} x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.25" />
+                                <stop offset="70%" stopColor={tier.accentColor} stopOpacity="0.15" />
+                                <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {/* Fluid ribbon waves */}
+                            <path
+                              d="M -20,180 C 80,120 180,210 280,140 C 330,105 370,120 410,90 L 410,240 L -20,240 Z"
+                              fill={`url(#frontWave-${tier.cardTheme})`}
+                            />
+                            <path
+                              d="M 120,-20 C 200,60 260,30 340,110 C 370,140 400,130 420,160 L 420,-20 Z"
+                              fill={`url(#frontGleam-${tier.cardTheme})`}
+                            />
+                            {/* Specular ribbon highlight line */}
+                            <path
+                              d="M -20,180 C 80,120 180,210 280,140 C 330,105 370,120 410,90"
+                              stroke={tier.accentColor}
+                              strokeWidth="1.5"
+                              strokeOpacity="0.6"
+                            />
+                          </svg>
+
+                          {/* Subtle 3D Crown Watermark in Center */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none">
+                            <Crown className="w-36 h-36 fill-current text-white stroke-[1]" />
+                          </div>
                         </div>
 
-                        {/* Top Brand Logo */}
+                        {/* Top Row: Brand & Large Serif Tier Title */}
                         <div className="flex justify-between items-start z-20 relative">
+                          {/* Brand Logo & Name */}
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-md">
-                              F
+                            <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-sm">
+                              <Crown className={`w-4 h-4 ${tier.crownColor} fill-current drop-shadow-sm`} />
                             </div>
                             <div className="flex flex-col text-left leading-none">
-                              <span className="text-[11px] font-black uppercase tracking-widest text-amber-400 font-serif">
-                                FORGE INDIA
+                              <span className="text-[12px] sm:text-[13px] font-black uppercase tracking-wider text-white font-serif">
+                                Connect Club
                               </span>
-                              <span className="text-[8px] font-bold uppercase tracking-wider text-sky-400 mt-0.5">
-                                CONNECT
+                              <span className="text-[6.5px] font-bold uppercase tracking-widest text-slate-300/80 mt-0.5">
+                                {tier.tagline}
                               </span>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Middle Row: EMV Chip + Wireless Icon & Circular Seal Badge */}
-                        <div className="flex justify-between items-center my-auto z-20 relative px-1">
-                          {/* EMV Chip & Wireless */}
-                          <div className="flex items-center gap-2">
-                            <div className={`w-9 h-7 rounded-md bg-gradient-to-br ${tier.chipBg} border border-white/40 shadow-inner flex items-center justify-center`}>
-                              <div className="w-5 h-4 border border-black/20 rounded-sm grid grid-cols-2 gap-0.5 opacity-60" />
+                          {/* Large Serif Tier Title */}
+                          <div className="text-right leading-none">
+                            <div className="flex items-center justify-end gap-1">
+                              <span className="text-[13px] sm:text-[15px] font-black tracking-widest text-white uppercase font-serif drop-shadow-md">
+                                {tier.tierTitle}
+                              </span>
+                              <Sparkles className={`w-3 h-3 ${tier.crownColor}`} />
                             </div>
-                            <Wifi className="w-5 h-5 text-white/80 rotate-90" />
-                          </div>
-
-                          {/* Circular Seal Badge with Crown & Stars */}
-                          <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${tier.sealBg} border-2 flex flex-col items-center justify-center text-center shadow-2xl p-1`}>
-                            <Crown className="w-3.5 h-3.5 fill-current mb-0.5" />
-                            <span className="text-[6px] font-black uppercase tracking-tighter leading-none">
-                              {tier.sealText}
+                            <span className={`text-[8px] font-black tracking-widest uppercase ${tier.crownColor} block mt-0.5`}>
+                              {tier.tierSubtitle}
                             </span>
-                            <div className="flex gap-0.5 mt-0.5">
-                              {[...Array(5)].map((_, i) => (
-                                <span key={i} className="text-[6px]">★</span>
-                              ))}
+                          </div>
+                        </div>
+
+                        {/* Bottom Row: Member Info & QR Code */}
+                        <div className="flex justify-between items-end z-20 relative pt-4">
+                          {/* Left Column: Member details */}
+                          <div className="space-y-1 text-left">
+                            <div className="text-sm sm:text-base font-black text-white uppercase tracking-wide drop-shadow-sm">
+                              {profileName || currentUser?.name || 'VIP MEMBER'}
+                            </div>
+                            <div className="text-[9px] sm:text-[10px] font-mono tracking-widest text-slate-300 font-bold">
+                              {activeCustomerId || 'FIC-CUS-OCT-2026-000001'}
+                            </div>
+                            <div className="flex items-center gap-2 pt-0.5">
+                              {/* EMV Chip */}
+                              <div className="w-6 h-4.5 rounded-xs bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 border border-white/40 flex items-center justify-center shadow-xs">
+                                <div className="w-3.5 h-2.5 border border-black/30 rounded-2xs grid grid-cols-2 gap-0.5 opacity-60" />
+                              </div>
+                              <span className="text-[7.5px] font-mono font-bold tracking-wider text-slate-300 uppercase">
+                                VALID THRU: 12/26
+                              </span>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Card Number, Name & Member Since */}
-                        <div className="z-20 relative text-left space-y-1">
-                          <div className="text-xs md:text-sm font-bold font-mono tracking-widest text-amber-300 drop-shadow-sm">
-                            {activeCustomerId || 'FIC-CUS-OCT-2026-000001'}
-                          </div>
-                          <div className="flex justify-between items-end">
-                            <div className="flex flex-col leading-none">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-white">
-                                {profileName || currentUser?.name || 'VIP MEMBER'}
-                              </span>
-                              <span className="text-[7px] font-bold uppercase tracking-widest text-slate-300 mt-0.5">
-                                CARD PERIOD: MONTHLY
-                              </span>
+                          {/* Right Column: QR Code Box */}
+                          <div className="flex flex-col items-center">
+                            <div className="bg-white p-1 rounded-lg sm:rounded-xl shadow-lg border border-white/80">
+                              <svg width="44" height="44" viewBox="0 0 100 100" className="w-9 h-9 sm:w-11 sm:h-11">
+                                <path
+                                  d="M 5,5 h 30 v 30 h -30 z M 12,12 v 16 h 16 v -16 z M 17,17 h 6 v 6 h -6 z M 65,5 h 30 v 30 h -30 z M 72,12 v 16 h 16 v -16 z M 77,17 h 6 v 6 h -6 z M 5,65 h 30 v 30 h -30 z M 12,72 v 16 h 16 v -16 z M 17,77 h 6 v 6 h -6 z M 45,10 h 10 v 10 h -10 z M 45,35 h 10 v 20 h -10 z M 65,45 h 25 v 10 h -25 z M 40,75 h 15 v 15 h -15 z M 65,70 h 10 v 10 h -10 z M 85,85 h 10 v 10 h -10 z M 75,85 h 8 v 8 h -8 z"
+                                  fill="#0f172a"
+                                />
+                              </svg>
                             </div>
+                            <span className="text-[6px] sm:text-[6.5px] font-extrabold tracking-wider uppercase text-slate-300 mt-1 leading-none">
+                              SCAN TO VERIFY
+                            </span>
                           </div>
                         </div>
-
-                        {/* Bottom Perk Icons Strip (Food, Travel, Stay, Shop, Support) */}
-                        <div className="z-20 relative mt-2 pt-1.5 border-t border-white/15 grid grid-cols-5 gap-1 text-center text-white/90">
-                          <div className="flex flex-col items-center">
-                            <Utensils className="w-2.5 h-2.5 mb-0.5 text-amber-400" />
-                            <span className="text-[5px] font-black uppercase leading-none">FOOD</span>
-                            <span className="text-[4px] text-white/60 leading-none scale-90">OFFERS</span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <Plane className="w-2.5 h-2.5 mb-0.5 text-sky-400" />
-                            <span className="text-[5px] font-black uppercase leading-none">TRAVEL</span>
-                            <span className="text-[4px] text-white/60 leading-none scale-90">DISCOUNTS</span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <BedDouble className="w-2.5 h-2.5 mb-0.5 text-indigo-400" />
-                            <span className="text-[5px] font-black uppercase leading-none">STAY</span>
-                            <span className="text-[4px] text-white/60 leading-none scale-90">DEALS</span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <ShoppingBag className="w-2.5 h-2.5 mb-0.5 text-rose-400" />
-                            <span className="text-[5px] font-black uppercase leading-none">SHOP</span>
-                            <span className="text-[4px] text-white/60 leading-none scale-90">BENEFITS</span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <Headphones className="w-2.5 h-2.5 mb-0.5 text-emerald-400" />
-                            <span className="text-[5px] font-black uppercase leading-none">SUPPORT</span>
-                            <span className="text-[4px] text-white/60 leading-none scale-90">24/7</span>
-                          </div>
-                        </div>
-
-                        {/* Background subtle mesh overlay */}
-                        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-10 pointer-events-none" />
                       </div>
 
-                      {/* BACK FACE */}
+                      {/* BACK FACE (Matching Approved Reference Image) */}
                       <div
-                        className="absolute inset-0 w-full h-full rounded-2xl p-4 overflow-hidden border bg-[#050d1a] text-slate-200 border-slate-800 flex flex-col justify-between text-left shadow-2xl"
+                        className={`absolute inset-0 w-full h-full rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br ${tier.backGradient} text-white flex flex-col justify-between p-4 sm:p-5 border ${tier.borderColor} shadow-2xl text-left`}
                         style={{
                           backfaceVisibility: 'hidden',
                           transform: 'rotateY(180deg)'
                         }}
                       >
-                        <div className="space-y-3">
-                          <div className="h-8 bg-slate-950 -mx-4 mt-1" />
-                          
-                          <div className="flex justify-between items-start gap-4">
-                            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-500 opacity-70 flex items-center justify-center p-0.5">
-                              <div className="w-full h-full border border-white/30 rounded bg-white/10" />
-                            </div>
-                            
-                            <div className="flex-grow h-7 bg-white rounded flex items-center justify-end px-3">
-                              <span className="text-slate-900 font-mono text-xs font-black tracking-widest">CVV 789</span>
-                            </div>
+                        {/* Background Fluid Overlay */}
+                        <div className="absolute inset-0 pointer-events-none opacity-20">
+                          <svg className="w-full h-full" viewBox="0 0 380 230" preserveAspectRatio="none" fill="none">
+                            <path
+                              d="M -20,40 C 90,110 200,20 310,90 C 350,115 380,80 410,120 L 410,240 L -20,240 Z"
+                              fill={tier.accentColor}
+                            />
+                          </svg>
+                        </div>
+
+                        {/* Top Row: Tier Title + Connect Club */}
+                        <div className="flex justify-between items-start z-10 relative">
+                          <div className="text-left leading-none">
+                            <h4 className="text-[12px] sm:text-[13px] font-black uppercase tracking-wider text-white font-serif">
+                              {tier.tierTitle} CLUB
+                            </h4>
+                            <span className={`text-[6.5px] sm:text-[7px] font-bold uppercase tracking-widest ${tier.crownColor} block mt-0.5`}>
+                              PRIVILEGES & BENEFITS
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <Crown className={`w-3.5 h-3.5 ${tier.crownColor} fill-current`} />
+                            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white font-serif">
+                              Connect Club
+                            </span>
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <p className="text-[7px] text-slate-400 leading-tight">
-                            Authorized signature card. Issued by Forge India Connect Ecosystem. Non-transferable. Tap again to return to front.
-                          </p>
-                          <div className="flex justify-between items-center border-t border-slate-800 pt-1 text-[8px] font-mono text-amber-400 font-bold">
-                            <span>ONLINE SECURE ✓</span>
-                            <span>FIC NODE v2.4</span>
+                        {/* Middle Row: Frosted Circular Benefit Badges */}
+                        <div className={`grid ${tier.perksRow.length === 4 ? 'grid-cols-4' : 'grid-cols-5'} gap-1.5 py-1 z-10 relative`}>
+                          {tier.perksRow.map((perk, idx) => {
+                            const PerkIcon = perk.icon;
+                            return (
+                              <div
+                                key={idx}
+                                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-1.5 flex flex-col items-center justify-center text-center shadow-xs"
+                              >
+                                <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/15 flex items-center justify-center mb-1 ${tier.crownColor}`}>
+                                  <PerkIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[2.2]" />
+                                </div>
+                                <span className="text-[6.5px] sm:text-[7px] font-black uppercase text-white truncate max-w-full leading-none">
+                                  {perk.label}
+                                </span>
+                                <span className={`text-[5px] sm:text-[5.5px] font-semibold ${tier.crownColor} truncate max-w-full leading-none mt-0.5`}>
+                                  {perk.sub}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Bottom Row: Verified Privileges & Flip Note */}
+                        <div className="space-y-1 text-left z-10 relative border-t border-white/15 pt-1.5">
+                          <div className="text-[6.5px] sm:text-[7.5px] text-slate-300 leading-snug space-y-0.5">
+                            <div>• Non-transferable digital membership card. Valid across all verified partner storefronts.</div>
+                            <div>• Present QR code at checkout for instant privilege discounts and verified service perks.</div>
+                            <div>• 24/7 Dedicated Assistance: support@forgeindiaconnect.com</div>
+                          </div>
+                          <div className="flex justify-between items-center pt-0.5 text-[7px] font-mono text-slate-400">
+                            <span className="text-emerald-400 font-bold">ONLINE VERIFIED ✓</span>
+                            <span className="text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer">
+                              <span>Tap to flip back</span> ↺
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -16995,171 +17101,32 @@ wishlistProducts.forEach(item => addToCart(item));
 
       {/* ==================== MEMBERSHIP UPGRADE MODAL ==================== */}
       {showUpgradeModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fade-in text-slate-800">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md animate-fade-in text-slate-800">
           <div onClick={() => setShowUpgradeModal(false)} className="absolute inset-0" />
           
-          <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/60 rounded-3xl w-full max-w-4xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10 text-slate-800 dark:text-slate-200">
+          <div className="bg-[#070b14] border border-slate-800 rounded-3xl w-full max-w-5xl shadow-2xl relative overflow-hidden flex flex-col max-h-[92vh] z-10 text-white">
             {/* Header */}
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20">
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950/70">
               <div className="flex items-center gap-2.5 text-left">
-                <div className="w-10 h-10 rounded-full bg-amber-400/10 text-amber-500 flex items-center justify-center border border-amber-400/20">
-                  <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                <div className="w-9 h-9 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center border border-amber-400/20">
+                  <Crown className="w-5 h-5 text-amber-400 fill-amber-400" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight">Elevate Your Membership</h3>
-                  <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Choose a premium tier to unlock high-fidelity rewards</p>
+                  <h3 className="text-base font-black text-white leading-tight font-serif tracking-wider">Connect Club Membership</h3>
+                  <p className="text-[10px] text-amber-400/80 font-bold mt-0.5 uppercase tracking-widest">ONE CITY ONE CARD • PRESTIGE TIERS</p>
                 </div>
               </div>
               <button 
                 onClick={() => setShowUpgradeModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Card grid options */}
-            <div className="p-6 overflow-y-auto no-scrollbar space-y-6 text-slate-800 dark:text-slate-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                {/* 1. SILVER PLAN - Show only if current tier is Silver */}
-                {(currentMembershipTier || '').toLowerCase().includes('silver') && (
-                  <div className="border border-slate-200 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-950/10 rounded-2xl p-5 flex flex-col justify-between text-left min-h-[360px]">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div className="w-8 h-8 rounded-full bg-slate-400/10 text-slate-500 flex items-center justify-center border border-slate-400/20">
-                          <Star className="w-4 h-4 fill-slate-400 text-slate-400" />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {(currentMembershipTier || '').toLowerCase().includes('silver') && (
-                            <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-xs">Active</span>
-                          )}
-                          <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 font-black px-2 py-0.5 rounded">Silver Tier</span>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-slate-900 dark:text-white">Silver Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹8,000<span className="text-[10px] font-bold text-slate-400">/month</span></span>
-                      </div>
-                      <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
-                        <li>5% off on products</li>
-                        <li>Standard shipping and support</li>
-                        <li>1.2x Reward Multiplier</li>
-                      </ul>
-                    </div>
-                    <button 
-                      disabled 
-                      className="mt-6 w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-black uppercase rounded-lg border border-slate-200 dark:border-slate-700 cursor-not-allowed text-center"
-                    >
-                      Current Plan
-                    </button>
-                  </div>
-                )}
-
-                {/* 2. GOLD PLAN - Show if current tier is Silver or Gold */}
-                {((currentMembershipTier || '').toLowerCase().includes('silver') || (currentMembershipTier || '').toLowerCase().includes('gold')) && (
-                  <div className={`border ${
-                    (currentMembershipTier || '').toLowerCase().includes('gold') ? 'border-amber-400 ring-2 ring-amber-400/10 bg-amber-500/5' : 'border-slate-200 dark:border-slate-800'
-                  } rounded-2xl p-5 flex flex-col justify-between text-left min-h-[360px] relative`}>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div className="w-8 h-8 rounded-full bg-amber-400/10 text-amber-500 flex items-center justify-center border border-amber-400/20">
-                          <Sparkles className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {(currentMembershipTier || '').toLowerCase().includes('gold') && (
-                            <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-xs">Active</span>
-                          )}
-                          <span className="text-[9px] bg-amber-400/15 text-amber-600 dark:text-amber-400 border border-amber-400/20 font-black px-2 py-0.5 rounded">Gold Elite</span>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-slate-900 dark:text-white">Gold Membership</h4>
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹15,000<span className="text-[10px] font-bold text-slate-400">/month</span></span>
-                      </div>
-                      <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
-                        <li>15% off Stays & 10% off Dining</li>
-                        <li>Priority express dispatch</li>
-                        <li>2.0x Reward Multiplier</li>
-                        <li>Dedicated helpdesk support</li>
-                      </ul>
-                    </div>
-                    {(currentMembershipTier || '').toLowerCase().includes('gold') ? (
-                      <button 
-                        disabled 
-                        className="mt-6 w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-black uppercase rounded-lg border border-slate-200 dark:border-slate-700 cursor-not-allowed text-center"
-                      >
-                        Current Plan
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleSelectOrUpgradeMembership('Gold Elite', () => setShowUpgradeModal(false))}
-                        disabled={Boolean(processingMembershipTier)}
-                        className={`mt-6 w-full py-2 bg-amber-400 hover:bg-amber-500 text-[#0b1e36] text-xs font-black uppercase rounded-lg transition-colors text-center ${
-                          processingMembershipTier ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
-                        }`}
-                      >
-                        {processingMembershipTier === 'Gold Elite' ? 'Processing...' : 'Upgrade to Gold'}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* 3. DIAMOND PLAN - Always show */}
-                <div className={`border ${
-                  (currentMembershipTier || '').toLowerCase().includes('diamond') ? 'border-cyan-400 ring-2 ring-cyan-400/10 bg-cyan-500/5' : 'border-slate-200 dark:border-slate-800/80 hover:border-cyan-450/40'
-                } rounded-2xl p-5 flex flex-col justify-between text-left min-h-[360px] relative`}>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="w-8 h-8 rounded-full bg-cyan-400/10 text-cyan-500 flex items-center justify-center border border-cyan-400/20">
-                        <Gem className="w-4 h-4 fill-cyan-400 text-cyan-400" />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {(currentMembershipTier || '').toLowerCase().includes('diamond') && (
-                          <span className="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-xs">Active</span>
-                        )}
-                        <span className="text-[9px] bg-cyan-400/15 text-cyan-600 dark:text-cyan-400 border border-cyan-400/20 font-black px-2 py-0.5 rounded">Diamond Prestige</span>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-slate-900 dark:text-white">Diamond Membership</h4>
-                      <span className="text-lg font-black text-slate-800 dark:text-slate-300 font-mono mt-1 block">₹35,000<span className="text-[10px] font-bold text-slate-400">/month</span></span>
-                    </div>
-                    <ul className="text-[10px] text-slate-500 dark:text-slate-400 space-y-2 list-disc pl-3 leading-relaxed">
-                      <li>Complimentary global airport VIP lounges</li>
-                      <li>25% off luxury Villas & 20% off Fine Dining</li>
-                      <li>3.0x Reward Multiplier</li>
-                      <li>24/7 dedicated lifestyle concierge manager</li>
-                      <li>Unlimited next-day express deliveries</li>
-                    </ul>
-                  </div>
-                  {(currentMembershipTier || '').toLowerCase().includes('diamond') ? (
-                    <button 
-                      disabled 
-                      className="mt-6 w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-black uppercase rounded-lg border border-slate-200 dark:border-slate-700 cursor-not-allowed text-center"
-                    >
-                      Current Plan
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => handleSelectOrUpgradeMembership('Diamond Prestige', () => setShowUpgradeModal(false))}
-                      disabled={Boolean(processingMembershipTier)}
-                      className={`mt-6 w-full py-2 bg-cyan-400 hover:bg-cyan-500 text-cyan-955 text-xs font-black uppercase rounded-lg transition-colors text-center ${
-                        processingMembershipTier ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
-                      }`}
-                    >
-                      {processingMembershipTier === 'Diamond Prestige' ? 'Processing...' : 'Upgrade to Diamond'}
-                    </button>
-                  )}
-                </div>
-
-              </div>
-
-              {/* Special instructions */}
-              <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-400">
-                <Info className="w-4.5 h-4.5 text-blue-500 shrink-0" />
-                <span className="font-medium">Notice: Membership fees are billed annually. Current members receive a pro-rated refund on their remaining time when choosing to upgrade.</span>
-              </div>
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto no-scrollbar">
+              {renderMembershipPrestigeView()}
             </div>
           </div>
         </div>
