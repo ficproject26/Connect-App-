@@ -1098,9 +1098,20 @@ router.post('/', async (req, res) => {
             updated_by: 'Customer',
             notes: `Order placed successfully by ${customer_name}`
         });
-        // Notify vendor and broadcast
+        // Notify vendor, customer, and broadcast
         socket_1.socketManager.emitToVendor(newOrder.vendor_id, 'new_order_received', newOrder);
         socket_1.socketManager.broadcast('new_order_placed', newOrder);
+        // Cross-platform synchronization: notify customer sessions
+        const cIdTarget = newOrder.customer_id || resolvedCustId || newOrder.customerId || '';
+        if (cIdTarget) {
+            socket_1.socketManager.emitToUser('customer', cIdTarget, 'new_order_placed', newOrder);
+            socket_1.socketManager.emitToUser('customer', cIdTarget, 'order_created', newOrder);
+        }
+        const uIdTarget = newOrder.user_id;
+        if (uIdTarget && uIdTarget !== cIdTarget) {
+            socket_1.socketManager.emitToUser('customer', uIdTarget, 'new_order_placed', newOrder);
+            socket_1.socketManager.emitToUser('customer', uIdTarget, 'order_created', newOrder);
+        }
         // Publish structured event to Redis message broker & WebSockets
         await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.ORDER, realtime_1.RealtimeActions.CREATED, newOrder.id, newOrder, { role: 'vendor', userId: newOrder.vendor_id });
         // Auto Assign algorithm
@@ -1230,7 +1241,11 @@ router.post('/:id/prepare', middleware_1.authenticateToken, (0, middleware_1.enf
             updated_by: 'Vendor',
             notes: 'Vendor is preparing your items'
         });
-        socket_1.socketManager.emitToOrder(id, 'order_status_updated', { status: 'Preparing' });
+        socket_1.socketManager.emitToOrder(id, 'order_status_updated', { status: 'Preparing', orderId: id, order: updated });
+        const targetCustPrep = updated?.customer_id || updated?.customerId || updated?.user_id;
+        if (targetCustPrep) {
+            socket_1.socketManager.emitToUser('customer', targetCustPrep, 'order_status_updated', { status: 'Preparing', orderId: id, order: updated });
+        }
         await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.ORDER, realtime_1.RealtimeActions.STATUS_CHANGED, id, { orderId: id, status: 'Preparing', updated }, { room: `order:${id}` });
         res.json({
             status: 'success',
@@ -1256,7 +1271,11 @@ router.post('/:id/ready', middleware_1.authenticateToken, (0, middleware_1.enfor
             updated_by: 'Vendor',
             notes: 'Order is packed and ready for pickup'
         });
-        socket_1.socketManager.emitToOrder(id, 'order_status_updated', { status: 'Ready For Pickup' });
+        socket_1.socketManager.emitToOrder(id, 'order_status_updated', { status: 'Ready For Pickup', orderId: id, order: updated });
+        const targetCustReady = updated?.customer_id || updated?.customerId || updated?.user_id;
+        if (targetCustReady) {
+            socket_1.socketManager.emitToUser('customer', targetCustReady, 'order_status_updated', { status: 'Ready For Pickup', orderId: id, order: updated });
+        }
         await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.ORDER, realtime_1.RealtimeActions.STATUS_CHANGED, id, { orderId: id, status: 'Ready For Pickup', updated }, { room: `order:${id}` });
         // Trigger auto-assignment if not already assigned
         const currentAssignment = await db_1.db.getAssignmentForOrder(id);
@@ -1407,7 +1426,11 @@ router.put('/:id/status', middleware_1.authenticateToken, async (req, res) => {
             updated_by: updater,
             notes: `Order status updated to ${cleanStatus} by ${updater}`
         });
-        socket_1.socketManager.emitToOrder(id, 'order_status_updated', { status });
+        socket_1.socketManager.emitToOrder(id, 'order_status_updated', { status, orderId: id, order: updated });
+        const targetCustGen = updated?.customer_id || updated?.customerId || updated?.user_id;
+        if (targetCustGen) {
+            socket_1.socketManager.emitToUser('customer', targetCustGen, 'order_status_updated', { status, orderId: id, order: updated });
+        }
         await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.ORDER, realtime_1.RealtimeActions.STATUS_CHANGED, id, { orderId: id, status, updated }, { room: `order:${id}` });
         res.json({
             status: 'success',
