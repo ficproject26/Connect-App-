@@ -2855,30 +2855,6 @@ export default function CustomerDashboard({
   // Background banners revalidation every 60s (avoiding network flooding)
   useAutoRefresh(fetchDbBanners, 60000);
 
-  // Background refresh on tab focus/visibility with debounced revalidation
-  useEffect(() => {
-    let lastFocusRevalidate = 0;
-    const handleVisibility = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        const now = Date.now();
-        if (now - lastFocusRevalidate > 4000) {
-          lastFocusRevalidate = now;
-          fetchDbBanners();
-          if (typeof fetchAdminPromotions === 'function') fetchAdminPromotions();
-          if (typeof loadCustomerOrders === 'function') loadCustomerOrders(true);
-        }
-      }
-    };
-    if (typeof window !== 'undefined') {
-      window.addEventListener('visibilitychange', handleVisibility);
-      window.addEventListener('focus', handleVisibility);
-      return () => {
-        window.removeEventListener('visibilitychange', handleVisibility);
-        window.removeEventListener('focus', handleVisibility);
-      };
-    }
-  }, [fetchDbBanners, fetchAdminPromotions, loadCustomerOrders]);
-
   useEffect(() => {
     fetchDbCategories();
     fetchDbBanners();
@@ -3030,6 +3006,30 @@ export default function CustomerDashboard({
       isFetchingOrdersRef.current = false;
     }
   }, [profileName, profileEmail, profilePhone, currentUser?.id, currentUser?.customerId, currentUser?.email, currentUser?.phone, activeCustomerId]);
+
+  // Background refresh on tab focus/visibility with debounced revalidation
+  useEffect(() => {
+    let lastFocusRevalidate = 0;
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        const now = Date.now();
+        if (now - lastFocusRevalidate > 4000) {
+          lastFocusRevalidate = now;
+          fetchDbBanners();
+          if (typeof fetchAdminPromotions === 'function') fetchAdminPromotions();
+          if (typeof loadCustomerOrders === 'function') loadCustomerOrders(true);
+        }
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('visibilitychange', handleVisibility);
+      window.addEventListener('focus', handleVisibility);
+      return () => {
+        window.removeEventListener('visibilitychange', handleVisibility);
+        window.removeEventListener('focus', handleVisibility);
+      };
+    }
+  }, [fetchDbBanners, fetchAdminPromotions, loadCustomerOrders]);
 
   const refreshTrackingDetails = async (orderId) => {
     try {
