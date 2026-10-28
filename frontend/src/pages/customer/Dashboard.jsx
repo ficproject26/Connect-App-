@@ -2801,9 +2801,8 @@ export default function CustomerDashboard({
     );
 
     const endpoints = [
-      mainUrl ? `${mainUrl}/api/public/banners` : '',
       'https://api.ficapp.in/api/public/banners',
-      mainUrl ? `${mainUrl}/api/banners` : '',
+      mainUrl ? `${mainUrl}/api/public/banners` : '',
       'https://api.ficapp.in/api/banners',
       ...(isLocal ? ['http://localhost:8001/api/public/banners', '/api/public/banners'] : [])
     ];
@@ -2856,11 +2855,18 @@ export default function CustomerDashboard({
   // Background banners revalidation every 60s (avoiding network flooding)
   useAutoRefresh(fetchDbBanners, 60000);
 
-  // Background refresh on tab focus/visibility
+  // Background refresh on tab focus/visibility with debounced revalidation
   useEffect(() => {
+    let lastFocusRevalidate = 0;
     const handleVisibility = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        fetchDbBanners();
+        const now = Date.now();
+        if (now - lastFocusRevalidate > 4000) {
+          lastFocusRevalidate = now;
+          fetchDbBanners();
+          if (typeof fetchAdminPromotions === 'function') fetchAdminPromotions();
+          if (typeof loadCustomerOrders === 'function') loadCustomerOrders(true);
+        }
       }
     };
     if (typeof window !== 'undefined') {
@@ -2871,23 +2877,31 @@ export default function CustomerDashboard({
         window.removeEventListener('focus', handleVisibility);
       };
     }
-  }, [fetchDbBanners]);
+  }, [fetchDbBanners, fetchAdminPromotions, loadCustomerOrders]);
 
   useEffect(() => {
     fetchDbCategories();
     fetchDbBanners();
 
     const onCategoriesUpdated = () => fetchDbCategories();
-    const onBannersUpdated = () => fetchDbBanners();
+    const onBannersUpdated = () => {
+      try { localStorage.removeItem(BANNER_CACHE_KEY); } catch (e) {}
+      fetchDbBanners();
+    };
+    const onOffersUpdated = () => {
+      if (typeof fetchAdminPromotions === 'function') fetchAdminPromotions();
+    };
 
     socketService.on('categories:updated', onCategoriesUpdated);
     socketService.on('banners:updated', onBannersUpdated);
+    socketService.on('offers:updated', onOffersUpdated);
 
     return () => {
       socketService.off('categories:updated', onCategoriesUpdated);
       socketService.off('banners:updated', onBannersUpdated);
+      socketService.off('offers:updated', onOffersUpdated);
     };
-  }, [fetchDbCategories, fetchDbBanners]);
+  }, [fetchDbCategories, fetchDbBanners, fetchAdminPromotions]);
 
   // --- DELIVERY TRACKING LOGIC & LIFECYCLES ---
 
@@ -3167,10 +3181,15 @@ export default function CustomerDashboard({
     socketService.on('customer_order_status', handleOrderStatus);
     socketService.on('new_order_placed', handleNewOrder);
     socketService.on('order_created', handleNewOrder);
+    const handleNotificationsRead = () => {
+      if (typeof fetchCustomerNotifications === 'function') fetchCustomerNotifications();
+    };
+
     socketService.on('addresses_updated', handleAddressesUpdated);
     socketService.on('cart_updated', handleCartUpdated);
     socketService.on('favorites_updated', handleFavoritesUpdated);
     socketService.on('customer_profile_updated', handleProfileUpdated);
+    socketService.on('notifications_read', handleNotificationsRead);
 
     return () => {
       socketService.off('order_status_updated', handleOrderStatus);
@@ -3181,6 +3200,7 @@ export default function CustomerDashboard({
       socketService.off('cart_updated', handleCartUpdated);
       socketService.off('favorites_updated', handleFavoritesUpdated);
       socketService.off('customer_profile_updated', handleProfileUpdated);
+      socketService.off('notifications_read', handleNotificationsRead);
     };
   }, [currentUser, activeCustomerId, trackingOrder, profileEmail, profilePhone]);
 
