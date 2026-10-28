@@ -2308,6 +2308,20 @@ const handleMarkNotificationsRead = async (req: AuthenticatedRequest, res: Respo
         { $set: { read: true, isRead: true } }
       ).catch(() => {});
 
+      // Real-time broadcast to active customer sessions
+      try {
+        const singleTargets: string[] = [];
+        if (authUser?.userId) singleTargets.push(String(authUser.userId).trim());
+        if (authUser?.customerId) singleTargets.push(String(authUser.customerId).trim());
+        if (authUser?.registrationId) singleTargets.push(String(authUser.registrationId).trim());
+        if (authUser?.id) singleTargets.push(String(authUser.id).trim());
+        if (authUser?._id) singleTargets.push(String(authUser._id).trim());
+        if (requestedId) singleTargets.push(requestedId.trim());
+        singleTargets.forEach(t => {
+          socketManager.emitToUser('customer', t, 'notifications_read', { id: notifId, read: true });
+        });
+      } catch (e) {}
+
       return res.json({ status: 'success', message: 'Notification marked as read', id: notifId });
     }
 
@@ -2430,6 +2444,16 @@ router.delete(['/customer-notifications/:id', '/notifications/:id'], optionalAut
       userId,
       deletedAt: new Date()
     }).catch(() => {});
+
+    // Real-time broadcast notification deletion to customer
+    try {
+      const delTargets: string[] = [];
+      if (userId && userId !== 'global') delTargets.push(String(userId).trim());
+      if (authUser?.customerId) delTargets.push(String(authUser.customerId).trim());
+      delTargets.forEach(t => {
+        socketManager.emitToUser('customer', t, 'notification_deleted', { id: notifId });
+      });
+    } catch (e) {}
 
     return res.json({
       status: 'success',

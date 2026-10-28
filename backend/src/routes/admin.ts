@@ -1,3 +1,4 @@
+import { socketManager } from '../socket';
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { securityManager } from '../security/securityManager';
@@ -326,6 +327,9 @@ router.post('/exclusive-offers', ...adminAuth, async (req: Request, res: Respons
         newOffer._id,
         newOffer
       );
+      try {
+        socketManager.broadcast('offers:updated', { action: 'create', offer: newOffer });
+      } catch (e) {}
       return res.status(201).json({ status: 'success', offer: newOffer });
     }
     return res.status(500).json({ error: 'Database unavailable' });
@@ -355,6 +359,9 @@ router.put('/exclusive-offers/:id', ...adminAuth, async (req: Request, res: Resp
         id,
         result
       );
+      try {
+        socketManager.broadcast('offers:updated', { action: 'update', offer: result, id });
+      } catch (e) {}
       return res.json({ status: 'success', offer: result });
     }
     return res.status(500).json({ error: 'Database unavailable' });
@@ -378,6 +385,9 @@ router.delete('/exclusive-offers/:id', ...adminAuth, async (req: Request, res: R
         id,
         { id }
       );
+      try {
+        socketManager.broadcast('offers:updated', { action: 'delete', id });
+      } catch (e) {}
       return res.json({ status: 'success', message: 'Offer deleted successfully.' });
     }
     return res.status(500).json({ error: 'Database unavailable' });

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.invalidateAdminBannersCache = void 0;
+const socket_1 = require("../socket");
 const express_1 = require("express");
 const db_1 = require("../db");
 const securityManager_1 = require("../security/securityManager");
@@ -281,6 +282,10 @@ router.post('/exclusive-offers', ...adminAuth, async (req, res) => {
             await col.insertOne(newOffer);
             await realtime_1.cacheManager.invalidatePattern('cache:offers:*');
             await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.OFFER, realtime_1.RealtimeActions.CREATED, newOffer._id, newOffer);
+            try {
+                socket_1.socketManager.broadcast('offers:updated', { action: 'create', offer: newOffer });
+            }
+            catch (e) { }
             return res.status(201).json({ status: 'success', offer: newOffer });
         }
         return res.status(500).json({ error: 'Database unavailable' });
@@ -301,6 +306,10 @@ router.put('/exclusive-offers/:id', ...adminAuth, async (req, res) => {
             const result = await col.findOneAndUpdate({ _id: id }, { $set: updateData }, { returnDocument: 'after' });
             await realtime_1.cacheManager.invalidatePattern('cache:offers:*');
             await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.OFFER, realtime_1.RealtimeActions.UPDATED, id, result);
+            try {
+                socket_1.socketManager.broadcast('offers:updated', { action: 'update', offer: result, id });
+            }
+            catch (e) { }
             return res.json({ status: 'success', offer: result });
         }
         return res.status(500).json({ error: 'Database unavailable' });
@@ -319,6 +328,10 @@ router.delete('/exclusive-offers/:id', ...adminAuth, async (req, res) => {
             await col.deleteOne({ _id: id });
             await realtime_1.cacheManager.invalidatePattern('cache:offers:*');
             await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.OFFER, realtime_1.RealtimeActions.DELETED, id, { id });
+            try {
+                socket_1.socketManager.broadcast('offers:updated', { action: 'delete', id });
+            }
+            catch (e) { }
             return res.json({ status: 'success', message: 'Offer deleted successfully.' });
         }
         return res.status(500).json({ error: 'Database unavailable' });

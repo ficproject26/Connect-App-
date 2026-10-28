@@ -2525,7 +2525,7 @@ export default function CustomerDashboard({
     const orderNum = String(o.order_number || o.id || '').toUpperCase().trim();
     const orderTypeLower = String(o.order_type || '').toLowerCase().trim();
     const detailsLower = String(o.product_details || o.name || '').toLowerCase();
-    const anyItemCategory = (o.items || []).map(it => String(it.category || it.mainCategory || '').toLowerCase()).join(' ');
+    const anyItemCategory = (o.items || []).map(it => String(it.category || it.mainCategory || it.subNavbarCategory || it.type || '').toLowerCase()).join(' ');
 
     // 1. MY JOBS / JOB APPLIED (Strictly isolated first)
     if (
@@ -2540,19 +2540,21 @@ export default function CustomerDashboard({
       return 'myjobs';
     }
 
-    const hasExplicitBookingSchedule = Boolean(
-      o.appointmentDate || o.appointmentTimeSlot || o.bookingDate || o.bookingTime ||
-      o.checkInDate || o.check_in_date || o.checkInTime || o.checkOutDate || o.check_out_date ||
-      o.boardingPoint || o.boarding_point || o.droppingPoint || o.dropping_point
-    );
+    // Check for REAL booking schedules (must not be empty, null, or defaulted dummy number)
+    const hasValidCheckIn = Boolean(o.checkInDate && String(o.checkInDate).trim() && String(o.checkInDate).toLowerCase() !== 'null');
+    const hasValidAppointment = Boolean(o.appointmentDate && String(o.appointmentDate).trim() && String(o.appointmentDate).toLowerCase() !== 'null');
+    const hasValidBoarding = Boolean(o.boardingPoint && (typeof o.boardingPoint === 'object' ? Boolean(o.boardingPoint.name) : String(o.boardingPoint).trim().length > 0));
 
+    // Explicit physical product, daily needs, or food classification
     const isExplicitProductOrFood = 
-      ['products', 'daily needs', 'food'].includes(mainCatLower) ||
-      ['products', 'daily needs', 'food'].includes(catLower) ||
-      ['products', 'daily needs', 'food'].includes(subNavCatLower);
+      ['products', 'product', 'daily needs', 'food'].includes(typeLower) ||
+      ['products', 'product', 'daily needs', 'food'].includes(mainCatLower) ||
+      ['products', 'product', 'daily needs', 'food'].includes(catLower) ||
+      ['products', 'product', 'daily needs', 'food'].includes(subNavCatLower) ||
+      ['products', 'product', 'daily needs', 'food'].some(k => anyItemCategory.includes(k));
 
-    // Physical Products, Daily Needs, and Food items without booking schedules always belong to Orders
-    if (isExplicitProductOrFood && !hasExplicitBookingSchedule) {
+    // If explicitly categorized as physical products, daily needs, or food, and lacks a real booking schedule -> ORDERS
+    if (isExplicitProductOrFood && !hasValidCheckIn && !hasValidAppointment && !hasValidBoarding) {
       return 'orders';
     }
 
@@ -2560,8 +2562,8 @@ export default function CustomerDashboard({
     const isServiceBooking = 
       mainCatLower === 'services' || catLower === 'services' || subNavCatLower === 'services' ||
       typeLower === 'services' || typeLower === 'service' || typeLower === 'appointment' ||
-      orderNum.startsWith('SRV-') || orderNum.startsWith('BK-') ||
-      Boolean(o.appointmentDate) || Boolean(o.appointmentTimeSlot) || Boolean(o.bookingDate) || Boolean(o.bookingTime) ||
+      orderNum.startsWith('SRV-') ||
+      hasValidAppointment ||
       Boolean(o.doctorName) || Boolean(o.appointment_slot) ||
       /\b(plumber|plumbers|electrician|electricians|carpenter|carpenters|salon|doctor|clinic|hospital|consultation|pest control|appliance repair|mechanic|ac repair|jet wash)\b/i.test(catLower) ||
       /\b(plumber|plumbers|electrician|electricians|carpenter|carpenters|salon|doctor|clinic|hospital|consultation|pest control|appliance repair|mechanic|ac repair|jet wash)\b/i.test(typeLower) ||
@@ -2571,7 +2573,7 @@ export default function CustomerDashboard({
     const isStayBooking = 
       mainCatLower === 'stay' || catLower === 'stay' || subNavCatLower === 'stay' ||
       typeLower === 'stay' || typeLower === 'hotel stay' || typeLower === 'hotel' || typeLower === 'resort' || typeLower === 'villa' ||
-      Boolean(o.checkInDate || o.check_in_date || o.check_in || o.checkInTime || o.checkOutDate || o.check_out_date || o.nights || o.nightsCount || o.roomsCount || o.hotel_name || o.hotelName) ||
+      (hasValidCheckIn && (Boolean(o.checkOutDate) || Boolean(o.nights) || Boolean(o.hotel_name) || Boolean(o.hotelName))) ||
       /\b(hotel|resort|villa|homestay|cottage|room stay|night stay)\b/i.test(catLower) ||
       /\b(hotel|resort|villa|homestay|cottage|room stay|night stay)\b/i.test(typeLower) ||
       /\b(hotel|resort|villa|homestay|cottage|room stay|night stay)\b/i.test(detailsLower) ||
@@ -2580,7 +2582,8 @@ export default function CustomerDashboard({
     const isTravelBooking = 
       mainCatLower === 'travel' || catLower === 'travel' || subNavCatLower === 'travel' ||
       typeLower === 'travel' || typeLower === 'travel ticket' || typeLower === 'bus' || typeLower === 'flight' || typeLower === 'cab' ||
-      Boolean(o.boardingPoint || o.boarding_point || o.droppingPoint || o.dropping_point || o.departureDate || o.travelDate || o.journeyDate || o.travelers?.length || o.vehicleDetails) ||
+      hasValidBoarding ||
+      Boolean(o.departureDate || o.travelDate || o.journeyDate || o.travelers?.length || o.vehicleDetails) ||
       /\b(bus|flight|cab|taxi|tour|trip|sightseeing)\b/i.test(catLower) ||
       /\b(bus|flight|cab|taxi|tour|trip|sightseeing)\b/i.test(typeLower) ||
       /\b(bus booking|volvo|sleeper|seater|ksrtc|vrl|intrcity|airavat|flight ticket)\b/i.test(detailsLower) ||
@@ -2594,7 +2597,7 @@ export default function CustomerDashboard({
       return 'bookings';
     }
 
-    // 3. MY ORDERS (Products, Daily Needs, Food only)
+    // 3. MY ORDERS (Physical items, Products, Daily Needs, Food)
     return 'orders';
   }, []);
 
@@ -2612,17 +2615,23 @@ export default function CustomerDashboard({
   // Derived filtered orders based on selected orders tab
   const filteredCustomerOrders = useMemo(() => {
     const orders = ordersForActiveTab;
-    if (selectedOrdersTab === 'All Orders' || selectedOrdersTab === 'All Bookings' || selectedOrdersTab === 'All Applications') {
+    const tab = String(selectedOrdersTab || '').toLowerCase().trim();
+    if (['all orders', 'all bookings', 'all applications'].includes(tab)) {
       return orders;
     }
     return orders.filter(o => {
-      const status = (o.status || '').toLowerCase();
-      const tab = selectedOrdersTab.toLowerCase();
-      if (tab === 'processing' || tab === 'upcoming' || tab === 'under review') {
-        return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'confirmed', 'upcoming', 'processing', 'under review', 'under preview', 'application received', 'applied'].includes(status);
+      const status = String(o.status || '').toLowerCase().trim();
+      if (tab === 'processing' || tab === 'under review') {
+        return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'confirmed', 'processing', 'under review', 'under preview', 'application received', 'applied', 'pending'].includes(status);
       }
-      if (tab === 'in transit' || tab === 'shortlisted') {
-        return ['out for delivery', 'delivery partner accepted', 'picked up', 'near customer', 'shortlisted', 'interview scheduled'].includes(status);
+      if (tab === 'upcoming') {
+        return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'delivery partner accepted', 'confirmed', 'active', 'scheduled', 'upcoming', 'pending'].includes(status);
+      }
+      if (tab === 'in transit') {
+        return ['out for delivery', 'delivery partner accepted', 'picked up', 'near customer'].includes(status);
+      }
+      if (tab === 'shortlisted') {
+        return ['shortlisted', 'interview scheduled'].includes(status);
       }
       if (tab === 'delivered' || tab === 'completed' || tab === 'selected') {
         return ['delivered', 'completed', 'selected / offered', 'selected'].includes(status);
@@ -3853,15 +3862,21 @@ export default function CustomerDashboard({
     if (matchedOrder) {
       const targetTab = getCustomerRecordClassification(matchedOrder);
       setActiveProfileTab(targetTab);
+      if (targetTab === 'orders') setSelectedOrdersTab('All Orders');
+      else if (targetTab === 'bookings') setSelectedOrdersTab('All Bookings');
+      else if (targetTab === 'myjobs') setSelectedOrdersTab('All Applications');
       setTrackingOrder(matchedOrder);
     } else {
       const notifType = String(notif.type || '').toLowerCase();
       if (notifType === 'job' || notifType === 'jobs') {
         setActiveProfileTab('myjobs');
+        setSelectedOrdersTab('All Applications');
       } else if (['booking', 'stay', 'travel', 'appointment', 'services', 'service'].includes(notifType)) {
         setActiveProfileTab('bookings');
+        setSelectedOrdersTab('All Bookings');
       } else {
         setActiveProfileTab('orders');
+        setSelectedOrdersTab('All Orders');
       }
     }
   };
@@ -13829,6 +13844,9 @@ wishlistProducts.forEach(item => addToCart(item));
                         key={tab.id}
                         onClick={() => {
                           setActiveProfileTab(tab.id);
+                          if (tab.id === 'orders') setSelectedOrdersTab('All Orders');
+                          else if (tab.id === 'bookings') setSelectedOrdersTab('All Bookings');
+                          else if (tab.id === 'myjobs') setSelectedOrdersTab('All Applications');
                           if (['myjobs', 'orders', 'bookings'].includes(tab.id)) {
                             setTrackingOrder(null);
                           }
@@ -13881,12 +13899,31 @@ wishlistProducts.forEach(item => addToCart(item));
                       if (o.created_at && new Date(o.created_at) < oneYearAgo) return false;
                     }
 
-                    if (['All Orders', 'All Bookings', 'All Applications'].includes(selectedOrdersTab)) return true;
-                    if (selectedOrdersTab === 'Processing' || selectedOrdersTab === 'Pending' || selectedOrdersTab === 'Under Review') return ['Preparing', 'Order Received', 'Under Review', 'Pending'].includes(o.status);
-                    if (selectedOrdersTab === 'In Transit' || selectedOrdersTab === 'Upcoming' || selectedOrdersTab === 'Confirmed' || selectedOrdersTab === 'Shortlisted') return ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted', 'Picked Up', 'Out For Delivery', 'Near Customer', 'Shortlisted', 'Interview Scheduled', 'Confirmed', 'Active', 'Scheduled'].includes(o.status);
-                    if (selectedOrdersTab === 'Delivered' || selectedOrdersTab === 'Completed' || selectedOrdersTab === 'Selected') return ['Delivered', 'Completed', 'Selected / Offered'].includes(o.status);
-                    if (selectedOrdersTab === 'Cancelled' || selectedOrdersTab === 'Rejected') return o.status === 'Cancelled' || o.status === 'Rejected';
-                    if (selectedOrdersTab === 'Returned') return o.status === 'Returned';
+                    const status = String(o.status || '').toLowerCase().trim();
+                    const tab = String(selectedOrdersTab || '').toLowerCase().trim();
+
+                    if (['all orders', 'all bookings', 'all applications'].includes(tab)) return true;
+                    if (tab === 'processing' || tab === 'under review') {
+                      return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'confirmed', 'processing', 'under review', 'under preview', 'application received', 'applied', 'pending'].includes(status);
+                    }
+                    if (tab === 'upcoming') {
+                      return ['order received', 'preparing', 'ready for pickup', 'assigned to delivery partner', 'delivery partner accepted', 'confirmed', 'active', 'scheduled', 'upcoming', 'pending'].includes(status);
+                    }
+                    if (tab === 'in transit') {
+                      return ['out for delivery', 'delivery partner accepted', 'picked up', 'near customer'].includes(status);
+                    }
+                    if (tab === 'shortlisted') {
+                      return ['shortlisted', 'interview scheduled'].includes(status);
+                    }
+                    if (tab === 'delivered' || tab === 'completed' || tab === 'selected') {
+                      return ['delivered', 'completed', 'selected / offered', 'selected'].includes(status);
+                    }
+                    if (tab === 'cancelled' || tab === 'rejected') {
+                      return status === 'cancelled' || status === 'rejected';
+                    }
+                    if (tab === 'returned') {
+                      return status === 'returned';
+                    }
                     return true;
                   });
 
@@ -14672,7 +14709,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                 ? ['All Applications', 'Under Review', 'Shortlisted', 'Selected', 'Rejected']
                                 : ['All Orders', 'Processing', 'In Transit', 'Delivered', 'Cancelled', 'Returned']
                               ).map((tabName) => {
-                                const isSelected = selectedOrdersTab === tabName || (selectedOrdersTab === 'All Orders' && (tabName === 'All Bookings' || tabName === 'All Applications'));
+                                const isSelected = selectedOrdersTab === tabName || (['All Orders', 'All Bookings', 'All Applications'].includes(selectedOrdersTab) && ['All Orders', 'All Bookings', 'All Applications'].includes(tabName));
                                 return (
                                   <button
                                     key={tabName}
@@ -14702,7 +14739,7 @@ wishlistProducts.forEach(item => addToCart(item));
                               </select>
                               <button 
                                 onClick={() => {
-                                  setSelectedOrdersTab('All Orders');
+                                  setSelectedOrdersTab(activeProfileTab === 'bookings' ? 'All Bookings' : activeProfileTab === 'myjobs' ? 'All Applications' : 'All Orders');
                                   setSelectedTimeWindow('All Time');
                                 }}
                                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
