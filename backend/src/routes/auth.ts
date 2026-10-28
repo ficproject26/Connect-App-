@@ -8,6 +8,7 @@ import { authRateLimiter, authenticateToken, optionalAuthenticateToken, Authenti
 import { generateCustomerId, isValidCustomerId, ensureCustomerIdIndexes } from '../services/customerIdService';
 import { checkAccountApproval, verifyRoleAuthorizedForApp, getAppRoleConfig } from '../security/roleAuthorization';
 import { smsService } from '../services/smsService';
+import { socketManager } from '../socket';
 
 const router = Router();
 
@@ -1846,6 +1847,26 @@ router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequ
       addresses: deduplicateAddresses(Array.isArray(safeUser.addresses) ? safeUser.addresses : [])
     };
 
+    // Emit real-time synchronization events to connected customer sessions
+    try {
+      const userTargetId = safeUser.id || safeUser._id?.toString() || authUser?.userId || '';
+      const userCustId = resolvedCustId || safeUser.customerId || safeUser.registrationId || '';
+      const targets = Array.from(new Set([userTargetId, userCustId].filter(Boolean)));
+      for (const t of targets) {
+        socketManager.emitToUser('customer', t, 'customer_profile_updated', {
+          user: finalProfile,
+          cart: req.body.cart,
+          favorites: req.body.favorites
+        });
+        if (req.body.cart !== undefined) {
+          socketManager.emitToUser('customer', t, 'cart_updated', { cart: req.body.cart });
+        }
+        if (req.body.favorites !== undefined) {
+          socketManager.emitToUser('customer', t, 'favorites_updated', { favorites: req.body.favorites });
+        }
+      }
+    } catch (e) {}
+
     return res.json({ status: 'success', message: 'Profile updated successfully', user: finalProfile, data: finalProfile });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
@@ -1945,6 +1966,15 @@ const handleSaveAddress = async (req: Request, res: Response) => {
     await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
     await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});
 
+    try {
+      const notifyTarget = String(target).trim();
+      const cId = user?.customerId || user?.registrationId || user?.id || (user?._id ? user._id.toString() : '');
+      const addrTargets = Array.from(new Set([notifyTarget, cId].filter(Boolean)));
+      for (const t of addrTargets) {
+        socketManager.emitToUser('customer', t, 'addresses_updated', { addresses: updatedAddresses });
+      }
+    } catch (e) {}
+
     return res.json({
       status: 'success',
       message: 'Address saved successfully',
@@ -1984,6 +2014,15 @@ const handleUpdateAddress = async (req: Request, res: Response) => {
     await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
     await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});
 
+    try {
+      const notifyTarget = String(target).trim();
+      const cId = user?.customerId || user?.registrationId || user?.id || (user?._id ? user._id.toString() : '');
+      const addrTargets = Array.from(new Set([notifyTarget, cId].filter(Boolean)));
+      for (const t of addrTargets) {
+        socketManager.emitToUser('customer', t, 'addresses_updated', { addresses: updatedAddresses });
+      }
+    } catch (e) {}
+
     return res.json({ status: 'success', message: 'Address updated successfully', addresses: updatedAddresses });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
@@ -2014,6 +2053,15 @@ const handleDeleteAddress = async (req: Request, res: Response) => {
 
     await mongoDb.collection('users').updateOne(filter, { $set: { addresses: updatedAddresses } });
     await mongoDb.collection('customers').updateOne(filter, { $set: { addresses: updatedAddresses } }).catch(() => {});
+
+    try {
+      const notifyTarget = String(target).trim();
+      const cId = user?.customerId || user?.registrationId || user?.id || (user?._id ? user._id.toString() : '');
+      const addrTargets = Array.from(new Set([notifyTarget, cId].filter(Boolean)));
+      for (const t of addrTargets) {
+        socketManager.emitToUser('customer', t, 'addresses_updated', { addresses: updatedAddresses });
+      }
+    } catch (e) {}
 
     return res.json({ status: 'success', message: 'Address deleted successfully', addresses: updatedAddresses });
   } catch (err: any) {
@@ -2314,6 +2362,12 @@ const handleMarkNotificationsRead = async (req: AuthenticatedRequest, res: Respo
         { $set: { notification_read: true, notificationRead: true } }
       ).catch(() => {});
     }
+
+    try {
+      targets.forEach(t => {
+        socketManager.emitToUser('customer', t, 'notifications_read', { all: true, unreadCount: 0 });
+      });
+    } catch (e) {}
 
     return res.json({ status: 'success', message: 'All notifications marked as read', unreadCount: 0 });
   } catch (err: any) {

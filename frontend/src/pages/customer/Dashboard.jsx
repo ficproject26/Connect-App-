@@ -2511,64 +2511,103 @@ export default function CustomerDashboard({
 
   const [selectedTimeWindow, setSelectedTimeWindow] = useState('All Time');
 
-  const isBookingOrder = (o) => {
-    if (!o) return false;
-    const typeLower = (o.type || '').toLowerCase();
-    const nameLower = (o.name || o.product_details || o.items?.[0]?.name || '').toLowerCase();
-    const catLower = (o.category || o.mainCategory || o.subNavbarCategory || o.items?.[0]?.category || '').toLowerCase();
+  // Authoritative, mutually exclusive classifier for customer activities
+  // 1. My Jobs = Job applications only
+  // 2. My Bookings = Services, Stay, and Travel bookings only
+  // 3. My Orders = Products, Daily Needs, and Food orders only
+  const getCustomerRecordClassification = useCallback((o) => {
+    if (!o) return 'orders';
 
-    // If order has booking specific fields, it is 100% a booking
+    const typeLower = String(o.type || '').toLowerCase().trim();
+    const catLower = String(o.category || '').toLowerCase().trim();
+    const mainCatLower = String(o.mainCategory || '').toLowerCase().trim();
+    const subNavCatLower = String(o.subNavbarCategory || '').toLowerCase().trim();
+    const orderNum = String(o.order_number || o.id || '').toUpperCase().trim();
+    const orderTypeLower = String(o.order_type || '').toLowerCase().trim();
+    const detailsLower = String(o.product_details || o.name || '').toLowerCase();
+    const anyItemCategory = (o.items || []).map(it => String(it.category || it.mainCategory || '').toLowerCase()).join(' ');
+
+    // 1. MY JOBS / JOB APPLIED (Strictly isolated first)
     if (
-      o.checkInDate || o.check_in_date || o.checkInTime || o.checkOutDate || 
-      o.appointmentDate || o.departureDate || o.travelDate || o.boardingPoint || 
-      o.droppingPoint || o.roomsCount || (o.guestDetails && o.guestDetails.length > 0) ||
-      o.items?.[0]?.checkInDate || o.items?.[0]?.nights
+      typeLower === 'job' || typeLower === 'jobs' ||
+      catLower === 'jobs' || mainCatLower === 'jobs' || subNavCatLower === 'jobs' ||
+      orderNum.startsWith('APP-') || orderNum.startsWith('JOB-') || orderNum.includes('JOB') ||
+      Boolean(o.applicationId) || Boolean(o.jobId) || Boolean(o.jobTitle) ||
+      Boolean(o.candidateResume) || Boolean(o.candidateEducation) || Boolean(o.experience) ||
+      Boolean(o.applicationDate) || Boolean(o.application_status) ||
+      o.status === 'APPLICATION RECEIVED'
     ) {
-      return true;
+      return 'myjobs';
     }
 
-    // Keywords that identify a booking (hotels, stays, villas, resorts, travel, services)
-    const bookingKeywords = [
-      'booking', 'stay', 'travel', 'services', 'service', 'appointment', 'hotel', 'villa', 'resort', 'homestay',
-      'cottage', 'room', 'bus', 'flight', 'tour', 'trip', 'taxi', 'cab', 'ticket', 'plumb', 'electric', 'clean',
-      'mechanic', 'salon', 'doctor', 'hospital', 'consultation'
-    ];
+    const hasExplicitBookingSchedule = Boolean(
+      o.appointmentDate || o.appointmentTimeSlot || o.bookingDate || o.bookingTime ||
+      o.checkInDate || o.check_in_date || o.checkInTime || o.checkOutDate || o.check_out_date ||
+      o.boardingPoint || o.boarding_point || o.droppingPoint || o.dropping_point
+    );
 
-    if (bookingKeywords.some(k => typeLower.includes(k) || nameLower.includes(k) || catLower.includes(k))) {
-      return true;
+    const isExplicitProductOrFood = 
+      ['products', 'daily needs', 'food'].includes(mainCatLower) ||
+      ['products', 'daily needs', 'food'].includes(catLower) ||
+      ['products', 'daily needs', 'food'].includes(subNavCatLower);
+
+    // Physical Products, Daily Needs, and Food items without booking schedules always belong to Orders
+    if (isExplicitProductOrFood && !hasExplicitBookingSchedule) {
+      return 'orders';
     }
-    return false;
-  };
+
+    // 2. MY BOOKINGS (Services, Stay, Travel only)
+    const isServiceBooking = 
+      mainCatLower === 'services' || catLower === 'services' || subNavCatLower === 'services' ||
+      typeLower === 'services' || typeLower === 'service' || typeLower === 'appointment' ||
+      orderNum.startsWith('SRV-') || orderNum.startsWith('BK-') ||
+      Boolean(o.appointmentDate) || Boolean(o.appointmentTimeSlot) || Boolean(o.bookingDate) || Boolean(o.bookingTime) ||
+      Boolean(o.doctorName) || Boolean(o.appointment_slot) ||
+      /\b(plumber|plumbers|electrician|electricians|carpenter|carpenters|salon|doctor|clinic|hospital|consultation|pest control|appliance repair|mechanic|ac repair|jet wash)\b/i.test(catLower) ||
+      /\b(plumber|plumbers|electrician|electricians|carpenter|carpenters|salon|doctor|clinic|hospital|consultation|pest control|appliance repair|mechanic|ac repair|jet wash)\b/i.test(typeLower) ||
+      /\b(plumber|plumbers|electrician|electricians|carpenter|carpenters|cleaning service|salon|doctor|consultation|pest control|appliance repair|ac repair|jet wash)\b/i.test(detailsLower) ||
+      /\b(plumber|plumbers|electrician|electricians|carpenter|carpenters|cleaning service|salon|doctor|consultation|pest control|appliance repair|ac repair|jet wash)\b/i.test(anyItemCategory);
+
+    const isStayBooking = 
+      mainCatLower === 'stay' || catLower === 'stay' || subNavCatLower === 'stay' ||
+      typeLower === 'stay' || typeLower === 'hotel stay' || typeLower === 'hotel' || typeLower === 'resort' || typeLower === 'villa' ||
+      Boolean(o.checkInDate || o.check_in_date || o.check_in || o.checkInTime || o.checkOutDate || o.check_out_date || o.nights || o.nightsCount || o.roomsCount || o.hotel_name || o.hotelName) ||
+      /\b(hotel|resort|villa|homestay|cottage|room stay|night stay)\b/i.test(catLower) ||
+      /\b(hotel|resort|villa|homestay|cottage|room stay|night stay)\b/i.test(typeLower) ||
+      /\b(hotel|resort|villa|homestay|cottage|room stay|night stay)\b/i.test(detailsLower) ||
+      /\b(hotel|resort|villa|homestay|cottage|room stay|night stay)\b/i.test(anyItemCategory);
+
+    const isTravelBooking = 
+      mainCatLower === 'travel' || catLower === 'travel' || subNavCatLower === 'travel' ||
+      typeLower === 'travel' || typeLower === 'travel ticket' || typeLower === 'bus' || typeLower === 'flight' || typeLower === 'cab' ||
+      Boolean(o.boardingPoint || o.boarding_point || o.droppingPoint || o.dropping_point || o.departureDate || o.travelDate || o.journeyDate || o.travelers?.length || o.vehicleDetails) ||
+      /\b(bus|flight|cab|taxi|tour|trip|sightseeing)\b/i.test(catLower) ||
+      /\b(bus|flight|cab|taxi|tour|trip|sightseeing)\b/i.test(typeLower) ||
+      /\b(bus booking|volvo|sleeper|seater|ksrtc|vrl|intrcity|airavat|flight ticket)\b/i.test(detailsLower) ||
+      /\b(bus|flight|cab|taxi|tour|trip|sightseeing)\b/i.test(anyItemCategory);
+
+    if (
+      isServiceBooking || isStayBooking || isTravelBooking ||
+      orderTypeLower === 'booking' || typeLower === 'booking' ||
+      orderNum.startsWith('BKG') || orderNum.startsWith('BK-')
+    ) {
+      return 'bookings';
+    }
+
+    // 3. MY ORDERS (Products, Daily Needs, Food only)
+    return 'orders';
+  }, []);
+
+  const isBookingOrder = useCallback((o) => {
+    return getCustomerRecordClassification(o) === 'bookings';
+  }, [getCustomerRecordClassification]);
 
   const ordersForActiveTab = useMemo(() => {
-    if (activeProfileTab === 'myjobs') {
-      return customerOrders.filter(o => {
-        if (!o) return false;
-        const typeLower = (o.type || '').toLowerCase();
-        if (typeLower === 'job' || typeLower === 'jobs') return true;
-        if (o.candidateEmail || o.candidateResume || o.experience || o.candidateEducation) return true;
-        return false;
-      });
-    }
-
-    if (activeProfileTab === 'bookings') {
-      return customerOrders.filter(o => {
-        const typeLower = (o.type || '').toLowerCase();
-        if (typeLower === 'job' || typeLower === 'jobs') return false;
-        return isBookingOrder(o);
-      });
-    }
-
-    if (activeProfileTab === 'orders') {
-      return customerOrders.filter(o => {
-        const typeLower = (o.type || '').toLowerCase();
-        if (typeLower === 'job' || typeLower === 'jobs') return false;
-        return !isBookingOrder(o);
-      });
-    }
-
-    return customerOrders;
-  }, [customerOrders, activeProfileTab]);
+    return customerOrders.filter(o => {
+      if (!o) return false;
+      return getCustomerRecordClassification(o) === activeProfileTab;
+    });
+  }, [customerOrders, activeProfileTab, getCustomerRecordClassification]);
 
   // Derived filtered orders based on selected orders tab
   const filteredCustomerOrders = useMemo(() => {
@@ -3025,28 +3064,116 @@ export default function CustomerDashboard({
     }
   };
 
-  // Connect to Socket and bind updates
+  // Connect to Socket and bind real-time synchronization across platforms
   useEffect(() => {
-    if (!currentUser?.id) {
+    const customerId = currentUser?.id || currentUser?.customerId || currentUser?.userId || activeCustomerId;
+    if (!customerId) {
       return;
     }
-    const customerId = currentUser.id;
-    socketService.connect(customerId, 'customer');
+    const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token'))) || '';
+    socketService.connect(customerId, 'customer', token);
 
+    // 1. Live Order Status Updates
     const handleOrderStatus = (data) => {
       loadCustomerOrders(true);
-      if (trackingOrder && trackingOrder.id === data.orderId) {
+      if (trackingOrder && (trackingOrder.id === data.orderId || trackingOrder._id === data.orderId || trackingOrder.order_number === data.orderId)) {
         setTrackingOrder(prev => prev ? { ...prev, status: data.status } : null);
-        refreshTrackingDetails(trackingOrder.id);
+        refreshTrackingDetails(data.orderId || trackingOrder.id);
+      }
+    };
+
+    // 2. New Order / Booking Placed on any platform (e.g. Mobile App)
+    const handleNewOrder = (data) => {
+      if (!data) return;
+      const curId = String(currentUser?.id || currentUser?.customerId || activeCustomerId || '').toLowerCase().trim();
+      const curEmail = String(currentUser?.email || profileEmail || '').toLowerCase().trim();
+      const curPhone = String(currentUser?.phone || profilePhone || '').replace(/\D/g, '').slice(-10);
+
+      const oCustId = String(data.customer_id || data.customerId || data.memberId || data.user_id || '').toLowerCase().trim();
+      const oEmail = String(data.customer_email || data.candidateEmail || data.email || '').toLowerCase().trim();
+      const oPhone = String(data.customer_phone || data.candidatePhone || data.phone || '').replace(/\D/g, '').slice(-10);
+
+      const isForMe = Boolean(
+        (curId && oCustId && (curId === oCustId || curId.includes(oCustId) || oCustId.includes(curId))) ||
+        (curEmail && oEmail && curEmail === oEmail) ||
+        (curPhone && oPhone && curPhone.length >= 7 && (curPhone.endsWith(oPhone) || oPhone.endsWith(curPhone)))
+      );
+
+      if (isForMe) {
+        setCustomerOrders(prev => {
+          const ordId = String(data.id || data.order_number || data._id || '');
+          const exists = prev.some(o => o && (String(o.id || o.order_number || o._id || '') === ordId));
+          if (exists) return prev;
+          return [data, ...prev];
+        });
+        loadCustomerOrders(true);
+        if (typeof triggerNotification === 'function') {
+          triggerNotification(`New ${data.type || 'order'} synced: #${data.order_number || data.id}`);
+        }
+      }
+    };
+
+    // 3. Saved Addresses Updated
+    const handleAddressesUpdated = (data) => {
+      if (data && Array.isArray(data.addresses)) {
+        setAddresses(data.addresses);
+        try {
+          localStorage.setItem(`connect_customer_addresses_${customerId}`, JSON.stringify(data.addresses));
+        } catch (e) {}
+      }
+    };
+
+    // 4. Cart Updated on another platform
+    const handleCartUpdated = (data) => {
+      if (data && Array.isArray(data.cart)) {
+        setCart(data.cart);
+        try {
+          localStorage.setItem('connect_cart', JSON.stringify(data.cart));
+        } catch (e) {}
+      }
+    };
+
+    // 5. Wishlist / Favorites Updated on another platform
+    const handleFavoritesUpdated = (data) => {
+      if (data && Array.isArray(data.favorites)) {
+        setFavorites(data.favorites);
+        try {
+          localStorage.setItem('connect_customer_favorites', JSON.stringify(data.favorites));
+        } catch (e) {}
+      }
+    };
+
+    // 6. Profile Updated on another platform
+    const handleProfileUpdated = (data) => {
+      if (data?.user) {
+        if (data.user.name && typeof setProfileName === 'function') setProfileName(data.user.name);
+        if (data.user.email && typeof setProfileEmail === 'function') setProfileEmail(data.user.email);
+        if (data.user.phone && typeof setProfilePhone === 'function') setProfilePhone(data.user.phone);
+        if (data.user.avatar && typeof setProfilePhoto === 'function') setProfilePhoto(data.user.avatar);
+        if (Array.isArray(data.user.addresses)) setAddresses(data.user.addresses);
       }
     };
 
     socketService.on('order_status_updated', handleOrderStatus);
+    socketService.on('customer_order_status', handleOrderStatus);
+    socketService.on('new_order_placed', handleNewOrder);
+    socketService.on('order_created', handleNewOrder);
+    socketService.on('addresses_updated', handleAddressesUpdated);
+    socketService.on('cart_updated', handleCartUpdated);
+    socketService.on('favorites_updated', handleFavoritesUpdated);
+    socketService.on('customer_profile_updated', handleProfileUpdated);
 
     return () => {
       socketService.off('order_status_updated', handleOrderStatus);
+      socketService.off('customer_order_status', handleOrderStatus);
+      socketService.off('new_order_placed', handleNewOrder);
+      socketService.off('order_created', handleNewOrder);
+      socketService.off('addresses_updated', handleAddressesUpdated);
+      socketService.off('cart_updated', handleCartUpdated);
+      socketService.off('favorites_updated', handleFavoritesUpdated);
+      socketService.off('customer_profile_updated', handleProfileUpdated);
     };
-  }, [currentUser?.id, trackingOrder]);
+  }, [currentUser, activeCustomerId, trackingOrder, profileEmail, profilePhone]);
 
   // Listen for order history loads
   useEffect(() => {
@@ -3193,7 +3320,7 @@ export default function CustomerDashboard({
   };
 
   useEffect(() => {
-    if (trackingOrder && activeProfileTab === 'orders' && trackingOrder.type !== 'Job') {
+    if (trackingOrder && activeProfileTab === 'orders' && getCustomerRecordClassification(trackingOrder) === 'orders') {
       const timer = setTimeout(() => {
         initCustomerMap();
       }, 300);
@@ -3208,7 +3335,7 @@ export default function CustomerDashboard({
         }
       };
     }
-  }, [trackingOrder, activeProfileTab]);
+  }, [trackingOrder, activeProfileTab, getCustomerRecordClassification]);
 
 
   // Sync active product image when a product is clicked
@@ -3724,19 +3851,14 @@ export default function CustomerDashboard({
     setIsProfileModalOpen(true);
 
     if (matchedOrder) {
-      const typeLower = (matchedOrder.type || '').toLowerCase();
-      if (typeLower === 'job' || typeLower === 'jobs' || notif.type === 'job') {
-        setActiveProfileTab('myjobs');
-      } else if (['booking', 'stay', 'travel', 'appointment', 'services', 'service', 'hospital', 'doctor'].includes(typeLower) || notif.type === 'booking') {
-        setActiveProfileTab('bookings');
-      } else {
-        setActiveProfileTab('orders');
-      }
+      const targetTab = getCustomerRecordClassification(matchedOrder);
+      setActiveProfileTab(targetTab);
       setTrackingOrder(matchedOrder);
     } else {
-      if (notif.type === 'job') {
+      const notifType = String(notif.type || '').toLowerCase();
+      if (notifType === 'job' || notifType === 'jobs') {
         setActiveProfileTab('myjobs');
-      } else if (notif.type === 'booking') {
+      } else if (['booking', 'stay', 'travel', 'appointment', 'services', 'service'].includes(notifType)) {
         setActiveProfileTab('bookings');
       } else {
         setActiveProfileTab('orders');
@@ -4945,10 +5067,11 @@ export default function CustomerDashboard({
         const finalTxnId = txnId || (payStatus === 'Paid' ? ('TXN_' + Math.floor(100000 + Math.random() * 900000)) : undefined);
         const itemAmount = (item.price || 0) * (item.quantity || 1);
 
-        const isItemStay = (activeTab === 'Stay') || (item.mainCategory === 'Stay') || (item.subNavbarCategory === 'Stay') || Boolean(item.checkInDate) || (item.nights != null && item.nights > 0);
-        const isItemTravel = (activeTab === 'Travel') || (item.mainCategory === 'Travel') || (item.subNavbarCategory === 'Travel') || Boolean(item.departureDate) || Boolean(item.boardingPoint);
-        const isItemService = (activeTab === 'Services') || (item.mainCategory === 'Services') || (item.subNavbarCategory === 'Services') || Boolean(item.bookingDate && item.bookingTime);
+        const isItemStay = (activeTab === 'Stay') || (item.mainCategory === 'Stay') || (item.subNavbarCategory === 'Stay') || (item.category === 'Stay') || (item.nights != null && item.nights > 0);
+        const isItemTravel = (activeTab === 'Travel') || (item.mainCategory === 'Travel') || (item.subNavbarCategory === 'Travel') || (item.category === 'Travel') || Boolean(item.departureDate) || Boolean(item.boardingPoint);
+        const isItemService = (activeTab === 'Services') || (item.mainCategory === 'Services') || (item.subNavbarCategory === 'Services') || (item.category === 'Services') || Boolean(item.bookingDate || item.appointmentDate || (item.bookingTime && !isItemStay && !isItemTravel));
         const resolvedType = isItemStay ? 'Stay' : isItemTravel ? 'Travel' : isItemService ? 'Services' : (item.subNavbarCategory || item.tag || item.category || 'Product');
+        const resolvedCategory = isItemStay ? 'Stay' : isItemTravel ? 'Travel' : isItemService ? 'Services' : (item.mainCategory || item.category || 'Products');
 
         const orderRes = await apiFetch('/orders', {
           method: 'POST',
@@ -4974,6 +5097,8 @@ export default function CustomerDashboard({
             items: [{
               productId: item.id || item._id,
               name: item.name || item.title,
+              category: resolvedCategory,
+              mainCategory: resolvedCategory,
               price: item.price || 0,
               basePrice: item.basePrice || item.price || 0,
               adultPrice: item.adultPrice,
@@ -4988,6 +5113,8 @@ export default function CustomerDashboard({
               children: item.children
             }],
             type: resolvedType,
+            category: resolvedCategory,
+            mainCategory: resolvedCategory,
             boardingPoint: item.boardingPoint || item.boarding_point || undefined,
             droppingPoint: item.droppingPoint || item.dropping_point || undefined,
             appointmentDate: item.bookingDate || item.checkInDate,
@@ -5020,6 +5147,8 @@ export default function CustomerDashboard({
           id: orderRes?.id || ('ORD_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
           order_number: orderRes?.order_number || ('ORD-' + Math.floor(100000 + Math.random() * 900000)),
           type: resolvedType,
+          category: resolvedCategory,
+          mainCategory: resolvedCategory,
           status: 'Order Received',
           amount: itemAmount,
           totalAmount: itemAmount,
@@ -13734,16 +13863,7 @@ wishlistProducts.forEach(item => addToCart(item));
               <div className="flex-grow max-w-full">
                 {/* 1. MY ORDERS, BOOKINGS, & JOBS TABS */}
                 {['orders', 'bookings', 'myjobs'].includes(activeProfileTab) && (() => {
-                  const ordersForActiveTab = customerOrders.filter(o => {
-                    const typeLower = (o.type || '').toLowerCase();
-                    if (activeProfileTab === 'myjobs') return typeLower === 'job' || typeLower === 'jobs';
-                    if (activeProfileTab === 'bookings') {
-                      if (typeLower === 'job' || typeLower === 'jobs') return false;
-                      return typeLower === 'booking' || ['stay', 'travel', 'services', 'service', 'appointment', 'hospital', 'doctor'].includes(typeLower);
-                    }
-                    if (['booking', 'stay', 'travel', 'services', 'service', 'job', 'jobs', 'appointment', 'doctor', 'hospital'].includes(typeLower)) return false;
-                    return true;
-                  });
+                  const ordersForActiveTab = customerOrders.filter(o => getCustomerRecordClassification(o) === activeProfileTab);
 
                   const filteredCustomerOrders = ordersForActiveTab.filter(o => {
                     if (selectedTimeWindow === 'Today') {
@@ -13773,7 +13893,7 @@ wishlistProducts.forEach(item => addToCart(item));
                   return (
                     <div className="space-y-4 animate-fade-in text-left flex flex-col min-h-full justify-between max-w-full">
                     {trackingOrder ? (
-                      trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs' ? (
+                      getCustomerRecordClassification(trackingOrder) === 'myjobs' ? (
                         /* Beautiful Job Application Status Tracking UI */
                         <div className="space-y-5 animate-fade-in text-left">
                           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
@@ -13888,7 +14008,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             </div>
                           </div>
                         </div>
-                      ) : (activeProfileTab === 'bookings' || ['Booking', 'Stay', 'Travel', 'Appointment', 'Services', 'Service', 'Hospital', 'Doctor'].includes(trackingOrder.type)) ? (
+                      ) : getCustomerRecordClassification(trackingOrder) === 'bookings' ? (
                         /* Beautiful Booking Status Tracking UI */
                         <div className="space-y-4 animate-fade-in">
                           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
@@ -14269,6 +14389,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                 setTrackingTimeline([]);
                                 setTrackingPartner(null);
                                 setTrackingCoords(null);
+                                setActiveProfileTab('orders');
                               }}
                               className="text-xs text-slate-500 hover:text-[#0b1e36] dark:hover:text-amber-400 flex items-center gap-1 cursor-pointer border-none bg-transparent"
                             >
@@ -14728,6 +14849,9 @@ wishlistProducts.forEach(item => addToCart(item));
                             ) : (
                               <div className="space-y-3">
                                 {filteredCustomerOrders.map(ord => {
+                                  const ordClassification = getCustomerRecordClassification(ord);
+                                  const isJobRec = ordClassification === 'myjobs';
+                                  const isBookingRec = ordClassification === 'bookings';
                                   const isFailed = ord.status === 'Payment Failed' || ord.status === 'Failed' || ord.paymentStatus === 'Failed' || ord.payment_status === 'Failed';
                                   const statusBadgeStyle = 
                                     isFailed
@@ -14740,36 +14864,36 @@ wishlistProducts.forEach(item => addToCart(item));
 
                                   const statusText = 
                                     isFailed ? 'Payment Failed' :
-                                    ord.type === 'Job' || ord.type === 'Jobs' ? (
+                                    isJobRec ? (
                                       ord.status === 'Order Received' ? 'Under Preview' :
                                       ord.status === 'Preparing' ? 'Resume Screening' :
                                       ['Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(ord.status) ? 'Shortlisted' :
                                       ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(ord.status) ? 'Interview Scheduled' :
                                       ['Delivered', 'Completed'].includes(ord.status) ? 'Selected' :
                                       ord.status === 'Cancelled' ? 'Rejected' : 'Under Review'
-                                    ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? (
+                                    ) : isBookingRec ? (
                                       ord.status === 'Order Received' ? 'Pending' :
                                       ['Preparing', 'Ready For Pickup', 'Assigned To Delivery Partner', 'Delivery Partner Accepted'].includes(ord.status) ? 'Confirmed' :
                                       ['Picked Up', 'Out For Delivery', 'Near Customer'].includes(ord.status) ? 'Active' :
                                       ['Delivered', 'Completed'].includes(ord.status) ? 'Completed' :
                                       ord.status === 'Cancelled' ? 'Cancelled' : 'Pending'
                                     ) : (
-                                      ord.status.replace('Delivery Partner ', '')
+                                      (ord.status || 'Order Received').replace('Delivery Partner ', '')
                                     );
 
                                   return (
                                     <div key={ord.id} className="border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all">
                                       <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                                         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                                          ord.type === 'Job' || ord.type === 'Jobs'
+                                          isJobRec
                                             ? 'bg-indigo-400/15 border border-indigo-400/20 text-indigo-500'
-                                            : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type)
+                                            : isBookingRec
                                             ? 'bg-blue-400/15 border border-blue-400/20 text-blue-500'
                                             : 'bg-amber-400/15 border border-amber-400/20 text-amber-500'
                                         }`}>
-                                          {ord.type === 'Job' || ord.type === 'Jobs' ? (
+                                          {isJobRec ? (
                                             <Briefcase className="w-5 h-5" />
-                                          ) : ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? (
+                                          ) : isBookingRec ? (
                                             <Calendar className="w-5 h-5" />
                                           ) : (
                                             <ShoppingBag className="w-5 h-5" />
@@ -14777,27 +14901,23 @@ wishlistProducts.forEach(item => addToCart(item));
                                         </div>
                                         <div className="text-left flex-1 min-w-0">
                                           <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white truncate">
-                                            {(ord.type === 'Job' || ord.type === 'Jobs' || ord.type === 'Booking' || ['Stay', 'Travel', 'Services', 'Appointment'].includes(ord.type)) ? (ord.product_details || '').replace(/\s*\(Qty:\s*\d+\)/gi, '') : ord.product_details}
+                                            {(isJobRec || isBookingRec) ? (ord.product_details || '').replace(/\s*\(Qty:\s*\d+\)/gi, '') : ord.product_details}
                                           </h4>
                                           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-slate-400 font-medium mt-0.5">
                                             <span>
-                                              {ord.type === 'Job' || ord.type === 'Jobs' ? 'App No: ' : 
-                                               ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? 'Ref: ' : 
-                                               'Order: '}
+                                              {isJobRec ? 'App No: ' : isBookingRec ? 'Ref: ' : 'Order: '}
                                               <strong className="text-slate-600 dark:text-slate-300">#{ord.order_number}</strong>
                                             </span>
                                             <span>•</span>
                                             <span>
-                                              {ord.type === 'Job' || ord.type === 'Jobs' ? 'Applied: ' : 
-                                               ['Booking', 'Stay', 'Travel', 'Appointment'].includes(ord.type) ? 'Booked: ' : 
-                                               'Ordered: '}
+                                              {isJobRec ? 'Applied: ' : isBookingRec ? 'Booked: ' : 'Ordered: '}
                                               {new Date(ord.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </span>
                                           </div>
                                           
                                           {/* Action Buttons */}
                                           <div className="flex items-center gap-2 mt-2 pt-0.5">
-                                            {ord.type === 'Job' || ord.type === 'Jobs' ? (
+                                            {isJobRec ? (
                                               <button 
                                                 type="button"
                                                 onClick={() => {
@@ -14808,11 +14928,11 @@ wishlistProducts.forEach(item => addToCart(item));
                                               >
                                                 View Status
                                               </button>
-                                            ) : (['Booking', 'Stay', 'Travel', 'Appointment', 'Services', 'Service', 'Hospital', 'Doctor'].includes(ord.type) || activeProfileTab === 'bookings') ? (
+                                            ) : isBookingRec ? (
                                               <button 
                                                 type="button"
                                                 onClick={() => {
-                                                  setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
+                                                  setActiveProfileTab('bookings');
                                                   setTrackingOrder(ord);
                                                 }} 
                                                 className="px-2.5 py-1 bg-blue-600 text-white hover:bg-blue-700 text-[9.5px] font-black uppercase rounded-lg border-none cursor-pointer shadow-3xs"
@@ -14825,7 +14945,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                                   <button 
                                                     type="button"
                                                     onClick={() => {
-                                                      setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
+                                                      setActiveProfileTab('orders');
                                                       setTrackingOrder(ord);
                                                     }} 
                                                     className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 text-[9.5px] font-black uppercase rounded-lg border-none cursor-pointer shadow-3xs"
@@ -14837,7 +14957,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                                   <button 
                                                     type="button"
                                                     onClick={() => {
-                                                      setActiveProfileTab(activeProfileTab === 'bookings' ? 'bookings' : 'orders');
+                                                      setActiveProfileTab('orders');
                                                       setTrackingOrder(ord);
                                                       setRatingOrder(ord);
                                                     }} 

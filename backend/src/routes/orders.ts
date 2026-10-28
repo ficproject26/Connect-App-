@@ -1179,9 +1179,21 @@ router.post('/', async (req: Request, res: Response) => {
       notes: `Order placed successfully by ${customer_name}`
     });
 
-    // Notify vendor and broadcast
+    // Notify vendor, customer, and broadcast
     socketManager.emitToVendor(newOrder.vendor_id, 'new_order_received', newOrder);
     socketManager.broadcast('new_order_placed', newOrder);
+
+    // Cross-platform synchronization: notify customer sessions
+    const cIdTarget = newOrder.customer_id || resolvedCustId || newOrder.customerId || '';
+    if (cIdTarget) {
+      socketManager.emitToUser('customer', cIdTarget, 'new_order_placed', newOrder);
+      socketManager.emitToUser('customer', cIdTarget, 'order_created', newOrder);
+    }
+    const uIdTarget = (newOrder as any).user_id;
+    if (uIdTarget && uIdTarget !== cIdTarget) {
+      socketManager.emitToUser('customer', uIdTarget, 'new_order_placed', newOrder);
+      socketManager.emitToUser('customer', uIdTarget, 'order_created', newOrder);
+    }
 
     // Publish structured event to Redis message broker & WebSockets
     await eventPublisher.publishEvent(
@@ -1325,7 +1337,11 @@ router.post('/:id/prepare', authenticateToken, enforceRoleAndApproval('vendor', 
       notes: 'Vendor is preparing your items'
     });
 
-    socketManager.emitToOrder(id, 'order_status_updated', { status: 'Preparing' });
+    socketManager.emitToOrder(id, 'order_status_updated', { status: 'Preparing', orderId: id, order: updated });
+    const targetCustPrep = (updated as any)?.customer_id || (updated as any)?.customerId || (updated as any)?.user_id;
+    if (targetCustPrep) {
+      socketManager.emitToUser('customer', targetCustPrep, 'order_status_updated', { status: 'Preparing', orderId: id, order: updated });
+    }
     await eventPublisher.publishEvent(
       RealtimeEntities.ORDER,
       RealtimeActions.STATUS_CHANGED,
@@ -1360,7 +1376,11 @@ router.post('/:id/ready', authenticateToken, enforceRoleAndApproval('vendor', 'a
       notes: 'Order is packed and ready for pickup'
     });
 
-    socketManager.emitToOrder(id, 'order_status_updated', { status: 'Ready For Pickup' });
+    socketManager.emitToOrder(id, 'order_status_updated', { status: 'Ready For Pickup', orderId: id, order: updated });
+    const targetCustReady = (updated as any)?.customer_id || (updated as any)?.customerId || (updated as any)?.user_id;
+    if (targetCustReady) {
+      socketManager.emitToUser('customer', targetCustReady, 'order_status_updated', { status: 'Ready For Pickup', orderId: id, order: updated });
+    }
     await eventPublisher.publishEvent(
       RealtimeEntities.ORDER,
       RealtimeActions.STATUS_CHANGED,
@@ -1535,7 +1555,11 @@ router.put('/:id/status', authenticateToken, async (req: AuthenticatedRequest, r
       notes: `Order status updated to ${cleanStatus} by ${updater}`
     });
 
-    socketManager.emitToOrder(id, 'order_status_updated', { status });
+    socketManager.emitToOrder(id, 'order_status_updated', { status, orderId: id, order: updated });
+    const targetCustGen = (updated as any)?.customer_id || (updated as any)?.customerId || (updated as any)?.user_id;
+    if (targetCustGen) {
+      socketManager.emitToUser('customer', targetCustGen, 'order_status_updated', { status, orderId: id, order: updated });
+    }
     await eventPublisher.publishEvent(
       RealtimeEntities.ORDER,
       RealtimeActions.STATUS_CHANGED,
