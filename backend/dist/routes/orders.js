@@ -240,6 +240,11 @@ router.get('/', middleware_1.optionalAuthenticateToken, async (req, res) => {
                     allowedIds.push(String(v).toLowerCase().trim());
                 });
             }
+            const userPhoneDigits = (userDbDoc?.phone || authUser.phone || '').replace(/\D/g, '');
+            if (userPhoneDigits && userPhoneDigits.length >= 10) {
+                allowedIds.push(userPhoneDigits.slice(-10));
+                allowedIds.push(`+91${userPhoneDigits.slice(-10)}`);
+            }
             if (customerId && !allowedIds.includes(customerId.toLowerCase().trim())) {
                 return res.status(403).json({
                     status: 'error',
@@ -253,9 +258,11 @@ router.get('/', middleware_1.optionalAuthenticateToken, async (req, res) => {
                 userDbDoc?.id,
                 userDbDoc?._id?.toString(),
                 userDbDoc?.email,
+                userDbDoc?.phone,
                 authUser.customerId,
                 authUser.userId,
-                authUser.email
+                authUser.email,
+                authUser.phone
             ].filter(Boolean);
             targetCustomerIds = Array.from(new Set(searchCustIds));
         }

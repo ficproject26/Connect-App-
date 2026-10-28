@@ -84,9 +84,11 @@ export function AuthProvider({ children }) {
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        if (!u.customerId || !isValidCustomerId(u.customerId)) {
-          if (u.registrationId && isValidCustomerId(u.registrationId)) {
+        if (!u.customerId) {
+          if (u.registrationId) {
             u.customerId = u.registrationId;
+          } else if (u.id || u._id) {
+            u.customerId = u.id || u._id;
           } else {
             u.customerId = getOrGenerateCustomerId(u);
           }
@@ -186,11 +188,7 @@ export function AuthProvider({ children }) {
           isRegistrationAddress: true
         }] : []);
 
-    const custId = (inputUser.customerId && isValidCustomerId(inputUser.customerId))
-      ? inputUser.customerId 
-      : (inputUser.registrationId && isValidCustomerId(inputUser.registrationId)
-          ? inputUser.registrationId
-          : getOrGenerateCustomerId(inputUser));
+    const custId = inputUser.customerId || inputUser.registrationId || inputUser.id || inputUser._id || getOrGenerateCustomerId(inputUser);
 
     const existingStoredToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('accessToken'))) || '';
     const userToken = inputUser.token || inputUser.accessToken || (existingStoredToken && !existingStoredToken.startsWith('token_') ? existingStoredToken : null) || existingStoredToken || `token_${custId}`;

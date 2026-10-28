@@ -2072,39 +2072,93 @@ router.get('/customer-notifications', authenticateToken, async (req: Authenticat
       return res.status(503).json({ status: 'error', message: 'Database not connected' });
     }
 
-    const cleanTarget = target.trim();
-    const cleanDigits = target.replace(/\D/g, '');
+    // Collect all authentic identifiers for this user
+    const targets: string[] = [];
+    if (authUser.userId) targets.push(String(authUser.userId).trim());
+    if (authUser.customerId) targets.push(String(authUser.customerId).trim());
+    if (authUser.registrationId) targets.push(String(authUser.registrationId).trim());
+    if (authUser.id) targets.push(String(authUser.id).trim());
+    if (authUser._id) targets.push(String(authUser._id).trim());
+    if (authUser.email) targets.push(String(authUser.email).toLowerCase().trim());
+    if (authUser.phone) targets.push(String(authUser.phone).trim());
+    if (requestedId) targets.push(requestedId.trim());
+
+    if (authUser.userId) {
+      const userOrs: any[] = [{ id: authUser.userId }, { email: (authUser.email || '').toLowerCase().trim() }];
+      if (ObjectId.isValid(authUser.userId)) {
+        try { userOrs.push({ _id: new ObjectId(authUser.userId) }); } catch (e) {}
+      }
+      const userDoc = await mongoDb.collection('users').findOne({ $or: userOrs } as any).catch(() => null);
+      if (userDoc) {
+        if (userDoc._id) targets.push(userDoc._id.toString());
+        if (userDoc.id) targets.push(String(userDoc.id));
+        if (userDoc.customerId) targets.push(String(userDoc.customerId));
+        if (userDoc.registrationId) targets.push(String(userDoc.registrationId));
+        if (userDoc.email) targets.push(String(userDoc.email).toLowerCase());
+        if (userDoc.phone) targets.push(String(userDoc.phone));
+      }
+    }
+
+    const uniqueTargets = Array.from(new Set(targets.filter(Boolean)));
+    if (uniqueTargets.length === 0) {
+      return res.status(200).json({ status: 'success', notifications: [], unreadCount: 0 });
+    }
+
+    // Build comprehensive search queries
+    const notifOrList: any[] = [];
+    const orderOrList: any[] = [];
+
+    uniqueTargets.forEach(t => {
+      const cleanT = t.trim();
+      const cleanLower = cleanT.toLowerCase();
+      const cleanDigits = cleanT.replace(/\D/g, '');
+
+      notifOrList.push(
+        { customerId: cleanT },
+        { customer_id: cleanT },
+        { userId: cleanT },
+        { email: cleanLower },
+        { customerEmail: cleanLower }
+      );
+
+      orderOrList.push(
+        { customer_id: cleanT },
+        { customerId: cleanT },
+        { memberId: cleanT },
+        { user_id: cleanT },
+        { customer_email: cleanLower },
+        { candidateEmail: cleanLower }
+      );
+
+      if (cleanDigits.length >= 7) {
+        notifOrList.push({ phone: cleanDigits }, { customerPhone: cleanDigits });
+        orderOrList.push(
+          { customer_phone: cleanDigits },
+          { customer_phone: { $regex: cleanDigits.slice(-10) } }
+        );
+      }
+    });
 
     // 1. Check explicit notifications collection
-    const notifFilter: any = {
-      $or: [
-        { customerId: cleanTarget },
-        { customer_id: cleanTarget },
-        { userId: cleanTarget },
-        { email: cleanTarget.toLowerCase() },
-        { customerEmail: cleanTarget.toLowerCase() },
-        ...(cleanDigits.length >= 10 ? [{ phone: cleanDigits }, { customerPhone: cleanDigits }] : [])
-      ]
-    };
-
-    const explicitNotifs = await mongoDb.collection('notifications').find(notifFilter).sort({ createdAt: -1, created_at: -1 }).limit(30).toArray().catch(() => []);
+    const explicitNotifs = await mongoDb.collection('notifications')
+      .find({ $or: notifOrList })
+      .sort({ createdAt: -1, created_at: -1 })
+      .limit(30)
+      .toArray()
+      .catch(() => []);
 
     // 2. Query recent orders to generate accurate real-time order/booking activity notifications
-    const orderFilter: any = {
-      $or: [
-        { customer_id: cleanTarget },
-        { customerId: cleanTarget },
-        { customer_email: cleanTarget.toLowerCase() },
-        ...(cleanDigits.length >= 10 ? [{ customer_phone: { $regex: cleanDigits.slice(-10) } }] : [])
-      ]
-    };
-
-    const userOrders = await mongoDb.collection('orders').find(orderFilter).sort({ created_at: -1 }).limit(20).toArray().catch(() => []);
+    const userOrders = await mongoDb.collection('orders')
+      .find({ $or: orderOrList })
+      .sort({ created_at: -1 })
+      .limit(20)
+      .toArray()
+      .catch(() => []);
 
     const orderNotifs = userOrders.map((ord: any) => {
       const ordNum = ord.order_number || ord.id || 'N/A';
       const status = ord.status || 'Order Received';
-      const prodName = (ord.product_details || 'Order').replace(/\s*\(Qty:\s*\d+\)/gi, '');
+      const prodName = (ord.product_details || ord.items?.[0]?.name || 'Order').replace(/\s*\(Qty:\s*\d+\)/gi, '');
       const isDelivered = ['Delivered', 'Completed'].includes(status);
       const isCancelled = status === 'Cancelled';
       const isRead = Boolean(ord.notification_read || ord.notificationRead || isDelivered);
@@ -2126,7 +2180,8 @@ router.get('/customer-notifications', authenticateToken, async (req: Authenticat
       }
 
       return {
-        id: `ord-notif-${ord._id || ord.id}`,
+        id: `ord-notif-${ord._id || ord.id || ordNum}`,
+        orderId: ord.id || ord._id || ordNum,
         title,
         message,
         text: message,
@@ -2164,10 +2219,11 @@ router.get('/customer-notifications', authenticateToken, async (req: Authenticat
   }
 });
 
-router.put('/customer-notifications/read', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+// Helper for Mark As Read logic
+const handleMarkNotificationsRead = async (req: AuthenticatedRequest, res: Response) => {
   const authUser = req.user;
   const requestedId = ((req.body?.customerId || req.body?.userId || req.body?.email || '') as string).trim();
-  const target = requestedId || (authUser?.userId || authUser?.email || '');
+  const notifId = ((req.params?.id || req.body?.id || req.body?.notificationId || req.query.id || req.query.notificationId || '') as string).trim();
 
   try {
     const mongoDb = db.getDb();
@@ -2175,33 +2231,86 @@ router.put('/customer-notifications/read', optionalAuthenticateToken, async (req
       return res.status(503).json({ status: 'error', message: 'Database not connected' });
     }
 
-    if (target) {
-      const cleanTarget = target.trim();
-      const cleanDigits = target.replace(/\D/g, '');
+    // 1. If a specific notification ID is provided, mark that single notification as read
+    if (notifId) {
+      let marked = false;
+      const cleanOrdId = notifId.replace(/^ord-notif-/, '');
 
-      // Mark explicit notifications as read
+      // Check if it corresponds to an order
+      const ordQueries: any[] = [{ id: cleanOrdId }, { order_number: cleanOrdId }];
+      if (ObjectId.isValid(cleanOrdId)) {
+        try { ordQueries.push({ _id: new ObjectId(cleanOrdId) }); } catch (e) {}
+      }
+      const ordRes = await mongoDb.collection('orders').updateMany(
+        { $or: ordQueries },
+        { $set: { notification_read: true, notificationRead: true } }
+      ).catch(() => null);
+      if (ordRes && ordRes.modifiedCount > 0) marked = true;
+
+      // Also check explicit notifications collection
+      const notifQueries: any[] = [{ id: notifId }, { id: cleanOrdId }];
+      if (ObjectId.isValid(notifId)) {
+        try { notifQueries.push({ _id: new ObjectId(notifId) }); } catch (e) {}
+      }
+      if (ObjectId.isValid(cleanOrdId)) {
+        try { notifQueries.push({ _id: new ObjectId(cleanOrdId) }); } catch (e) {}
+      }
       await mongoDb.collection('notifications').updateMany(
-        {
-          $or: [
-            { customerId: cleanTarget },
-            { userId: cleanTarget },
-            { email: cleanTarget.toLowerCase() },
-            ...(cleanDigits.length >= 10 ? [{ phone: cleanDigits }] : [])
-          ]
-        },
+        { $or: notifQueries },
         { $set: { read: true, isRead: true } }
       ).catch(() => {});
 
-      // Mark order notifications as read
+      return res.json({ status: 'success', message: 'Notification marked as read', id: notifId });
+    }
+
+    // 2. Bulk mark all notifications as read for this customer
+    const targets: string[] = [];
+    if (authUser?.userId) targets.push(String(authUser.userId).trim());
+    if (authUser?.customerId) targets.push(String(authUser.customerId).trim());
+    if (authUser?.registrationId) targets.push(String(authUser.registrationId).trim());
+    if (authUser?.id) targets.push(String(authUser.id).trim());
+    if (authUser?._id) targets.push(String(authUser._id).trim());
+    if (authUser?.email) targets.push(String(authUser.email).toLowerCase().trim());
+    if (authUser?.phone) targets.push(String(authUser.phone).trim());
+    if (requestedId) targets.push(requestedId.trim());
+
+    if (targets.length > 0) {
+      const notifOrList: any[] = [];
+      const orderOrList: any[] = [];
+
+      targets.forEach(t => {
+        const cleanT = t.trim();
+        const cleanLower = cleanT.toLowerCase();
+        const cleanDigits = cleanT.replace(/\D/g, '');
+
+        notifOrList.push(
+          { customerId: cleanT },
+          { customer_id: cleanT },
+          { userId: cleanT },
+          { email: cleanLower }
+        );
+
+        orderOrList.push(
+          { customer_id: cleanT },
+          { customerId: cleanT },
+          { memberId: cleanT },
+          { user_id: cleanT },
+          { customer_email: cleanLower }
+        );
+
+        if (cleanDigits.length >= 7) {
+          notifOrList.push({ phone: cleanDigits });
+          orderOrList.push({ customer_phone: { $regex: cleanDigits.slice(-10) } });
+        }
+      });
+
+      await mongoDb.collection('notifications').updateMany(
+        { $or: notifOrList },
+        { $set: { read: true, isRead: true } }
+      ).catch(() => {});
+
       await mongoDb.collection('orders').updateMany(
-        {
-          $or: [
-            { customer_id: cleanTarget },
-            { customerId: cleanTarget },
-            { customer_email: cleanTarget.toLowerCase() },
-            ...(cleanDigits.length >= 10 ? [{ customer_phone: { $regex: cleanDigits.slice(-10) } }] : [])
-          ]
-        },
+        { $or: orderOrList },
         { $set: { notification_read: true, notificationRead: true } }
       ).catch(() => {});
     }
@@ -2209,6 +2318,29 @@ router.put('/customer-notifications/read', optionalAuthenticateToken, async (req
     return res.json({ status: 'success', message: 'All notifications marked as read', unreadCount: 0 });
   } catch (err: any) {
     return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+router.put(['/customer-notifications/read', '/customer-notifications/:id/read'], optionalAuthenticateToken, handleMarkNotificationsRead);
+router.patch(['/customer-notifications/read', '/customer-notifications/:id/read'], optionalAuthenticateToken, handleMarkNotificationsRead);
+
+// FCM / Device Token Registration
+router.post('/notifications/register-token', optionalAuthenticateToken, async (req: Request, res: Response) => {
+  const { token, platform, deviceId, userId } = req.body || {};
+  const authUser = (req as any).user;
+  const targetUser = userId || authUser?.userId || authUser?.customerId || 'anonymous';
+  try {
+    const mongoDb = db.getDb();
+    if (mongoDb && token) {
+      await mongoDb.collection('fcm_tokens').updateOne(
+        { token },
+        { $set: { token, platform: platform || 'android', deviceId: deviceId || '', userId: targetUser, updatedAt: new Date() } },
+        { upsert: true }
+      ).catch(() => {});
+    }
+    return res.json({ status: 'success', message: 'Device token registered successfully.' });
+  } catch (err: any) {
+    return res.json({ status: 'success', message: 'Token recorded.' });
   }
 });
 

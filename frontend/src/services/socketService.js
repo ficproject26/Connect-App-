@@ -75,9 +75,7 @@ class SocketServiceClient {
     this.isConnecting = true;
 
     try {
-      const socketUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-        ? 'http://localhost:8001' 
-        : 'https://api.ficapp.in';
+      const socketUrl = getSocketUrl();
 
       this.socket = io(socketUrl, {
         auth: {

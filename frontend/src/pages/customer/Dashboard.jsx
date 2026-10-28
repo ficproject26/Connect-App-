@@ -2937,6 +2937,7 @@ export default function CustomerDashboard({
         const cPhone = String(ord.customer_phone || ord.customerPhone || ord.phone || '').replace(/\D/g, '');
         const cId = String(ord.customer_id || ord.customerId || ord.memberId || ord.user_id || '').trim().toLowerCase();
 
+        const isApiOrder = apiOrders.some(ao => ao && (ao.id === ord.id || ao.order_number === ord.order_number || ao._id === ord._id));
         const isLocalDeviceOrder = localOrders.some(lo => lo && (lo.id === ord.id || lo.order_number === ord.order_number || lo._id === ord._id));
 
         let isMatch = false;
@@ -2947,7 +2948,7 @@ export default function CustomerDashboard({
           const matchPhone = Boolean(targetPhone && cPhone && targetPhone.length >= 7 && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone)));
           const matchExactName = Boolean(targetName && cName && (cName === targetName || (targetFirstName && cName.includes(targetFirstName))) && !['customer', 'applicant', 'member', 'connect member', 'guest', ''].includes(cName));
 
-          isMatch = matchId || matchEmail || matchPhone || matchExactName || isLocalDeviceOrder;
+          isMatch = isApiOrder || matchId || matchEmail || matchPhone || matchExactName || isLocalDeviceOrder;
         } else {
           isMatch = true;
         }
@@ -3597,8 +3598,15 @@ export default function CustomerDashboard({
     });
   }, [customerOrders]);
 
-  const loadCustomerNotifications = useCallback(() => {
+  const loadCustomerNotifications = useCallback(async () => {
     try {
+      setIsNotificationsLoading(true);
+      const res = await apiFetch('/api/auth/customer-notifications');
+      if (res && res.status === 'success' && Array.isArray(res.notifications)) {
+        setNotificationsList(res.notifications);
+        setUnreadCount(typeof res.unreadCount === 'number' ? res.unreadCount : res.notifications.filter(n => !n.read).length);
+        return;
+      }
       const orderNotifs = deriveOrderNotifications();
       if (orderNotifs.length > 0) {
         setNotificationsList(orderNotifs);
@@ -3608,7 +3616,14 @@ export default function CustomerDashboard({
         setUnreadCount(0);
       }
     } catch (err) {
-      // Graceful fallback
+      const orderNotifs = deriveOrderNotifications();
+      if (orderNotifs.length > 0) {
+        setNotificationsList(orderNotifs);
+        setUnreadCount(orderNotifs.filter(n => !n.read).length);
+      } else {
+        setNotificationsList([]);
+        setUnreadCount(0);
+      }
     } finally {
       setIsNotificationsLoading(false);
     }
@@ -3670,6 +3685,9 @@ export default function CustomerDashboard({
       setNotificationsList([]);
       setUnreadCount(0);
       triggerNotification("All notifications cleared", "success");
+
+      // Persist mark all read to backend
+      apiFetch('/api/auth/customer-notifications/read', { method: 'PUT' }).catch(() => {});
     } catch (e) {
       console.warn("Failed clearing all notifications:", e);
     }
@@ -3687,6 +3705,12 @@ export default function CustomerDashboard({
       } catch (e) {}
       setNotificationsList(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
+
+      // Persist read status to backend MongoDB
+      apiFetch('/api/auth/customer-notifications/read', {
+        method: 'PUT',
+        body: JSON.stringify({ id: notif.id, notificationId: notif.id })
+      }).catch(() => {});
     }
 
     const entityId = notif.entityId || notif.orderId || String(notif.id).replace('ord-notif-', '');
@@ -3731,6 +3755,11 @@ export default function CustomerDashboard({
       setUnreadCount(0);
       setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
       triggerNotification("All notifications marked as read");
+
+      // Persist bulk read status to backend MongoDB
+      apiFetch('/api/auth/customer-notifications/read', {
+        method: 'PUT'
+      }).catch(() => {});
     } catch (err) {
       console.warn("Failed marking notifications read:", err);
     }

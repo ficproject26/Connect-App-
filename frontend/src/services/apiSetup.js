@@ -23,78 +23,59 @@ export const isLocalHostname = (hostname) => {
 };
 
 export const getBackendUrl = () => {
+  // 1. Authoritative configured environment URL (e.g. VITE_API_URL / VITE_BACKEND_URL)
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
+    return formatUrl(import.meta.env.VITE_API_URL);
+  }
+  if (import.meta.env.VITE_BACKEND_URL && !import.meta.env.VITE_BACKEND_URL.includes('www.ficapp.in')) {
+    return formatUrl(import.meta.env.VITE_BACKEND_URL);
+  }
+
+  // 2. Local fallback if explicitly running locally without configured remote URL
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   if (isLocalHostname(hostname)) {
     return `http://${hostname || 'localhost'}:8001`;
   }
-
-  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-
-  if (isHttps) {
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
-      return formatUrl(import.meta.env.VITE_API_URL);
-    }
-    if (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_BACKEND_URL.includes('www.ficapp.in')) {
-      return formatUrl(import.meta.env.VITE_BACKEND_URL);
-    }
-    return 'https://api.ficapp.in';
-  }
-
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
-  if (import.meta.env.VITE_BACKEND_URL && !import.meta.env.VITE_BACKEND_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_BACKEND_URL);
 
   return 'https://api.ficapp.in';
 };
 
 export const getVendorBackendUrl = () => {
+  if (import.meta.env.VITE_VENDOR_BACKEND_URL && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('www.ficapp.in')) {
+    return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
+  }
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
+    return formatUrl(import.meta.env.VITE_API_URL);
+  }
+
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   if (isLocalHostname(hostname)) {
     return `http://${hostname || 'localhost'}:8001`;
   }
-
-  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-
-  if (isHttps) {
-    if (import.meta.env.VITE_VENDOR_BACKEND_URL && import.meta.env.VITE_VENDOR_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('www.ficapp.in')) {
-      return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
-    }
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
-      return formatUrl(import.meta.env.VITE_API_URL);
-    }
-    return 'https://api.ficapp.in';
-  }
-
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
-  if (import.meta.env.VITE_VENDOR_BACKEND_URL && !import.meta.env.VITE_VENDOR_BACKEND_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_VENDOR_BACKEND_URL);
 
   return 'https://api.ficapp.in';
 };
 
 export const getAdminBackendUrl = () => {
+  if (import.meta.env.VITE_ADMIN_BACKEND_URL && !import.meta.env.VITE_ADMIN_BACKEND_URL.includes('www.ficapp.in')) {
+    return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
+  }
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
+    return formatUrl(import.meta.env.VITE_API_URL);
+  }
+
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   if (isLocalHostname(hostname)) {
     return `http://${hostname || 'localhost'}:8001`;
   }
 
-  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-
-  if (isHttps) {
-    if (import.meta.env.VITE_ADMIN_BACKEND_URL && import.meta.env.VITE_ADMIN_BACKEND_URL.startsWith('https://') && !import.meta.env.VITE_ADMIN_BACKEND_URL.includes('www.ficapp.in')) {
-      return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
-    }
-    if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('https://') && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
-      return formatUrl(import.meta.env.VITE_API_URL);
-    }
-    return 'https://api.ficapp.in';
-  }
-
-  if (import.meta.env.VITE_ADMIN_BACKEND_URL && !import.meta.env.VITE_ADMIN_BACKEND_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_ADMIN_BACKEND_URL);
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) return formatUrl(import.meta.env.VITE_API_URL);
-
   return 'https://api.ficapp.in';
 };
 
 export const getSocketUrl = () => {
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('www.ficapp.in')) {
+    return formatUrl(import.meta.env.VITE_API_URL);
+  }
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   if (isLocalHostname(hostname)) {
     return `http://${hostname || 'localhost'}:8001`;

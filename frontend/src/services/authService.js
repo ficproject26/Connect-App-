@@ -16,7 +16,11 @@ export const clearClientAuthState = () => {
       'connect_active_profile_tab',
       'connect_profile_modal_open',
       'connect_user_orders',
-      'user_orders'
+      'user_orders',
+      'connect_read_notifications',
+      'connect_deleted_notifications',
+      'connect_notifications_cleared_at',
+      'connect_fallback_orders'
     ];
     keysToRemove.forEach(k => {
       try { localStorage.removeItem(k); } catch (e) {}
