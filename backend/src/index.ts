@@ -148,6 +148,14 @@ app.get('/', (req, res) => {
   });
 });
 
+// Auto-heal duplicate '/api/api' requests from stale or misconfigured client bundles
+app.use((req, _res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace(/^\/api\/api\//, '/api/');
+  }
+  next();
+});
+
 // Production API Rate Limiting (500 requests per 15 minutes per client IP/session)
 app.use('/api/', globalApiRateLimiter);
 

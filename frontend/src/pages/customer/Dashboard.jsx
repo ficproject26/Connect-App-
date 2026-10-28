@@ -3601,7 +3601,7 @@ export default function CustomerDashboard({
   const loadCustomerNotifications = useCallback(async () => {
     try {
       setIsNotificationsLoading(true);
-      const res = await apiFetch('/api/auth/customer-notifications');
+      const res = await apiFetch('/auth/customer-notifications');
       if (res && res.status === 'success' && Array.isArray(res.notifications)) {
         setNotificationsList(res.notifications);
         setUnreadCount(typeof res.unreadCount === 'number' ? res.unreadCount : res.notifications.filter(n => !n.read).length);
@@ -3648,13 +3648,13 @@ export default function CustomerDashboard({
 
       // Call backend DELETE endpoint
       try {
-        await apiFetch(`/api/auth/customer-notifications/${cleanId}`, {
+        await apiFetch(`/auth/customer-notifications/${cleanId}`, {
           method: 'DELETE'
         });
       } catch (e) {
         // Fallback endpoint
         try {
-          await apiFetch(`/api/auth/notifications/${cleanId}`, { method: 'DELETE' });
+          await apiFetch(`/auth/notifications/${cleanId}`, { method: 'DELETE' });
         } catch (err) {}
       }
 
@@ -3687,7 +3687,7 @@ export default function CustomerDashboard({
       triggerNotification("All notifications cleared", "success");
 
       // Persist mark all read to backend
-      apiFetch('/api/auth/customer-notifications/read', { method: 'PUT' }).catch(() => {});
+      apiFetch('/auth/customer-notifications/read', { method: 'PUT' }).catch(() => {});
     } catch (e) {
       console.warn("Failed clearing all notifications:", e);
     }
@@ -3707,7 +3707,7 @@ export default function CustomerDashboard({
       setUnreadCount(prev => Math.max(0, prev - 1));
 
       // Persist read status to backend MongoDB
-      apiFetch('/api/auth/customer-notifications/read', {
+      apiFetch('/auth/customer-notifications/read', {
         method: 'PUT',
         body: JSON.stringify({ id: notif.id, notificationId: notif.id })
       }).catch(() => {});
@@ -3757,7 +3757,7 @@ export default function CustomerDashboard({
       triggerNotification("All notifications marked as read");
 
       // Persist bulk read status to backend MongoDB
-      apiFetch('/api/auth/customer-notifications/read', {
+      apiFetch('/auth/customer-notifications/read', {
         method: 'PUT'
       }).catch(() => {});
     } catch (err) {

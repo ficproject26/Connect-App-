@@ -473,10 +473,16 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   const token = localStorage.getItem('connect_token') || localStorage.getItem('token') || localStorage.getItem('vendor_token') || localStorage.getItem('admin_token');
 
+  // Strip duplicate '/api' prefix so `${BACKEND_URL}${normalizedEndpoint}` never produces '/api/api/...'
+  const epStr = typeof endpoint === 'string' ? endpoint.trim() : '';
+  const normalizedEndpoint = epStr.startsWith('/api/')
+    ? epStr.slice(4)
+    : (epStr.startsWith('/') ? epStr : `/${epStr}`);
+
   try {
     const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-    const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+    const res = await fetch(`${BACKEND_URL}${normalizedEndpoint}`, {
       headers: {
         'Content-Type': 'application/json',
         ...authHeader,
@@ -491,8 +497,8 @@ export const apiFetch = async (endpoint, options = {}) => {
         return { status: 'error', statusCode: 429, code: 'RATE_LIMIT_EXCEEDED', message: 'Too Many Requests. Please slow down.' };
       }
       // Never attempt fallback for auth endpoints or security rejections (401, 403)
-      if (!endpoint.startsWith('/auth') && res.status !== 401 && res.status !== 403) {
-        const fallbackRes = await handleFallbackRequest(endpoint, options).catch(() => null);
+      if (!normalizedEndpoint.startsWith('/auth') && res.status !== 401 && res.status !== 403) {
+        const fallbackRes = await handleFallbackRequest(normalizedEndpoint, options).catch(() => null);
         if (fallbackRes && fallbackRes.status === 'success') {
           return fallbackRes;
         }
@@ -514,9 +520,9 @@ export const apiFetch = async (endpoint, options = {}) => {
     if (isNetworkSuspended) {
       return { status: 'network_suspended', message: error?.message || 'Network suspended' };
     }
-    if (endpoint.startsWith('/auth')) {
+    if (normalizedEndpoint.startsWith('/auth')) {
       return { status: 'error', code: 'NETWORK_ERROR', message: error?.message || 'Authentication request failed.' };
     }
-    return await handleFallbackRequest(endpoint, options).catch(() => ({ status: 'error', message: error.message }));
+    return await handleFallbackRequest(normalizedEndpoint, options).catch(() => ({ status: 'error', message: error.message }));
   }
 };
