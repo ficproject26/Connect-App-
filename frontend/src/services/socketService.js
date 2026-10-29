@@ -13,6 +13,7 @@ class SocketServiceClient {
     this.lifecycleBound = true;
 
     window.addEventListener('online', () => {
+      this.triggerLocalEvent('app_network_online', {});
       if (this.lastUserId && (!this.socket || !this.socket.connected)) {
         setTimeout(() => {
           this.connect(this.lastUserId, this.lastRole);
@@ -26,8 +27,9 @@ class SocketServiceClient {
 
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && typeof navigator !== 'undefined' && navigator.onLine && this.lastUserId) {
-          if (!this.socket || !this.socket.connected) {
+        if (!document.hidden && typeof navigator !== 'undefined' && navigator.onLine) {
+          this.triggerLocalEvent('app_visibility_active', {});
+          if (this.lastUserId && (!this.socket || !this.socket.connected)) {
             setTimeout(() => {
               this.connect(this.lastUserId, this.lastRole);
             }, 500);
@@ -52,6 +54,14 @@ class SocketServiceClient {
     })() : null) || 'guest';
 
     const effectiveRole = role || 'customer';
+
+    let customerRegistrationId = null;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const u = JSON.parse(localStorage.getItem('connect_current_user') || '{}');
+        customerRegistrationId = u.customerId || u.registrationId || localStorage.getItem('connect_customer_id') || null;
+      } catch {}
+    }
 
     if (this.socket && (this.socket.connected || this.socket.active || this.isConnecting) && this.lastUserId === effectiveUserId && this.lastRole === effectiveRole) {
       return;
@@ -104,8 +114,10 @@ class SocketServiceClient {
         this.socket.emit('register', {
           userId: effectiveUserId,
           role: effectiveRole,
-          token: authToken
+          token: authToken,
+          customerId: customerRegistrationId || undefined
         });
+        this.triggerLocalEvent('socket_reconnected', { socketId: this.socket.id });
       });
 
       this.socket.on('connect_error', () => {

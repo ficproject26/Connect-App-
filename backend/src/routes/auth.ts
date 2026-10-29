@@ -1,4 +1,4 @@
-import { uploadToS3 } from '../s3';
+﻿import { uploadToS3 } from '../s3';
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { ObjectId } from 'mongodb';
@@ -1502,14 +1502,22 @@ router.get('/customer-profile', optionalAuthenticateToken, async (req: Authentic
 
   // IDOR Protection: If authenticated non-admin passes an explicit requestedId, ensure they only view their own profile
   if (authUser && !isAdmin && requestedId) {
-    const selfId = (authUser.userId || authUser.customerId || authUser.registrationId || '').toLowerCase().trim();
-    const selfEmail = (authUser.email || '').toLowerCase().trim();
+    const allowedIds = [
+      authUser.userId,
+      authUser.customerId,
+      authUser.registrationId,
+      authUser.id,
+      authUser._id,
+      authUser.customer_id,
+      authUser.phone,
+      authUser.email
+    ].filter(Boolean).map((s: any) => String(s).toLowerCase().trim());
+
     const selfPhone = (authUser.phone || '').replace(/\D/g, '');
     const reqClean = requestedId.toLowerCase().trim();
     const reqCleanDigits = requestedId.replace(/\D/g, '');
 
-    const isMatch = (selfId && reqClean === selfId) ||
-                    (selfEmail && reqClean === selfEmail) ||
+    const isMatch = allowedIds.includes(reqClean) ||
                     (selfPhone && reqCleanDigits && selfPhone === reqCleanDigits);
 
     if (!isMatch) {
@@ -2083,14 +2091,72 @@ const handleDeleteAddress = async (req: Request, res: Response) => {
   }
 };
 
+// PATCH: /customer/addresses/:id/default (Set Default Address with atomic unsetting)
+const handleSetDefaultAddress = async (req: Request, res: Response) => {
+  const addressId = req.params.addressId || req.params.id;
+  const target = resolveCustomerTarget(req);
+
+  if (!target || !addressId) {
+    return res.status(400).json({ status: 'error', message: 'Customer identifier and Address ID are required.' });
+  }
+
+  try {
+    const mongoDb = db.getDb();
+    if (!mongoDb) return res.status(503).json({ status: 'error', message: 'Database not connected' });
+
+    const filter = buildCustomerMongoFilter(target);
+    let user = await mongoDb.collection('users').findOne(filter);
+    if (!user) user = await mongoDb.collection('customers').findOne(filter);
+
+    if (!user) return res.status(404).json({ status: 'error', message: 'Customer record not found.' });
+
+    const existingAddresses: any[] = Array.isArray(user.addresses) ? user.addresses : [];
+    const rawUpdated = existingAddresses.map((a: any) => ({
+      ...a,
+      isDefault: String(a.id || a._id) === String(addressId)
+    }));
+    const updatedAddresses = deduplicateAddresses(rawUpdated);
+
+    const defAddr = updatedAddresses.find((a: any) => a.isDefault);
+    const updateFields: any = { addresses: updatedAddresses };
+    if (defAddr) {
+      updateFields.address = defAddr.address || `${defAddr.house ? defAddr.house + ', ' : ''}${defAddr.street}`;
+      if (defAddr.city) updateFields.city = defAddr.city;
+      if (defAddr.state) updateFields.state = defAddr.state;
+      if (defAddr.pincode) updateFields.pincode = defAddr.pincode;
+      if (defAddr.landmark) updateFields.landmark = defAddr.landmark;
+    }
+
+    await mongoDb.collection('users').updateOne(filter, { $set: updateFields });
+    await mongoDb.collection('customers').updateOne(filter, { $set: updateFields }).catch(() => {});
+
+    try {
+      const notifyTarget = String(target).trim();
+      const cId = user?.customerId || user?.registrationId || user?.id || (user?._id ? user._id.toString() : '');
+      const addrTargets = Array.from(new Set([notifyTarget, cId].filter(Boolean)));
+      for (const t of addrTargets) {
+        socketManager.emitToUser('customer', t, 'addresses_updated', { addresses: updatedAddresses });
+      }
+    } catch (e) {}
+
+    return res.json({ status: 'success', message: 'Default address updated successfully', addresses: updatedAddresses });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 // Register Address Endpoints (Supports both /customer/addresses and /customer-address)
 router.get('/addresses', authenticateToken, handleGetAddresses);
 router.post('/addresses', authenticateToken, handleSaveAddress);
 router.put('/addresses/:id', authenticateToken, handleUpdateAddress);
+router.patch('/addresses/:id', authenticateToken, handleUpdateAddress);
+router.patch('/addresses/:id/default', authenticateToken, handleSetDefaultAddress);
 router.delete('/addresses/:id', authenticateToken, handleDeleteAddress);
 
 router.post('/customer-address', authenticateToken, handleSaveAddress);
 router.put('/customer-address/:addressId', authenticateToken, handleUpdateAddress);
+router.patch('/customer-address/:addressId', authenticateToken, handleUpdateAddress);
+router.patch('/customer-address/:addressId/default', authenticateToken, handleSetDefaultAddress);
 router.delete('/customer-address/:addressId', authenticateToken, handleDeleteAddress);
 
 // Customer Notifications Endpoints

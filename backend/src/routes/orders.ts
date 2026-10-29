@@ -1,4 +1,4 @@
-import { uploadToS3 } from '../s3';
+﻿import { uploadToS3 } from '../s3';
 import { Router, Request, Response } from 'express';
 import { db, Order, DeliveryPartner, DeliveryAssignment } from '../db';
 import { socketManager } from '../socket';
@@ -635,13 +635,13 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    const isBookingType = ['Booking', 'Stay', 'Travel', 'Services'].includes(type);
+    const isBookingType = ['Booking', 'Stay', 'Travel', 'Services'].includes(type) || req.body.order_type === 'booking';
     const isJobType = ['Job', 'Jobs'].includes(type);
     const prefix = isBookingType ? 'BKG' : isJobType ? 'JOB' : 'ORD';
     const orderId = prefix + Math.floor(1000 + Math.random() * 9000);
     const orderNo = prefix + Math.floor(100000 + Math.random() * 900000);
-    const resolvedCustId = (customer_id || customerId || memberId || req.body.user_id || '').trim();
-    const resolvedEmail = (customer_email || candidateEmail || '').trim();
+    const resolvedCustId = (customer_id || customerId || memberId || req.body.user_id || (req as any).user?.customerId || (req as any).user?.registrationId || (req as any).user?.userId || '').trim();
+    const resolvedEmail = (customer_email || candidateEmail || (req as any).user?.email || '').trim();
 
     if (isJobType) {
       const candidateName = String(req.body.customer_name || req.body.candidateName || req.body.applicantName || customer_name || '').trim();
@@ -1135,7 +1135,7 @@ router.post('/', async (req: Request, res: Response) => {
       amount: finalOrderAmount,
       totalAmount: finalOrderAmount,
       status: isJobType ? (req.body.status || 'APPLICATION RECEIVED') : (req.body.status || 'Order Received'),
-      type: type || (isJobType ? 'Job' : 'Order'),
+      type: type || (isJobType ? 'Job' : (isBookingType ? (req.body.category || 'Services') : 'Order')),
       paymentMethod: resolvedPaymentMethod,
       payment_method: resolvedPaymentMethod,
       paymentStatus: resolvedPaymentStatus,

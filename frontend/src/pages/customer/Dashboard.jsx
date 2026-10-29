@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -1860,7 +1860,7 @@ export default function CustomerDashboard({
   const loadCustomerProfileFromDb = useCallback(async (signal) => {
     if (!currentUser) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
     if (!userTarget) return;
     if (isFetchingProfileRef.current) return;
     isFetchingProfileRef.current = true;
@@ -2165,7 +2165,8 @@ export default function CustomerDashboard({
       return;
     }
 
-    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+    const custIdTarget = currentUser?.customerId || currentUser?.registrationId || activeCustomerId || '';
     if (userTarget && isCartInitializedRef.current) {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token'))) || '';
@@ -2175,7 +2176,7 @@ export default function CustomerDashboard({
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ userId: userTarget, cart })
+        body: JSON.stringify({ userId: userTarget, customerId: custIdTarget || userTarget, cart })
       }).catch(() => {});
     }
   }, [cart, currentUser, activeCustomerId]);
@@ -2186,6 +2187,14 @@ export default function CustomerDashboard({
     } catch (e) {}
   }, [selectedCartItems]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  useEffect(() => {
+    if (isCartOpen && currentUser && typeof loadCustomerProfileFromDb === 'function') {
+      const controller = new AbortController();
+      loadCustomerProfileFromDb(controller.signal);
+      return () => controller.abort();
+    }
+  }, [isCartOpen, currentUser, loadCustomerProfileFromDb]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [selectedCheckoutAddressId, setSelectedCheckoutAddressId] = useState(null);
   const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
@@ -2284,7 +2293,8 @@ export default function CustomerDashboard({
 
       const orderPayload = {
         vendor_id: selectedProduct.vendorId || selectedProduct.vendor_id || '3w8hhon38mqg7ni0u',
-        customer_id: currentUser?.id || currentUser?.customerId || getOrGenerateCustomerId(currentUser),
+        customer_id: currentUser?.customerId || currentUser?.registrationId || currentUser?.id || getOrGenerateCustomerId(currentUser),
+        customerId: currentUser?.customerId || currentUser?.registrationId || currentUser?.id || getOrGenerateCustomerId(currentUser),
         customer_name: profileName || currentUser?.name || 'Customer',
         customer_phone: profilePhone || currentUser?.phone || '',
         customer_email: profileEmail || currentUser?.email || '',
@@ -2905,7 +2915,7 @@ export default function CustomerDashboard({
 
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-      const targetId = (currentUser?.id || currentUser?.customerId || currentUser?.customer_id || activeCustomerId || '').trim();
+      const targetId = (currentUser?.customerId || currentUser?.registrationId || currentUser?.id || currentUser?.customer_id || activeCustomerId || '').trim();
       const targetEmail = (profileEmail || currentUser?.email || currentUser?.candidateEmail || '').trim().toLowerCase();
       const targetPhone = (profilePhone || currentUser?.phone || '').replace(/\D/g, '');
       const targetName = (profileName || currentUser?.name || currentUser?.memberName || '').trim().toLowerCase();
@@ -3093,6 +3103,19 @@ export default function CustomerDashboard({
     }
   };
 
+  // Stable references to prevent socket listener unbinding on rapid state changes
+  const currentUserRef = useRef(currentUser);
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+
+  const trackingOrderRef = useRef(trackingOrder);
+  useEffect(() => { trackingOrderRef.current = trackingOrder; }, [trackingOrder]);
+
+  const profileEmailRef = useRef(profileEmail);
+  useEffect(() => { profileEmailRef.current = profileEmail; }, [profileEmail]);
+
+  const profilePhoneRef = useRef(profilePhone);
+  useEffect(() => { profilePhoneRef.current = profilePhone; }, [profilePhone]);
+
   // Connect to Socket and bind real-time synchronization across platforms
   useEffect(() => {
     const customerId = currentUser?.id || currentUser?.customerId || currentUser?.userId || activeCustomerId;
@@ -3105,18 +3128,20 @@ export default function CustomerDashboard({
     // 1. Live Order Status Updates
     const handleOrderStatus = (data) => {
       loadCustomerOrders(true);
-      if (trackingOrder && (trackingOrder.id === data.orderId || trackingOrder._id === data.orderId || trackingOrder.order_number === data.orderId)) {
+      const curTracking = trackingOrderRef.current;
+      if (curTracking && (curTracking.id === data.orderId || curTracking._id === data.orderId || curTracking.order_number === data.orderId)) {
         setTrackingOrder(prev => prev ? { ...prev, status: data.status } : null);
-        refreshTrackingDetails(data.orderId || trackingOrder.id);
+        refreshTrackingDetails(data.orderId || curTracking.id);
       }
     };
 
     // 2. New Order / Booking Placed on any platform (e.g. Mobile App)
     const handleNewOrder = (data) => {
       if (!data) return;
-      const curId = String(currentUser?.id || currentUser?.customerId || activeCustomerId || '').toLowerCase().trim();
-      const curEmail = String(currentUser?.email || profileEmail || '').toLowerCase().trim();
-      const curPhone = String(currentUser?.phone || profilePhone || '').replace(/\D/g, '').slice(-10);
+      const curUser = currentUserRef.current;
+      const curId = String(curUser?.id || curUser?.customerId || activeCustomerId || '').toLowerCase().trim();
+      const curEmail = String(curUser?.email || profileEmailRef.current || '').toLowerCase().trim();
+      const curPhone = String(curUser?.phone || profilePhoneRef.current || '').replace(/\D/g, '').slice(-10);
 
       const oCustId = String(data.customer_id || data.customerId || data.memberId || data.user_id || '').toLowerCase().trim();
       const oEmail = String(data.customer_email || data.candidateEmail || data.email || '').toLowerCase().trim();
@@ -3188,9 +3213,28 @@ export default function CustomerDashboard({
         if (data.user.phone && typeof setProfilePhone === 'function') setProfilePhone(data.user.phone);
         if (data.user.avatar && typeof setProfilePhoto === 'function') setProfilePhoto(data.user.avatar);
         if (Array.isArray(data.user.addresses)) setAddresses(data.user.addresses);
-        if (typeof login === 'function' && currentUser) {
-          login({ ...currentUser, ...data.user }, 'customer');
+        if (typeof login === 'function' && currentUserRef.current) {
+          login({ ...currentUserRef.current, ...data.user }, 'customer');
         }
+      }
+      if (Array.isArray(data?.cart)) {
+        isRemoteCartUpdateRef.current = true;
+        isCartInitializedRef.current = true;
+        const sanitizedCart = data.cart.map(item => ({
+          ...item,
+          price: typeof item.price === 'string'
+            ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
+            : Number(item.price || 0)
+        }));
+        setCart(sanitizedCart);
+        try { localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart)); } catch (e) {}
+      }
+      if (Array.isArray(data?.favorites)) {
+        setFavorites(data.favorites);
+        try { localStorage.setItem('connect_customer_favorites', JSON.stringify(data.favorites)); } catch (e) {}
+      }
+      if (typeof loadCustomerProfileFromDb === 'function') {
+        loadCustomerProfileFromDb();
       }
     };
 
@@ -3239,7 +3283,7 @@ export default function CustomerDashboard({
       socketService.off('membership_updated', handleMembershipUpdated);
       socketService.off('membership:updated', handleMembershipUpdated);
     };
-  }, [currentUser, activeCustomerId, trackingOrder, profileEmail, profilePhone]);
+  }, [currentUser?.id, currentUser?.customerId, activeCustomerId]);
 
   // Listen for order history loads
   useEffect(() => {
@@ -3256,17 +3300,55 @@ export default function CustomerDashboard({
   }, [isProfileModalOpen]);
 
 
-  // Clean network recovery after system wake or reconnection
+  // Clean network recovery and automatic cross-platform synchronization (No Manual Refresh)
   useEffect(() => {
-    const handleOnline = () => {
-      setTimeout(() => {
-        loadCustomerProfileFromDb();
-        loadCustomerOrders();
-      }, 500);
+    let lastSyncTime = 0;
+    const triggerRevalidation = () => {
+      const now = Date.now();
+      if (now - lastSyncTime < 1500) return; // Debounce 1.5s
+      lastSyncTime = now;
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        if (typeof loadCustomerProfileFromDb === 'function') loadCustomerProfileFromDb();
+        if (typeof loadCustomerOrders === 'function') loadCustomerOrders(true);
+        if (typeof loadCustomerNotifications === 'function') loadCustomerNotifications();
+      }
     };
+
+    const handleOnline = () => {
+      setTimeout(triggerRevalidation, 300);
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        triggerRevalidation();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      triggerRevalidation();
+    };
+
     window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, [loadCustomerProfileFromDb, loadCustomerOrders]);
+    window.addEventListener('focus', handleWindowFocus);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    socketService.on('socket_reconnected', triggerRevalidation);
+    socketService.on('app_visibility_active', triggerRevalidation);
+    socketService.on('app_network_online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleWindowFocus);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      socketService.off('socket_reconnected', triggerRevalidation);
+      socketService.off('app_visibility_active', triggerRevalidation);
+      socketService.off('app_network_online', handleOnline);
+    };
+  }, [loadCustomerProfileFromDb, loadCustomerOrders, loadCustomerNotifications]);
 
   useEffect(() => {
     if (trackingOrder && (trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs')) {
@@ -4854,7 +4936,7 @@ export default function CustomerDashboard({
       id: addressForm.id || undefined
     };
 
-    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
     let savedAddr = null;
 
     if (userTarget) {
@@ -4910,7 +4992,7 @@ export default function CustomerDashboard({
 
   const handleDeleteAddress = async (id) => {
     setAddresses(prev => deduplicateAddresses(prev.filter(addr => addr.id !== id)));
-    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
     if (userTarget) {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
@@ -5149,7 +5231,8 @@ export default function CustomerDashboard({
           method: 'POST',
           body: JSON.stringify({
             vendor_id: vendorId,
-            customer_id: currentUser?.id || currentUser?.customerId || getOrGenerateCustomerId(currentUser),
+            customer_id: currentUser?.customerId || currentUser?.registrationId || currentUser?.id || getOrGenerateCustomerId(currentUser),
+        customerId: currentUser?.customerId || currentUser?.registrationId || currentUser?.id || getOrGenerateCustomerId(currentUser),
             customer_name: chosenAddr.name || profileName || currentUser?.name || 'Customer',
             customer_phone: chosenAddr.phone || profilePhone || currentUser?.phone || '',
             customer_email: profileEmail || currentUser?.email || '',
@@ -5780,7 +5863,7 @@ export default function CustomerDashboard({
         localStorage.setItem('connect_customer_favorites', JSON.stringify(next));
       } catch (e) {}
 
-      const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+      const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
       if (userTarget) {
         const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
         const token = localStorage.getItem('connect_token') || '';
@@ -15233,7 +15316,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             }
                           }
 
-                          const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+                          const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
                           if (!userTarget) {
                             triggerNotification("Please log in to update profile.", "error");
                             return;
@@ -15349,7 +15432,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       }
                                       setProfilePhoto(compressedBase64);
 
-                                      const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+                                      const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
                                       if (userTarget) {
                                         const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
                                         const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
@@ -15383,7 +15466,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                   type="button"
                                   onClick={() => {
                                     setProfilePhoto('');
-                                    const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
+                                    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
                                     if (userTarget) {
                                       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
                                       const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';

@@ -100,7 +100,8 @@ class WebSocketServer {
             this.clients.set(socket.id, clientInfo);
             console.log(`[WebSocketServer]: Client connected: ${socket.id} (User: ${clientInfo.userId}, Role: ${clientInfo.role})`);
             // Automatically join initial role & user rooms
-            this.joinUserRooms(socket, clientInfo.userId, clientInfo.role);
+            const initialCustomerId = socket.handshake.auth?.customerId || socket.handshake.query?.customerId || socket.data.customerId;
+            this.joinUserRooms(socket, clientInfo.userId, clientInfo.role, initialCustomerId);
             // 1. Explicit Register Event (with server-side token & role verification)
             socket.on('register', (data) => {
                 if (!data || typeof data !== 'object') {
@@ -163,12 +164,13 @@ class WebSocketServer {
                     if (clientInfo.role === 'admin')
                         socket.leave('admins');
                 }
+                const effectiveCustomerId = data.customerId || socket.handshake.auth?.customerId || socket.handshake.query?.customerId || socket.data.customerId;
                 clientInfo.userId = effectiveUserId;
                 clientInfo.role = effectiveRole;
                 socket.data.userId = effectiveUserId;
                 socket.data.role = effectiveRole;
                 socket.data.authenticated = isAuthenticated;
-                this.joinUserRooms(socket, effectiveUserId, effectiveRole);
+                this.joinUserRooms(socket, effectiveUserId, effectiveRole, effectiveCustomerId);
                 socket.emit('registered', {
                     status: 'ok',
                     socketId: socket.id,
@@ -255,11 +257,15 @@ class WebSocketServer {
         });
         return this.io;
     }
-    joinUserRooms(socket, userId, role) {
+    joinUserRooms(socket, userId, role, customerId) {
         // Universal user room
         socket.join(`user:${userId}`);
         // Role-specific user room
         socket.join(`${role}:${userId}`);
+        if (customerId && customerId !== userId) {
+            socket.join(`user:${customerId}`);
+            socket.join(`customer:${customerId}`);
+        }
         // Global role channel
         if (role === 'vendor') {
             socket.join('vendors');
