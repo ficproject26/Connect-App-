@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -1958,23 +1958,23 @@ export default function CustomerDashboard({
 
               // Synchronize favorites (Wishlist) across devices
               if (Array.isArray(dbUser.favorites)) {
-                setFavorites(prev => {
-                  const merged = Array.from(new Set([...prev, ...dbUser.favorites]));
-                  try { localStorage.setItem('connect_customer_favorites', JSON.stringify(merged)); } catch (e) {}
-                  return merged;
-                });
+                setFavorites(dbUser.favorites);
+                try { localStorage.setItem('connect_customer_favorites', JSON.stringify(dbUser.favorites)); } catch (e) {}
               }
 
               // Synchronize cart (Add to Cart) across devices
-              if (Array.isArray(dbUser.cart) && dbUser.cart.length > 0) {
-                setCart(prev => {
-                  const mergedMap = new Map();
-                  dbUser.cart.forEach(item => { if (item?.id) mergedMap.set(item.id, item); });
-                  prev.forEach(item => { if (item?.id) mergedMap.set(item.id, item); });
-                  const merged = Array.from(mergedMap.values());
-                  try { localStorage.setItem('connect_cart', JSON.stringify(merged)); } catch (e) {}
-                  return merged;
-                });
+              if (Array.isArray(dbUser.cart)) {
+                if (typeof isRemoteCartUpdateRef !== 'undefined' && isRemoteCartUpdateRef) {
+                  isRemoteCartUpdateRef.current = true;
+                }
+                const sanitizedCart = dbUser.cart.map(item => ({
+                  ...item,
+                  price: typeof item.price === 'string'
+                    ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
+                    : Number(item.price || 0)
+                }));
+                setCart(sanitizedCart);
+                try { localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart)); } catch (e) {}
               }
               isCartInitializedRef.current = true;
               return;
@@ -2153,11 +2153,17 @@ export default function CustomerDashboard({
   });
 
   const isCartInitializedRef = useRef(false);
+  const isRemoteCartUpdateRef = useRef(false);
 
   useEffect(() => {
     try {
       localStorage.setItem('connect_cart', JSON.stringify(cart));
     } catch (e) {}
+
+    if (isRemoteCartUpdateRef.current) {
+      isRemoteCartUpdateRef.current = false;
+      return;
+    }
 
     const userTarget = currentUser?.id || currentUser?.customerId || currentUser?.phone || currentUser?.email || activeCustomerId;
     if (userTarget && isCartInitializedRef.current) {
@@ -3149,9 +3155,17 @@ export default function CustomerDashboard({
     // 4. Cart Updated on another platform
     const handleCartUpdated = (data) => {
       if (data && Array.isArray(data.cart)) {
-        setCart(data.cart);
+        isRemoteCartUpdateRef.current = true;
+        isCartInitializedRef.current = true;
+        const sanitizedCart = data.cart.map(item => ({
+          ...item,
+          price: typeof item.price === 'string'
+            ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
+            : Number(item.price || 0)
+        }));
+        setCart(sanitizedCart);
         try {
-          localStorage.setItem('connect_cart', JSON.stringify(data.cart));
+          localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart));
         } catch (e) {}
       }
     };
@@ -3174,6 +3188,9 @@ export default function CustomerDashboard({
         if (data.user.phone && typeof setProfilePhone === 'function') setProfilePhone(data.user.phone);
         if (data.user.avatar && typeof setProfilePhoto === 'function') setProfilePhoto(data.user.avatar);
         if (Array.isArray(data.user.addresses)) setAddresses(data.user.addresses);
+        if (typeof login === 'function' && currentUser) {
+          login({ ...currentUser, ...data.user }, 'customer');
+        }
       }
     };
 
@@ -3181,8 +3198,18 @@ export default function CustomerDashboard({
     socketService.on('customer_order_status', handleOrderStatus);
     socketService.on('new_order_placed', handleNewOrder);
     socketService.on('order_created', handleNewOrder);
+
     const handleNotificationsRead = () => {
-      if (typeof fetchCustomerNotifications === 'function') fetchCustomerNotifications();
+      if (typeof loadCustomerNotifications === 'function') loadCustomerNotifications();
+      else if (typeof fetchCustomerNotifications === 'function') fetchCustomerNotifications();
+    };
+
+    const handleCategoriesUpdated = () => {
+      if (typeof fetchDbCategories === 'function') fetchDbCategories();
+    };
+
+    const handleMembershipUpdated = () => {
+      if (typeof loadCustomerProfileFromDb === 'function') loadCustomerProfileFromDb();
     };
 
     socketService.on('addresses_updated', handleAddressesUpdated);
@@ -3190,6 +3217,11 @@ export default function CustomerDashboard({
     socketService.on('favorites_updated', handleFavoritesUpdated);
     socketService.on('customer_profile_updated', handleProfileUpdated);
     socketService.on('notifications_read', handleNotificationsRead);
+    socketService.on('notification_created', handleNotificationsRead);
+    socketService.on('customer_notification', handleNotificationsRead);
+    socketService.on('categories:updated', handleCategoriesUpdated);
+    socketService.on('membership_updated', handleMembershipUpdated);
+    socketService.on('membership:updated', handleMembershipUpdated);
 
     return () => {
       socketService.off('order_status_updated', handleOrderStatus);
@@ -3201,6 +3233,11 @@ export default function CustomerDashboard({
       socketService.off('favorites_updated', handleFavoritesUpdated);
       socketService.off('customer_profile_updated', handleProfileUpdated);
       socketService.off('notifications_read', handleNotificationsRead);
+      socketService.off('notification_created', handleNotificationsRead);
+      socketService.off('customer_notification', handleNotificationsRead);
+      socketService.off('categories:updated', handleCategoriesUpdated);
+      socketService.off('membership_updated', handleMembershipUpdated);
+      socketService.off('membership:updated', handleMembershipUpdated);
     };
   }, [currentUser, activeCustomerId, trackingOrder, profileEmail, profilePhone]);
 
@@ -8087,6 +8124,66 @@ export default function CustomerDashboard({
               </div>
             );
           })}
+        </div>
+
+        {/* Membership Card History Section */}
+        <div className="mt-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-left shadow-sm">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-4">
+            <div className="flex items-center space-x-2.5">
+              <Award className="w-5 h-5 text-[#F4C400]" />
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Membership Card History</h3>
+            </div>
+            <span className="text-xs text-slate-500 font-medium">
+              {Array.isArray(currentUser?.membershipHistory) ? currentUser.membershipHistory.length : 0} Records
+            </span>
+          </div>
+
+          {Array.isArray(currentUser?.membershipHistory) && currentUser.membershipHistory.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                    <th className="pb-2 font-semibold">Date</th>
+                    <th className="pb-2 font-semibold">Plan</th>
+                    <th className="pb-2 font-semibold">Membership ID</th>
+                    <th className="pb-2 font-semibold">Amount</th>
+                    <th className="pb-2 font-semibold">Status</th>
+                    <th className="pb-2 font-semibold">Expiry</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {[...currentUser.membershipHistory].reverse().map((entry, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3 text-slate-600 dark:text-slate-300">
+                        {entry.date ? new Date(entry.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </td>
+                      <td className="py-3 font-semibold text-slate-900 dark:text-white">
+                        {entry.plan || entry.tier || 'Privilege Membership'}
+                      </td>
+                      <td className="py-3 font-mono text-slate-500">
+                        {entry.membershipId || entry.orderId || '-'}
+                      </td>
+                      <td className="py-3 font-bold text-slate-900 dark:text-white">
+                        {entry.amount ? `₹${entry.amount}` : 'Free'}
+                      </td>
+                      <td className="py-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                          {entry.status || 'ACTIVE'}
+                        </span>
+                      </td>
+                      <td className="py-3 text-slate-500">
+                        {entry.expiryDate ? new Date(entry.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '1 Year'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-slate-400 text-xs">
+              No previous membership card history found. Your active membership records will be displayed here chronologically.
+            </div>
+          )}
         </div>
       </div>
     );

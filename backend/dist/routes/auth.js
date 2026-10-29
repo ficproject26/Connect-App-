@@ -996,7 +996,7 @@ router.post('/logout-all-devices', middleware_1.authenticateToken, (req, res) =>
 });
 // Customer Registration Persistence
 router.post('/register-customer', async (req, res) => {
-    const { name, email, phone, password, address, city, pincode, aadhaarNumber, panNumber } = req.body;
+    const { name, email, phone, password, address, city, pincode, state, landmark, locality, aadhaarNumber, panNumber } = req.body;
     // 1. Name validation & title-case capitalization
     if (name) {
         const nameCheck = validateName(name, 'Full Name');
@@ -1102,11 +1102,11 @@ router.post('/register-customer', async (req, res) => {
                 name: cleanName || 'Connect Member',
                 phone: cleanPhone,
                 pincode: pincode || '',
-                locality: city || '',
+                locality: locality || city || '',
                 address: address || '',
                 city: city || '',
-                state: 'Karnataka',
-                landmark: '',
+                state: state || 'Karnataka',
+                landmark: landmark || '',
                 altPhone: '',
                 type: 'Home',
                 isRegistrationAddress: true
@@ -1211,6 +1211,7 @@ router.post('/register-customer', async (req, res) => {
             address: address || '',
             city: city || '',
             pincode: pincode || '',
+            state: state || 'Karnataka',
             aadhaar: aadhaarNumber ? securityManager_1.securityManager.encryptAES256GCM(String(aadhaarNumber).trim()) : '',
             pan: panNumber ? securityManager_1.securityManager.encryptAES256GCM(String(panNumber).trim().toUpperCase()) : '',
             role: 'customer',
@@ -1669,6 +1670,24 @@ router.put('/customer-profile', middleware_1.authenticateToken, async (req, res)
         if (req.body.cart !== undefined && Array.isArray(req.body.cart)) {
             updateFields.cart = req.body.cart;
         }
+        if (req.body.dob !== undefined)
+            updateFields.dob = String(req.body.dob).trim();
+        if (req.body.dateOfBirth !== undefined)
+            updateFields.dob = String(req.body.dateOfBirth).trim();
+        if (req.body.gender !== undefined)
+            updateFields.gender = String(req.body.gender).trim();
+        if (req.body.address !== undefined)
+            updateFields.address = String(req.body.address).trim();
+        if (req.body.city !== undefined)
+            updateFields.city = String(req.body.city).trim();
+        if (req.body.state !== undefined)
+            updateFields.state = String(req.body.state).trim();
+        if (req.body.pincode !== undefined)
+            updateFields.pincode = String(req.body.pincode).trim();
+        if (req.body.landmark !== undefined)
+            updateFields.landmark = String(req.body.landmark).trim();
+        if (req.body.locality !== undefined)
+            updateFields.locality = String(req.body.locality).trim();
         const filter = callerDbDoc?._id
             ? { _id: callerDbDoc._id }
             : buildCustomerMongoFilter(callerDbDoc || req.body);
@@ -1716,10 +1735,14 @@ router.put('/customer-profile', middleware_1.authenticateToken, async (req, res)
             phone: safeUser.phone || '',
             avatar: safeUser.avatar || safeUser.photo || '',
             photo: safeUser.avatar || safeUser.photo || '',
+            dob: safeUser.dob || '',
+            gender: safeUser.gender || '',
             address: safeUser.address || safeUser.registeredAddress || '',
             city: safeUser.city || '',
             pincode: safeUser.pincode || '',
             state: safeUser.state || '',
+            landmark: safeUser.landmark || '',
+            locality: safeUser.locality || '',
             role: safeUser.role || 'customer',
             customerId: resolvedCustId,
             registrationId: resolvedCustId,
