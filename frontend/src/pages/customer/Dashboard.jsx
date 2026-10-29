@@ -1856,7 +1856,6 @@ export default function CustomerDashboard({
 
   const profileLoadedUserRef = useRef('');
   const isFetchingProfileRef = useRef(false);
-
   const loadCustomerProfileFromDb = useCallback(async (signal) => {
     if (!currentUser) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
@@ -3103,252 +3102,6 @@ export default function CustomerDashboard({
     }
   };
 
-  // Stable references to prevent socket listener unbinding on rapid state changes
-  const currentUserRef = useRef(currentUser);
-  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
-
-  const trackingOrderRef = useRef(trackingOrder);
-  useEffect(() => { trackingOrderRef.current = trackingOrder; }, [trackingOrder]);
-
-  const profileEmailRef = useRef(profileEmail);
-  useEffect(() => { profileEmailRef.current = profileEmail; }, [profileEmail]);
-
-  const profilePhoneRef = useRef(profilePhone);
-  useEffect(() => { profilePhoneRef.current = profilePhone; }, [profilePhone]);
-
-  // Connect to Socket and bind real-time synchronization across platforms
-  useEffect(() => {
-    const customerId = currentUser?.id || currentUser?.customerId || currentUser?.userId || activeCustomerId;
-    if (!customerId) {
-      return;
-    }
-    const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token'))) || '';
-    socketService.connect(customerId, 'customer', token);
-
-    // 1. Live Order Status Updates
-    const handleOrderStatus = (data) => {
-      loadCustomerOrders(true);
-      const curTracking = trackingOrderRef.current;
-      if (curTracking && (curTracking.id === data.orderId || curTracking._id === data.orderId || curTracking.order_number === data.orderId)) {
-        setTrackingOrder(prev => prev ? { ...prev, status: data.status } : null);
-        refreshTrackingDetails(data.orderId || curTracking.id);
-      }
-    };
-
-    // 2. New Order / Booking Placed on any platform (e.g. Mobile App)
-    const handleNewOrder = (data) => {
-      if (!data) return;
-      const curUser = currentUserRef.current;
-      const curId = String(curUser?.id || curUser?.customerId || activeCustomerId || '').toLowerCase().trim();
-      const curEmail = String(curUser?.email || profileEmailRef.current || '').toLowerCase().trim();
-      const curPhone = String(curUser?.phone || profilePhoneRef.current || '').replace(/\D/g, '').slice(-10);
-
-      const oCustId = String(data.customer_id || data.customerId || data.memberId || data.user_id || '').toLowerCase().trim();
-      const oEmail = String(data.customer_email || data.candidateEmail || data.email || '').toLowerCase().trim();
-      const oPhone = String(data.customer_phone || data.candidatePhone || data.phone || '').replace(/\D/g, '').slice(-10);
-
-      const isForMe = Boolean(
-        (curId && oCustId && (curId === oCustId || curId.includes(oCustId) || oCustId.includes(curId))) ||
-        (curEmail && oEmail && curEmail === oEmail) ||
-        (curPhone && oPhone && curPhone.length >= 7 && (curPhone.endsWith(oPhone) || oPhone.endsWith(curPhone)))
-      );
-
-      if (isForMe) {
-        setCustomerOrders(prev => {
-          const ordId = String(data.id || data.order_number || data._id || '');
-          const exists = prev.some(o => o && (String(o.id || o.order_number || o._id || '') === ordId));
-          if (exists) return prev;
-          return [data, ...prev];
-        });
-        loadCustomerOrders(true);
-        if (typeof triggerNotification === 'function') {
-          triggerNotification(`New ${data.type || 'order'} synced: #${data.order_number || data.id}`);
-        }
-      }
-    };
-
-    // 3. Saved Addresses Updated
-    const handleAddressesUpdated = (data) => {
-      if (data && Array.isArray(data.addresses)) {
-        setAddresses(data.addresses);
-        try {
-          localStorage.setItem(`connect_customer_addresses_${customerId}`, JSON.stringify(data.addresses));
-        } catch (e) {}
-      }
-    };
-
-    // 4. Cart Updated on another platform
-    const handleCartUpdated = (data) => {
-      if (data && Array.isArray(data.cart)) {
-        isRemoteCartUpdateRef.current = true;
-        isCartInitializedRef.current = true;
-        const sanitizedCart = data.cart.map(item => ({
-          ...item,
-          price: typeof item.price === 'string'
-            ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
-            : Number(item.price || 0)
-        }));
-        setCart(sanitizedCart);
-        try {
-          localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart));
-        } catch (e) {}
-      }
-    };
-
-    // 5. Wishlist / Favorites Updated on another platform
-    const handleFavoritesUpdated = (data) => {
-      if (data && Array.isArray(data.favorites)) {
-        setFavorites(data.favorites);
-        try {
-          localStorage.setItem('connect_customer_favorites', JSON.stringify(data.favorites));
-        } catch (e) {}
-      }
-    };
-
-    // 6. Profile Updated on another platform
-    const handleProfileUpdated = (data) => {
-      if (data?.user) {
-        if (data.user.name && typeof setProfileName === 'function') setProfileName(data.user.name);
-        if (data.user.email && typeof setProfileEmail === 'function') setProfileEmail(data.user.email);
-        if (data.user.phone && typeof setProfilePhone === 'function') setProfilePhone(data.user.phone);
-        if (data.user.avatar && typeof setProfilePhoto === 'function') setProfilePhoto(data.user.avatar);
-        if (Array.isArray(data.user.addresses)) setAddresses(data.user.addresses);
-        if (typeof login === 'function' && currentUserRef.current) {
-          login({ ...currentUserRef.current, ...data.user }, 'customer');
-        }
-      }
-      if (Array.isArray(data?.cart)) {
-        isRemoteCartUpdateRef.current = true;
-        isCartInitializedRef.current = true;
-        const sanitizedCart = data.cart.map(item => ({
-          ...item,
-          price: typeof item.price === 'string'
-            ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
-            : Number(item.price || 0)
-        }));
-        setCart(sanitizedCart);
-        try { localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart)); } catch (e) {}
-      }
-      if (Array.isArray(data?.favorites)) {
-        setFavorites(data.favorites);
-        try { localStorage.setItem('connect_customer_favorites', JSON.stringify(data.favorites)); } catch (e) {}
-      }
-      if (typeof loadCustomerProfileFromDb === 'function') {
-        loadCustomerProfileFromDb();
-      }
-    };
-
-    socketService.on('order_status_updated', handleOrderStatus);
-    socketService.on('customer_order_status', handleOrderStatus);
-    socketService.on('new_order_placed', handleNewOrder);
-    socketService.on('order_created', handleNewOrder);
-
-    const handleNotificationsRead = () => {
-      if (typeof loadCustomerNotifications === 'function') loadCustomerNotifications();
-      else if (typeof fetchCustomerNotifications === 'function') fetchCustomerNotifications();
-    };
-
-    const handleCategoriesUpdated = () => {
-      if (typeof fetchDbCategories === 'function') fetchDbCategories();
-    };
-
-    const handleMembershipUpdated = () => {
-      if (typeof loadCustomerProfileFromDb === 'function') loadCustomerProfileFromDb();
-    };
-
-    socketService.on('addresses_updated', handleAddressesUpdated);
-    socketService.on('cart_updated', handleCartUpdated);
-    socketService.on('favorites_updated', handleFavoritesUpdated);
-    socketService.on('customer_profile_updated', handleProfileUpdated);
-    socketService.on('notifications_read', handleNotificationsRead);
-    socketService.on('notification_created', handleNotificationsRead);
-    socketService.on('customer_notification', handleNotificationsRead);
-    socketService.on('categories:updated', handleCategoriesUpdated);
-    socketService.on('membership_updated', handleMembershipUpdated);
-    socketService.on('membership:updated', handleMembershipUpdated);
-
-    return () => {
-      socketService.off('order_status_updated', handleOrderStatus);
-      socketService.off('customer_order_status', handleOrderStatus);
-      socketService.off('new_order_placed', handleNewOrder);
-      socketService.off('order_created', handleNewOrder);
-      socketService.off('addresses_updated', handleAddressesUpdated);
-      socketService.off('cart_updated', handleCartUpdated);
-      socketService.off('favorites_updated', handleFavoritesUpdated);
-      socketService.off('customer_profile_updated', handleProfileUpdated);
-      socketService.off('notifications_read', handleNotificationsRead);
-      socketService.off('notification_created', handleNotificationsRead);
-      socketService.off('customer_notification', handleNotificationsRead);
-      socketService.off('categories:updated', handleCategoriesUpdated);
-      socketService.off('membership_updated', handleMembershipUpdated);
-      socketService.off('membership:updated', handleMembershipUpdated);
-    };
-  }, [currentUser?.id, currentUser?.customerId, activeCustomerId]);
-
-  // Listen for order history loads
-  useEffect(() => {
-    const activeUserId = currentUser?.id || currentUser?.customerId || currentUser?.email || '';
-    if (activeUserId) {
-      loadCustomerOrders();
-    }
-  }, [currentUser?.id, currentUser?.customerId, currentUser?.email]);
-
-  useEffect(() => {
-    if (isProfileModalOpen) {
-      loadCustomerOrders();
-    }
-  }, [isProfileModalOpen]);
-
-
-  // Clean network recovery and automatic cross-platform synchronization (No Manual Refresh)
-  useEffect(() => {
-    let lastSyncTime = 0;
-    const triggerRevalidation = () => {
-      const now = Date.now();
-      if (now - lastSyncTime < 1500) return; // Debounce 1.5s
-      lastSyncTime = now;
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        if (typeof loadCustomerProfileFromDb === 'function') loadCustomerProfileFromDb();
-        if (typeof loadCustomerOrders === 'function') loadCustomerOrders(true);
-        if (typeof loadCustomerNotifications === 'function') loadCustomerNotifications();
-      }
-    };
-
-    const handleOnline = () => {
-      setTimeout(triggerRevalidation, 300);
-    };
-
-    const handleVisibilityChange = () => {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        triggerRevalidation();
-      }
-    };
-
-    const handleWindowFocus = () => {
-      triggerRevalidation();
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('focus', handleWindowFocus);
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-    }
-
-    socketService.on('socket_reconnected', triggerRevalidation);
-    socketService.on('app_visibility_active', triggerRevalidation);
-    socketService.on('app_network_online', handleOnline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('focus', handleWindowFocus);
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      }
-      socketService.off('socket_reconnected', triggerRevalidation);
-      socketService.off('app_visibility_active', triggerRevalidation);
-      socketService.off('app_network_online', handleOnline);
-    };
-  }, [loadCustomerProfileFromDb, loadCustomerOrders, loadCustomerNotifications]);
 
   useEffect(() => {
     if (trackingOrder && (trackingOrder.type === 'Job' || trackingOrder.type === 'Jobs')) {
@@ -3907,6 +3660,253 @@ export default function CustomerDashboard({
   useEffect(() => {
     loadCustomerNotifications();
   }, [customerOrders, loadCustomerNotifications]);
+
+  // Stable references to prevent socket listener unbinding on rapid state changes
+  const currentUserRef = useRef(currentUser);
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+
+  const trackingOrderRef = useRef(trackingOrder);
+  useEffect(() => { trackingOrderRef.current = trackingOrder; }, [trackingOrder]);
+
+  const profileEmailRef = useRef(profileEmail);
+  useEffect(() => { profileEmailRef.current = profileEmail; }, [profileEmail]);
+
+  const profilePhoneRef = useRef(profilePhone);
+  useEffect(() => { profilePhoneRef.current = profilePhone; }, [profilePhone]);
+
+  // Connect to Socket and bind real-time synchronization across platforms
+  useEffect(() => {
+    const customerId = currentUser?.id || currentUser?.customerId || currentUser?.userId || activeCustomerId;
+    if (!customerId) {
+      return;
+    }
+    const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('connect_token') || localStorage.getItem('token'))) || '';
+    socketService.connect(customerId, 'customer', token);
+
+    // 1. Live Order Status Updates
+    const handleOrderStatus = (data) => {
+      loadCustomerOrders(true);
+      const curTracking = trackingOrderRef.current;
+      if (curTracking && (curTracking.id === data.orderId || curTracking._id === data.orderId || curTracking.order_number === data.orderId)) {
+        setTrackingOrder(prev => prev ? { ...prev, status: data.status } : null);
+        refreshTrackingDetails(data.orderId || curTracking.id);
+      }
+    };
+
+    // 2. New Order / Booking Placed on any platform (e.g. Mobile App)
+    const handleNewOrder = (data) => {
+      if (!data) return;
+      const curUser = currentUserRef.current;
+      const curId = String(curUser?.id || curUser?.customerId || activeCustomerId || '').toLowerCase().trim();
+      const curEmail = String(curUser?.email || profileEmailRef.current || '').toLowerCase().trim();
+      const curPhone = String(curUser?.phone || profilePhoneRef.current || '').replace(/\D/g, '').slice(-10);
+
+      const oCustId = String(data.customer_id || data.customerId || data.memberId || data.user_id || '').toLowerCase().trim();
+      const oEmail = String(data.customer_email || data.candidateEmail || data.email || '').toLowerCase().trim();
+      const oPhone = String(data.customer_phone || data.candidatePhone || data.phone || '').replace(/\D/g, '').slice(-10);
+
+      const isForMe = Boolean(
+        (curId && oCustId && (curId === oCustId || curId.includes(oCustId) || oCustId.includes(curId))) ||
+        (curEmail && oEmail && curEmail === oEmail) ||
+        (curPhone && oPhone && curPhone.length >= 7 && (curPhone.endsWith(oPhone) || oPhone.endsWith(curPhone)))
+      );
+
+      if (isForMe) {
+        setCustomerOrders(prev => {
+          const ordId = String(data.id || data.order_number || data._id || '');
+          const exists = prev.some(o => o && (String(o.id || o.order_number || o._id || '') === ordId));
+          if (exists) return prev;
+          return [data, ...prev];
+        });
+        loadCustomerOrders(true);
+        if (typeof triggerNotification === 'function') {
+          triggerNotification(`New ${data.type || 'order'} synced: #${data.order_number || data.id}`);
+        }
+      }
+    };
+
+    // 3. Saved Addresses Updated
+    const handleAddressesUpdated = (data) => {
+      if (data && Array.isArray(data.addresses)) {
+        setAddresses(data.addresses);
+        try {
+          localStorage.setItem(`connect_customer_addresses_${customerId}`, JSON.stringify(data.addresses));
+        } catch (e) {}
+      }
+    };
+
+    // 4. Cart Updated on another platform
+    const handleCartUpdated = (data) => {
+      if (data && Array.isArray(data.cart)) {
+        isRemoteCartUpdateRef.current = true;
+        isCartInitializedRef.current = true;
+        const sanitizedCart = data.cart.map(item => ({
+          ...item,
+          price: typeof item.price === 'string'
+            ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
+            : Number(item.price || 0)
+        }));
+        setCart(sanitizedCart);
+        try {
+          localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart));
+        } catch (e) {}
+      }
+    };
+
+    // 5. Wishlist / Favorites Updated on another platform
+    const handleFavoritesUpdated = (data) => {
+      if (data && Array.isArray(data.favorites)) {
+        setFavorites(data.favorites);
+        try {
+          localStorage.setItem('connect_customer_favorites', JSON.stringify(data.favorites));
+        } catch (e) {}
+      }
+    };
+
+    // 6. Profile Updated on another platform
+    const handleProfileUpdated = (data) => {
+      if (data?.user) {
+        if (data.user.name && typeof setProfileName === 'function') setProfileName(data.user.name);
+        if (data.user.email && typeof setProfileEmail === 'function') setProfileEmail(data.user.email);
+        if (data.user.phone && typeof setProfilePhone === 'function') setProfilePhone(data.user.phone);
+        if (data.user.avatar && typeof setProfilePhoto === 'function') setProfilePhoto(data.user.avatar);
+        if (Array.isArray(data.user.addresses)) setAddresses(data.user.addresses);
+        if (typeof login === 'function' && currentUserRef.current) {
+          login({ ...currentUserRef.current, ...data.user }, 'customer');
+        }
+      }
+      if (Array.isArray(data?.cart)) {
+        isRemoteCartUpdateRef.current = true;
+        isCartInitializedRef.current = true;
+        const sanitizedCart = data.cart.map(item => ({
+          ...item,
+          price: typeof item.price === 'string'
+            ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
+            : Number(item.price || 0)
+        }));
+        setCart(sanitizedCart);
+        try { localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart)); } catch (e) {}
+      }
+      if (Array.isArray(data?.favorites)) {
+        setFavorites(data.favorites);
+        try { localStorage.setItem('connect_customer_favorites', JSON.stringify(data.favorites)); } catch (e) {}
+      }
+      if (typeof loadCustomerProfileFromDb === 'function') {
+        loadCustomerProfileFromDb();
+      }
+    };
+
+    socketService.on('order_status_updated', handleOrderStatus);
+    socketService.on('customer_order_status', handleOrderStatus);
+    socketService.on('new_order_placed', handleNewOrder);
+    socketService.on('order_created', handleNewOrder);
+
+    const handleNotificationsRead = () => {
+      if (typeof loadCustomerNotifications === 'function') loadCustomerNotifications();
+      else if (typeof fetchCustomerNotifications === 'function') fetchCustomerNotifications();
+    };
+
+    const handleCategoriesUpdated = () => {
+      if (typeof fetchDbCategories === 'function') fetchDbCategories();
+    };
+
+    const handleMembershipUpdated = () => {
+      if (typeof loadCustomerProfileFromDb === 'function') loadCustomerProfileFromDb();
+    };
+
+    socketService.on('addresses_updated', handleAddressesUpdated);
+    socketService.on('cart_updated', handleCartUpdated);
+    socketService.on('favorites_updated', handleFavoritesUpdated);
+    socketService.on('customer_profile_updated', handleProfileUpdated);
+    socketService.on('notifications_read', handleNotificationsRead);
+    socketService.on('notification_created', handleNotificationsRead);
+    socketService.on('customer_notification', handleNotificationsRead);
+    socketService.on('categories:updated', handleCategoriesUpdated);
+    socketService.on('membership_updated', handleMembershipUpdated);
+    socketService.on('membership:updated', handleMembershipUpdated);
+
+    return () => {
+      socketService.off('order_status_updated', handleOrderStatus);
+      socketService.off('customer_order_status', handleOrderStatus);
+      socketService.off('new_order_placed', handleNewOrder);
+      socketService.off('order_created', handleNewOrder);
+      socketService.off('addresses_updated', handleAddressesUpdated);
+      socketService.off('cart_updated', handleCartUpdated);
+      socketService.off('favorites_updated', handleFavoritesUpdated);
+      socketService.off('customer_profile_updated', handleProfileUpdated);
+      socketService.off('notifications_read', handleNotificationsRead);
+      socketService.off('notification_created', handleNotificationsRead);
+      socketService.off('customer_notification', handleNotificationsRead);
+      socketService.off('categories:updated', handleCategoriesUpdated);
+      socketService.off('membership_updated', handleMembershipUpdated);
+      socketService.off('membership:updated', handleMembershipUpdated);
+    };
+  }, [currentUser?.id, currentUser?.customerId, activeCustomerId]);
+
+  // Listen for order history loads
+  useEffect(() => {
+    const activeUserId = currentUser?.id || currentUser?.customerId || currentUser?.email || '';
+    if (activeUserId) {
+      loadCustomerOrders();
+    }
+  }, [currentUser?.id, currentUser?.customerId, currentUser?.email]);
+
+  useEffect(() => {
+    if (isProfileModalOpen) {
+      loadCustomerOrders();
+    }
+  }, [isProfileModalOpen]);
+
+
+  // Clean network recovery and automatic cross-platform synchronization (No Manual Refresh)
+  useEffect(() => {
+    let lastSyncTime = 0;
+    const triggerRevalidation = () => {
+      const now = Date.now();
+      if (now - lastSyncTime < 1500) return; // Debounce 1.5s
+      lastSyncTime = now;
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        if (typeof loadCustomerProfileFromDb === 'function') loadCustomerProfileFromDb();
+        if (typeof loadCustomerOrders === 'function') loadCustomerOrders(true);
+        if (typeof loadCustomerNotifications === 'function') loadCustomerNotifications();
+      }
+    };
+
+    const handleOnline = () => {
+      setTimeout(triggerRevalidation, 300);
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        triggerRevalidation();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      triggerRevalidation();
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('focus', handleWindowFocus);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    socketService.on('socket_reconnected', triggerRevalidation);
+    socketService.on('app_visibility_active', triggerRevalidation);
+    socketService.on('app_network_online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleWindowFocus);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      socketService.off('socket_reconnected', triggerRevalidation);
+      socketService.off('app_visibility_active', triggerRevalidation);
+      socketService.off('app_network_online', handleOnline);
+    };
+  }, [loadCustomerProfileFromDb, loadCustomerOrders, loadCustomerNotifications]);
 
   const handleDeleteNotification = async (notifId) => {
     if (!notifId) return;
