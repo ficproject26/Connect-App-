@@ -1423,8 +1423,33 @@ router.get('/customer-profile', middleware_1.optionalAuthenticateToken, async (r
         const selfPhone = (authUser.phone || '').replace(/\D/g, '');
         const reqClean = requestedId.toLowerCase().trim();
         const reqCleanDigits = requestedId.replace(/\D/g, '');
-        const isMatch = allowedIds.includes(reqClean) ||
+        let isMatch = allowedIds.includes(reqClean) ||
             (selfPhone && reqCleanDigits && selfPhone === reqCleanDigits);
+        if (!isMatch) {
+            try {
+                const mongoDb = db_1.db.getDb();
+                if (mongoDb) {
+                    const authFilter = buildCustomerMongoFilter(authUser.userId || authUser.id || authUser.email || '');
+                    const callerDoc = await mongoDb.collection('users').findOne(authFilter) ||
+                        await mongoDb.collection('customers').findOne(authFilter);
+                    if (callerDoc) {
+                        const callerIds = [
+                            callerDoc.customerId,
+                            callerDoc.registrationId,
+                            callerDoc.id,
+                            callerDoc._id?.toString(),
+                            callerDoc.email,
+                            callerDoc.phone
+                        ].filter(Boolean).map((s) => String(s).toLowerCase().trim());
+                        const callerPhoneDigits = (callerDoc.phone || '').toString().replace(/\D/g, '');
+                        if (callerIds.includes(reqClean) || (callerPhoneDigits && reqCleanDigits && callerPhoneDigits === reqCleanDigits)) {
+                            isMatch = true;
+                        }
+                    }
+                }
+            }
+            catch (e) { }
+        }
         if (!isMatch) {
             return res.status(403).json({
                 status: 'error',

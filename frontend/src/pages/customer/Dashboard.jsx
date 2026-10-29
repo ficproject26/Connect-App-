@@ -1866,10 +1866,16 @@ export default function CustomerDashboard({
 
     const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
+    const altId = currentUser?.id && currentUser.id !== userTarget ? currentUser.id : '';
     const endpoints = [
       adminBackend ? `${adminBackend}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}` : '',
       baseBackend ? `${baseBackend}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}` : '',
-      `/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}`
+      altId && adminBackend ? `${adminBackend}/api/auth/customer-profile?userId=${encodeURIComponent(altId)}` : '',
+      altId && baseBackend ? `${baseBackend}/api/auth/customer-profile?userId=${encodeURIComponent(altId)}` : '',
+      adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+      baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+      `/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}`,
+      `/api/auth/customer-profile`
     ].filter(Boolean);
 
     const uniqueEndpoints = [...new Set(endpoints)];
@@ -1892,6 +1898,9 @@ export default function CustomerDashboard({
             console.warn('Customer profile API rate-limited (429), cooling down.');
             profileLoadedUserRef.current = String(userTarget).trim().toLowerCase();
             return;
+          }
+          if (res.status === 403) {
+            continue;
           }
           if (res.ok) {
             const data = await res.json();
