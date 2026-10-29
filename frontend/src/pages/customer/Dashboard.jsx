@@ -1859,21 +1859,21 @@ export default function CustomerDashboard({
   const loadCustomerProfileFromDb = useCallback(async (signal) => {
     if (!currentUser) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+    const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
     if (!userTarget) return;
     if (isFetchingProfileRef.current) return;
     isFetchingProfileRef.current = true;
 
     const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
     const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
-    const altId = currentUser?.id && currentUser.id !== userTarget ? currentUser.id : '';
+    const custId = currentUser?.customerId || currentUser?.registrationId || activeCustomerId || '';
     const endpoints = [
-      adminBackend ? `${adminBackend}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}` : '',
       baseBackend ? `${baseBackend}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}` : '',
-      altId && adminBackend ? `${adminBackend}/api/auth/customer-profile?userId=${encodeURIComponent(altId)}` : '',
-      altId && baseBackend ? `${baseBackend}/api/auth/customer-profile?userId=${encodeURIComponent(altId)}` : '',
-      adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+      adminBackend ? `${adminBackend}/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}` : '',
       baseBackend ? `${baseBackend}/api/auth/customer-profile` : '',
+      adminBackend ? `${adminBackend}/api/auth/customer-profile` : '',
+      custId && baseBackend ? `${baseBackend}/api/auth/customer-profile?userId=${encodeURIComponent(custId)}` : '',
+      custId && adminBackend ? `${adminBackend}/api/auth/customer-profile?userId=${encodeURIComponent(custId)}` : '',
       `/api/auth/customer-profile?userId=${encodeURIComponent(userTarget)}`,
       `/api/auth/customer-profile`
     ].filter(Boolean);
@@ -2173,7 +2173,7 @@ export default function CustomerDashboard({
       return;
     }
 
-    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+    const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
     const custIdTarget = currentUser?.customerId || currentUser?.registrationId || activeCustomerId || '';
     if (userTarget && isCartInitializedRef.current) {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
@@ -4945,7 +4945,7 @@ export default function CustomerDashboard({
       id: addressForm.id || undefined
     };
 
-    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+    const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
     let savedAddr = null;
 
     if (userTarget) {
@@ -5001,7 +5001,7 @@ export default function CustomerDashboard({
 
   const handleDeleteAddress = async (id) => {
     setAddresses(prev => deduplicateAddresses(prev.filter(addr => addr.id !== id)));
-    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+    const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
     if (userTarget) {
       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
       const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
@@ -5872,7 +5872,7 @@ export default function CustomerDashboard({
         localStorage.setItem('connect_customer_favorites', JSON.stringify(next));
       } catch (e) {}
 
-      const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+      const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
       if (userTarget) {
         const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
         const token = localStorage.getItem('connect_token') || '';
@@ -15325,7 +15325,7 @@ wishlistProducts.forEach(item => addToCart(item));
                             }
                           }
 
-                          const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+                          const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
                           if (!userTarget) {
                             triggerNotification("Please log in to update profile.", "error");
                             return;
@@ -15441,7 +15441,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                       }
                                       setProfilePhoto(compressedBase64);
 
-                                      const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+                                      const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
                                       if (userTarget) {
                                         const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
                                         const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
@@ -15475,7 +15475,7 @@ wishlistProducts.forEach(item => addToCart(item));
                                   type="button"
                                   onClick={() => {
                                     setProfilePhoto('');
-                                    const userTarget = currentUser?.customerId || currentUser?.registrationId || currentUser?.id || activeCustomerId || currentUser?.phone || currentUser?.email;
+                                    const userTarget = currentUser?.id || currentUser?.userId || currentUser?._id || currentUser?.customerId || currentUser?.registrationId || activeCustomerId || currentUser?.phone || currentUser?.email;
                                     if (userTarget) {
                                       const baseBackend = typeof getBackendUrl === 'function' ? getBackendUrl() : '';
                                       const adminBackend = typeof getAdminBackendUrl === 'function' ? getAdminBackendUrl() : '';
