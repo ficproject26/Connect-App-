@@ -8,8 +8,13 @@ const mongodb_1 = require("mongodb");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const dns_1 = __importDefault(require("dns"));
 const customerIdService_1 = require("./services/customerIdService");
 dotenv_1.default.config();
+try {
+    dns_1.default.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+}
+catch (e) { }
 // Config file path for mock database
 const MOCK_DB_PATH = path_1.default.join(__dirname, 'mock_db.json');
 // Default Coordinates

@@ -2312,7 +2312,7 @@ export default function CustomerDashboard({
       });
 
       const orderPayload = {
-        vendor_id: selectedProduct.vendorId || selectedProduct.vendor_id || '3w8hhon38mqg7ni0u',
+        vendor_id: selectedProduct.vendorId || selectedProduct.vendor_id || '',
         customer_id: currentUser?.customerId || currentUser?.registrationId || currentUser?.id || getOrGenerateCustomerId(currentUser),
         customerId: currentUser?.customerId || currentUser?.registrationId || currentUser?.id || getOrGenerateCustomerId(currentUser),
         customer_name: profileName || currentUser?.name || 'Customer',
@@ -4338,12 +4338,12 @@ export default function CustomerDashboard({
         (selectedProduct && (selectedProduct.id === appliedJobId || String(selectedProduct.id) === String(appliedJobId)) ? selectedProduct : null) || {
           title: 'Full Stack Developer',
           id: appliedJobId || 'CAT-FSD-2026-1024',
-          vendorId: '3w8hhon38mqg7ni0u'
+          vendorId: ''
         };
 
       const jobTitle = selectedJob?.title || selectedJob?.name || selectedJob?.jobTitle || 'Job Application';
       const jobId = selectedJob?.id || selectedJob?._id || appliedJobId || 'CAT-FSD-2026-1024';
-      const vendorId = selectedJob?.vendorId || selectedJob?.vendor_id || '3w8hhon38mqg7ni0u';
+      const vendorId = selectedJob?.vendorId || selectedJob?.vendor_id || '';
 
       const custIdTarget = currentUser?.id || currentUser?.customerId || activeCustomerId || '';
       const custEmailTarget = applicantEmail || profileEmail || currentUser?.email || '';
@@ -5246,7 +5246,7 @@ export default function CustomerDashboard({
       const placedOrdersList = [];
 
       for (const item of selectedCart) {
-        const vendorId = item.vendorId || item.vendor_id || '3w8hhon38mqg7ni0u';
+        const vendorId = item.vendorId || item.vendor_id || '';
         const finalTxnId = txnId || (payStatus === 'Paid' ? ('TXN_' + Math.floor(100000 + Math.random() * 900000)) : undefined);
         const itemAmount = (item.price || 0) * (item.quantity || 1);
 

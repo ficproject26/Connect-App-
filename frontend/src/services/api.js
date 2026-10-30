@@ -192,7 +192,7 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
             id: orderId,
             order_number: orderId,
             applicationId: orderId,
-            vendorId: body.vendor_id || 'v1',
+            vendorId: body.vendor_id || body.vendorId || '',
             memberId: body.customer_id || 'cust_dhanush',
             memberName: body.customer_name || 'Customer',
             type: body.type || 'Order',

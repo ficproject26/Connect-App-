@@ -553,6 +553,107 @@ function logVendorSyncThrottled(msg: string) {
   }
 }
 
+// Check if an ID is a dummy / mock placeholder that must never be used
+export const isDummyVendor = (id: any): boolean => {
+  if (!id) return true;
+  const s = String(id).trim().toLowerCase();
+  return ['v1', '3w8hhon38mqg7ni0u', 'vendor_job', 'undefined', 'null', 'v_prod_mock'].includes(s);
+};
+
+// Authoritatively resolve product owner vendor from database catalog
+export async function resolveProductOwnerVendor(
+  mongoDb: any,
+  item: any,
+  fallbackVendorId?: string
+): Promise<{ vendorId: string; productDoc: any }> {
+  if (!mongoDb) return { vendorId: isDummyVendor(fallbackVendorId) ? '' : String(fallbackVendorId || ''), productDoc: null };
+  const prodId = item?.productId || item?.id || item?._id || item?.jobId || item?.job_id;
+  const prodName = item?.name || item?.title || item?.product_details || item?.jobTitle;
+
+  let productDoc: any = null;
+  if (prodId) {
+    const q: any[] = [{ id: String(prodId) }, { _id: String(prodId) }];
+    try {
+      if (ObjectId.isValid(String(prodId))) {
+        q.push({ _id: new ObjectId(String(prodId)) });
+      }
+    } catch (e) {}
+    productDoc = await mongoDb.collection('products').findOne({ $or: q });
+  }
+
+  if (!productDoc && prodName) {
+    const cleanStr = String(prodName).trim();
+    const safeRegex = new RegExp('^' + cleanStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+    productDoc = await mongoDb.collection('products').findOne({
+      $or: [
+        { name: prodName },
+        { title: prodName },
+        { name: safeRegex },
+        { title: safeRegex }
+      ]
+    });
+  }
+
+  const dbVendor = productDoc?.vendorId || productDoc?.vendor_id || '';
+  if (dbVendor && !isDummyVendor(dbVendor)) {
+    return { vendorId: String(dbVendor), productDoc };
+  }
+
+  if (fallbackVendorId && !isDummyVendor(fallbackVendorId)) {
+    return { vendorId: String(fallbackVendorId), productDoc };
+  }
+
+  return { vendorId: '', productDoc };
+}
+
+
+async function forwardOrderToVendorBackend(order: any, syncPayload: any) {
+  try {
+    if (process.env.ENABLE_VENDOR_SYNC === 'false') return;
+    const vendorUrlRaw = process.env.VENDOR_BACKEND_URL || process.env.VENDOR_API_URL || 'http://127.0.0.1:8002';
+    let vendorUrl: URL;
+    try {
+      vendorUrl = new URL('/api/public/orders', vendorUrlRaw);
+    } catch {
+      vendorUrl = new URL('http://127.0.0.1:8002/api/public/orders');
+    }
+
+    const client = vendorUrl.protocol === 'https:' ? require('https') : require('http');
+    const syncData = JSON.stringify(syncPayload);
+    const reqPost = client.request({
+      protocol: vendorUrl.protocol,
+      hostname: vendorUrl.hostname,
+      port: vendorUrl.port || (vendorUrl.protocol === 'https:' ? 443 : 80),
+      path: vendorUrl.pathname + vendorUrl.search,
+      method: 'POST',
+      timeout: 4000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(syncData)
+      }
+    }, (resPost: any) => {
+      let respData = '';
+      resPost.on('data', (d: any) => { respData += d.toString(); });
+      resPost.on('end', () => {
+        if (resPost.statusCode >= 200 && resPost.statusCode < 300) {
+          console.log(`[Sync Order ${order.id}]: Vendor backend accepted order for vendor ${order.vendor_id}.`);
+        } else {
+          logVendorSyncThrottled(`Vendor backend (${vendorUrl.origin}) returned status ${resPost.statusCode}: ${respData.slice(0, 100)}`);
+        }
+      });
+    });
+
+    reqPost.on('timeout', () => { reqPost.destroy(new Error('Connection timed out')); });
+    reqPost.on('error', (e: any) => {
+      logVendorSyncThrottled(`Failed to forward order to vendor backend (${vendorUrl.origin}): ${e.message}`);
+    });
+    reqPost.write(syncData);
+    reqPost.end();
+  } catch (err: any) {
+    logVendorSyncThrottled(err.message);
+  }
+}
+
 // POST: /api/orders
 router.post('/', async (req: Request, res: Response) => {
   let {
@@ -625,7 +726,66 @@ router.post('/', async (req: Request, res: Response) => {
   const resolvedCustomerAddress = customer_address || (isBookingWithoutPhysicalDelivery ? 'N/A (Booking Service)' : '');
 
   try {
-    if (vendor_id) {
+    const mongoDb = db.getDb();
+    let travelProduct: any = null;
+
+    // Authoritatively resolve vendor ownership from MongoDB catalog for all items
+    if (Array.isArray(items) && items.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const itResolved = await resolveProductOwnerVendor(mongoDb, it, vendor_id);
+        if (itResolved.vendorId) {
+          it.vendorId = itResolved.vendorId;
+          it.vendor_id = itResolved.vendorId;
+        }
+        if (itResolved.productDoc) {
+          it.category = it.category || itResolved.productDoc.category;
+          it.mainCategory = it.mainCategory || itResolved.productDoc.mainCategory;
+          it.productId = it.productId || String(itResolved.productDoc.id || itResolved.productDoc._id);
+          if (!it.price && itResolved.productDoc.price) it.price = itResolved.productDoc.price;
+        }
+      }
+    }
+
+    let primaryVendorId = '';
+    if (Array.isArray(items) && items.length > 0) {
+      primaryVendorId = items[0]?.vendorId || items[0]?.vendor_id || '';
+    }
+
+    if (!primaryVendorId) {
+      const singleResolved = await resolveProductOwnerVendor(mongoDb, {
+        productId: firstItem?.productId || firstItem?.id || req.body.productId || req.body.jobId || req.body.job_id,
+        name: product_details || req.body.jobTitle || firstItem?.name
+      }, vendor_id);
+      primaryVendorId = singleResolved.vendorId;
+      if (!travelProduct && singleResolved.productDoc) {
+        travelProduct = singleResolved.productDoc;
+      }
+    }
+
+    if (!primaryVendorId && !isDummyVendor(vendor_id)) {
+      primaryVendorId = String(vendor_id).trim();
+    }
+
+    // Safety fallback: find active vendor for the category if still undetermined
+    if (!primaryVendorId && mongoDb) {
+      const catGuess = type || req.body.category || 'Food';
+      const sampleProd = await mongoDb.collection('products').findOne({
+        $or: [
+          { mainCategory: new RegExp('^' + catGuess, 'i') },
+          { category: new RegExp('^' + catGuess, 'i') }
+        ]
+      });
+      if (sampleProd && sampleProd.vendorId) {
+        primaryVendorId = String(sampleProd.vendorId);
+      }
+    }
+
+    if (primaryVendorId) {
+      vendor_id = primaryVendorId;
+    }
+
+    if (vendor_id && !isDummyVendor(vendor_id)) {
       const isVendorActive = await db.isVendorActive(vendor_id);
       if (!isVendorActive) {
         return res.status(403).json({
@@ -671,7 +831,6 @@ router.post('/', async (req: Request, res: Response) => {
       }
 
       const jobId = firstItem?.id || firstItem?._id || firstItem?.productId || req.body.job_id || req.body.productId;
-      const mongoDb = db.getDb();
       if (mongoDb && (jobId || firstItem?.name)) {
         const custFilter: any[] = [];
         if (resolvedCustId) custFilter.push({ customer_id: resolvedCustId }, { customerId: resolvedCustId });
@@ -796,8 +955,6 @@ router.post('/', async (req: Request, res: Response) => {
     if (isNaN(numAdults) || numAdults < 0) numAdults = 1;
     let numChildren = typeof children === 'number' ? children : parseInt(children, 10);
     if (isNaN(numChildren) || numChildren < 0) numChildren = 0;
-
-    const mongoDb = db.getDb();
     const targetProdId = firstItem?.productId || firstItem?.id || req.body.productId;
 
     // Validate stock and availability for products in items
@@ -834,7 +991,6 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    let travelProduct: any = null;
     if (mongoDb && targetProdId) {
       const queries: any[] = [{ id: String(targetProdId) }, { _id: String(targetProdId) }];
       try {
@@ -1116,11 +1272,107 @@ router.post('/', async (req: Request, res: Response) => {
     const resolvedTxnId = transactionId || paymentId || (!isCod ? ('TXN_' + orderNo) : undefined);
     const resolvedPaidAt = resolvedPaymentStatus === 'Paid' ? (paidAt || new Date().toISOString()) : undefined;
 
+    // Check if multi-item cart contains items from multiple distinct vendors
+    const distinctVendorIds = Array.isArray(items) && items.length > 1
+      ? [...new Set(items.map((it: any) => it.vendorId).filter(Boolean))]
+      : [];
+
+    if (distinctVendorIds.length > 1) {
+      const createdOrders: any[] = [];
+      for (const vId of distinctVendorIds) {
+        const vItems = items.filter((it: any) => it.vendorId === vId);
+        const vAmount = vItems.reduce((acc: number, it: any) => acc + (Number(it.price || 0) * Number(it.quantity || 1)), 0);
+        const vOrderId = prefix + Math.floor(1000 + Math.random() * 9000);
+        const vOrderNo = prefix + Math.floor(100000 + Math.random() * 900000);
+        const vProdDetails = vItems.map((it: any) => `${it.name} (x${it.quantity || 1})`).join(', ');
+
+        const vOrder = await db.createOrder({
+          id: vOrderId,
+          order_number: vOrderNo,
+          vendor_id: vId,
+          vendorId: vId,
+          customer_id: resolvedCustId,
+          customerId: resolvedCustId,
+          memberId: resolvedCustId,
+          customer_name,
+          memberName: customer_name,
+          customer_email: resolvedEmail,
+          customer_phone,
+          customer_address: resolvedCustomerAddress,
+          customer_latitude: customer_latitude || 12.9400,
+          customer_longitude: customer_longitude || 77.6250,
+          product_details: vProdDetails,
+          amount: vAmount,
+          totalAmount: vAmount,
+          status: isJobType ? (req.body.status || 'APPLICATION RECEIVED') : (req.body.status || 'Order Received'),
+          type: type || (isJobType ? 'Job' : (isBookingType ? (req.body.category || 'Services') : 'Order')),
+          paymentMethod: resolvedPaymentMethod,
+          payment_method: resolvedPaymentMethod,
+          paymentStatus: resolvedPaymentStatus,
+          payment_status: resolvedPaymentStatus,
+          ...(resolvedTxnId && { transactionId: resolvedTxnId }),
+          ...(resolvedPaidAt && { paidAt: resolvedPaidAt }),
+          items: vItems
+        });
+
+        await db.logStatusHistory({
+          order_id: vOrderId,
+          status: 'Order Placed',
+          updated_by: 'Customer',
+          notes: `Order placed successfully by ${customer_name}`
+        });
+
+        socketManager.emitToVendor(vId, 'new_order_received', vOrder);
+        socketManager.broadcast('new_order_placed', vOrder);
+
+        await eventPublisher.publishEvent(
+          RealtimeEntities.ORDER,
+          RealtimeActions.CREATED,
+          vOrder.id,
+          vOrder,
+          { role: 'vendor', userId: vId }
+        );
+
+        setTimeout(async () => {
+          await runAutoAssignment(vOrderId);
+        }, 1500);
+
+        forwardOrderToVendorBackend(vOrder, {
+          id: vOrderId,
+          order_number: vOrderNo,
+          vendorId: vId,
+          memberId: resolvedCustId || 'cust_dhanush',
+          memberName: customer_name,
+          type: type || 'Order',
+          items: vItems,
+          totalAmount: vAmount,
+          discountApplied: 0,
+          finalAmount: vAmount,
+          paymentMethod: resolvedPaymentMethod,
+          payment_method: resolvedPaymentMethod,
+          paymentStatus: resolvedPaymentStatus,
+          payment_status: resolvedPaymentStatus,
+          ...(resolvedTxnId && { transactionId: resolvedTxnId }),
+          ...(resolvedPaidAt && { paidAt: resolvedPaidAt })
+        });
+
+        createdOrders.push(vOrder);
+      }
+
+      return res.status(201).json({
+        status: 'success',
+        message: 'Multi-vendor orders created successfully.',
+        orders: createdOrders,
+        data: createdOrders[0],
+        order: createdOrders[0]
+      });
+    }
+
     const newOrder = await db.createOrder({
       id: orderId,
       order_number: orderNo,
-      vendor_id: vendor_id || travelProduct?.vendorId || 'v1',
-      vendorId: vendor_id || travelProduct?.vendorId || 'v1',
+      vendor_id: vendor_id || travelProduct?.vendorId || primaryVendorId,
+      vendorId: vendor_id || travelProduct?.vendorId || primaryVendorId,
       customer_id: resolvedCustId,
       customerId: resolvedCustId,
       memberId: resolvedCustId,
@@ -1214,7 +1466,7 @@ router.post('/', async (req: Request, res: Response) => {
       const syncData = JSON.stringify({
         id: orderId,
         order_number: orderNo,
-        vendorId: vendor_id || travelProduct?.vendorId || 'v1',
+        vendorId: vendor_id || travelProduct?.vendorId || primaryVendorId,
         memberId: resolvedCustId || 'cust_dhanush',
         memberName: customer_name,
         type: type || 'Order',
@@ -1311,7 +1563,8 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(201).json({
       status: 'success',
       message: 'Order created successfully.',
-      data: newOrder
+      data: newOrder,
+      order: newOrder
     });
   } catch (error: any) {
     res.status(500).json({

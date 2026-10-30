@@ -361,7 +361,7 @@ export default function SubServiceDetails({ title, onBack }) {
       const res = await apiFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
-          vendor_id: selectedHospital?.vendorId || 'v1',
+          vendor_id: selectedHospital?.vendorId || '',
           customer_name: 'Dhanush Kumar',
           customer_phone: '+91 98765 43210',
           customer_address: 'Koramangala, 5th Block, Bangalore',
@@ -402,7 +402,7 @@ export default function SubServiceDetails({ title, onBack }) {
       const res = await apiFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
-          vendor_id: selectedItemForPurchase.vendorId || 'v1',
+          vendor_id: selectedItemForPurchase.vendorId || '',
           customer_name: purchaseName,
           customer_phone: purchasePhone,
           customer_address: purchaseAddress,

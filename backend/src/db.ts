@@ -2,9 +2,14 @@ import { MongoClient, Db, ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import dns from 'dns';
 import { generateCustomerId, ensureCustomerIdIndexes } from './services/customerIdService';
 
 dotenv.config();
+
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch (e) {}
 
 // Database Schema Interfaces
 export interface Vendor {
