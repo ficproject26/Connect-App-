@@ -19,3 +19,4 @@ All notable changes to the Customer Website & Backend are documented here.
   - Fixed `src/routes/auth.ts` IDOR validation in `GET /customer-profile`.
   - Joined sockets to `customer:${userId}` and `customer:${customerId}` in `wsServer.ts`.
   - Unblocked `isCartInitializedRef` in `Dashboard.jsx`.
+

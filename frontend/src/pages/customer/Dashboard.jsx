@@ -1972,19 +1972,21 @@ export default function CustomerDashboard({
 
               // Synchronize cart (Add to Cart) across devices
               if (Array.isArray(dbUser.cart)) {
-                if (typeof isRemoteCartUpdateRef !== 'undefined' && isRemoteCartUpdateRef) {
+                if (typeof isRemoteCartUpdateRef !== "undefined" && isRemoteCartUpdateRef) {
                   isRemoteCartUpdateRef.current = true;
                 }
                 const sanitizedCart = dbUser.cart.map(item => ({
                   ...item,
-                  price: typeof item.price === 'string'
-                    ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
+                  name: item.name || item.title || "Cart Item",
+                  image: item.image || item.imageUrl || (Array.isArray(item.images) ? (item.images[0]?.url || item.images[0]) : "") || "",
+                  price: typeof item.price === "string"
+                    ? (parseFloat(item.price.replace(/[^\d.]/g, "")) || 0)
                     : Number(item.price || 0)
                 }));
                 setCart(sanitizedCart);
-                try { localStorage.setItem('connect_cart', JSON.stringify(sanitizedCart)); } catch (e) {}
+                try { localStorage.setItem("connect_cart", JSON.stringify(sanitizedCart)); } catch (e) {}
+                isCartInitializedRef.current = true;
               }
-              isCartInitializedRef.current = true;
               return;
             }
           }
@@ -3763,6 +3765,8 @@ export default function CustomerDashboard({
         isCartInitializedRef.current = true;
         const sanitizedCart = data.cart.map(item => ({
           ...item,
+          name: item.name || item.title || 'Cart Item',
+          image: item.image || item.imageUrl || (Array.isArray(item.images) ? (item.images[0]?.url || item.images[0]) : '') || '',
           price: typeof item.price === 'string'
             ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
             : Number(item.price || 0)
@@ -3801,6 +3805,8 @@ export default function CustomerDashboard({
         isCartInitializedRef.current = true;
         const sanitizedCart = data.cart.map(item => ({
           ...item,
+          name: item.name || item.title || 'Cart Item',
+          image: item.image || item.imageUrl || (Array.isArray(item.images) ? (item.images[0]?.url || item.images[0]) : '') || '',
           price: typeof item.price === 'string'
             ? (parseFloat(item.price.replace(/[^\d.]/g, '')) || 0)
             : Number(item.price || 0)
@@ -13683,9 +13689,9 @@ export default function CustomerDashboard({
                         }}
                         className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-[#f43397] focus:ring-[#f43397] cursor-pointer shrink-0"
                       />
-                      <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" />
+                      <img src={item.image || item.imageUrl || (Array.isArray(item.images) ? (item.images[0]?.url || item.images[0]) : "") || "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=300&auto=format&fit=crop&q=80"} alt={item.name || item.title || "Cart Item"} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0" />
                       <div className="text-left overflow-hidden">
-                        <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{item.name || item.title || "Cart Item"}</h4>
                         {isOutOfStock && (
                           <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60 inline-block mt-0.5">
                             {getUnavailableCartBadge(item)}
