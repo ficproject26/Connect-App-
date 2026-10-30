@@ -181,54 +181,57 @@ const handleFallbackRequest = async (endpoint, options = {}) => {
     orders.unshift(newOrder);
     localStorage.setItem('connect_fallback_orders', JSON.stringify(orders));
 
-    // Attempt fallback sync to vendor backend
+    // Attempt fallback sync to vendor backend if a dedicated microservice is configured
     try {
-      fetch(`${getVendorBackendUrl()}/api/public/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: orderId,
-          order_number: orderId,
-          applicationId: orderId,
-          vendorId: body.vendor_id || 'v1',
-          memberId: body.customer_id || 'cust_dhanush',
-          memberName: body.customer_name || 'Customer',
-          type: body.type || 'Order',
-          items: body.items || [],
-          totalAmount: body.amount || 0,
-          finalAmount: body.amount || 0,
-          status: initialStatus,
-          paymentMethod: body.paymentMethod || body.payment_method || (body.isCOD ? 'Cash on Delivery' : 'Connect Wallet'),
-          payment_method: body.payment_method || body.paymentMethod || (body.isCOD ? 'Cash on Delivery' : 'Connect Wallet'),
-          paymentStatus: body.paymentStatus || body.payment_status || ((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD) ? 'Pending' : 'Paid'),
-          payment_status: body.payment_status || body.paymentStatus || ((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD) ? 'Pending' : 'Paid'),
-          transactionId: body.transactionId || (!((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD)) ? ('TXN_' + orderId) : undefined),
-          paidAt: body.paidAt || ((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD) ? null : new Date().toISOString()),
-          jobId: body.jobId || (body.items && body.items[0]?.productId),
-          jobTitle: body.jobTitle || (body.items && body.items[0]?.name) || body.product_details,
-          candidateName: body.customer_name || body.candidateName,
-          candidateEmail: body.candidateEmail || body.customer_email,
-          candidatePhone: body.customer_phone || body.candidatePhone,
-          jobLocation: body.customer_address || body.jobLocation,
-          candidateEducation: body.candidateEducation || 'Graduate',
-          experience: body.experience || 'Fresher',
-          candidateResume: body.candidateResume,
-          applicationDate: new Date().toISOString(),
-          appointmentDate: body.appointmentDate,
-          appointmentTimeSlot: body.appointmentTimeSlot,
-          doctorName: body.doctorName,
-          tableNumber: body.tableNumber,
-          roomNumber: body.roomNumber,
-          prescriptionUrl: body.prescriptionUrl,
-          guests: body.guests || body.numberOfGuests || body.guestCount || body.adults || (body.items && body.items[0]?.guests) || 2,
-          adults: body.adults || (body.items && body.items[0]?.adults),
-          children: body.children || (body.items && body.items[0]?.children),
-          customer_address: body.customer_address || body.address || body.deliveryAddress,
-          customer_phone: body.customer_phone || body.phone
-        })
-      }).then(r => r.json())
-        .then(data => console.log('Fallback sync response:', data))
-        .catch(err => console.warn('Fallback sync to vendor backend failed:', err));
+      const vendorUrl = getVendorBackendUrl();
+      if (vendorUrl && !vendorUrl.includes('ficapp.in')) {
+        fetch(`${vendorUrl}/api/public/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: orderId,
+            order_number: orderId,
+            applicationId: orderId,
+            vendorId: body.vendor_id || 'v1',
+            memberId: body.customer_id || 'cust_dhanush',
+            memberName: body.customer_name || 'Customer',
+            type: body.type || 'Order',
+            items: body.items || [],
+            totalAmount: body.amount || 0,
+            finalAmount: body.amount || 0,
+            status: initialStatus,
+            paymentMethod: body.paymentMethod || body.payment_method || (body.isCOD ? 'Cash on Delivery' : 'Connect Wallet'),
+            payment_method: body.payment_method || body.paymentMethod || (body.isCOD ? 'Cash on Delivery' : 'Connect Wallet'),
+            paymentStatus: body.paymentStatus || body.payment_status || ((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD) ? 'Pending' : 'Paid'),
+            payment_status: body.payment_status || body.paymentStatus || ((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD) ? 'Pending' : 'Paid'),
+            transactionId: body.transactionId || (!((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD)) ? ('TXN_' + orderId) : undefined),
+            paidAt: body.paidAt || ((body.paymentMethod === 'Cash on Delivery' || body.payment_method === 'Cash on Delivery' || body.isCOD) ? null : new Date().toISOString()),
+            jobId: body.jobId || (body.items && body.items[0]?.productId),
+            jobTitle: body.jobTitle || (body.items && body.items[0]?.name) || body.product_details,
+            candidateName: body.customer_name || body.candidateName,
+            candidateEmail: body.candidateEmail || body.customer_email,
+            candidatePhone: body.customer_phone || body.candidatePhone,
+            jobLocation: body.customer_address || body.jobLocation,
+            candidateEducation: body.candidateEducation || 'Graduate',
+            experience: body.experience || 'Fresher',
+            candidateResume: body.candidateResume,
+            applicationDate: new Date().toISOString(),
+            appointmentDate: body.appointmentDate,
+            appointmentTimeSlot: body.appointmentTimeSlot,
+            doctorName: body.doctorName,
+            tableNumber: body.tableNumber,
+            roomNumber: body.roomNumber,
+            prescriptionUrl: body.prescriptionUrl,
+            guests: body.guests || body.numberOfGuests || body.guestCount || body.adults || (body.items && body.items[0]?.guests) || 2,
+            adults: body.adults || (body.items && body.items[0]?.adults),
+            children: body.children || (body.items && body.items[0]?.children),
+            customer_address: body.customer_address || body.address || body.deliveryAddress,
+            customer_phone: body.customer_phone || body.phone
+          })
+        }).then(r => r.json())
+          .then(data => console.log('Fallback sync response:', data))
+          .catch(err => console.warn('Fallback sync to vendor backend failed:', err));
+      }
     } catch (e) {
       console.warn(e);
     }
@@ -496,8 +499,9 @@ export const apiFetch = async (endpoint, options = {}) => {
       if (res.status === 429) {
         return { status: 'error', statusCode: 429, code: 'RATE_LIMIT_EXCEEDED', message: 'Too Many Requests. Please slow down.' };
       }
-      // Never attempt fallback for auth endpoints or security rejections (401, 403)
-      if (!normalizedEndpoint.startsWith('/auth') && res.status !== 401 && res.status !== 403) {
+      // Never attempt fallback for client errors (4xx: 400, 401, 403, 404, 409, 422, etc.) or /auth endpoints.
+      // Fallback is strictly reserved for 5xx server outages (500, 502, 503, 504).
+      if (res.status >= 500 && !normalizedEndpoint.startsWith('/auth')) {
         const fallbackRes = await handleFallbackRequest(normalizedEndpoint, options).catch(() => null);
         if (fallbackRes && fallbackRes.status === 'success') {
           return fallbackRes;
