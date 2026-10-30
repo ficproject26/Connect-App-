@@ -6,7 +6,9 @@ All notable changes to the Customer Website & Backend are documented here.
 
 ### Fixed
 - **Unified Customer Cart & Cross-Platform Category Synchronization (Modules 1–6)**:
-  - **Cart Metadata Display in Website Cart Drawer (`Dashboard.jsx`)**: Enhanced the Website cart drawer to render booking dates (`📅 Date • Time`), check-in/out dates, and vehicle/bus registration numbers when customer items are added from Mobile or Web.
+  - **Cart Metadata Display in Website Cart Drawer (`Dashboard.jsx`)**: Enhanced the Website cart drawer to render booking dates (`📅 Date • Time`), check-in/out dates, and vehicle/bus registration numbers when customer items are added from Mobile or Web. Added resilient fallbacks for `item.name || item.title` and `item.image || item.imageUrl || item.images`.
+  - **Cart State Overwrite Safeguard (`Dashboard.jsx`)**: Protected `isCartInitializedRef.current` so it only flags true when `Array.isArray(dbUser.cart)` is verified, preventing premature empty-cart syncs from wiping active carts.
+  - **EC2 Deployment Target Host (`.github/workflows/deploy.yml`)**: Updated EC2 deploy workflow to target active host `3.110.88.42` (`api.ficapp.in`).
   - **Backend Cart & Favorites Persistence (`backend/src/routes/auth.ts`)**: Added `cart` and `favorites` arrays into `finalProfile` returned by `PUT /api/auth/customer-profile` so that client stores receive authoritative persisted cart state on profile updates.
   - **Compiled Backend Dist Build (`backend/dist/routes/auth.js`)**: Compiled all backend routes via `npm run build` (`tsc`) ensuring server runs synchronized IDOR protection, websocket room registrations, and cart persistence handlers.
   - **Jobs Application-Only Invariant**: Protected job applications to remain application-only without cart addition.
