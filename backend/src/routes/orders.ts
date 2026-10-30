@@ -1,4 +1,4 @@
-﻿import { uploadToS3 } from '../s3';
+import { uploadToS3 } from '../s3';
 import { Router, Request, Response } from 'express';
 import { db, Order, DeliveryPartner, DeliveryAssignment } from '../db';
 import { socketManager } from '../socket';
@@ -653,6 +653,7 @@ async function forwardOrderToVendorBackend(order: any, syncPayload: any) {
     logVendorSyncThrottled(err.message);
   }
 }
+
 
 // POST: /api/orders
 router.post('/', async (req: Request, res: Response) => {
@@ -1574,6 +1575,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+
 // POST: /api/orders/:id/prepare
 router.post('/:id/prepare', authenticateToken, enforceRoleAndApproval('vendor', 'admin', 'superadmin'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
@@ -1612,6 +1614,7 @@ router.post('/:id/prepare', authenticateToken, enforceRoleAndApproval('vendor', 
     res.status(500).json({ status: 'error', message: error.message });
   }
 });
+
 
 // POST: /api/orders/:id/ready
 router.post('/:id/ready', authenticateToken, enforceRoleAndApproval('vendor', 'admin', 'superadmin'), async (req: AuthenticatedRequest, res: Response) => {
@@ -1659,6 +1662,7 @@ router.post('/:id/ready', authenticateToken, enforceRoleAndApproval('vendor', 'a
     res.status(500).json({ status: 'error', message: error.message });
   }
 });
+
 
 // POST: /api/orders/:id/rate
 router.post('/:id/rate', optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
