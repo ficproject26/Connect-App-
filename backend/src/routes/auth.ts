@@ -1891,6 +1891,8 @@ router.put('/customer-profile', authenticateToken, async (req: AuthenticatedRequ
       role: safeUser.role || 'customer',
       customerId: resolvedCustId,
       registrationId: resolvedCustId,
+      favorites: Array.isArray(safeUser.favorites) ? safeUser.favorites : [],
+      cart: Array.isArray(safeUser.cart) ? safeUser.cart : [],
       addresses: deduplicateAddresses(Array.isArray(safeUser.addresses) ? safeUser.addresses : [])
     };
 

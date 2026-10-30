@@ -13691,6 +13691,21 @@ export default function CustomerDashboard({
                             {getUnavailableCartBadge(item)}
                           </span>
                         )}
+                        {item.bookingDate && (
+                          <p className="text-[9.5px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
+                            📅 {item.bookingDate} {item.bookingTime ? `• ${item.bookingTime}` : ''}
+                          </p>
+                        )}
+                        {item.checkInDate && (
+                          <p className="text-[9.5px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
+                            🏨 Check-in: {item.checkInDate} {item.checkOutDate ? `| Out: ${item.checkOutDate}` : ''}
+                          </p>
+                        )}
+                        {item.vehicleNumber && (
+                          <p className="text-[9.5px] text-blue-600 dark:text-blue-400 font-semibold truncate mt-0.5">
+                            Vehicle / Bus: {item.vehicleNumber}
+                          </p>
+                        )}
                         {item.configurationDetails && (
                           <p className="text-[9.5px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
                             {item.configurationDetails}
