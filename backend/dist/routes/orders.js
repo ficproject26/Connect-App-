@@ -520,6 +520,10 @@ async function resolveProductOwnerVendor(mongoDb, item, fallbackVendorId) {
         return { vendorId: (0, exports.isDummyVendor)(fallbackVendorId) ? '' : String(fallbackVendorId || ''), productDoc: null };
     const prodId = item?.productId || item?.id || item?._id || item?.jobId || item?.job_id;
     const prodName = item?.name || item?.title || item?.product_details || item?.jobTitle;
+    const itemVendor = item?.vendorId || item?.vendor_id;
+    if (itemVendor && !(0, exports.isDummyVendor)(itemVendor)) {
+        return { vendorId: String(itemVendor), productDoc: null };
+    }
     let productDoc = null;
     if (prodId) {
         const q = [{ id: String(prodId) }, { _id: String(prodId) }];
@@ -542,6 +546,20 @@ async function resolveProductOwnerVendor(mongoDb, item, fallbackVendorId) {
                 { title: safeRegex }
             ]
         });
+        if (!productDoc && cleanStr.includes('(')) {
+            const baseName = cleanStr.replace(/\s*\([^)]*\).*$/, '').trim();
+            if (baseName) {
+                const baseSafeRegex = new RegExp('^' + baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+                productDoc = await mongoDb.collection('products').findOne({
+                    $or: [
+                        { name: baseName },
+                        { title: baseName },
+                        { name: baseSafeRegex },
+                        { title: baseSafeRegex }
+                    ]
+                });
+            }
+        }
     }
     const dbVendor = productDoc?.vendorId || productDoc?.vendor_id || '';
     if (dbVendor && !(0, exports.isDummyVendor)(dbVendor)) {
@@ -1215,6 +1233,7 @@ router.post('/', async (req, res) => {
                     totalAmount: vAmount,
                     status: isJobType ? (req.body.status || 'APPLICATION RECEIVED') : (req.body.status || 'Order Received'),
                     type: type || (isJobType ? 'Job' : (isBookingType ? (req.body.category || 'Services') : 'Order')),
+                    category: req.body.category || vItems[0]?.category || vItems[0]?.mainCategory || (isJobType ? 'Jobs' : (isBookingType ? 'Services' : 'Products')),
                     paymentMethod: resolvedPaymentMethod,
                     payment_method: resolvedPaymentMethod,
                     paymentStatus: resolvedPaymentStatus,
@@ -1242,6 +1261,7 @@ router.post('/', async (req, res) => {
                     memberId: resolvedCustId || 'cust_dhanush',
                     memberName: customer_name,
                     type: type || 'Order',
+                    category: req.body.category || vItems[0]?.category || vItems[0]?.mainCategory || 'Products',
                     items: vItems,
                     totalAmount: vAmount,
                     discountApplied: 0,
@@ -1283,6 +1303,7 @@ router.post('/', async (req, res) => {
             totalAmount: finalOrderAmount,
             status: isJobType ? (req.body.status || 'APPLICATION RECEIVED') : (req.body.status || 'Order Received'),
             type: type || (isJobType ? 'Job' : (isBookingType ? (req.body.category || 'Services') : 'Order')),
+            category: req.body.category || (items && items[0]?.category) || (items && items[0]?.mainCategory) || (isJobType ? 'Jobs' : (isBookingType ? 'Services' : 'Products')),
             paymentMethod: resolvedPaymentMethod,
             payment_method: resolvedPaymentMethod,
             paymentStatus: resolvedPaymentStatus,
