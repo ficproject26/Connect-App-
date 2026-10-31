@@ -1342,11 +1342,21 @@ router.post('/', async (req: Request, res: Response) => {
           notes: `Order placed successfully by ${customer_name}`
         });
 
+        const specificMultiEvent = isJobType ? 'APPLICATION_CREATED' : (isBookingType ? 'BOOKING_CREATED' : 'ORDER_CREATED');
+        const specificMultiEntity = isJobType ? RealtimeEntities.APPLICATION : (isBookingType ? RealtimeEntities.BOOKING : RealtimeEntities.ORDER);
+
+        const isMultiJob = isJobType;
+        const isMultiBooking = isBookingType;
+        const specificMultiEvent = isMultiJob ? 'APPLICATION_CREATED' : (isMultiBooking ? 'BOOKING_CREATED' : 'ORDER_CREATED');
+        const specificMultiEntity = isMultiJob ? 'job' : (isMultiBooking ? 'booking' : RealtimeEntities.ORDER);
+
         socketManager.emitToVendor(vId, 'new_order_received', vOrder);
+        socketManager.emitToVendor(vId, specificMultiEvent, vOrder);
         socketManager.broadcast('new_order_placed', vOrder);
+        socketManager.broadcast(specificMultiEvent, vOrder);
 
         await eventPublisher.publishEvent(
-          RealtimeEntities.ORDER,
+          specificMultiEntity,
           RealtimeActions.CREATED,
           vOrder.id,
           vOrder,
@@ -1453,30 +1463,58 @@ router.post('/', async (req: Request, res: Response) => {
       notes: `Order placed successfully by ${customer_name}`
     });
 
+    const specificSingleEvent = isJobType ? 'APPLICATION_CREATED' : (isBookingType ? 'BOOKING_CREATED' : 'ORDER_CREATED');
+    const specificSingleEntity = isJobType ? RealtimeEntities.APPLICATION : (isBookingType ? RealtimeEntities.BOOKING : RealtimeEntities.ORDER);
+
     // Notify vendor, customer, and broadcast
+    const specificSingleEvent = isJobType ? 'APPLICATION_CREATED' : (isBookingType ? 'BOOKING_CREATED' : 'ORDER_CREATED');
+    const specificSingleEntity = isJobType ? 'job' : (isBookingType ? 'booking' : RealtimeEntities.ORDER);
+
     socketManager.emitToVendor(newOrder.vendor_id, 'new_order_received', newOrder);
+    socketManager.emitToVendor(newOrder.vendor_id, specificSingleEvent, newOrder);
+    if (vendor_id && vendor_id !== newOrder.vendor_id) {
+      socketManager.emitToVendor(vendor_id, 'new_order_received', newOrder);
+      socketManager.emitToVendor(vendor_id, specificSingleEvent, newOrder);
+    }
+    socketManager.emitToVendor(newOrder.vendor_id, specificSingleEvent, newOrder);
+    if (vendor_id && String(vendor_id) !== String(newOrder.vendor_id)) {
+      socketManager.emitToVendor(vendor_id, specificSingleEvent, newOrder);
+      socketManager.emitToVendor(vendor_id, 'new_order_received', newOrder);
+    }
     socketManager.broadcast('new_order_placed', newOrder);
+    socketManager.broadcast(specificSingleEvent, newOrder);
 
     // Cross-platform synchronization: notify customer sessions
     const cIdTarget = newOrder.customer_id || resolvedCustId || newOrder.customerId || '';
     if (cIdTarget) {
       socketManager.emitToUser('customer', cIdTarget, 'new_order_placed', newOrder);
       socketManager.emitToUser('customer', cIdTarget, 'order_created', newOrder);
+      socketManager.emitToUser('customer', cIdTarget, specificSingleEvent, newOrder);
     }
     const uIdTarget = (newOrder as any).user_id;
     if (uIdTarget && uIdTarget !== cIdTarget) {
       socketManager.emitToUser('customer', uIdTarget, 'new_order_placed', newOrder);
       socketManager.emitToUser('customer', uIdTarget, 'order_created', newOrder);
+      socketManager.emitToUser('customer', uIdTarget, specificSingleEvent, newOrder);
     }
 
     // Publish structured event to Redis message broker & WebSockets
     await eventPublisher.publishEvent(
-      RealtimeEntities.ORDER,
+      specificSingleEntity,
       RealtimeActions.CREATED,
       newOrder.id,
       newOrder,
       { role: 'vendor', userId: newOrder.vendor_id }
     );
+    if (vendor_id && vendor_id !== newOrder.vendor_id) {
+      await eventPublisher.publishEvent(
+        specificSingleEntity,
+        RealtimeActions.CREATED,
+        newOrder.id,
+        newOrder,
+        { role: 'vendor', userId: vendor_id }
+      );
+    }
 
     // Auto Assign algorithm
     setTimeout(async () => {
@@ -1619,7 +1657,7 @@ router.post('/:id/prepare', authenticateToken, enforceRoleAndApproval('vendor', 
       socketManager.emitToUser('customer', targetCustPrep, 'order_status_updated', { status: 'Preparing', orderId: id, order: updated });
     }
     await eventPublisher.publishEvent(
-      RealtimeEntities.ORDER,
+      specificSingleEntity,
       RealtimeActions.STATUS_CHANGED,
       id,
       { orderId: id, status: 'Preparing', updated },
@@ -1659,7 +1697,7 @@ router.post('/:id/ready', authenticateToken, enforceRoleAndApproval('vendor', 'a
       socketManager.emitToUser('customer', targetCustReady, 'order_status_updated', { status: 'Ready For Pickup', orderId: id, order: updated });
     }
     await eventPublisher.publishEvent(
-      RealtimeEntities.ORDER,
+      specificSingleEntity,
       RealtimeActions.STATUS_CHANGED,
       id,
       { orderId: id, status: 'Ready For Pickup', updated },
@@ -1839,7 +1877,7 @@ router.put('/:id/status', authenticateToken, async (req: AuthenticatedRequest, r
       socketManager.emitToUser('customer', targetCustGen, 'order_status_updated', { status, orderId: id, order: updated });
     }
     await eventPublisher.publishEvent(
-      RealtimeEntities.ORDER,
+      specificSingleEntity,
       RealtimeActions.STATUS_CHANGED,
       id,
       { orderId: id, status, updated },

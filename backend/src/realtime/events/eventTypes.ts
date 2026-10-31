@@ -10,6 +10,8 @@ export const RealtimeEntities = {
   AD: 'ad',
   OFFER: 'offer',
   ORDER: 'order',
+  BOOKING: 'booking',
+  APPLICATION: 'application',
   VENDOR: 'vendor',
   DELIVERY_PARTNER: 'delivery_partner',
   AGENT: 'agent',
@@ -42,6 +44,7 @@ export interface EventTarget {
 }
 
 export interface StandardEventPayload<T = any> {
+  eventId?: string;
   event: string;
   entity: string;
   entityId: string;
