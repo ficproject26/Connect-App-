@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.wsServer = void 0;
 const socket_io_1 = require("socket.io");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const mongodb_1 = require("mongodb");
+const db_1 = require("../../db");
 const middleware_1 = require("../../security/middleware");
 class WebSocketServer {
     constructor() {
@@ -195,6 +197,36 @@ class WebSocketServer {
                     console.log(`[WebSocketServer]: Socket ${socket.id} left ${room}`);
                 }
             });
+            // Dynamic topic and room subscription (cross-platform vendor & ecosystem sync)
+            socket.on('subscribe_topic', (topic) => {
+                if (typeof topic !== 'string' || topic.length > 120)
+                    return;
+                const clean = topic.trim();
+                if (clean === 'public' || clean.startsWith('product:') || clean.startsWith('category:')) {
+                    socket.join(clean);
+                    return;
+                }
+                if (clean.startsWith('vendor:') || clean.startsWith('business:')) {
+                    socket.join(clean);
+                    return;
+                }
+                if (clean.startsWith('user:') && String(clean.slice(5)) === String(socket.data.userId)) {
+                    socket.join(clean);
+                    return;
+                }
+            });
+            socket.on('join', (room) => {
+                if (typeof room !== 'string' || room.length > 120)
+                    return;
+                const clean = room.trim();
+                if (clean.startsWith('vendor:') || clean.startsWith('business:') || clean === 'public') {
+                    socket.join(clean);
+                }
+                else if (clean === String(socket.data.userId) || (socket.data.role === 'vendor')) {
+                    socket.join(`vendor:${clean}`);
+                    socket.join(clean);
+                }
+            });
             // 3. Heartbeat / Latency Ping-Pong
             socket.on('ping_check', (data, callback) => {
                 const serverTime = Date.now();
@@ -267,9 +299,13 @@ class WebSocketServer {
             socket.join(`customer:${customerId}`);
         }
         // Global role channel
-        if (role === 'vendor') {
+        if (role === 'vendor' || String(role).toLowerCase() === 'vendor') {
             socket.join('vendors');
             socket.join(`vendor:${userId}`);
+            socket.join(`business:${userId}`);
+            this.joinVendorOutletRooms(socket, userId).catch((err) => {
+                console.warn('[WebSocketServer]: joinVendorOutletRooms error:', err?.message);
+            });
         }
         else if (role === 'delivery') {
             socket.join('delivery_partners');
@@ -283,6 +319,53 @@ class WebSocketServer {
         }
         else if (role === 'agent') {
             socket.join('agents');
+        }
+    }
+    async joinVendorOutletRooms(socket, vendorIdentifier) {
+        try {
+            const mongoDb = db_1.db.getDb();
+            if (!mongoDb || !vendorIdentifier)
+                return;
+            const q = [
+                { id: String(vendorIdentifier) },
+                { vendorId: String(vendorIdentifier) },
+                { registrationId: String(vendorIdentifier) }
+            ];
+            if (mongodb_1.ObjectId.isValid(String(vendorIdentifier))) {
+                try {
+                    q.push({ _id: new mongodb_1.ObjectId(String(vendorIdentifier)) });
+                }
+                catch { }
+            }
+            const vendorUser = await mongoDb.collection('users').findOne({
+                $or: q
+            });
+            if (vendorUser) {
+                if (vendorUser._id) {
+                    const uIdStr = String(vendorUser._id);
+                    socket.join(`vendor:${uIdStr}`);
+                    socket.join(`user:${uIdStr}`);
+                }
+                if (vendorUser.vendorId) {
+                    socket.join(`vendor:${vendorUser.vendorId}`);
+                }
+                if (vendorUser.primaryBusinessId) {
+                    socket.join(`vendor:${vendorUser.primaryBusinessId}`);
+                    socket.join(`business:${vendorUser.primaryBusinessId}`);
+                }
+                if (Array.isArray(vendorUser.businesses)) {
+                    for (const b of vendorUser.businesses) {
+                        const bid = (b?._id || b?.id || (typeof b === 'string' ? b : null))?.toString();
+                        if (bid) {
+                            socket.join(`vendor:${bid}`);
+                            socket.join(`business:${bid}`);
+                        }
+                    }
+                }
+            }
+        }
+        catch (err) {
+            console.warn('[WebSocketServer]: Error resolving vendor outlets:', err?.message);
         }
     }
     /**
@@ -300,22 +383,33 @@ class WebSocketServer {
             const room = target.role ? `${target.role}:${target.userId}` : `user:${target.userId}`;
             this.io.to(room).emit(eventName, event);
             this.io.to(room).emit(legacyEventName, event);
+            this.io.to(room).emit('realtime_event', event);
+            if (target.role === 'vendor' || String(target.role).toLowerCase() === 'vendor') {
+                this.io.to(`vendor:${target.userId}`).emit(eventName, event);
+                this.io.to(`vendor:${target.userId}`).emit(legacyEventName, event);
+                this.io.to(`vendor:${target.userId}`).emit('realtime_event', event);
+                this.io.to(`business:${target.userId}`).emit(eventName, event);
+                this.io.to(`business:${target.userId}`).emit('realtime_event', event);
+            }
             return;
         }
         if (target?.room) {
             this.io.to(target.room).emit(eventName, event);
             this.io.to(target.room).emit(legacyEventName, event);
+            this.io.to(target.room).emit('realtime_event', event);
             return;
         }
         if (target?.role && target.role !== 'all') {
             const roleRoom = target.role === 'delivery' ? 'delivery_partners' : `${target.role}s`;
             this.io.to(roleRoom).emit(eventName, event);
             this.io.to(roleRoom).emit(legacyEventName, event);
+            this.io.to(roleRoom).emit('realtime_event', event);
             return;
         }
         // Broadcast globally to all connected applications
         this.io.emit(eventName, event);
         this.io.emit(legacyEventName, event);
+        this.io.emit('realtime_event', event);
         // Also emit common convenience events for customer dashboard
         if (event.entity === 'category') {
             this.io.emit('categories:updated', event);
@@ -338,6 +432,17 @@ class WebSocketServer {
     emitToVendor(vendorId, event, data) {
         if (this.io) {
             this.io.to(`vendor:${vendorId}`).emit(event, data);
+            this.io.to(`business:${vendorId}`).emit(event, data);
+            this.io.to(vendorId).emit(event, data);
+            const eventPayload = (data && data.eventId) ? data : {
+                eventId: `${event}_${data?._id || data?.id || data?.order_number || Date.now()}`,
+                event,
+                data,
+                target: { role: 'vendor', userId: vendorId, vendorId }
+            };
+            this.io.to(`vendor:${vendorId}`).emit('realtime_event', eventPayload);
+            this.io.to(`business:${vendorId}`).emit('realtime_event', eventPayload);
+            this.io.to(vendorId).emit('realtime_event', eventPayload);
         }
     }
     emitToAdmins(event, data) {
@@ -348,6 +453,12 @@ class WebSocketServer {
     broadcast(event, data) {
         if (this.io) {
             this.io.emit(event, data);
+            const eventPayload = (data && data.eventId) ? data : {
+                eventId: `${event}_${data?._id || data?.id || data?.order_number || Date.now()}`,
+                event,
+                data
+            };
+            this.io.emit('realtime_event', eventPayload);
         }
     }
     getStats() {

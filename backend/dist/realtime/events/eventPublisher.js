@@ -50,7 +50,9 @@ class EventPublisher {
             return null;
         }
         this.recentPublishHashes.set(dedupKey, now);
+        const eventId = `${normalizedEntity}_${entityId}_${version}_${Date.now()}`;
         const payload = {
+            eventId,
             event: eventName,
             entity: normalizedEntity,
             entityId: String(entityId),

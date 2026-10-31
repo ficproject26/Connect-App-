@@ -13,6 +13,8 @@ exports.RealtimeEntities = {
     AD: 'ad',
     OFFER: 'offer',
     ORDER: 'order',
+    BOOKING: 'booking',
+    APPLICATION: 'application',
     VENDOR: 'vendor',
     DELIVERY_PARTNER: 'delivery_partner',
     AGENT: 'agent',

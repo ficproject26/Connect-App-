@@ -723,6 +723,9 @@ router.post('/', async (req, res) => {
         if (primaryVendorId) {
             vendor_id = primaryVendorId;
         }
+        else if ((0, exports.isDummyVendor)(vendor_id)) {
+            vendor_id = '';
+        }
         if (vendor_id && !(0, exports.isDummyVendor)(vendor_id)) {
             const isVendorActive = await db_1.db.isVendorActive(vendor_id);
             if (!isVendorActive) {
@@ -1248,9 +1251,15 @@ router.post('/', async (req, res) => {
                     updated_by: 'Customer',
                     notes: `Order placed successfully by ${customer_name}`
                 });
+                const isMultiJob = isJobType;
+                const isMultiBooking = isBookingType;
+                const specificMultiEvent = isMultiJob ? 'APPLICATION_CREATED' : (isMultiBooking ? 'BOOKING_CREATED' : 'ORDER_CREATED');
+                const specificMultiEntity = isMultiJob ? 'job' : (isMultiBooking ? 'booking' : realtime_1.RealtimeEntities.ORDER);
                 socket_1.socketManager.emitToVendor(vId, 'new_order_received', vOrder);
+                socket_1.socketManager.emitToVendor(vId, specificMultiEvent, vOrder);
                 socket_1.socketManager.broadcast('new_order_placed', vOrder);
-                await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.ORDER, realtime_1.RealtimeActions.CREATED, vOrder.id, vOrder, { role: 'vendor', userId: vId });
+                socket_1.socketManager.broadcast(specificMultiEvent, vOrder);
+                await realtime_1.eventPublisher.publishEvent(specificMultiEntity, realtime_1.RealtimeActions.CREATED, vOrder.id, vOrder, { role: 'vendor', userId: vId });
                 setTimeout(async () => {
                     await runAutoAssignment(vOrderId);
                 }, 1500);
@@ -1286,8 +1295,8 @@ router.post('/', async (req, res) => {
         const newOrder = await db_1.db.createOrder({
             id: orderId,
             order_number: orderNo,
-            vendor_id: vendor_id || travelProduct?.vendorId || primaryVendorId,
-            vendorId: vendor_id || travelProduct?.vendorId || primaryVendorId,
+            vendor_id: (!(0, exports.isDummyVendor)(vendor_id) ? vendor_id : '') || travelProduct?.vendorId || primaryVendorId || '',
+            vendorId: (!(0, exports.isDummyVendor)(vendor_id) ? vendor_id : '') || travelProduct?.vendorId || primaryVendorId || '',
             customer_id: resolvedCustId,
             customerId: resolvedCustId,
             memberId: resolvedCustId,
@@ -1318,10 +1327,12 @@ router.post('/', async (req, res) => {
             tableNumber,
             roomNumber,
             prescriptionUrl,
-            candidateEmail: resolvedEmail || candidateEmail,
-            candidateResume,
-            experience,
-            candidateEducation,
+            ...(isJobType ? {
+                candidateEmail: resolvedEmail || candidateEmail,
+                candidateResume,
+                experience,
+                candidateEducation,
+            } : {}),
             boardingPoint: validatedBoardingPoint,
             droppingPoint: validatedDroppingPoint,
             adults: numAdults,
@@ -1346,21 +1357,39 @@ router.post('/', async (req, res) => {
             notes: `Order placed successfully by ${customer_name}`
         });
         // Notify vendor, customer, and broadcast
+        const specificSingleEvent = isJobType ? 'APPLICATION_CREATED' : (isBookingType ? 'BOOKING_CREATED' : 'ORDER_CREATED');
+        const specificSingleEntity = isJobType ? 'job' : (isBookingType ? 'booking' : realtime_1.RealtimeEntities.ORDER);
         socket_1.socketManager.emitToVendor(newOrder.vendor_id, 'new_order_received', newOrder);
+        socket_1.socketManager.emitToVendor(newOrder.vendor_id, specificSingleEvent, newOrder);
+        if (vendor_id && vendor_id !== newOrder.vendor_id) {
+            socket_1.socketManager.emitToVendor(vendor_id, 'new_order_received', newOrder);
+            socket_1.socketManager.emitToVendor(vendor_id, specificSingleEvent, newOrder);
+        }
+        socket_1.socketManager.emitToVendor(newOrder.vendor_id, specificSingleEvent, newOrder);
+        if (vendor_id && String(vendor_id) !== String(newOrder.vendor_id)) {
+            socket_1.socketManager.emitToVendor(vendor_id, specificSingleEvent, newOrder);
+            socket_1.socketManager.emitToVendor(vendor_id, 'new_order_received', newOrder);
+        }
         socket_1.socketManager.broadcast('new_order_placed', newOrder);
+        socket_1.socketManager.broadcast(specificSingleEvent, newOrder);
         // Cross-platform synchronization: notify customer sessions
         const cIdTarget = newOrder.customer_id || resolvedCustId || newOrder.customerId || '';
         if (cIdTarget) {
             socket_1.socketManager.emitToUser('customer', cIdTarget, 'new_order_placed', newOrder);
             socket_1.socketManager.emitToUser('customer', cIdTarget, 'order_created', newOrder);
+            socket_1.socketManager.emitToUser('customer', cIdTarget, specificSingleEvent, newOrder);
         }
         const uIdTarget = newOrder.user_id;
         if (uIdTarget && uIdTarget !== cIdTarget) {
             socket_1.socketManager.emitToUser('customer', uIdTarget, 'new_order_placed', newOrder);
             socket_1.socketManager.emitToUser('customer', uIdTarget, 'order_created', newOrder);
+            socket_1.socketManager.emitToUser('customer', uIdTarget, specificSingleEvent, newOrder);
         }
         // Publish structured event to Redis message broker & WebSockets
-        await realtime_1.eventPublisher.publishEvent(realtime_1.RealtimeEntities.ORDER, realtime_1.RealtimeActions.CREATED, newOrder.id, newOrder, { role: 'vendor', userId: newOrder.vendor_id });
+        await realtime_1.eventPublisher.publishEvent(specificSingleEntity, realtime_1.RealtimeActions.CREATED, newOrder.id, newOrder, { role: 'vendor', userId: newOrder.vendor_id });
+        if (vendor_id && vendor_id !== newOrder.vendor_id) {
+            await realtime_1.eventPublisher.publishEvent(specificSingleEntity, realtime_1.RealtimeActions.CREATED, newOrder.id, newOrder, { role: 'vendor', userId: vendor_id });
+        }
         // Auto Assign algorithm
         setTimeout(async () => {
             await runAutoAssignment(orderId);

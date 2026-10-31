@@ -802,6 +802,8 @@ router.post('/', async (req: Request, res: Response) => {
 
     if (primaryVendorId) {
       vendor_id = primaryVendorId;
+    } else if (isDummyVendor(vendor_id)) {
+      vendor_id = '';
     }
 
     if (vendor_id && !isDummyVendor(vendor_id)) {
@@ -1342,9 +1344,6 @@ router.post('/', async (req: Request, res: Response) => {
           notes: `Order placed successfully by ${customer_name}`
         });
 
-        const specificMultiEvent = isJobType ? 'APPLICATION_CREATED' : (isBookingType ? 'BOOKING_CREATED' : 'ORDER_CREATED');
-        const specificMultiEntity = isJobType ? RealtimeEntities.APPLICATION : (isBookingType ? RealtimeEntities.BOOKING : RealtimeEntities.ORDER);
-
         const isMultiJob = isJobType;
         const isMultiBooking = isBookingType;
         const specificMultiEvent = isMultiJob ? 'APPLICATION_CREATED' : (isMultiBooking ? 'BOOKING_CREATED' : 'ORDER_CREATED');
@@ -1402,8 +1401,8 @@ router.post('/', async (req: Request, res: Response) => {
     const newOrder = await db.createOrder({
       id: orderId,
       order_number: orderNo,
-      vendor_id: vendor_id || travelProduct?.vendorId || primaryVendorId,
-      vendorId: vendor_id || travelProduct?.vendorId || primaryVendorId,
+      vendor_id: (!isDummyVendor(vendor_id) ? vendor_id : '') || travelProduct?.vendorId || primaryVendorId || '',
+      vendorId: (!isDummyVendor(vendor_id) ? vendor_id : '') || travelProduct?.vendorId || primaryVendorId || '',
       customer_id: resolvedCustId,
       customerId: resolvedCustId,
       memberId: resolvedCustId,
@@ -1434,10 +1433,12 @@ router.post('/', async (req: Request, res: Response) => {
       tableNumber,
       roomNumber,
       prescriptionUrl,
-      candidateEmail: resolvedEmail || candidateEmail,
-      candidateResume,
-      experience,
-      candidateEducation,
+      ...(isJobType ? {
+        candidateEmail: resolvedEmail || candidateEmail,
+        candidateResume,
+        experience,
+        candidateEducation,
+      } : {}),
       boardingPoint: validatedBoardingPoint,
       droppingPoint: validatedDroppingPoint,
       adults: numAdults,
@@ -1462,9 +1463,6 @@ router.post('/', async (req: Request, res: Response) => {
       updated_by: 'Customer',
       notes: `Order placed successfully by ${customer_name}`
     });
-
-    const specificSingleEvent = isJobType ? 'APPLICATION_CREATED' : (isBookingType ? 'BOOKING_CREATED' : 'ORDER_CREATED');
-    const specificSingleEntity = isJobType ? RealtimeEntities.APPLICATION : (isBookingType ? RealtimeEntities.BOOKING : RealtimeEntities.ORDER);
 
     // Notify vendor, customer, and broadcast
     const specificSingleEvent = isJobType ? 'APPLICATION_CREATED' : (isBookingType ? 'BOOKING_CREATED' : 'ORDER_CREATED');
@@ -1657,7 +1655,7 @@ router.post('/:id/prepare', authenticateToken, enforceRoleAndApproval('vendor', 
       socketManager.emitToUser('customer', targetCustPrep, 'order_status_updated', { status: 'Preparing', orderId: id, order: updated });
     }
     await eventPublisher.publishEvent(
-      specificSingleEntity,
+      RealtimeEntities.ORDER,
       RealtimeActions.STATUS_CHANGED,
       id,
       { orderId: id, status: 'Preparing', updated },
@@ -1697,7 +1695,7 @@ router.post('/:id/ready', authenticateToken, enforceRoleAndApproval('vendor', 'a
       socketManager.emitToUser('customer', targetCustReady, 'order_status_updated', { status: 'Ready For Pickup', orderId: id, order: updated });
     }
     await eventPublisher.publishEvent(
-      specificSingleEntity,
+      RealtimeEntities.ORDER,
       RealtimeActions.STATUS_CHANGED,
       id,
       { orderId: id, status: 'Ready For Pickup', updated },
@@ -1877,7 +1875,7 @@ router.put('/:id/status', authenticateToken, async (req: AuthenticatedRequest, r
       socketManager.emitToUser('customer', targetCustGen, 'order_status_updated', { status, orderId: id, order: updated });
     }
     await eventPublisher.publishEvent(
-      specificSingleEntity,
+      RealtimeEntities.ORDER,
       RealtimeActions.STATUS_CHANGED,
       id,
       { orderId: id, status, updated },
