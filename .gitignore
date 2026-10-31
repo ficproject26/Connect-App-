@@ -28,3 +28,6 @@ scratch/
 .env
 *.env
 
+
+AGENT.md
+CHANGELOG.md
